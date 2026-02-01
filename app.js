@@ -10,6 +10,7 @@ class BookRenderer {
         this.libraryManager = new LibraryManager();
     }
 
+
     createBookElement(bookData) {
         const { id, volumeInfo } = bookData;
         const title = volumeInfo.title || "Untitled";
@@ -42,6 +43,7 @@ class BookRenderer {
                     </div>
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
+                        <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped')"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -69,6 +71,13 @@ class BookRenderer {
             setTimeout(() => addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>', 2000);
         });
 
+        // Interaction: Open Details Modal
+        const infoBtn = scene.querySelector('.info-btn');
+        infoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openModal(bookData);
+        });
+
         return scene;
     }
 
@@ -82,6 +91,70 @@ class BookRenderer {
             "Will make you travel without moving."
         ];
         return vibes[Math.floor(Math.random() * vibes.length)];
+    }
+
+    generateMockAISummary(book) {
+        const title = book.volumeInfo.title;
+        const genres = book.volumeInfo.categories || ["General Fiction"];
+        const mainGenre = genres[0];
+        
+        // Templates for "AI" generation
+        const templates = [
+            `This story explores the nuances of human connection through the lens of ${mainGenre}. Readers often find themselves reflecting on their own journeys after finishing "${title}".Expect a narrative that is both grounding and transcendent.`,
+            `A defining work in ${mainGenre} that asks difficult questions without providing easy answers. "${title}" is best enjoyed in a single sitting, preferably with a hot beverage. The pacing is deliberate, allowing the atmosphere to settle around you.`,
+            `If you appreciate lyrical prose and character-driven plots, this is a must-read. The themes of "${title}" resonate long after the final page is turned. A beautiful examination of what it means to be alive.`,
+            `An intellectual puzzle wrapped in an emotional narrative. "${title}" challenges conventions of ${mainGenre} while paying homage to its roots. Prepare for a twist that recontextualizes the entire opening chapter.`
+        ];
+
+        return templates[Math.floor(Math.random() * templates.length)];
+    }
+
+    openModal(book) {
+        const modal = document.getElementById('book-details-modal');
+        const img = document.getElementById('modal-img');
+        const title = document.getElementById('modal-title');
+        const author = document.getElementById('modal-author');
+        const summary = document.getElementById('modal-summary');
+        const addBtn = document.getElementById('modal-add-btn');
+        const closeBtn = document.getElementById('closeModalBtn');
+
+        if (!modal) return;
+
+        // Populate Data
+        const volume = book.volumeInfo;
+        title.textContent = volume.title;
+        author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
+        img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
+        
+        // Mock AI Generation Effect
+        summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
+        
+        setTimeout(() => {
+            summary.textContent = this.generateMockAISummary(book);
+        }, 800);
+
+        // Handle Add Button inside Modal
+        // Clone to remove old listeners
+        const newAddBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+        
+        newAddBtn.addEventListener('click', () => {
+            this.libraryManager.addBook(book, 'want');
+            newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added';
+            setTimeout(() => newAddBtn.innerHTML = '<i class="fa-regular fa-heart"></i> Add to Library', 2000);
+        });
+
+        // Show Modal
+        modal.showModal();
+
+        // Close Handlers
+        const closeHandler = () => modal.close();
+        closeBtn.onclick = closeHandler;
+        
+        // Close on backdrop click
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.close();
+        };
     }
 
     async renderCuratedSection(query, elementId) {
