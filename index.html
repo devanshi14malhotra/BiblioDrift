@@ -1,124 +1,187 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BiblioDrift | Find yourself in the pages</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
 
-<body>
-
+  <body>
     <header>
-        <a href="index.html" class="logo">
-            <i class="fa-solid fa-book-open"></i> BiblioDrift
-        </a>
-        <div class="header-controls">
-            <div class="search-bar">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-                <i class="fa-solid fa-search search-icon"></i>
-            </div>
-            <nav class="nav-links">
-                <a href="index.html" class="active">Discovery</a>
-                <a href="library.html">My Library</a>
-                <a href="auth.html">Sign In</a>
-            </nav>
-            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-                <i class="fa-solid fa-moon"></i>
-            </button>
+      <a href="index.html" class="logo">
+        <i class="fa-solid fa-book-open"></i> BiblioDrift
+      </a>
+      <div class="header-controls">
+        <div class="search-bar">
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="Search for a feeling..."
+          />
+          <i class="fa-solid fa-search search-icon"></i>
         </div>
+        <nav class="nav-links">
+          <a href="index.html" class="active">Discovery</a>
+          <a href="library.html">My Library</a>
+          <a href="chat.html">Chat</a>
+          <a href="auth.html">Sign In</a>
+        </nav>
+        <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </div>
     </header>
 
     <main>
-        <section class="hero">
-            <h1>Find yourself in the pages.</h1>
-            <p>A curated sanctuary for those who read through emotions.</p>
-        </section>
+      <section class="hero">
+        <h1>Find yourself in the pages.</h1>
+        <p>A curated sanctuary for those who read through emotions.</p>
+      </section>
 
-        <!-- Curated Table 1 -->
-        <section class="curated-section">
-            <div class="section-header">
-                <h2>Rainy Evening Reads</h2>
-                <span><i class="fa-solid fa-cloud-rain"></i> Mystery & Melancholy</span>
-            </div>
+      <!-- Curated Table 1 -->
+      <section class="curated-section">
+        <div class="section-header">
+          <h2>Rainy Evening Reads</h2>
+          <span
+            ><i class="fa-solid fa-cloud-rain"></i> Mystery & Melancholy</span
+          >
+        </div>
 
-            <div class="curated-row" id="row-rainy">
-                <!-- Books injected by JS -->
-                <!-- Hardcoded example for structure reference during dev -->
-                <div class="book-scene">
-                    <div class="book">
-                        <div class="book__face book__face--front">
-                            <img src="https://books.google.com/books/content?id=uyr0DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
-                                alt="Cover">
-                        </div>
-                        <div class="book__face book__face--spine"></div>
-                        <div class="book__face book_face--right"></div>
-                        <div class="book__face book__face--back">
-                            <div class="handwritten-note">
-                                "A quiet storm of a book. Best read with a blanket."
-                            </div>
-                            <div class="book-actions">
-                                <button class="btn-icon" title="Add to Library"><i
-                                        class="fa-regular fa-heart"></i></button>
-                                <button class="btn-icon" title="Read Details"><i class="fa-solid fa-info"></i></button>
-                            </div>
-                        </div>
-                    </div>
+        <div class="curated-row" id="row-rainy">
+          <!-- Books injected by JS -->
+          <!-- Hardcoded example for structure reference during dev -->
+          <div class="book-scene">
+            <div class="book">
+              <div class="book__face book__face--front">
+                <img
+                  src="https://books.google.com/books/content?id=uyr0DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+                  alt="Cover"
+                />
+              </div>
+              <div class="book__face book__face--spine"></div>
+              <div class="book__face book_face--right"></div>
+              <div class="book__face book__face--back">
+                <div class="handwritten-note">
+                  "A quiet storm of a book. Best read with a blanket."
                 </div>
+                <div class="book-actions">
+                  <button class="btn-icon" title="Add to Library">
+                    <i class="fa-regular fa-heart"></i>
+                  </button>
+                  <button class="btn-icon" title="Read Details">
+                    <i class="fa-solid fa-info"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        <!-- Curated Table 2 -->
-        <section class="curated-section">
-            <div class="section-header">
-                <h2>Indian Authors</h2>
-                <span><i class="fa-solid fa-feather"></i> Voices from the Subcontinent</span>
-            </div>
-            <div class="curated-row" id="row-indian">
-                <!-- JS will fill this -->
-            </div>
-        </section>
+      <!-- Curated Table 2 -->
+      <section class="curated-section">
+        <div class="section-header">
+          <h2>Indian Authors</h2>
+          <span
+            ><i class="fa-solid fa-feather"></i> Voices from the
+            Subcontinent</span
+          >
+        </div>
+        <div class="curated-row" id="row-indian">
+          <!-- JS will fill this -->
+        </div>
+      </section>
 
-        <!-- Curated Table 3 -->
-        <section class="curated-section">
-            <div class="section-header">
-                <h2>Forgotten Classics</h2>
-                <span><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span>
-            </div>
-            <div class="curated-row" id="row-classics">
-                <!-- JS will fill this -->
-            </div>
-        </section>
+      <!-- Curated Table 3 -->
+      <section class="curated-section">
+        <div class="section-header">
+          <h2>Forgotten Classics</h2>
+          <span
+            ><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span
+          >
+        </div>
+        <div class="curated-row" id="row-classics">
+          <!-- JS will fill this -->
+        </div>
+      </section>
+
+      <!-- Curated Table 4 -->
+      <section class="curated-section">
+        <div class="section-header">
+          <h2>By Genre</h2>
+          <span><i class="fa-solid fa-tag"></i> Explore by Category</span>
+        </div>
+        <div class="curated-row" id="row-genre">
+          <!-- JS will fill this -->
+        </div>
+      </section>
 
     </main>
 
     <button id="backToTop" class="btn-icon back-to-top" title="Back to Top">
-        <i class="fa-solid fa-arrow-up"></i>
+      <i class="fa-solid fa-arrow-up"></i>
     </button>
     <!--Footer for social media icons -->
     <footer class="footer">
-        <div class="social_icons">
-            <a href="#" ><i class="fab fa-linkedin" ></i></a>
-            <a href="#"><i class="fab fa-instagram" ></i></a>
-              <a href="#"><i class="fab fa-facebook" ></i></a>
-               <a href="#"><i class="fab fa-x" ></i></a>
-        </div>
+      <div class="social_icons">
+        <a href="#"><i class="fab fa-linkedin"></i></a>
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-facebook"></i></a>
+        <a href="#"><i class="fab fa-x"></i></a>
+      </div>
     </footer>
 
+    <!-- Glass Modal for Book Details -->
+    <dialog id="book-details-modal" class="glass-modal">
+      <div class="modal-content">
+        <button class="close-modal-btn" id="closeModalBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="modal-body">
+          <div class="modal-media">
+            <img id="modal-img" src="" alt="Book Cover" />
+          </div>
+
+          <div class="modal-info">
+            <h2 id="modal-title">Book Title</h2>
+            <p id="modal-author" class="modal-subtitle">Author Name</p>
+
+            <div class="ai-insight-box">
+              <div class="ai-header">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>AI Insight (Spoiler-Free)</span>
+              </div>
+              <p id="modal-summary">Loading thoughts...</p>
+            </div>
+
+            <div class="modal-actions">
+              <button id="modal-add-btn" class="btn-primary">
+                <i class="fa-regular fa-heart"></i> Add to Library
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <script src="app.js"></script>
-
-
-</body>
-
+  </body>
 </html>
