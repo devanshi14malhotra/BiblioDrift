@@ -9,14 +9,14 @@ const MOOD_API_BASE = 'http://localhost:5000/api/v1';
 
 
 class BookRenderer {
-    constructor() {
-        // this.libraryManager = new LibraryManager();
+    constructor(libraryManager = null) {
+        this.libraryManager = libraryManager;
         // this.moodAnalyzer = new MoodAnalyzer();
     }
 
-
-    async createBookElement(bookData) {
+    async createBookElement(bookData, shelf = null) {
         const { id, volumeInfo } = bookData;
+        const progress = typeof bookData.progress === 'number' ? bookData.progress : 0;
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
@@ -67,9 +67,22 @@ class BookRenderer {
                             </div>
                         </div>` : ''}
                     </div>
+                    ${shelf === 'current' ? `
+                <div class="reading-progress">
+                        <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        value="${progress}" 
+                        class="progress-slider"
+                    />
+                <small>${progress}% read</small>
+                </div>
+                ` : ''}
+
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                        <button class="btn-icon mood-btn" title="Analyze Mood" onclick="event.stopPropagation(); this.closest('.book-scene').querySelector('.book-renderer').showMoodAnalysis('${title}', '${authors}')"><i class="fa-solid fa-brain"></i></button>
+                        <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped')"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -81,30 +94,77 @@ class BookRenderer {
             </div>
         `;
 
-
         // Store reference for mood analysis
         const bookScene = scene.querySelector('.book-scene');
         if (bookScene) bookScene.bookRenderer = this;
 
+        // Progress slider logic
+        const slider = scene.querySelector('.progress-slider');
+        if (slider) {
+            slider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value, 10);
+                const lib = JSON.parse(localStorage.getItem('bibliodrift_library'));
+
+                for (const shelfKey in lib) {
+                    const book = lib[shelfKey].find(b => b.id === id);
+                    if (book) {
+                        book.progress = value;
+                        break;
+                    }
+                }
+                this.libraryManager.library = lib;
+
+                localStorage.setItem('bibliodrift_library', JSON.stringify(lib));
+
+                const label = slider.nextElementSibling;
+                if (label) label.textContent = `${value}% read`;
+            });
+        }
 
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
-            if (!e.target.closest('.btn-icon')) {
-                bookEl.classList.toggle('flipped');
-            }
+        if (
+            !e.target.closest('.btn-icon') &&
+            !e.target.closest('.reading-progress')
+        ) {
+            bookEl.classList.toggle('flipped');
+        }
         });
 
 
-        // Interaction: Add to Library
+        // Interaction: Add to Library (Toggle)
         const addBtn = scene.querySelector('.add-btn');
+        const updateButtonState = () => {
+            if (this.libraryManager.findBook(bookData.id)) {
+                addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else {
+                addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+            }
+        };
+        
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.libraryManager.addBook(bookData, 'want'); // Default to "Want to Read"
-            addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
-            setTimeout(() => addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>', 2000);
+            if (this.libraryManager.findBook(bookData.id)) {
+                // Book is in library - remove it
+                this.libraryManager.removeBook(bookData.id);
+                addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+            } else {
+                // Book not in library - add it
+                this.libraryManager.addBook(bookData, 'current');
+                addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            }
         });
+        
+        // Set initial button state
+        updateButtonState();
 
+        // Interaction: Open Details Modal
+        const infoBtn = scene.querySelector('.info-btn');
+        infoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openModal(bookData);
+        });
 
         return scene;
     }
@@ -260,6 +320,71 @@ class BookRenderer {
         return vibes[Math.floor(Math.random() * vibes.length)];
     }
 
+    generateMockAISummary(book) {
+        const title = book.volumeInfo.title;
+        const genres = book.volumeInfo.categories || ["General Fiction"];
+        const mainGenre = genres[0];
+        
+        // Templates for "AI" generation
+        const templates = [
+            `This story explores the nuances of human connection through the lens of ${mainGenre}. Readers often find themselves reflecting on their own journeys after finishing "${title}".Expect a narrative that is both grounding and transcendent.`,
+            `A defining work in ${mainGenre} that asks difficult questions without providing easy answers. "${title}" is best enjoyed in a single sitting, preferably with a hot beverage. The pacing is deliberate, allowing the atmosphere to settle around you.`,
+            `If you appreciate lyrical prose and character-driven plots, this is a must-read. The themes of "${title}" resonate long after the final page is turned. A beautiful examination of what it means to be alive.`,
+            `An intellectual puzzle wrapped in an emotional narrative. "${title}" challenges conventions of ${mainGenre} while paying homage to its roots. Prepare for a twist that recontextualizes the entire opening chapter.`
+        ];
+
+        return templates[Math.floor(Math.random() * templates.length)];
+    }
+
+    openModal(book) {
+        const modal = document.getElementById('book-details-modal');
+        const img = document.getElementById('modal-img');
+        const title = document.getElementById('modal-title');
+        const author = document.getElementById('modal-author');
+        const summary = document.getElementById('modal-summary');
+        const addBtn = document.getElementById('modal-add-btn');
+        const closeBtn = document.getElementById('closeModalBtn');
+
+        if (!modal) return;
+
+        // Populate Data
+        const volume = book.volumeInfo;
+        title.textContent = volume.title;
+        author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
+        img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
+        
+        // Mock AI Generation Effect
+        summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
+        
+        setTimeout(() => {
+            summary.textContent = this.generateMockAISummary(book);
+        }, 800);
+
+        // Handle Add Button inside Modal
+        // Clone to remove old listeners
+        const newAddBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+        
+        newAddBtn.addEventListener('click', () => {
+            this.libraryManager.addBook(book, 'want');
+            newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added';
+            setTimeout(() => newAddBtn.innerHTML = '<i class="fa-regular fa-heart"></i> Add to Library', 2000);
+        });
+
+        // Show Modal
+        modal.showModal();
+
+        // Close Handlers
+        const closeHandler = () => modal.close();
+        closeBtn.onclick = closeHandler;
+        
+        // Close on backdrop click
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.close();
+        };
+    }
+
+
 
     async renderCuratedSection(query, elementId) {
         const container = document.getElementById(elementId);
@@ -334,11 +459,14 @@ class LibraryManager {
 
 
     addBook(book, shelf) {
-        // Check duplicates
         if (this.findBook(book.id)) return;
 
+        const enrichedBook = {
+            ...book,
+            progress: shelf === 'current' ? 0 : null
+        };
 
-        this.library[shelf].push(book);
+        this.library[shelf].push(enrichedBook);
         this.save();
         console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
     }
@@ -351,6 +479,25 @@ class LibraryManager {
         return false;
     }
 
+    findBookInShelf(id) {
+        for (const shelf in this.library) {
+            const book = this.library[shelf].find(b => b.id === id);
+            if (book) return { shelf, book };
+        }
+        return null;
+    }
+
+    removeBook(id) {
+        const result = this.findBookInShelf(id);
+        if (result) {
+            const { shelf } = result;
+            this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
+            this.save();
+            console.log(`Removed book ${id} from ${shelf}`);
+            return true;
+        }
+        return false;
+    }
 
     save() {
         localStorage.setItem(this.storageKey, JSON.stringify(this.library));
@@ -375,14 +522,13 @@ class LibraryManager {
         const emptyState = container.querySelector('.empty-state');
         if (emptyState) emptyState.remove();
 
-
-        books.forEach(book => {
-            const renderer = new BookRenderer();
-            const el = renderer.createBookElement(book);
-            // On shelves, we might want interaction to be "Move" or "Remove",
-            // but for MVP reuse the same card.
-            container.appendChild(el);
-        });
+        (async () => {
+            for (const book of books) {
+                const renderer = new BookRenderer(this);
+                const el = await renderer.createBookElement(book, shelfName);
+                container.appendChild(el);
+            }
+        })();
     }
 }
 
@@ -426,8 +572,8 @@ class ThemeManager {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    const renderer = new BookRenderer();
     const libManager = new LibraryManager();
+    const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
 
 
@@ -502,4 +648,94 @@ if (backToTopBtn) {
         });
     });
 }
+});
+
+function handleAuth(event) {
+  event.preventDefault();
+
+  const email = document.getElementById("email").value;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    alert("Enter a valid email address");
+    return;
+  }
+
+  window.location.href = "library.html";
+}
+
+
+function enableTapEffects() {
+    if (!('ontouchstart' in window)) return;
+
+    document.querySelectorAll('.book-scene').forEach(scene => {
+        const book = scene.querySelector('.book');
+        const overlay = scene.querySelector('.glass-overlay');
+        scene.addEventListener('click', () => {
+            book.classList.toggle('tap-effect');
+            if (overlay) overlay.classList.toggle('tap-overlay');
+        });
+    });
+
+    document.querySelectorAll('.btn-icon').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('tap-btn-icon');
+        });
+    });
+
+
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', () => {
+            link.classList.toggle('tap-nav-link');
+        });
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            themeToggle.classList.toggle('tap-theme-toggle');
+        });
+    }
+
+    const backTop = document.querySelector('.back-to-top');
+    if (backTop) {
+        backTop.addEventListener('click', () => {
+            backTop.classList.toggle('tap-back-to-top');
+        });
+    }
+
+   
+    document.querySelectorAll('.social_icons a').forEach(icon => {
+        icon.addEventListener('click', () => {
+            icon.classList.toggle('tap-social-icon');
+        });
+    });
+}
+
+enableTapEffects();
+
+// --- creak and page flip effects ---
+const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
+pageFlipSound.volume = 0.2;  
+pageFlipSound.muted = true;   
+
+
+document.addEventListener("click", (e) => {
+    const scene = e.target.closest(".book-scene");
+    if (!scene) return;
+
+    console.log("BOOK CLICK");
+
+    const book = scene.querySelector(".book");
+    const overlay = scene.querySelector(".glass-overlay");
+
+    pageFlipSound.muted = false;
+
+    pageFlipSound.pause();
+    pageFlipSound.currentTime = 0;
+    pageFlipSound.play().catch(err => console.log("PLAY ERROR", err));
+
+    book.classList.toggle("tap-effect");
+    if (overlay) overlay.classList.toggle("tap-overlay");
 });

@@ -1,298 +1,298 @@
 :root {
-    /* Day Theme (Default) */
-    --bg-color: #F9F7F2;
-    --header-bg: rgba(249, 247, 242, 0.8);
-    --text-main: #2C2420;
-    --text-muted: #6B5E55;
-    --accent-gold: #D4AF37;
-    --wood-dark: #5D4037;
-    --wood-light: #8D6E63;
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.05);
-    --input-bg: rgba(255, 255, 255, 0.5);
-    --input-border: rgba(0, 0, 0, 0.1);
-    --book-bg: #fff;
-    --paper-color: #fffdf9;
+  /* Day Theme (Default) */
+  --bg-color: #f9f7f2;
+  --header-bg: rgba(249, 247, 242, 0.8);
+  --text-main: #2c2420;
+  --text-muted: #6b5e55;
+  --accent-gold: #d4af37;
+  --wood-dark: #5d4037;
+  --wood-light: #8d6e63;
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.5);
+  --input-border: rgba(0, 0, 0, 0.1);
+  --book-bg: #fff;
+  --paper-color: #fffdf9;
 
-    /* Vibe Colors */
-    --vibe-mystery: #78909c;
-    --vibe-romance: #ef9a9a;
-    --vibe-classic: #a1887f;
+  /* Vibe Colors */
+  --vibe-mystery: #78909c;
+  --vibe-romance: #ef9a9a;
+  --vibe-classic: #a1887f;
 
-    /* Dimensions */
-    --book-width: 160px;
-    --book-height: 240px;
-    --book-thick: 40px;
+  /* Dimensions */
+  --book-width: 160px;
+  --book-height: 240px;
+  --book-thick: 40px;
 }
 
-[data-theme='night'] {
-    /* Night Theme (Dark Wood) */
-    --bg-color: #1e1a18;
-    --header-bg: rgba(30, 26, 24, 0.85);
-    --text-main: #e0d5cb;
-    --text-muted: #a89a8e;
-    --accent-gold: #fccb4e;
-    --wood-dark: #3e2723;
-    --wood-light: #5d4037;
-    --glass-bg: rgba(0, 0, 0, 0.3);
-    --glass-border: rgba(255, 255, 255, 0.05);
-    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.4);
-    --input-bg: rgba(0, 0, 0, 0.2);
-    --input-border: rgba(255, 255, 255, 0.1);
-    --book-bg: #2c2420;
-    --paper-color: #e0d5cb;
+[data-theme="night"] {
+  /* Night Theme (Dark Wood) */
+  --bg-color: #1e1a18;
+  --header-bg: rgba(30, 26, 24, 0.85);
+  --text-main: #e0d5cb;
+  --text-muted: #a89a8e;
+  --accent-gold: #fccb4e;
+  --wood-dark: #3e2723;
+  --wood-light: #5d4037;
+  --glass-bg: rgba(0, 0, 0, 0.3);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --input-bg: rgba(0, 0, 0, 0.2);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --book-bg: #2c2420;
+  --paper-color: #e0d5cb;
 }
 
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-family: 'Georgia', serif;
-    /* Classic serif for books */
-    overflow-x: hidden;
-    min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: "Georgia", serif;
+  /* Classic serif for books */
+  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 h1,
 h2,
 h3 {
-    font-weight: normal;
-    font-family: 'Playfair Display', serif;
-    /* Elegant headings */
+  font-weight: normal;
+  font-family: "Playfair Display", serif;
+  /* Elegant headings */
 }
 
 /* --- Layout --- */
 header {
-    padding: 2rem 4rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: var(--header-bg);
-    backdrop-filter: blur(10px);
-    transition: background 0.5s ease;
+  padding: 2rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--header-bg);
+  backdrop-filter: blur(10px);
+  transition: background 0.5s ease;
 }
 
 .header-controls {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
 }
 
 .search-bar {
-    position: relative;
-    display: flex;
-    align-items: center;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .search-input {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-family: 'Georgia', serif;
-    width: 200px;
-    transition: all 0.3s ease;
-    outline: none;
-    color: var(--text-main);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-family: "Georgia", serif;
+  width: 200px;
+  transition: all 0.3s ease;
+  outline: none;
+  color: var(--text-main);
 }
 
 .search-input:focus {
-    background: var(--book-bg);
-    width: 300px;
-    box-shadow: var(--shadow-soft);
+  background: var(--book-bg);
+  width: 300px;
+  box-shadow: var(--shadow-soft);
 }
 
 .search-icon {
-    position: absolute;
-    right: 10px;
-    color: var(--text-muted);
-    pointer-events: none;
+  position: absolute;
+  right: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
 .logo {
-    font-size: 1.5rem;
-    letter-spacing: 1px;
-    color: var(--text-main);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+  color: var(--text-main);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav-links a {
-    text-decoration: none;
-    color: var(--text-muted);
-    margin-left: 2rem;
-    transition: color 0.3s ease;
+  text-decoration: none;
+  color: var(--text-muted);
+  margin-left: 2rem;
+  transition: color 0.3s ease;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
-    color: var(--text-main);
+  color: var(--text-main);
 }
 
 main {
-    padding: 2rem 4rem;
-    max-width: 1400px;
-    margin: 0 auto;
+  padding: 2rem 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* --- Hero --- */
 .hero {
-    text-align: center;
-    padding: 6rem 1rem;
-    animation: heroFade 1s ease-out;}
-    @keyframes heroFade {
-        from{
-            opacity: 0;
-            transform: translateY (15px);
-        }
-        to{
-            opacity: 1;
-            transform: translateY (0);
-        }
-        
-    }
+  text-align: center;
+  padding: 6rem 1rem;
+  animation: heroFade 1s ease-out;
+}
 
+@keyframes heroFade {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .hero h1 {
-    
-    font-size: clamp(2.5rem, 8vw,4.5rem);
-    margin-bottom: 1.5rem;
-    font-style: italic;
-    line-height: 1.2;
-    letter-spacing: 0.5px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  margin-bottom: 1.5rem;
+  font-style: italic;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .hero p {
-    color: var(--text-muted);
-    font-size: 1.2rem;
-    line-height:  1.8;
-    max-width: 55ch;
-    margin: 0 auto;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1.8;
+  max-width: 55ch;
+  margin: 0 auto;
 }
 
 /* --- Curated Tables (Horizontal Scroll) --- */
 .curated-section {
-    margin-bottom: 6rem;
+  margin-bottom: 6rem;
 }
 
 .section-header {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding-bottom: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
 .curated-row {
-    display: flex;
-    gap: 3rem;
-    padding: 2rem 1rem;
-    overflow-x: visible;
-    /* Allow 3D overflow */
-    perspective: 1000px;
+  display: flex;
+  gap: 3rem;
+  padding: 2rem 1rem;
+  overflow-x: visible;
+  /* Allow 3D overflow */
+  perspective: 1000px;
 }
 
 /* --- 3D Book Component --- */
 .book-scene {
-    width: var(--book-width);
-    height: var(--book-height);
-    perspective: 1000px;
-    cursor: pointer;
-    /* Random slight rotation for organic feel - handled in JS usually, but default here */
+  width: var(--book-width);
+  height: var(--book-height);
+  perspective: 1000px;
+  cursor: pointer;
+  /* Random slight rotation for organic feel - handled in JS usually, but default here */
 }
 
 .book {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transform-style: preserve-3d;
-    /* Bouncy cozy feel */
-    transform-origin: center center -20px;
-    /* Pivot inside the book */
-    animation: floatIn 0.8s ease-out backwards;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  /* Bouncy cozy feel */
+  transform-origin: center center -20px;
+  /* Pivot inside the book */
+  animation: floatIn 0.8s ease-out backwards;
 }
 
 @keyframes floatIn {
-    from {
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .book.flipped {
-    transform: rotateY(180deg) scale(1.2) translateZ(50px);
-    /* Expand and bring closer */
-    z-index: 100;
+  transform: rotateY(180deg) scale(1.2) translateZ(50px);
+  /* Expand and bring closer */
+  z-index: 100;
 }
 
 /* Book Faces */
 .book__face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    /* Hide back when front is clear */
-    border-radius: 4px 8px 8px 4px;
-    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.15);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  /* Hide back when front is clear */
+  border-radius: 4px 8px 8px 4px;
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.15);
 }
 
 .book__face--front {
-    background: var(--book-bg);
-    transform: rotateY(0deg);
-    z-index: 2;
+  background: var(--book-bg);
+  transform: rotateY(0deg);
+  z-index: 2;
 }
 
 .book__face--front img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 4px 8px 8px 4px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px 8px 8px 4px;
 }
 
 .book__face--back {
-    transform: rotateY(180deg);
-    background: var(--paper-color);
-    /* Paper color */
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    border: 1px solid var(--glass-border);
-    z-index: 1;
-    color: #2C2420; /* Keep text dark for paper feel even in night mode */
+  transform: rotateY(180deg);
+  background: var(--paper-color);
+  /* Paper color */
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--glass-border);
+  z-index: 1;
+  color: #2c2420; /* Keep text dark for paper feel even in night mode */
 }
 
 /* The Spine */
 .book__face--spine {
-    position: absolute;
-    width: var(--book-thick);
-    height: 100%;
-    left: 0;
-    top: 0;
-    transform: rotateY(-90deg) translateZ(calc(var(--book-thick) / 2));
-    /* Adjust spine logic: Needs to be anchored correctly. 
+  position: absolute;
+  width: var(--book-thick);
+  height: 100%;
+  left: 0;
+  top: 0;
+  transform: rotateY(-90deg) translateZ(calc(var(--book-thick) / 2));
+  /* Adjust spine logic: Needs to be anchored correctly. 
        Actually, standard box model:
        Front: translateZ(20px)
        Back: translateZ(-20px)
@@ -307,149 +307,159 @@ main {
 /* Improved 3D Box Model */
 /* Re-defining .book for proper thickness volume */
 .book {
-    transform-origin: center center -20px;
-    /* Pivot inside the book */
+  transform-origin: center center -20px;
+  /* Pivot inside the book */
 }
 
 .book__face--front {
-    transform: translateZ(20px);
+  transform: translateZ(20px);
 }
 
 .book__face--back {
-    transform: rotateY(180deg) translateZ(20px);
+  transform: rotateY(180deg) translateZ(20px);
 }
 
 .book__face--spine {
-    width: 40px;
-    height: 100%;
-    background: #333;
-    /* Default spine color */
-    transform: rotateY(-90deg) translateZ(20px);
-    /* Adjust positioning to be flush left of front face */
-    left: -20px;
-    /* Half thickness */
+  width: 40px;
+  height: 100%;
+  background: #333;
+  /* Default spine color */
+  transform: rotateY(-90deg) translateZ(20px);
+  /* Adjust positioning to be flush left of front face */
+  left: -20px;
+  /* Half thickness */
 }
 
 .book__face--right {
-    /* Pages */
-    width: 40px;
-    height: 100%;
-    background: linear-gradient(to right, #fff, #f0f0f0 20%, #fff 40%);
-    transform: rotateY(90deg) translateZ(140px);
-    /* Width - half thickness */
-    left: auto;
-    right: -20px;
+  /* Pages */
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(to right, #fff, #f0f0f0 20%, #fff 40%);
+  transform: rotateY(90deg) translateZ(140px);
+  /* Width - half thickness */
+  left: auto;
+  right: -20px;
 }
 
 /* Hover Effect: Pull out */
 .book-scene:hover .book:not(.flipped) {
-    transform: translateZ(30px) translateY(-10px) rotateY(-10deg);
+  transform: translateZ(30px) translateY(-10px) rotateY(-10deg);
 }
 
 /* Glassmorphism Overlay (Quick view) */
 .glass-overlay {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    padding: 0.5rem;
-    border-radius: 6px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
-    pointer-events: none;
-    /* Let clicks pass to book */
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  padding: 0.5rem;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  /* Let clicks pass to book */
 }
 
 .book-scene:hover .glass-overlay {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Back of book content */
 .handwritten-note {
-    font-family: 'Courier New', Courier, monospace;
-    /* Placeholder for handwriting font */
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    line-height: 1.4;
-    background: #fffdc2;
-    padding: 10px;
-    transform: rotate(-2deg);
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
+  font-family: "Courier New", Courier, monospace;
+  /* Placeholder for handwriting font */
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  background: #fffdc2;
+  padding: 10px;
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
 }
 
 .book-actions {
-    display: flex;
-    gap: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .btn-icon {
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    opacity: 0.6;
-    transition: opacity 0.2s;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
 }
 
 .btn-icon:hover {
-    opacity: 1;
-    transform: scale(1.1);
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 /* --- Virtual Shelves --- */
 .shelves-container {
-    display: flex;
-    flex-direction: column;
-    gap: 4rem;
-    padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 2rem 0;
 }
 
 .shelf-row {
-    position: relative;
-    padding: 0 2rem 1.5rem 2rem;
-    /* Realistic Wood Texture Gradient */
-    background:
-        repeating-linear-gradient(90deg, transparent 0, transparent 4px, rgba(0, 0, 0, 0.02) 5px, transparent 10px),
-        linear-gradient(to bottom, #5D4037 0%, #3E2723 100%);
-    border-bottom: 25px solid #281A15;
-    /* Thicker front lip */
-    border-radius: 4px;
-    box-shadow:
-        0 20px 20px -10px rgba(0, 0, 0, 0.3),
-        inset 0 2px 20px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: flex-end;
-    gap: 1.5rem;
-    /* More spacing for expanded books */
-    min-height: 280px;
+  position: relative;
+  padding: 0 2rem 1.5rem 2rem;
+  /* Realistic Wood Texture Gradient */
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 4px,
+      rgba(0, 0, 0, 0.02) 5px,
+      transparent 10px
+    ),
+    linear-gradient(to bottom, #5d4037 0%, #3e2723 100%);
+  border-bottom: 25px solid #281a15;
+  /* Thicker front lip */
+  border-radius: 4px;
+  box-shadow:
+    0 20px 20px -10px rgba(0, 0, 0, 0.3),
+    inset 0 2px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
+  /* More spacing for expanded books */
+  min-height: 280px;
 }
 
 .shelf-row::after {
-    /* Depth shadow on wall behind books */
-    content: '';
-    position: absolute;
-    bottom: 25px;
-    /* Above bottom lip */
-    left: 0;
-    right: 0;
-    height: 100%;
-    z-index: -1;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4));
-    pointer-events: none;
+  /* Depth shadow on wall behind books */
+  content: "";
+  position: absolute;
+  bottom: 25px;
+  /* Above bottom lip */
+  left: 0;
+  right: 0;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.4)
+  );
+  pointer-events: none;
 }
 
 .shelf-label {
-    position: absolute;
-    top: -20px;
-    left: 0;
-    font-size: 1.2rem;
-    color: var(--wood-light);
-    font-style: italic;
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 1.2rem;
+  color: var(--wood-light);
+  font-style: italic;
 }
 
 /* --- Mood Analysis Styles --- */
@@ -475,16 +485,45 @@ main {
 }
 
 /* Mood-specific colors */
-.mood-cozy { background: #8D6E63 !important; }
-.mood-dark { background: #424242 !important; }
-.mood-mysterious { background: #5E35B1 !important; }
-.mood-romantic { background: #E91E63 !important; }
-.mood-adventurous { background: #FF5722 !important; }
-.mood-melancholy { background: #607D8B !important; }
-.mood-uplifting { background: #4CAF50 !important; }
-.mood-intense { background: #F44336 !important; }
-.mood-whimsical { background: #9C27B0 !important; }
-.mood-thought-provoking { background: #795548 !important; }
+.mood-cozy {
+    background: #8d6e63 !important;
+}
+
+.mood-dark {
+    background: #424242 !important;
+}
+
+.mood-mysterious {
+    background: #5e35b1 !important;
+}
+
+.mood-romantic {
+    background: #e91e63 !important;
+}
+
+.mood-adventurous {
+    background: #ff5722 !important;
+}
+
+.mood-melancholy {
+    background: #607d8b !important;
+}
+
+.mood-uplifting {
+    background: #4caf50 !important;
+}
+
+.mood-intense {
+    background: #f44336 !important;
+}
+
+.mood-whimsical {
+    background: #9c27b0 !important;
+}
+
+.mood-thought-provoking {
+    background: #795548 !important;
+}
 
 /* Glass overlay mood tags */
 .glass-mood-tags {
@@ -634,7 +673,7 @@ main {
     padding: 1rem;
     border-radius: 8px;
     font-style: italic;
-    color: #2C2420;
+    color: #2c2420;
     border-left: 4px solid var(--accent-gold);
     margin: 0.5rem 0;
 }
@@ -655,110 +694,347 @@ main {
         width: 95%;
         margin: 1rem;
     }
-    
+
     .mood-tags-large {
         flex-direction: column;
     }
-    
+
     .mood-tag-large {
         text-align: center;
     }
 }
 
+/* Utilities */
+.hidden {
+  display: none;
+}
+
 .fade-in {
-    animation: fadeIn 1s ease;
+  animation: fadeIn 1s ease;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Theme Toggle Button Enhancement */
 #themeToggle {
-    font-size: 1.4rem;
-    color: var(--text-main);
-    cursor: pointer;
-    transition: transform 0.3s ease, color 0.3s ease;
+  font-size: 1.4rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
 }
 
 #themeToggle:hover {
-    transform: rotate(15deg) scale(1.1);
-    color: var(--accent-gold);
+  transform: rotate(15deg) scale(1.1);
+  color: var(--accent-gold);
 }
 
 /* --- Back to Top Button --- */
 .back-to-top {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    background: var(--header-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-soft);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-    opacity: 1;
-    visibility: visible;
-    transition: all 0.4s ease;
-    backdrop-filter: blur(5px);
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--header-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  opacity: 1;
+  visibility: visible;
+  transition: all 0.4s ease;
+  backdrop-filter: blur(5px);
 }
 
 .back-to-top.hidden {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
 }
 
 .back-to-top:hover {
-    background: var(--book-bg);
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-    color: var(--accent-gold);
+  background: var(--book-bg);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  color: var(--accent-gold);
 }
 /*Footer design */
 
 .footer {
-    min-height: 120px;
-    width: 100%;
-    background-color: #222; 
-    display: flex;
-    flex-direction: column; 
-    justify-content: center;
-    align-items: center;
-    gap: 1.2rem;
-    padding: 2rem 0;
-    margin-top: 4rem;
-
+  min-height: 120px;
+  width: 100%;
+  background-color: #222;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 2rem 0;
+  margin-top: 4rem;
 }
 
 .social_icons {
-    display: flex;
-    gap: 2rem;
-    z-index: 999;
+  display: flex;
+  gap: 2rem;
+  z-index: 999;
 }
 
 .social_icons a {
-    color: var(--accent-gold);
-    font-size: 2rem;
-    transition: transform 0.3s ease,color 0.3s ease;
-    text-decoration: none;
+  color: var(--accent-gold);
+  font-size: 2rem;
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
+  text-decoration: none;
 }
 
 .social_icons a:hover {
-    color: white;
-    transform: translateY(-5px);
+  color: white;
+  transform: translateY(-5px);
+}
+
+.reading-progress {
+    margin-top: 0.75rem;
+    opacity: 0.85;
+}
+
+.progress-slider {
+    width: 100%;
+    accent-color: var(--accent-gold);
+}
+
+.reading-progress small {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+/* --- Glass Modal --- */
+.glass-modal {
+  margin: auto;
+  width: 90%;
+  max-width: 900px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.glass-modal::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+  animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+[data-theme="night"] .modal-content {
+  background: rgba(30, 26, 24, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: var(--glass-bg);
+  border: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.close-modal-btn:hover {
+  background: var(--accent-gold);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 3rem;
+}
+
+.modal-media {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-media img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.2);
+  transform: rotate(-3deg);
+  transition: transform 0.3s;
+}
+
+.modal-media img:hover {
+  transform: rotate(0) scale(1.02);
+}
+
+.modal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.modal-info h2 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  margin-bottom: 0;
+}
+
+.modal-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: -1rem;
+}
+
+/* AI Insight Box */
+.ai-insight-box {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.1)
+  );
+  border: 1px solid var(--glass-border);
+  padding: 1.5rem;
+  border-radius: 15px;
+  position: relative;
+  margin-top: 1rem;
+}
+
+[data-theme="night"] .ai-insight-box {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(0, 0, 0, 0.2)
+  );
+}
+
+.ai-insight-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-gold),
+    transparent
+  );
+  opacity: 0.5;
+}
+
+.ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: "Courier New", monospace; /* Tech feel */
+  font-weight: bold;
+  color: var(--accent-gold);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+}
+
+#modal-summary {
+  line-height: 1.6;
+  color: var(--text-main);
+}
+
+.modal-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary {
+  background: var(--text-main);
+  color: var(--bg-color);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 30px;
+  font-family: "Georgia", serif;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.btn-primary:hover {
+  background: var(--accent-gold);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+  .modal-body {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-media img {
+    max-width: 200px;
+    transform: rotate(0);
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+  }
 }
 
 /* ===== CHAT INTERFACE STYLES ===== */
@@ -1272,5 +1548,93 @@ main {
     
     .book-rec-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+/* --- Hover Effects --- */
+.tap-effect {
+    transform: translateZ(30px) translateY(-10px) rotateY(-10deg);
+}
+
+.tap-overlay {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tap-btn-icon {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.tap-nav-link {
+    color: var(--text-main);
+}
+
+.tap-theme-toggle {
+    transform: rotate(15deg) scale(1.1);
+    color: var(--accent-gold);
+}
+
+.tap-back-to-top {
+    background: var(--book-bg);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+    color: var(--accent-gold);
+}
+
+.tap-social-icon {
+    color: white;
+    transform: translateY(-5px);
+}
+
+/* Mobile / small screen adjustments */
+@media (max-width: 600px) {
+    .curated-row,
+    .shelf-row {
+        flex-wrap: wrap; /* allow books to wrap to next line */
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .book-scene {
+        width: 120px;  /* smaller book */
+        height: 180px;
+    }
+
+    .book__face--front img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .book__face--spine {
+        width: 25px;
+    }
+
+    .book__face--right {
+        width: 25px;
+        transform: rotateY(90deg) translateZ(70px);
+    }
+}
+
+@media (max-width: 600px) {
+    /* Scale book back face */
+    .book__face--back {
+        padding: 0.8rem;       /* smaller padding */
+        font-size: 0.8rem;     /* smaller text */
+    }
+
+    /* Handwritten notes scale down */
+    .handwritten-note {
+        font-size: 0.7rem;
+        padding: 6px;
+        line-height: 1.2;
+    }
+
+    /* Glass overlay inside books */
+    .glass-overlay {
+        bottom: 5px;
+        left: 5px;
+        right: 5px;
+        padding: 0.3rem;
+        font-size: 0.7rem;
     }
 }

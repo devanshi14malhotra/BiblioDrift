@@ -6,9 +6,11 @@ from flask_cors import CORS
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe
+from models import db, User, register_user, login_user
 from collections import defaultdict, deque
 from math import ceil
 from time import time
+from datetime import datetime
 
 # Try to import enhanced mood analysis
 try:
@@ -320,6 +322,41 @@ def health_check():
             "preferred_llm": llm_service.preferred_llm
         }
     })
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///biblio.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+
+@app.route('/api/v1/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    if not username or not email or not password:
+        return jsonify({"error": "Missing fields"}), 400
+
+    try:
+        register_user(username, email, password)
+        return jsonify({"message": "User registered successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/v1/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return jsonify({"error": "Missing fields"}), 400
+
+    if login_user(username, password):
+        return jsonify({"message": "Login successful"}), 200
+    return jsonify({"error": "Invalid username or password"}), 401
+
+with app.app_context():
+    db.create_all()  # creates User & ShelfItem tables
 
 if __name__ == '__main__':
     import os
