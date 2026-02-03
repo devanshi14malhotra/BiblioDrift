@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Bookseller - BiblioDrift</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <div class="nav-content">
+            <div class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>BiblioDrift</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-compass"></i>
+                    <span>Discover</span>
+                </a>
+                <a href="library.html" class="nav-link">
+                    <i class="fas fa-bookmark"></i>
+                    <span>Library</span>
+                </a>
+                <a href="chat.html" class="nav-link active">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="bookseller-info">
+                    <div class="bookseller-avatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="bookseller-details">
+                        <h2>Your Personal Bookseller</h2>
+                        <p class="status">
+                            <span class="status-dot"></span>
+                            Ready to help you find your next great read
+                        </p>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button class="action-btn" onclick="clearChat()" title="Clear conversation">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="action-btn" onclick="exportChat()" title="Export conversation">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bookseller-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <p>Hello! I'm your personal bookseller. I'm here to help you discover your next favorite book based on your mood, preferences, and what you're feeling like reading.</p>
+                            <p>Tell me what kind of vibe you're looking for - maybe something cozy for a rainy evening, or an adventurous tale to spark your imagination?</p>
+                        </div>
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div class="quick-suggestions" id="quickSuggestions">
+                <div class="suggestions-header">
+                    <span>Quick suggestions:</span>
+                </div>
+                <div class="suggestions-list">
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want something cozy and comforting')">
+                        <i class="fas fa-mug-hot"></i>
+                        Cozy & Comforting
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('Looking for a thrilling mystery')">
+                        <i class="fas fa-search"></i>
+                        Thrilling Mystery
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('Something romantic and heartwarming')">
+                        <i class="fas fa-heart"></i>
+                        Romantic & Heartwarming
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I need an escape to another world')">
+                        <i class="fas fa-magic"></i>
+                        Fantasy Escape
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        placeholder="Tell me what kind of book you're in the mood for..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="adjustTextareaHeight(this)"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-hint">
+                    <i class="fas fa-lightbulb"></i>
+                    Try: "I want something like Harry Potter but darker" or "Books for a cozy Sunday afternoon"
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Book Recommendation Modal -->
+    <div class="modal-overlay" id="bookModal">
+        <div class="modal-content book-modal">
+            <div class="modal-header">
+                <h3>Book Recommendation</h3>
+                <button class="close-btn" onclick="closeBookModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="bookModalContent">
+                <!-- Book details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure API base URL for chat functionality
+        window.MOOD_API_BASE = 'http://localhost:5001/api/v1';
+    </script>
+    <script src="chat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -85,8 +85,8 @@
     <main>
         <div class="auth-container">
             <h2 style="margin-bottom: 2rem;">Welcome Back</h2>
-            <form onsubmit="event.preventDefault(); window.location.href='library.html';">
-                <input type="email" class="auth-input" placeholder="Email Address" required>
+            <form onsubmit="handleAuth(event)">
+                <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
                 <input type="password" class="auth-input" placeholder="Password" required>
                 <button type="submit" class="auth-btn">Sign In</button>
             </form>
