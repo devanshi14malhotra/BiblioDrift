@@ -3,3 +3,7 @@ GITHUB_ISSUES.md
 # Mood analysis cache files
 mood_analysis/mood_cache.json
 *.cache
+# Python bytecode files
+__pycache__/
+.venv/
+venv
