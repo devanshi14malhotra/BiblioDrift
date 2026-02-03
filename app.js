@@ -714,3 +714,28 @@ function enableTapEffects() {
 }
 
 enableTapEffects();
+
+// --- creak and page flip effects ---
+const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
+pageFlipSound.volume = 0.2;  
+pageFlipSound.muted = true;   
+
+
+document.addEventListener("click", (e) => {
+    const scene = e.target.closest(".book-scene");
+    if (!scene) return;
+
+    console.log("BOOK CLICK");
+
+    const book = scene.querySelector(".book");
+    const overlay = scene.querySelector(".glass-overlay");
+
+    pageFlipSound.muted = false;
+
+    pageFlipSound.pause();
+    pageFlipSound.currentTime = 0;
+    pageFlipSound.play().catch(err => console.log("PLAY ERROR", err));
+
+    book.classList.toggle("tap-effect");
+    if (overlay) overlay.classList.toggle("tap-overlay");
+});
