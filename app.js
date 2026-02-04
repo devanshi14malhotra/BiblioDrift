@@ -469,6 +469,7 @@ class LibraryManager {
         
         // Sync API if user is logged in
         this.syncWithBackend();
+        this.setupSorting();
     }
 
     getUser() {
@@ -499,6 +500,7 @@ class LibraryManager {
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
+                        date_added: item.created_at || new Date().toISOString()
                         // Default progress if not stored in DB yet, or add column later
                     };
                     
@@ -514,7 +516,14 @@ class LibraryManager {
                    this.saveLocally();
                    // If we are on library page, trigger re-render
                    if (document.getElementById('shelf-want')) {
-                       window.location.reload(); 
+                       const sortSelect = document.getElementById('sortLibrary');
+                       if (sortSelect) {
+                           this.sortLibrary(sortSelect.value);
+                       } else {
+                           this.renderShelf('want', 'shelf-want');
+                           this.renderShelf('current', 'shelf-current');
+                           this.renderShelf('finished', 'shelf-finished');
+                       }
                    }
                 }
             }
@@ -523,12 +532,50 @@ class LibraryManager {
         }
     }
 
+    setupSorting() {
+        const sortSelect = document.getElementById('sortLibrary');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                this.sortLibrary(e.target.value);
+            });
+        }
+    }
+
+    sortLibrary(criteria) {
+        const sortFn = (a, b) => {
+            switch (criteria) {
+                case 'date_desc':
+                    return new Date(b.date_added || 0) - new Date(a.date_added || 0);
+                case 'date_asc':
+                    return new Date(a.date_added || 0) - new Date(b.date_added || 0);
+                case 'title_asc':
+                    return (a.volumeInfo.title || "").localeCompare(b.volumeInfo.title || "");
+                case 'title_desc':
+                    return (b.volumeInfo.title || "").localeCompare(a.volumeInfo.title || "");
+                case 'author_asc':
+                    const authorA = (a.volumeInfo.authors && a.volumeInfo.authors[0]) || "";
+                    const authorB = (b.volumeInfo.authors && b.volumeInfo.authors[0]) || "";
+                    return authorA.localeCompare(authorB);
+                default:
+                    return 0;
+            }
+        };
+
+        ['current', 'want', 'finished'].forEach(shelf => {
+            if (this.library[shelf]) {
+                this.library[shelf].sort(sortFn);
+                this.renderShelf(shelf, `shelf-${shelf}`);
+            }
+        });
+    }
+
     async addBook(book, shelf) {
         if (this.findBook(book.id)) return;
 
         const enrichedBook = {
             ...book,
-            progress: shelf === 'current' ? 0 : null
+            progress: shelf === 'current' ? 0 : null,
+            date_added: new Date().toISOString()
         };
 
         // 1. Update Local State
@@ -633,17 +680,14 @@ class LibraryManager {
 
 
         const books = this.library[shelfName];
-        if (books.length === 0) return; // Keep empty state if empty
+        if (books.length === 0) {
+            // If we have no books, ensure empty state is visible (if we cleared it previously)
+             container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
+             return;
+        }
 
-
-        // Clear empty state text if we have books
-        // But keep the shelf label which is typically a sibling or parent logic,
-        // In my HTML: span.shelf-label is sibling. container contains books.
-
-
-        // Remove "empty state" div if exists
-        const emptyState = container.querySelector('.empty-state');
-        if (emptyState) emptyState.remove();
+        // Clear container for re-rendering (essential for sorting)
+        container.innerHTML = '';
 
         (async () => {
             for (const book of books) {

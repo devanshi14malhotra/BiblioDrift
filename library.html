@@ -36,9 +36,20 @@
     </header>
 
     <main>
-        <section class="hero" style="padding-bottom: 2rem;">
+        <section class="hero" style="padding-bottom: 2rem; display: flex; flex-direction: column; align-items: center;">
             <h1>My Virtual Library</h1>
             <p>A quiet sanctuary for your stories.</p>
+            
+            <div class="library-controls">
+                <label for="sortLibrary" class="sort-label">Sort by:</label>
+                <select id="sortLibrary" class="sort-select">
+                    <option value="date_desc">Date Added (Newest)</option>
+                    <option value="date_asc">Date Added (Oldest)</option>
+                    <option value="title_asc">Title (A-Z)</option>
+                    <option value="title_desc">Title (Z-A)</option>
+                    <option value="author_asc">Author (A-Z)</option>
+                </select>
+            </div>
         </section>
 
         <div class="shelves-container">

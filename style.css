@@ -122,6 +122,59 @@ header {
   pointer-events: none;
 }
 
+/* Sort Dropdown Styles */
+.library-controls {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.sort-label {
+  font-family: "Georgia", serif;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 1.05rem;
+}
+
+.sort-select {
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  padding: 0.6rem 2.5rem 0.6rem 1rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b5e55' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+[data-theme="night"] .sort-select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a89a8e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.sort-select:hover {
+  background-color: var(--bg-color);
+  border-color: var(--wood-light);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  background-color: var(--bg-color);
+}
+
 .logo {
   font-size: 1.5rem;
   letter-spacing: 1px;
