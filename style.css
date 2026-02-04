@@ -24,7 +24,7 @@
   --book-width: 160px;
   --book-height: 240px;
   --book-thick: 40px;
-}
+ }
 
 [data-theme="night"] {
   /* Night Theme (Dark Wood) */
@@ -402,6 +402,45 @@ main {
 }
 
 /* --- Virtual Shelves --- */
+.library-controls {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1.5rem;
+}
+
+.library-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.library-sort-select {
+  appearance: none;
+  border: 1px solid rgba(93, 64, 55, 0.35);
+  border-radius: 999px;
+  padding: 0.45rem 2rem 0.45rem 0.9rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(245, 235, 224, 0.85));
+  color: #5d4037;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.library-sort-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(141, 110, 99, 0.25);
+}
+
+.library-sort::after {
+  content: "▾";
+  margin-left: -1.4rem;
+  color: #6d4c41;
+  pointer-events: none;
+}
+
 .shelves-container {
   display: flex;
   flex-direction: column;

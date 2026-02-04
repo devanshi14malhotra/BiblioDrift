@@ -450,11 +450,77 @@ class MoodAnalyzer {
 class LibraryManager {
     constructor() {
         this.storageKey = 'bibliodrift_library';
+        this.sortKeyStorage = 'bibliodrift_library_sort';
         this.library = JSON.parse(localStorage.getItem(this.storageKey)) || {
             current: [],
             want: [],
             finished: []
         };
+        this.ensureAddedAt();
+    }
+
+
+    ensureAddedAt() {
+        let updated = false;
+        const now = new Date().toISOString();
+
+        for (const shelf in this.library) {
+            this.library[shelf] = this.library[shelf].map(book => {
+                if (!book.addedAt) {
+                    updated = true;
+                    return { ...book, addedAt: now };
+                }
+                return book;
+            });
+        }
+
+        if (updated) this.save();
+    }
+
+
+    getSortKey() {
+        return localStorage.getItem(this.sortKeyStorage) || 'date';
+    }
+
+
+    setSortKey(sortKey) {
+        localStorage.setItem(this.sortKeyStorage, sortKey);
+    }
+
+
+    getBookTitle(book) {
+        return (book.volumeInfo && book.volumeInfo.title) ? book.volumeInfo.title : 'Untitled';
+    }
+
+
+    getBookAuthor(book) {
+        if (book.volumeInfo && Array.isArray(book.volumeInfo.authors) && book.volumeInfo.authors.length > 0) {
+            return book.volumeInfo.authors[0];
+        }
+        return 'Unknown Author';
+    }
+
+
+    getBookAddedAt(book) {
+        const timestamp = Date.parse(book.addedAt);
+        return Number.isNaN(timestamp) ? 0 : timestamp;
+    }
+
+
+    getSortedBooks(shelfName) {
+        const books = [...this.library[shelfName]];
+        const sortKey = this.getSortKey();
+        const collator = new Intl.Collator('en', { sensitivity: 'base' });
+
+        return books.sort((a, b) => {
+            if (sortKey === 'title') {
+                return collator.compare(this.getBookTitle(a), this.getBookTitle(b));
+            }
+            if (sortKey === 'author') {
+                return collator.compare(this.getBookAuthor(a), this.getBookAuthor(b));
+            }
+            return this.getBookAddedAt(b) - this.getBookAddedAt(a);
+        });
     }
 
 
@@ -463,7 +529,8 @@ class LibraryManager {
 
         const enrichedBook = {
             ...book,
-            progress: shelf === 'current' ? 0 : null
+            progress: shelf === 'current' ? 0 : null,
+            addedAt: new Date().toISOString()
         };
 
         this.library[shelf].push(enrichedBook);
@@ -509,13 +576,16 @@ class LibraryManager {
         if (!container) return;
 
 
-        const books = this.library[shelfName];
+        const books = this.getSortedBooks(shelfName);
         if (books.length === 0) return; // Keep empty state if empty
 
 
         // Clear empty state text if we have books
         // But keep the shelf label which is typically a sibling or parent logic,
         // In my HTML: span.shelf-label is sibling. container contains books.
+
+
+        container.querySelectorAll('.book-scene').forEach(scene => scene.remove());
 
 
         // Remove "empty state" div if exists
@@ -623,9 +693,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if Library
     if (document.getElementById('shelf-want')) {
-        libManager.renderShelf('want', 'shelf-want');
-        libManager.renderShelf('current', 'shelf-current');
-        libManager.renderShelf('finished', 'shelf-finished');
+        const renderLibrary = () => {
+            libManager.renderShelf('want', 'shelf-want');
+            libManager.renderShelf('current', 'shelf-current');
+            libManager.renderShelf('finished', 'shelf-finished');
+        };
+
+
+        const sortSelect = document.getElementById('librarySort');
+        if (sortSelect) {
+            sortSelect.value = libManager.getSortKey();
+            sortSelect.addEventListener('change', () => {
+                libManager.setSortKey(sortSelect.value);
+                renderLibrary();
+            });
+        }
+
+        renderLibrary();
     }
 
 
@@ -739,4 +823,3 @@ document.addEventListener("click", (e) => {
     book.classList.toggle("tap-effect");
     if (overlay) overlay.classList.toggle("tap-overlay");
 });
-
