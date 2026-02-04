@@ -3,14 +3,18 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe
-from models import db, User, register_user, login_user
+from models import db, User, ShelfItem, register_user, login_user
 from collections import defaultdict, deque
 from math import ceil
 from time import time
 from datetime import datetime
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Try to import enhanced mood analysis
 try:
@@ -323,7 +327,76 @@ def health_check():
         }
     })
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///biblio.db'
+@app.route('/api/v1/library', methods=['POST'])
+def add_to_library():
+    """Add a book to the user's shelf."""
+    data = request.json
+    required_fields = ['user_id', 'google_books_id', 'title', 'shelf_type']
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    try:
+        item = ShelfItem(
+            user_id=data['user_id'],
+            google_books_id=data['google_books_id'],
+            title=data['title'],
+            authors=data.get('authors', ''),
+            thumbnail=data.get('thumbnail', ''),
+            shelf_type=data['shelf_type']
+        )
+        db.session.add(item)
+        db.session.commit()
+        return jsonify({"message": "Book added to shelf", "item": item.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/v1/library/<int:user_id>', methods=['GET'])
+def get_library(user_id):
+    """Get all books in a user's library."""
+    try:
+        items = ShelfItem.query.filter_by(user_id=user_id).all()
+        return jsonify({"library": [item.to_dict() for item in items]}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/v1/library/<int:item_id>', methods=['PUT'])
+def update_library_item(item_id):
+    """Update a library item (e.g. move to different shelf)."""
+    data = request.json
+    try:
+        item = ShelfItem.query.get(item_id)
+        if not item:
+            return jsonify({"error": "Item not found"}), 404
+            
+        if 'shelf_type' in data:
+            item.shelf_type = data['shelf_type']
+            
+        db.session.commit()
+        return jsonify({"message": "Item updated", "item": item.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/v1/library/<int:item_id>', methods=['DELETE'])
+def remove_from_library(item_id):
+    """Remove a book from the library."""
+    try:
+        item = ShelfItem.query.get(item_id)
+        if not item:
+            return jsonify({"error": "Item not found"}), 404
+            
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({"message": "Item removed"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+import os
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///biblio.db')
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 

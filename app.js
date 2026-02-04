@@ -149,6 +149,15 @@ class BookRenderer {
                 // Book is in library - remove it
                 this.libraryManager.removeBook(bookData.id);
                 addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+
+                // If currently on a shelf (Library Page), remove the book element visually
+                // Check if the parent container is a shelf
+                const parentShelf = scene.closest('.shelf-row, .library-shelf, [id^="shelf-"]');
+                if (parentShelf) {
+                    scene.style.opacity = '0';
+                    scene.style.transform = 'scale(0.8)';
+                    setTimeout(() => scene.remove(), 300); // Wait for transition
+                }
             } else {
                 // Book not in library - add it
                 this.libraryManager.addBook(bookData, 'current');
@@ -447,6 +456,7 @@ class MoodAnalyzer {
 }
 
 
+
 class LibraryManager {
     constructor() {
         this.storageKey = 'bibliodrift_library';
@@ -455,10 +465,65 @@ class LibraryManager {
             want: [],
             finished: []
         };
+        this.apiBase = 'http://localhost:5000/api/v1';
+        
+        // Sync API if user is logged in
+        this.syncWithBackend();
     }
 
+    getUser() {
+        const userStr = localStorage.getItem('bibliodrift_user');
+        return userStr ? JSON.parse(userStr) : null;
+    }
 
-    addBook(book, shelf) {
+    async syncWithBackend() {
+        const user = this.getUser();
+        if (!user) return;
+
+        try {
+            const res = await fetch(`${this.apiBase}/library/${user.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                // Merge backend data into local structures for rendering
+                // Note: To be robust, this should handle duplicates, but for MVP we'll just parse
+                // the backend items into shelves
+                const backendLibrary = { current: [], want: [], finished: [] };
+                
+                data.library.forEach(item => {
+                    // Reconstruct book object structure expected by renderer
+                    const book = {
+                        id: item.google_books_id,
+                        db_id: item.id, // Database ID for updates/deletes
+                        volumeInfo: {
+                            title: item.title,
+                            authors: item.authors ? item.authors.split(', ') : [],
+                            imageLinks: { thumbnail: item.thumbnail }
+                        },
+                        // Default progress if not stored in DB yet, or add column later
+                    };
+                    
+                    if (backendLibrary[item.shelf_type]) {
+                        backendLibrary[item.shelf_type].push(book);
+                    }
+                });
+
+                // Update local library state (simple override for now to ensure consistency)
+                // In a real app we might merge local+remote
+                if (data.library.length > 0) {
+                   this.library = backendLibrary;
+                   this.saveLocally();
+                   // If we are on library page, trigger re-render
+                   if (document.getElementById('shelf-want')) {
+                       window.location.reload(); 
+                   }
+                }
+            }
+        } catch (e) {
+            console.error("Sync failed", e);
+        }
+    }
+
+    async addBook(book, shelf) {
         if (this.findBook(book.id)) return;
 
         const enrichedBook = {
@@ -466,9 +531,40 @@ class LibraryManager {
             progress: shelf === 'current' ? 0 : null
         };
 
+        // 1. Update Local State
         this.library[shelf].push(enrichedBook);
-        this.save();
+        this.saveLocally();
         console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
+
+        // 2. Update Backend
+        const user = this.getUser();
+        if (user) {
+            try {
+                const payload = {
+                    user_id: user.id,
+                    google_books_id: book.id,
+                    title: book.volumeInfo.title,
+                    authors: book.volumeInfo.authors ? book.volumeInfo.authors.join(", ") : "",
+                    thumbnail: book.volumeInfo.imageLinks ? book.volumeInfo.imageLinks.thumbnail : "",
+                    shelf_type: shelf
+                };
+                
+                const res = await fetch(`${this.apiBase}/library`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    // Store the DB ID back to the local object
+                    enrichedBook.db_id = data.item.id;
+                    this.saveLocally();
+                }
+            } catch (e) {
+                console.error("Failed to save to backend", e);
+            }
+        }
     }
 
 
@@ -487,20 +583,47 @@ class LibraryManager {
         return null;
     }
 
-    removeBook(id) {
+    async removeBook(id) {
         const result = this.findBookInShelf(id);
         if (result) {
-            const { shelf } = result;
+            const { shelf, book } = result;
+            
+            // 1. Update Local
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
-            this.save();
+            this.saveLocally();
             console.log(`Removed book ${id} from ${shelf}`);
+
+            // 2. Update Backend
+            const user = this.getUser();
+            // We need the DB ID to delete from backend usually, 
+            // but our remove_from_library endpoint uses item_id (DB ID).
+            // Do we have it?
+            if (user && book.db_id) {
+                 try {
+                    await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE' });
+                } catch (e) {
+                    console.error("Failed to delete from backend", e);
+                }
+            } else if (user) {
+                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
+                 // we might need to look it up or accept that local-only items can't be remotely deleted easily
+                 // without an API change to delete by google_id.
+                 // For MVP, we proceed.
+                 console.warn("Could not delete from backend: missing db_id");
+            }
+
             return true;
         }
         return false;
     }
 
-    save() {
+    saveLocally() {
         localStorage.setItem(this.storageKey, JSON.stringify(this.library));
+    }
+
+
+    save() {
+        this.saveLocally();
     }
 
 
