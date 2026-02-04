@@ -15,6 +15,13 @@
   --book-bg: #fff;
   --paper-color: #fffdf9;
 
+  /* Book texture overlay */
+  --book-texture: 
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0),
+    radial-gradient(circle at 1px 25px, rgba(0,0,0,0.08) 1px, transparent 0),
+    radial-gradient(ellipse 50% 30% at 25% 50%, rgba(0,0,0,0.03) 40%, transparent 50%),
+    radial-gradient(circle at 75% 75px, rgba(255,255,255,0.06) 2px, transparent 0);
+
   /* Vibe Colors */
   --vibe-mystery: #78909c;
   --vibe-romance: #ef9a9a;
@@ -25,6 +32,7 @@
   --book-height: 240px;
   --book-thick: 40px;
 }
+
 
 [data-theme="night"] {
   /* Night Theme (Dark Wood) */
@@ -42,6 +50,11 @@
   --input-border: rgba(255, 255, 255, 0.1);
   --book-bg: #2c2420;
   --paper-color: #e0d5cb;
+  --book-texture: 
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0),
+    radial-gradient(circle at 1px 25px, rgba(255,255,255,0.12) 1px, transparent 0),
+    radial-gradient(ellipse 50% 30% at 25% 50%, rgba(255,255,255,0.04) 40%, transparent 50%),
+    radial-gradient(circle at 75% 75px, rgba(0,0,0,0.1) 2px, transparent 0);
 }
 
 * {
@@ -55,13 +68,18 @@ html {
 }
 
 body {
+  background: 
+    var(--book-texture),
+    var(--bg-color);
   background-color: var(--bg-color);
   color: var(--text-main);
   font-family: "Georgia", serif;
-  /* Classic serif for books */
   overflow-x: hidden;
   min-height: 100vh;
+  line-height: 1.65;         
+  font-feature-settings: "kern" 1; 
 }
+
 
 h1,
 h2,
@@ -83,6 +101,14 @@ header {
   background: var(--header-bg);
   backdrop-filter: blur(10px);
   transition: background 0.5s ease;
+  background: 
+    var(--book-texture),
+    linear-gradient(135deg, 
+      #f8f4ec 0%,     
+      #efe8db 50%,    
+      #f9f7f2 100%  
+    );
+  
 }
 
 .header-controls {
@@ -112,8 +138,11 @@ header {
 .search-input:focus {
   background: var(--book-bg);
   width: 300px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 
+    var(--shadow-soft),
+    0 0 0 3px rgba(212,175,55,0.1); 
 }
+
 
 .search-icon {
   position: absolute;
@@ -155,6 +184,7 @@ main {
   text-align: center;
   padding: 6rem 1rem;
   animation: heroFade 1s ease-out;
+  text-rendering: optimizeLegibility; 
 }
 
 @keyframes heroFade {
@@ -344,6 +374,7 @@ main {
 /* Hover Effect: Pull out */
 .book-scene:hover .book:not(.flipped) {
   transform: translateZ(30px) translateY(-10px) rotateY(-10deg);
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* Glassmorphism Overlay (Quick view) */
@@ -366,6 +397,8 @@ main {
 .book-scene:hover .glass-overlay {
   opacity: 1;
   transform: translateY(0);
+  color: var(--text-main) !important; 
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Back of book content */
@@ -836,7 +869,7 @@ main {
 
 .glass-modal::backdrop {
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px) saturate(180%);
 }
 
 .modal-content {
@@ -1613,6 +1646,9 @@ main {
         width: 25px;
         transform: rotateY(90deg) translateZ(70px);
     }
+    .curated-row {
+    gap: clamp(1rem, 4vw, 1.5rem);  
+  }
 }
 
 @media (max-width: 600px) {

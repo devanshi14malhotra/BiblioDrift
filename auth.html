@@ -11,53 +11,122 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .auth-container {
-            max-width: 400px;
-            margin: 6rem auto;
-            background: var(--book-bg);
-            padding: 3rem;
-            border-radius: 8px;
-            box-shadow: var(--shadow-soft);
-            text-align: center;
-            border: 1px solid var(--input-border);
-            color: var(--text-main);
-        }
+/* Glassmorphic Auth Container - Matches main site */
+.auth-container {
+    max-width: 420px;
+    margin: clamp(4rem, 15vh, 8rem) auto;
+    background: 
+        var(--book-texture),
+        rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 3.5rem 3rem;
+    border-radius: 20px;
+    box-shadow: 
+        var(--shadow-soft),
+        0 0 0 1px rgba(255,255,255,0.2);
+    text-align: center;
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    position: relative;
+    overflow: hidden;
+}
 
-        .auth-input {
-            width: 100%;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border: 1px solid var(--input-border);
-            border-radius: 4px;
-            font-family: 'Georgia', serif;
-            background: var(--input-bg);
-            color: var(--text-main);
-        }
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+}
 
-        .auth-btn {
-            width: 100%;
-            padding: 1rem;
-            background: var(--text-main);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem;
-            transition: background 0.3s;
-        }
+/* Enhanced Inputs */
+.auth-input {
+    width: 100%;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    font-family: 'Georgia', serif;
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
 
-        .auth-btn:hover {
-            background: var(--wood-dark);
-        }
+.auth-input:focus {
+    outline: none;
+    background: var(--book-bg);
+    box-shadow: 
+        0 0 0 3px rgba(212,175,55,0.15),
+        var(--shadow-soft);
+    transform: translateY(-1px);
+}
 
-        .toggle-link {
-            display: block;
-            margin-top: 1rem;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-    </style>
+/* Premium Button */
+.auth-btn {
+    width: 100%;
+    padding: 1.2rem;
+    background: linear-gradient(135deg, var(--text-main), var(--wood-dark));
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 10px 25px rgba(44,36,32,0.3),
+        0 0 0 1px var(--accent-gold);
+    background: linear-gradient(135deg, var(--accent-gold), var(--wood-dark));
+}
+
+.auth-btn:active {
+    transform: translateY(0);
+}
+
+/* Toggle Link */
+.toggle-link {
+    display: block;
+    margin-top: 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.toggle-link:hover {
+    background: rgba(212,175,55,0.1);
+    color: var(--text-main);
+}
+
+/* Main content padding for fixed header */
+main {
+    padding-top: 100px;
+    min-height: calc(100vh - 100px);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .auth-container {
+        margin: 2rem 1rem;
+        padding: 2.5rem 2rem;
+    }
+}
+</style>
+
 </head>
 
 <body>
@@ -95,6 +164,38 @@
     </main>
 
     <script src="js/header-scroll.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'day';
+    html.setAttribute('data-theme', savedTheme);
+    themeToggle.querySelector('i').className = savedTheme === 'night' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'night' ? 'day' : 'night';
+        
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        themeToggle.querySelector('i').className = newTheme === 'night' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    });
+    
+    // Header scroll effect
+    window.addEventListener('scroll', () => {
+        const header = document.querySelector('header');
+        if (window.scrollY > 50) {
+            header.classList.add('shrink');
+        } else {
+            header.classList.remove('shrink');
+        }
+    });
+});
+</script>
+
 
 
 </body>
