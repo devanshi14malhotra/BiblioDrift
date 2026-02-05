@@ -5,6 +5,7 @@ from .goodreads_scraper import GoodReadsReviewScraper
 from .mood_analyzer import BookMoodAnalyzer
 import json
 import os
+import logging
 from typing import Dict, Optional
 
 class AIBookService:
@@ -32,7 +33,8 @@ class AIBookService:
             with open(self.cache_file, 'w') as f:
                 json.dump(self.mood_cache, f, indent=2)
         except Exception as e:
-            print(f"Error saving cache: {e}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error saving cache: {e}")
     
     def _get_cache_key(self, title: str, author: str = "") -> str:
         """Generate cache key for book."""
@@ -53,7 +55,8 @@ class AIBookService:
         
         # Check cache first
         if cache_key in self.mood_cache:
-            print(f"Using cached mood analysis for: {title}")
+            logger = logging.getLogger(__name__)
+            logger.info(f"Using cached mood analysis for: {title}")
             return self.mood_cache[cache_key]
         
         try:
@@ -61,7 +64,8 @@ class AIBookService:
             reviews = self.scraper.get_book_reviews(title, author, max_reviews=15)
             
             if not reviews:
-                print(f"No reviews found for: {title}")
+                logger = logging.getLogger(__name__)
+                logger.warning(f"No reviews found for: {title}")
                 return None
             
             # Analyze mood
@@ -74,7 +78,8 @@ class AIBookService:
             return mood_analysis
             
         except Exception as e:
-            print(f"Error analyzing book mood: {e}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error analyzing book mood: {e}")
             return None
 
 def get_book_mood_tags(title: str, author: str = "") -> list:

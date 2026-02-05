@@ -357,8 +357,7 @@ class BookMoodAnalyzer:
             
             # Generate mood description and vibe
             mood_description = self._generate_mood_description(overall_sentiment, dynamic_moods)
-            bibliodrift_vibe = self._generate_bibliodrift_vibe(overall_sentiment['compound_score'], 
-                                                             [(mood, conf) for mood, conf in dynamic_moods.items()])
+            bibliodrift_vibe = self._generate_bibliodrift_vibe(overall_sentiment['compound_score'], dynamic_moods)
             
             # Calculate analysis confidence
             analysis_confidence = self._calculate_analysis_confidence(sentiment_scores, dynamic_moods)
@@ -462,8 +461,10 @@ class BookMoodAnalyzer:
         from datetime import datetime
         return datetime.utcnow().isoformat() + 'Z'
     
-    def _generate_mood_description(self, compound_score: float, top_moods: List[Tuple]) -> str:
+    def _generate_mood_description(self, overall_sentiment: Dict, dynamic_moods: Dict) -> str:
         """Generate a human-readable mood description."""
+        
+        compound_score = overall_sentiment.get('compound_score', 0)
         
         if compound_score >= 0.5:
             sentiment_desc = "overwhelmingly positive"
@@ -476,13 +477,13 @@ class BookMoodAnalyzer:
         else:
             sentiment_desc = "predominantly negative"
         
-        if top_moods:
-            primary_mood = top_moods[0][0]
+        if dynamic_moods:
+            primary_mood = max(dynamic_moods.items(), key=lambda x: x[1])[0]
             return f"This book has a {sentiment_desc} reception with a primarily {primary_mood} mood."
         else:
             return f"This book has a {sentiment_desc} reception."
     
-    def _generate_bibliodrift_vibe(self, compound_score: float, top_moods: List[Tuple]) -> str:
+    def _generate_bibliodrift_vibe(self, compound_score: float, dynamic_moods: Dict) -> str:
         """Generate a BiblioDrift-style vibe description."""
         
         vibes = []
@@ -514,8 +515,8 @@ class BookMoodAnalyzer:
             ])
         
         # Add mood-specific vibes
-        if top_moods:
-            primary_mood = top_moods[0][0]
+        if dynamic_moods:
+            primary_mood = max(dynamic_moods.items(), key=lambda x: x[1])[0]
             
             mood_vibes = {
                 'cozy': "Like a warm blanket on a rainy day.",

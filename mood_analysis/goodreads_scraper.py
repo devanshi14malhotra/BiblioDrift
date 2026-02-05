@@ -17,7 +17,7 @@ from urllib3.util.retry import Retry
 @dataclass
 class ScrapingConfig:
     """Configuration for scraping behavior"""
-    base_url: str = "https://www.goodreads.com"
+    base_url: str = os.getenv('GOODREADS_BASE_URL', 'https://www.goodreads.com')
     min_delay: float = float(os.getenv('GOODREADS_MIN_DELAY', '2.0'))
     max_delay: float = float(os.getenv('GOODREADS_MAX_DELAY', '5.0'))
     max_retries: int = int(os.getenv('GOODREADS_MAX_RETRIES', '3'))

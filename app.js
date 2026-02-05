@@ -696,6 +696,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const libManager = new LibraryManager();
     const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
+    const exportBtn = document.getElementById("export-library");
+
+if (exportBtn) {
+    const isLibraryPage = document.getElementById("shelf-want");
+    exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
+}
+
+
 
 
     // Search Handler
@@ -770,5 +778,127 @@ document.addEventListener('DOMContentLoaded', () => {
                 behavior: 'smooth'
             });
         });
+<<<<<<< genre
     }
 });
+=======
+    });
+}
+});
+
+// Export Library as JSON
+const exportBtn = document.getElementById("export-library");
+
+if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+        const library = localStorage.getItem("bibliodrift_library");
+        if (!library) {
+            alert("Your library is empty!");
+            return;
+        }
+
+        const blob = new Blob([library], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `bibliodrift_library_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
+        alert("Library exported successfully!");
+    });
+}
+
+function handleAuth(event) {
+  event.preventDefault();
+
+  const email = document.getElementById("email").value;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    alert("Enter a valid email address");
+    return;
+  }
+
+  window.location.href = "library.html";
+}
+
+
+function enableTapEffects() {
+    if (!('ontouchstart' in window)) return;
+
+    document.querySelectorAll('.book-scene').forEach(scene => {
+        const book = scene.querySelector('.book');
+        const overlay = scene.querySelector('.glass-overlay');
+        scene.addEventListener('click', () => {
+            book.classList.toggle('tap-effect');
+            if (overlay) overlay.classList.toggle('tap-overlay');
+        });
+    });
+
+    document.querySelectorAll('.btn-icon').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('tap-btn-icon');
+        });
+    });
+
+
+    document.querySelectorAll('.nav-links a').forEach(link => {
+        link.addEventListener('click', () => {
+            link.classList.toggle('tap-nav-link');
+        });
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            themeToggle.classList.toggle('tap-theme-toggle');
+        });
+    }
+
+    const backTop = document.querySelector('.back-to-top');
+    if (backTop) {
+        backTop.addEventListener('click', () => {
+            backTop.classList.toggle('tap-back-to-top');
+        });
+    }
+
+   
+    document.querySelectorAll('.social_icons a').forEach(icon => {
+        icon.addEventListener('click', () => {
+            icon.classList.toggle('tap-social-icon');
+        });
+    });
+}
+
+enableTapEffects();
+
+// --- creak and page flip effects ---
+const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
+pageFlipSound.volume = 0.2;  
+pageFlipSound.muted = true;   
+
+
+document.addEventListener("click", (e) => {
+    const scene = e.target.closest(".book-scene");
+    if (!scene) return;
+
+    console.log("BOOK CLICK");
+
+    const book = scene.querySelector(".book");
+    const overlay = scene.querySelector(".glass-overlay");
+
+    pageFlipSound.muted = false;
+
+    pageFlipSound.pause();
+    pageFlipSound.currentTime = 0;
+    pageFlipSound.play().catch(err => console.log("PLAY ERROR", err));
+
+    book.classList.toggle("tap-effect");
+    if (overlay) overlay.classList.toggle("tap-overlay");
+});
+>>>>>>> main

@@ -3,7 +3,12 @@ GITHUB_ISSUES.md
 # Mood analysis cache files
 mood_analysis/mood_cache.json
 *.cache
-# Python bytecode files
-__pycache__/
-.venv/
-venv
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# API keys and secrets
+*.key
+secrets/

@@ -36,10 +36,16 @@
     </header>
 
     <main>
-        <section class="hero" style="padding-bottom: 2rem;">
-            <h1>My Virtual Library</h1>
-            <p>A quiet sanctuary for your stories.</p>
-        </section>
+        <section class="hero" style="padding-bottom: 2rem; position: relative;">
+    <h1>My Virtual Library</h1>
+    <p>A quiet sanctuary for your stories.</p>
+
+    <!-- Export button added here -->
+    <button id="export-library" class="btn-icon" style="position: absolute; top: 45; right: 0;" title="Export Library">
+        <i class="fa-solid fa-download"></i> Export Library
+    </button>
+</section>
+
 
         <!-- 3D Bookshelf Container -->
         <div class="bookshelf-3d-container" id="library-shelves">
@@ -152,6 +158,7 @@
 
     <script src="library-3d.js"></script>
     <script src="app.js"></script>
+     <script src="script/header-scroll.js"></script>
 </body>
 
 </html>
