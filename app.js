@@ -740,3 +740,109 @@ document.addEventListener("click", (e) => {
     if (overlay) overlay.classList.toggle("tap-overlay");
 });
 
+// ============================================
+// Keyboard Shortcuts Module (Issue #103)
+// ============================================
+// Provides keyboard navigation and interaction
+// with BiblioDrift library and book management
+
+const KeyboardShortcuts = {
+  // Shortcut configuration mapping
+  shortcuts: {
+    'j': { action: 'navigateNext', description: 'Navigate to next book' },
+    'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
+    'Enter': { action: 'selectBook', description: 'Select/open current book' },
+    'a': { action: 'addToWantRead', description: 'Add to Want to Read' },
+    'r': { action: 'markCurrentlyReading', description: 'Mark as Currently Reading' },
+    'f': { action: 'addToFavorites', description: 'Add to Favorites' },
+    'Escape': { action: 'closeModal', description: 'Close popup/modal' },
+    '?': { action: 'showHelpMenu', description: 'Show keyboard shortcuts help' },
+    '/': { action: 'focusSearch', description: 'Focus search bar' }
+  },
+
+  // Initialize keyboard event listener
+  init() {
+    document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+    console.log('Keyboard shortcuts module initialized');
+  },
+
+  // Handle keypress events
+  handleKeyPress(event) {
+    // Don't trigger shortcuts when typing in input fields
+    if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+      return;
+    }
+
+    const key = event.key;
+    const shortcut = this.shortcuts[key];
+
+    if (shortcut) {
+      event.preventDefault();
+      this.executeAction(shortcut.action);
+    }
+  },
+
+  // Execute action based on shortcut
+  executeAction(action) {
+    switch (action) {
+      case 'navigateNext':
+        console.log('Navigating to next book...');
+        // TODO: Implement next book navigation
+        break;
+      case 'navigatePrev':
+        console.log('Navigating to previous book...');
+        // TODO: Implement previous book navigation
+        break;
+      case 'selectBook':
+        console.log('Selecting current book...');
+        // TODO: Implement book selection
+        break;
+      case 'addToWantRead':
+        console.log('Adding to Want to Read list...');
+        // TODO: Implement add to want read
+        break;
+      case 'markCurrentlyReading':
+        console.log('Marking as Currently Reading...');
+        // TODO: Implement mark as reading
+        break;
+      case 'addToFavorites':
+        console.log('Adding to Favorites...');
+        // TODO: Implement add to favorites
+        break;
+      case 'closeModal':
+        console.log('Closing modal...');
+        const modals = document.querySelectorAll('.modal, [role="dialog"]');
+        modals.forEach(modal => modal.style.display = 'none');
+        break;
+      case 'showHelpMenu':
+        console.log('Showing help menu...');
+        this.displayHelpMenu();
+        break;
+      case 'focusSearch':
+        console.log('Focusing search bar...');
+        const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
+        if (searchInput) searchInput.focus();
+        break;
+    }
+  },
+
+  // Display keyboard shortcuts help menu
+  displayHelpMenu() {
+    const helpContent = Object.entries(this.shortcuts)
+      .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
+      .join('<br/>');
+    
+    alert('BiblioDrift Keyboard Shortcuts\n\n' + 
+          Object.entries(this.shortcuts)
+          .map(([key, data]) => `${key}: ${data.description}`)
+          .join('\n'));
+  }
+};
+
+// Initialize keyboard shortcuts when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
+} else {
+  KeyboardShortcuts.init();
+}
+
