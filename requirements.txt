@@ -2,10 +2,12 @@
 # Core Flask dependencies
 flask==3.1.2
 flask-cors==6.0.2
+python-dotenv==1.0.1
 
 # Database
 Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.46
+psycopg2-binary==2.9.9
 
 # LLM Services
 openai>=1.0.0
@@ -17,15 +19,20 @@ vaderSentiment==3.3.2
 textblob==0.17.1
 
 # Web Scraping
-requests==2.31.0
+requests>=2.32.2
 beautifulsoup4==4.12.2
 lxml==4.9.3
 
 # Data Processing
-numpy==1.24.3
+numpy>=1.26.0
 
+# Purchase Links (new)
+urllib3>=1.26.0
+
+# Optional: For future database integration
+# sqlalchemy==2.0.21
+# flask-sqlalchemy==3.0.5
 # Utilities
-python-dotenv==1.2.1
 click==8.3.1
 colorama==0.4.6
 Jinja2==3.1.6
