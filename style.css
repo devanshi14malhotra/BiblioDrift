@@ -773,55 +773,6 @@ main {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
   color: var(--accent-gold);
 }
-/*Footer design */
-
-.footer {
-  min-height: 120px;
-  width: 100%;
-  background-color: #222;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 1.2rem;
-  padding: 2rem 0;
-  margin-top: 4rem;
-}
-
-.social_icons {
-  display: flex;
-  gap: 2rem;
-  z-index: 999;
-}
-
-.social_icons a {
-  color: var(--accent-gold);
-  font-size: 2rem;
-  transition:
-    transform 0.3s ease,
-    color 0.3s ease;
-  text-decoration: none;
-}
-
-.social_icons a:hover {
-  color: white;
-  transform: translateY(-5px);
-}
-
-.reading-progress {
-    margin-top: 0.75rem;
-    opacity: 0.85;
-}
-
-.progress-slider {
-    width: 100%;
-    accent-color: var(--accent-gold);
-}
-
-.reading-progress small {
-    font-size: 0.7rem;
-    opacity: 0.7;
-}
 
 /* --- Glass Modal --- */
 .glass-modal {
@@ -1756,4 +1707,145 @@ header.shrink .nav-links a {
   font-size: 0.95rem;
   opacity: 0.9;
   transition: all 0.4s ease;
+}
+
+/* Footer Styles */
+.main-footer {
+    background: var(--bg-color, #fff); 
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 60px 5% 20px 5%;
+    margin-top: 50px;
+    font-family: 'Georgia', serif;
+}
+
+body.dark-theme .main-footer {
+    background: #1a1a1a;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.footer-brand .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.footer-tagline {
+    font-style: italic;
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+body.dark-theme .footer-tagline { color: #bbb; }
+
+.footer-subtext {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.footer-nav h3, .footer-social h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+.footer-nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-nav ul li {
+    margin-bottom: 10px;
+}
+
+.footer-nav ul li a {
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.8;
+    transition: opacity 0.3s, transform 0.3s;
+    display: inline-block;
+}
+
+.footer-nav ul li a:hover {
+    opacity: 1;
+    transform: translateX(5px);
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+}
+
+.social-icons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+body.dark-theme .social-icons a { background: rgba(255, 255, 255, 0.05); }
+
+.social-icons a:hover {
+    background: #000;
+    color: #fff;
+    transform: translateY(-3px);
+}
+
+body.dark-theme .social-icons a:hover {
+    background: #fff;
+    color: #000;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+body.dark-theme .footer-bottom { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+
+@media (max-width: 768px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .footer-brand .logo {
+        justify-content: center;
+    }
+
+    .footer-nav ul li a:hover {
+        transform: none;
+    }
+
+    .social-icons {
+        justify-content: center;
+    }
 }
