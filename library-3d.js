@@ -196,6 +196,7 @@ class BookshelfRenderer3D {
         this.currentBook = null;
         this.tooltipTimeout = null;
         this.sortCriteria = 'title'; // Default sort
+        this.filterCriteria = 'all'; // Default filter
 
         this.init();
     }
@@ -210,6 +211,15 @@ class BookshelfRenderer3D {
             });
         }
 
+        // Filter listener
+        const filterSelect = document.getElementById('library-filter');
+        if (filterSelect) {
+            filterSelect.addEventListener('change', (e) => {
+                this.filterCriteria = e.target.value;
+                this.refreshShelves();
+            });
+        }
+
         // Render all shelves with sample books
         this.refreshShelves();
 
@@ -218,9 +228,27 @@ class BookshelfRenderer3D {
     }
 
     refreshShelves() {
-        this.renderShelf('current', 'shelf-current-3d');
-        this.renderShelf('want', 'shelf-want-3d');
-        this.renderShelf('finished', 'shelf-finished-3d');
+        const showCurrent = this.filterCriteria === 'all' || this.filterCriteria === 'current';
+        const showWant = this.filterCriteria === 'all' || this.filterCriteria === 'want';
+        const showFinished = this.filterCriteria === 'all' || this.filterCriteria === 'finished';
+
+        this.updateShelfVisibility('shelf-current-3d', showCurrent);
+        this.updateShelfVisibility('shelf-want-3d', showWant);
+        this.updateShelfVisibility('shelf-finished-3d', showFinished);
+
+        if (showCurrent) this.renderShelf('current', 'shelf-current-3d');
+        if (showWant) this.renderShelf('want', 'shelf-want-3d');
+        if (showFinished) this.renderShelf('finished', 'shelf-finished-3d');
+    }
+
+    updateShelfVisibility(containerId, isVisible) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            const section = container.closest('.shelf-section-3d');
+            if (section) {
+                section.style.display = isVisible ? 'block' : 'none';
+            }
+        }
     }
 
     renderShelf(shelfType, containerId) {
