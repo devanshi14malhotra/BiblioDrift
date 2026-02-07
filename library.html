@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -24,10 +22,23 @@
                 <i class="fa-solid fa-search search-icon"></i>
             </div>
             <nav class="nav-links">
-                <a href="index.html">Discovery</a>
-                <a href="library.html" class="active">My Library</a>
-                <a href="chat.html">Chat</a>
-                <a href="auth.html">Sign In</a>
+                <div class="tooltip">
+                    <a href="index.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html" class="active">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <!-- DYNAMIC AUTH LINK -->
+                <div class="tooltip">
+                    <a href="auth.html" id="navAuthLink">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
                 <i class="fa-solid fa-moon"></i>
@@ -42,11 +53,9 @@
         </section>
 
         <div class="shelves-container">
-
             <div>
                 <span class="shelf-label">Currently Immersed 📖</span>
                 <div class="shelf-row" id="shelf-current">
-                    <!-- JS will inject saved books here -->
                     <div class="empty-state" style="color: #8D6E63; font-style: italic; align-self: center; width: 100%; padding: 2rem;">
                         Your nightstand is empty...
                     </div>
@@ -56,7 +65,6 @@
             <div>
                 <span class="shelf-label">Anticipated Journeys 📚</span>
                 <div class="shelf-row" id="shelf-want">
-                    <!-- JS will inject saved books here -->
                     <div class="empty-state" style="color: #8D6E63; font-style: italic; align-self: center; width: 100%; padding: 2rem;">
                         No books added yet...
                     </div>
@@ -66,20 +74,35 @@
             <div>
                 <span class="shelf-label">Lifetime Favorites ✓</span>
                 <div class="shelf-row" id="shelf-finished">
-                    <!-- JS will inject saved books here -->
                     <div class="empty-state" style="color: #8D6E63; font-style: italic; align-self: center; width: 100%; padding: 2rem;">
                         No books finished yet...
                     </div>
                 </div>
             </div>
-
         </div>
-
     </main>
 
     <script src="app.js"></script>
     <script src="footer.js"></script>
-     <script src="script/header-scroll.js"></script>
+    <script src="script/header-scroll.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            if (isLoggedIn) {
+                const link = document.getElementById('navAuthLink');
+                const tooltip = document.getElementById('navAuthTooltip');
+                
+                if (link) {
+                    link.innerHTML = '<i class="fa-solid fa-user"></i>';
+                    link.href = 'profile.html';
+                    link.classList.remove('active'); // library is active, not profile
+                }
+                if (tooltip) {
+                    tooltip.innerHTML = '<i class="fa-solid fa-address-card"></i> View Profile';
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

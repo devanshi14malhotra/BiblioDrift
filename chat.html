@@ -3,50 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat with Bookseller - BiblioDrift</title>
+    <title>Chat with Bookseller | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Unified Font Imports -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Georgia:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="nav-container">
-        <div class="nav-content">
-            <div class="logo">
-                <i class="fas fa-book-open"></i>
-                <span>BiblioDrift</span>
+    <!-- Unified Navigation Header -->
+    <header>
+        <a href="index.html" class="logo">
+            <i class="fa-solid fa-book-open"></i> BiblioDrift
+        </a>
+        <div class="header-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling..." />
+                <i class="fa-solid fa-search search-icon"></i>
             </div>
-            <div class="nav-links">
-                <a href="index.html" class="nav-link">
-                    <i class="fas fa-compass"></i>
-                    <span>Discover</span>
-                </a>
-                <a href="library.html" class="nav-link">
-                    <i class="fas fa-bookmark"></i>
-                    <span>Library</span>
-                </a>
-                <a href="chat.html" class="nav-link active">
-                    <i class="fas fa-comments"></i>
-                    <span>Chat</span>
-                </a>
-                <button class="theme-toggle" onclick="toggleTheme()">
-                    <i class="fas fa-moon"></i>
-                </button>
-            </div>
+            <nav class="nav-links">
+                <div class="tooltip">
+                    <a href="index.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html" class="active">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <!-- DYNAMIC AUTH LINK -->
+                <div class="tooltip">
+                    <a href="auth.html" id="navAuthLink">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
+            </nav>
+            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
         </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main style="padding-top: 2rem;">
         <div class="chat-container">
             <!-- Chat Header -->
             <div class="chat-header">
                 <div class="bookseller-info">
                     <div class="bookseller-avatar">
-                        <i class="fas fa-user-tie"></i>
+                        <i class="fa-solid fa-user-tie"></i>
                     </div>
                     <div class="bookseller-details">
-                        <h2>Your Personal Bookseller</h2>
+                        <h2 style="font-family: 'Playfair Display', serif;">Your Personal Bookseller</h2>
                         <p class="status">
                             <span class="status-dot"></span>
                             Ready to help you find your next great read
@@ -55,10 +66,10 @@
                 </div>
                 <div class="chat-actions">
                     <button class="action-btn" onclick="clearChat()" title="Clear conversation">
-                        <i class="fas fa-trash"></i>
+                        <i class="fa-solid fa-trash"></i>
                     </button>
                     <button class="action-btn" onclick="exportChat()" title="Export conversation">
-                        <i class="fas fa-download"></i>
+                        <i class="fa-solid fa-download"></i>
                     </button>
                 </div>
             </div>
@@ -67,7 +78,7 @@
             <div class="chat-messages" id="chatMessages">
                 <div class="message bookseller-message">
                     <div class="message-avatar">
-                        <i class="fas fa-user-tie"></i>
+                        <i class="fa-solid fa-user-tie"></i>
                     </div>
                     <div class="message-content">
                         <div class="message-bubble">
@@ -86,19 +97,19 @@
                 </div>
                 <div class="suggestions-list">
                     <button class="suggestion-btn" onclick="sendQuickMessage('I want something cozy and comforting')">
-                        <i class="fas fa-mug-hot"></i>
+                        <i class="fa-solid fa-mug-hot"></i>
                         Cozy & Comforting
                     </button>
                     <button class="suggestion-btn" onclick="sendQuickMessage('Looking for a thrilling mystery')">
-                        <i class="fas fa-search"></i>
+                        <i class="fa-solid fa-magnifying-glass"></i>
                         Thrilling Mystery
                     </button>
                     <button class="suggestion-btn" onclick="sendQuickMessage('Something romantic and heartwarming')">
-                        <i class="fas fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
                         Romantic & Heartwarming
                     </button>
                     <button class="suggestion-btn" onclick="sendQuickMessage('I need an escape to another world')">
-                        <i class="fas fa-magic"></i>
+                        <i class="fa-solid fa-wand-sparkles"></i>
                         Fantasy Escape
                     </button>
                 </div>
@@ -115,12 +126,12 @@
                         oninput="adjustTextareaHeight(this)"
                     ></textarea>
                     <button class="send-btn" id="sendBtn">
-                        <i class="fas fa-paper-plane"></i>
+                        <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
                 <div class="input-hint">
-                    <i class="fas fa-lightbulb"></i>
-                    Try: "I want something like Harry Potter but darker" or "Books for a cozy Sunday afternoon"
+                    <i class="fa-solid fa-lightbulb"></i>
+                    Try: "I want something like Harry Potter but darker"
                 </div>
             </div>
         </div>
@@ -132,21 +143,37 @@
             <div class="modal-header">
                 <h3>Book Recommendation</h3>
                 <button class="close-btn" onclick="closeBookModal()">
-                    <i class="fas fa-times"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div class="modal-body" id="bookModalContent">
-                <!-- Book details will be populated here -->
+                <!-- Book details populated by chat.js -->
             </div>
         </div>
     </div>
 
     <script>
-        // Configure API base URL for chat functionality
         window.MOOD_API_BASE = 'http://localhost:5001/api/v1';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            if (isLoggedIn) {
+                const link = document.getElementById('navAuthLink');
+                const tooltip = document.getElementById('navAuthTooltip');
+                
+                if (link) {
+                    link.innerHTML = '<i class="fa-solid fa-user"></i>';
+                    link.href = 'profile.html';
+                }
+                if (tooltip) {
+                    tooltip.innerHTML = '<i class="fa-solid fa-address-card"></i> View Profile';
+                }
+            }
+        });
     </script>
     <script src="chat.js"></script>
     <script src="app.js"></script>
     <script src="footer.js"></script>
+    <script src="script/header-scroll.js"></script>
 </body>
 </html>
