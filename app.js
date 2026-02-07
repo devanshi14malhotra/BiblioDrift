@@ -147,7 +147,7 @@ class LibraryManager {
         return Object.values(this.library).some(shelf => shelf.some(b => b.id === id));
     }
 
-    save() {
+    saveLocally() {
         localStorage.setItem(this.storageKey, JSON.stringify(this.library));
     }
 

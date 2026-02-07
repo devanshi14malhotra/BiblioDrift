@@ -123,7 +123,7 @@ Tell me what kind of vibe you're looking for - maybe something cozy for a rainy 
     async getBooksellerResponse(userMessage) {
         // First, try to use the dedicated chat endpoint
         try {
-            const chatResponse = await fetch(`${window.MOOD_API_BASE || 'http://localhost:5001/api/v1'}/chat`, {
+            const chatResponse = await fetch(`${window.MOOD_API_BASE || 'http://localhost:5000/api/v1'}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ Tell me what kind of vibe you're looking for - maybe something cozy for a rainy 
         
         // Fallback to mood search
         try {
-            const moodResponse = await fetch(`${window.MOOD_API_BASE || 'http://localhost:5001/api/v1'}/mood-search`, {
+            const moodResponse = await fetch(`${window.MOOD_API_BASE || 'http://localhost:5000/api/v1'}/mood-search`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
