@@ -22,6 +22,56 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+const MOCK_BOOKS = [
+    {
+        id: "mock1",
+        volumeInfo: {
+            title: "The Midnight Library",
+            authors: ["Matt Haig"],
+            description: "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
+            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4OVQAQAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+        }
+    },
+    {
+        id: "mock2",
+        volumeInfo: {
+            title: "The Night Circus",
+            authors: ["Erin Morgenstern"],
+            description: "The circus arrives without warning. No announcements precede it. It is simply there, when yesterday it was not.",
+            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4nEOXAOMwDAC&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+        }
+    },
+    {
+        id: "mock3",
+        volumeInfo: {
+            title: "Piranesi",
+            authors: ["Susanna Clarke"],
+            description: "Piranesi's house is no ordinary building: its rooms are infinite, its corridors endless, its walls are lined with thousands upon thousands of statues.",
+            imageLinks: { thumbnail: "https://books.google.com/books/content?id=h3fdDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+        }
+    },
+    {
+        id: "mock4",
+        volumeInfo: {
+            title: "The Starless Sea",
+            authors: ["Erin Morgenstern"],
+            description: "Zachary Ezra Rawlins is a graduate student in Vermont when he discovers a mysterious book hidden in the stacks.",
+            imageLinks: { thumbnail: "https://books.google.com/books/content?id=1aWPDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+        }
+    },
+    {
+        id: "mock5",
+        volumeInfo: {
+            title: "Kafka on the Shore",
+            authors: ["Haruki Murakami"],
+            description: "Kafka on the Shore is powered by two remarkable characters: a teenage boy, Kafka Tamura, who runs away from home...",
+            imageLinks: { thumbnail: "https://books.google.com/books/content?id=d_wPAQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+        }
+    }
+];
+
+>>>>>>> upstream/main
+
 class BookRenderer {
     constructor(libraryManager = null) {
         this.libraryManager = libraryManager;
@@ -435,6 +485,7 @@ class BookRenderer {
                         <p>No books found. The shelves are empty.</p>
                     </div>`;
             }
+
         } catch (err) {
             console.error("Failed to fetch books", err);
             showToast("Failed to load bookshelf.", "error");
@@ -494,7 +545,7 @@ class LibraryManager {
             finished: []
         };
         this.apiBase = 'http://localhost:5000/api/v1';
-        
+
         // Sync API if user is logged in
         this.syncWithBackend();
     }
@@ -516,7 +567,7 @@ class LibraryManager {
                 // Note: To be robust, this should handle duplicates, but for MVP we'll just parse
                 // the backend items into shelves
                 const backendLibrary = { current: [], want: [], finished: [] };
-                
+
                 data.library.forEach(item => {
                     // Reconstruct book object structure expected by renderer
                     const book = {
@@ -529,7 +580,7 @@ class LibraryManager {
                         },
                         // Default progress if not stored in DB yet, or add column later
                     };
-                    
+
                     if (backendLibrary[item.shelf_type]) {
                         backendLibrary[item.shelf_type].push(book);
                     }
@@ -584,13 +635,13 @@ class LibraryManager {
                     thumbnail: book.volumeInfo.imageLinks ? book.volumeInfo.imageLinks.thumbnail : "",
                     shelf_type: shelf
                 };
-                
+
                 const res = await fetch(`${this.apiBase}/library`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
+
                 if (res.ok) {
                     const data = await res.json();
                     // Store the DB ID back to the local object
@@ -624,7 +675,7 @@ class LibraryManager {
         const result = this.findBookInShelf(id);
         if (result) {
             const { shelf, book } = result;
-            
+
             // 1. Update Local
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
             this.saveLocally();
@@ -636,18 +687,18 @@ class LibraryManager {
             // but our remove_from_library endpoint uses item_id (DB ID).
             // Do we have it?
             if (user && book.db_id) {
-                 try {
+                try {
                     await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE' });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
                     showToast("Removed locally (Backend sync failed)", "info");
                 }
             } else if (user) {
-                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
-                 // we might need to look it up or accept that local-only items can't be remotely deleted easily
-                 // without an API change to delete by google_id.
-                 // For MVP, we proceed.
-                 console.warn("Could not delete from backend: missing db_id");
+                // Fallback: If we don't have db_id locally (maybe added before login logic), 
+                // we might need to look it up or accept that local-only items can't be remotely deleted easily
+                // without an API change to delete by google_id.
+                // For MVP, we proceed.
+                console.warn("Could not delete from backend: missing db_id");
             }
 
             return true;
@@ -731,11 +782,137 @@ class ThemeManager {
 }
 
 
+
+class GenreManager {
+    constructor() {
+        this.genreGrid = document.getElementById('genre-grid');
+        this.modal = document.getElementById('genre-modal');
+        this.closeBtn = document.getElementById('close-genre-modal');
+        this.modalTitle = document.getElementById('genre-modal-title');
+        this.booksGrid = document.getElementById('genre-books-grid');
+    }
+
+    init() {
+        if (!this.genreGrid) return;
+
+        // Add click listeners to genre cards
+        const cards = this.genreGrid.querySelectorAll('.genre-card');
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                const genre = card.dataset.genre;
+                this.openGenre(genre);
+            });
+        });
+
+        // Close modal listeners
+        if (this.closeBtn) {
+            this.closeBtn.addEventListener('click', () => this.closeModal());
+        }
+
+        if (this.modal) {
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) this.closeModal();
+            });
+        }
+    }
+
+    openGenre(genre) {
+        if (!this.modal) return;
+
+        const genreName = genre.charAt(0).toUpperCase() + genre.slice(1);
+        this.modalTitle.textContent = `${genreName} Books`;
+        this.modal.showModal();
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+
+        this.fetchBooks(genre);
+    }
+
+    closeModal() {
+        if (!this.modal) return;
+        this.modal.close();
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    async fetchBooks(genre) {
+        if (!this.booksGrid) return;
+
+        // Show loading
+        this.booksGrid.innerHTML = `
+            <div class="genre-loading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>Finding best ${genre} books...</span>
+            </div>
+        `;
+
+        try {
+            // Fetch relevant books from Google Books API
+            // Using subject search and higher relevance
+            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance`);
+
+            let items = [];
+            if (response.ok) {
+                const data = await response.json();
+                items = data.items || [];
+            } else {
+                console.warn(`API Error ${response.status}: Using mock data`);
+                items = MOCK_BOOKS;
+            }
+
+            if (items && items.length > 0) {
+                this.renderBooks(items);
+            } else {
+                // Fallback to mock if no items
+                this.renderBooks(MOCK_BOOKS);
+            }
+        } catch (error) {
+            console.error('Error fetching genre books, using mock:', error);
+            this.renderBooks(MOCK_BOOKS);
+        }
+    }
+
+    renderBooks(books) {
+        this.booksGrid.innerHTML = '';
+
+        books.forEach(book => {
+            const info = book.volumeInfo;
+            const title = info.title || 'Untitled';
+            const author = info.authors ? info.authors[0] : 'Unknown';
+            const thumbnail = info.imageLinks ?
+                (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) :
+                'https://via.placeholder.com/128x196?text=No+Cover';
+
+            const card = document.createElement('div');
+            card.className = 'genre-book-card';
+            card.innerHTML = `
+                <img src="${thumbnail}" alt="${title}" loading="lazy">
+                <div class="genre-book-info">
+                    <h4>${title}</h4>
+                    <p>${author}</p>
+                </div>
+            `;
+
+            // Add click listener to open detailed view (using existing renderer logic if possible, or just mock it)
+            // For now, let's just use the existing BookRenderer's modal if accessible, 
+            // or just simple log. The user asked for "modal should open up with some books". 
+            // The books themselves inside the modal don't necessarily need to open *another* modal, 
+            // but it would be nice.
+
+            this.booksGrid.appendChild(card);
+        });
+    }
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
     const libManager = new LibraryManager();
     const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
+    const exportBtn = document.getElementById("export-library");
+
+    if (exportBtn) {
+        const isLibraryPage = document.getElementById("shelf-want");
+        exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
+    }
 
 
     // Search Handler
@@ -808,22 +985,45 @@ if (backToTopBtn) {
             behavior: 'smooth'
         });
     });
+
+    const exportBtn = document.getElementById("export-library");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", () => {
+            const library = localStorage.getItem("bibliodrift_library");
+            if (!library) {
+                showToast("Library is empty!", "info");
+                return;
+            }
+            const blob = new Blob([library], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+            showToast("Library exported successfully!", "success");
+        });
+    }
 }
 });
 
 function handleAuth(event) {
-  event.preventDefault();
+    event.preventDefault();
 
-  const email = document.getElementById("email").value;
+    const email = document.getElementById("email").value;
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!emailRegex.test(email)) {
-    alert("Enter a valid email address");
-    return;
-  }
+    if (!emailRegex.test(email)) {
+        alert("Enter a valid email address");
+        return;
+    }
 
-  window.location.href = "library.html";
+    window.location.href = "library.html";
 }
 
 
@@ -866,7 +1066,7 @@ function enableTapEffects() {
         });
     }
 
-   
+
     document.querySelectorAll('.social_icons a').forEach(icon => {
         icon.addEventListener('click', () => {
             icon.classList.toggle('tap-social-icon');
@@ -878,8 +1078,8 @@ enableTapEffects();
 
 // --- creak and page flip effects ---
 const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
-pageFlipSound.volume = 0.2;  
-pageFlipSound.muted = true;   
+pageFlipSound.volume = 0.2;
+pageFlipSound.muted = true;
 
 
 document.addEventListener("click", (e) => {
@@ -901,3 +1101,108 @@ document.addEventListener("click", (e) => {
     if (overlay) overlay.classList.toggle("tap-overlay");
 });
 
+// ============================================
+// Keyboard Shortcuts Module (Issue #103)
+// ============================================
+// Provides keyboard navigation and interaction
+// with BiblioDrift library and book management
+
+const KeyboardShortcuts = {
+  // Shortcut configuration mapping
+  shortcuts: {
+    'j': { action: 'navigateNext', description: 'Navigate to next book' },
+    'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
+    'Enter': { action: 'selectBook', description: 'Select/open current book' },
+    'a': { action: 'addToWantRead', description: 'Add to Want to Read' },
+    'r': { action: 'markCurrentlyReading', description: 'Mark as Currently Reading' },
+    'f': { action: 'addToFavorites', description: 'Add to Favorites' },
+    'Escape': { action: 'closeModal', description: 'Close popup/modal' },
+    '?': { action: 'showHelpMenu', description: 'Show keyboard shortcuts help' },
+    '/': { action: 'focusSearch', description: 'Focus search bar' }
+  },
+
+  // Initialize keyboard event listener
+  init() {
+    document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+    console.log('Keyboard shortcuts module initialized');
+  },
+
+  // Handle keypress events
+  handleKeyPress(event) {
+    // Don't trigger shortcuts when typing in input fields
+    if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+      return;
+    }
+
+    const key = event.key;
+    const shortcut = this.shortcuts[key];
+
+    if (shortcut) {
+      event.preventDefault();
+      this.executeAction(shortcut.action);
+    }
+  },
+
+  // Execute action based on shortcut
+  executeAction(action) {
+    switch (action) {
+      case 'navigateNext':
+        console.log('Navigating to next book...');
+        // TODO: Implement next book navigation
+        break;
+      case 'navigatePrev':
+        console.log('Navigating to previous book...');
+        // TODO: Implement previous book navigation
+        break;
+      case 'selectBook':
+        console.log('Selecting current book...');
+        // TODO: Implement book selection
+        break;
+      case 'addToWantRead':
+        console.log('Adding to Want to Read list...');
+        // TODO: Implement add to want read
+        break;
+      case 'markCurrentlyReading':
+        console.log('Marking as Currently Reading...');
+        // TODO: Implement mark as reading
+        break;
+      case 'addToFavorites':
+        console.log('Adding to Favorites...');
+        // TODO: Implement add to favorites
+        break;
+      case 'closeModal':
+        console.log('Closing modal...');
+        const modals = document.querySelectorAll('.modal, [role="dialog"]');
+        modals.forEach(modal => modal.style.display = 'none');
+        break;
+      case 'showHelpMenu':
+        console.log('Showing help menu...');
+        this.displayHelpMenu();
+        break;
+      case 'focusSearch':
+        console.log('Focusing search bar...');
+        const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
+        if (searchInput) searchInput.focus();
+        break;
+    }
+  },
+
+  // Display keyboard shortcuts help menu
+  displayHelpMenu() {
+    const helpContent = Object.entries(this.shortcuts)
+      .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
+      .join('<br/>');
+    
+    alert('BiblioDrift Keyboard Shortcuts\n\n' + 
+          Object.entries(this.shortcuts)
+          .map(([key, data]) => `${key}: ${data.description}`)
+          .join('\n'));
+  }
+};
+
+// Initialize keyboard shortcuts when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
+} else {
+  KeyboardShortcuts.init();
+}
