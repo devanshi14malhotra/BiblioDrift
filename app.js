@@ -7,6 +7,21 @@
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const MOOD_API_BASE = 'http://localhost:5000/api/v1';
 
+// Toast Notification Helper
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.innerHTML = `
+        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 const MOCK_BOOKS = [
     {
         id: "mock1",
@@ -54,7 +69,6 @@ const MOCK_BOOKS = [
         }
     }
 ];
-
 
 class BookRenderer {
     constructor(libraryManager = null) {
@@ -172,12 +186,12 @@ class BookRenderer {
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
-            if (
-                !e.target.closest('.btn-icon') &&
-                !e.target.closest('.reading-progress')
-            ) {
-                bookEl.classList.toggle('flipped');
-            }
+        if (
+            !e.target.closest('.btn-icon') &&
+            !e.target.closest('.reading-progress')
+        ) {
+            bookEl.classList.toggle('flipped');
+        }
         });
 
 
@@ -190,7 +204,7 @@ class BookRenderer {
                 addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
             }
         };
-
+        
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (this.libraryManager.findBook(bookData.id)) {
@@ -212,7 +226,7 @@ class BookRenderer {
                 addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
             }
         });
-
+        
         // Set initial button state
         updateButtonState();
 
@@ -245,63 +259,63 @@ class BookRenderer {
     displayMoodModal(title, moodAnalysis) {
         const modal = document.createElement('div');
         modal.className = 'mood-modal';
-
+       
         // Create modal content safely using DOM methods
         const content = document.createElement('div');
         content.className = 'mood-modal-content';
-
+       
         // Header
         const header = document.createElement('div');
         header.className = 'mood-modal-header';
-
+       
         const headerTitle = document.createElement('h3');
         headerTitle.textContent = `Mood Analysis: ${title}`;
-
+       
         const closeButton = document.createElement('button');
         closeButton.className = 'close-modal';
         closeButton.textContent = '×';
-
+       
         header.appendChild(headerTitle);
         header.appendChild(closeButton);
-
+       
         // Body
         const body = document.createElement('div');
         body.className = 'mood-modal-body';
-
+       
         // Overall Sentiment section
         const overallSection = document.createElement('div');
         overallSection.className = 'mood-section';
-
+       
         const overallHeading = document.createElement('h4');
         overallHeading.textContent = 'Overall Sentiment';
-
+       
         const sentimentBar = document.createElement('div');
         sentimentBar.className = 'sentiment-bar';
-
+       
         const sentimentFill = document.createElement('div');
         sentimentFill.className = 'sentiment-fill';
         const compoundScore = moodAnalysis.overall_sentiment?.compound_score || 0;
         sentimentFill.style.width = `${(compoundScore + 1) * 50}%`;
-
+       
         sentimentBar.appendChild(sentimentFill);
-
+       
         const moodDescription = document.createElement('p');
         moodDescription.textContent = moodAnalysis.mood_description || '';
-
+       
         overallSection.appendChild(overallHeading);
         overallSection.appendChild(sentimentBar);
         overallSection.appendChild(moodDescription);
-
+       
         // Primary Moods section
         const primarySection = document.createElement('div');
         primarySection.className = 'mood-section';
-
+       
         const primaryHeading = document.createElement('h4');
         primaryHeading.textContent = 'Primary Moods';
-
+       
         const moodTagsContainer = document.createElement('div');
         moodTagsContainer.className = 'mood-tags-large';
-
+       
         const primaryMoods = Array.isArray(moodAnalysis.primary_moods) ? moodAnalysis.primary_moods : [];
         primaryMoods.forEach(mood => {
             const span = document.createElement('span');
@@ -310,39 +324,39 @@ class BookRenderer {
             span.textContent = `${moodName} (${mood.confidence || mood.frequency || 0})`;
             moodTagsContainer.appendChild(span);
         });
-
+       
         primarySection.appendChild(primaryHeading);
         primarySection.appendChild(moodTagsContainer);
-
+       
         // BiblioDrift Vibe section
         const vibeSection = document.createElement('div');
         vibeSection.className = 'mood-section';
-
+       
         const vibeHeading = document.createElement('h4');
         vibeHeading.textContent = 'BiblioDrift Vibe';
-
+       
         const vibeQuote = document.createElement('div');
         vibeQuote.className = 'vibe-quote';
         vibeQuote.textContent = `"${moodAnalysis.bibliodrift_vibe || ''}"`;
-
+       
         vibeSection.appendChild(vibeHeading);
         vibeSection.appendChild(vibeQuote);
-
+       
         // Reviews analyzed section
         const reviewsSection = document.createElement('div');
         reviewsSection.className = 'mood-section';
-
+       
         const reviewsInfo = document.createElement('small');
         reviewsInfo.textContent = `Based on ${moodAnalysis.total_reviews_analyzed || 0} GoodReads reviews`;
-
+       
         reviewsSection.appendChild(reviewsInfo);
-
+       
         // Assemble everything
         body.appendChild(overallSection);
         body.appendChild(primarySection);
         body.appendChild(vibeSection);
         body.appendChild(reviewsSection);
-
+       
         content.appendChild(header);
         content.appendChild(body);
         modal.appendChild(content);
@@ -381,7 +395,7 @@ class BookRenderer {
         const title = book.volumeInfo.title;
         const genres = book.volumeInfo.categories || ["General Fiction"];
         const mainGenre = genres[0];
-
+        
         // Templates for "AI" generation
         const templates = [
             `This story explores the nuances of human connection through the lens of ${mainGenre}. Readers often find themselves reflecting on their own journeys after finishing "${title}".Expect a narrative that is both grounding and transcendent.`,
@@ -409,10 +423,10 @@ class BookRenderer {
         title.textContent = volume.title;
         author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
         img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
-
+        
         // Mock AI Generation Effect
         summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
-
+        
         setTimeout(() => {
             summary.textContent = this.generateMockAISummary(book);
         }, 800);
@@ -421,7 +435,7 @@ class BookRenderer {
         // Clone to remove old listeners
         const newAddBtn = addBtn.cloneNode(true);
         addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-
+        
         newAddBtn.addEventListener('click', () => {
             this.libraryManager.addBook(book, 'want');
             newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added';
@@ -434,7 +448,7 @@ class BookRenderer {
         // Close Handlers
         const closeHandler = () => modal.close();
         closeBtn.onclick = closeHandler;
-
+        
         // Close on backdrop click
         modal.onclick = (e) => {
             if (e.target === modal) modal.close();
@@ -447,37 +461,37 @@ class BookRenderer {
         const container = document.getElementById(elementId);
         if (!container) return; // Not on page
 
-
         try {
             const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books`);
+            
+            if (!res.ok) {
+                throw new Error(`API Error: ${res.statusText}`);
+            }
 
-            let items = [];
-            if (res.ok) {
-                const data = await res.json();
-                items = data.items || [];
+            const data = await res.json();
+
+            if (data.items && data.items.length > 0) {
+                container.innerHTML = '';
+                for (const book of data.items) {
+                    const bookElement = await this.createBookElement(book);
+                    container.appendChild(bookElement);
+                }
             } else {
-                console.warn(`API Error ${res.status}: Using mock data`);
-                items = MOCK_BOOKS;
-            }
-
-            // Fallback if items is empty (e.g. 429 quota or no results)
-            if (!items || items.length === 0) {
-                items = MOCK_BOOKS;
-            }
-
-            container.innerHTML = '';
-            for (const book of items) {
-                const bookElement = await this.createBookElement(book);
-                container.appendChild(bookElement);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-box-open"></i>
+                        <p>No books found. The shelves are empty.</p>
+                    </div>`;
             }
 
         } catch (err) {
-            console.error("Failed to fetch books, using mock data", err);
-            container.innerHTML = '';
-            for (const book of MOCK_BOOKS) {
-                const bookElement = await this.createBookElement(book);
-                container.appendChild(bookElement);
-            }
+            console.error("Failed to fetch books", err);
+            showToast("Failed to load bookshelf.", "error");
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>Bookshelf Empty (API connection failed)</p>
+                </div>`;
         }
     }
 }
@@ -573,21 +587,24 @@ class LibraryManager {
                 // Update local library state (simple override for now to ensure consistency)
                 // In a real app we might merge local+remote
                 if (data.library.length > 0) {
-                    this.library = backendLibrary;
-                    this.saveLocally();
-                    // If we are on library page, trigger re-render
-                    if (document.getElementById('shelf-want')) {
-                        // Prevent infinite reload loop by only reloading once per session
-                        const hasSyncedOnce = sessionStorage.getItem('bibliodrift_synced_once');
-                        if (!hasSyncedOnce) {
-                            sessionStorage.setItem('bibliodrift_synced_once', 'true');
-                            window.location.reload();
-                        }
-                    }
+                   this.library = backendLibrary;
+                   this.saveLocally();
+                   // If we are on library page, trigger re-render
+                   if (document.getElementById('shelf-want')) {
+                       const sortSelect = document.getElementById('sortLibrary');
+                       if (sortSelect) {
+                           this.sortLibrary(sortSelect.value);
+                       } else {
+                           this.renderShelf('want', 'shelf-want');
+                           this.renderShelf('current', 'shelf-current');
+                           this.renderShelf('finished', 'shelf-finished');
+                       }
+                   }
                 }
             }
         } catch (e) {
             console.error("Sync failed", e);
+            showToast("Sync failed. Using local library.", "error");
         }
     }
 
@@ -631,6 +648,7 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
+                showToast("Saved locally (Sync failed)", "info");
             }
         }
     }
@@ -671,6 +689,7 @@ class LibraryManager {
                     await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE' });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
+                    showToast("Removed locally (Backend sync failed)", "info");
                 }
             } else if (user) {
                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
@@ -729,16 +748,16 @@ class ThemeManager {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
         this.currentTheme = localStorage.getItem(this.themeKey) || 'day';
-
+       
         this.init();
     }
 
 
     init() {
         if (!this.toggleBtn) return;
-
+       
         this.applyTheme(this.currentTheme);
-
+       
         this.toggleBtn.addEventListener('click', () => {
             this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
             this.applyTheme(this.currentTheme);
@@ -828,24 +847,34 @@ class GenreManager {
             // Using subject search and higher relevance
             const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance`);
 
-            let items = [];
             if (response.ok) {
                 const data = await response.json();
-                items = data.items || [];
-            } else {
-                console.warn(`API Error ${response.status}: Using mock data`);
-                items = MOCK_BOOKS;
-            }
+                const items = data.items || [];
 
-            if (items && items.length > 0) {
-                this.renderBooks(items);
+                if (items.length > 0) {
+                    this.renderBooks(items);
+                } else {
+                    this.booksGrid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>Bookshelf Empty (No books found)</p>
+                        </div>`;
+                }
             } else {
-                // Fallback to mock if no items
-                this.renderBooks(MOCK_BOOKS);
+                console.warn(`API Error ${response.status}`);
+                this.booksGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p>Bookshelf Empty (API Error: ${response.status})</p>
+                    </div>`;
             }
         } catch (error) {
-            console.error('Error fetching genre books, using mock:', error);
-            this.renderBooks(MOCK_BOOKS);
+            console.error('Error fetching genre books:', error);
+            this.booksGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-wifi"></i>
+                    <p>Bookshelf Empty (Connection Failed)</p>
+                </div>`;
         }
     }
 
@@ -894,8 +923,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-
-
     // Search Handler
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
@@ -936,9 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
         renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
         renderer.renderCuratedSection('subject:classic+fiction', 'row-classics');
-        // Initialize Genre Manager
-        const genreManager = new GenreManager();
-        genreManager.init();
+        renderer.renderCuratedSection('subject:fiction', 'row-genre');
     }
 
 
@@ -950,51 +975,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // Scroll Manager (Back to Top)
-    const backToTopBtn = document.getElementById('backToTop');
-    if (backToTopBtn) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 200) {
-                backToTopBtn.classList.remove('hidden');
-            } else {
-                backToTopBtn.classList.add('hidden');
-            }
-        });
+   // Scroll Manager (Back to Top)
+const backToTopBtn = document.getElementById('backToTop');
+if (backToTopBtn) {
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) {
+            backToTopBtn.classList.remove('hidden');
+        } else {
+            backToTopBtn.classList.add('hidden');
+        }
+    });
 
-        backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    const exportBtn = document.getElementById("export-library");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", () => {
+            const library = localStorage.getItem("bibliodrift_library");
+            if (!library) {
+                showToast("Library is empty!", "info");
+                return;
+            }
+            const blob = new Blob([library], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+            showToast("Library exported successfully!", "success");
         });
     }
-});
-
-// Export Library as JSON
-const exportBtn = document.getElementById("export-library");
-
-if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-        const library = localStorage.getItem("bibliodrift_library");
-        if (!library) {
-            alert("Your library is empty!");
-            return;
-        }
-
-        const blob = new Blob([library], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        URL.revokeObjectURL(url);
-        alert("Library exported successfully!");
-    });
 }
+});
 
 function handleAuth(event) {
     event.preventDefault();
@@ -1191,4 +1214,3 @@ if (document.readyState === 'loading') {
 } else {
   KeyboardShortcuts.init();
 }
-
