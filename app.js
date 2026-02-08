@@ -70,8 +70,6 @@ const MOCK_BOOKS = [
     }
 ];
 
->>>>>>> upstream/main
-
 class BookRenderer {
     constructor(libraryManager = null) {
         this.libraryManager = libraryManager;
@@ -492,7 +490,7 @@ class BookRenderer {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>The shelves are dusty... (API connection failed)</p>
+                    <p>Bookshelf Empty (API connection failed)</p>
                 </div>`;
         }
     }
@@ -849,24 +847,34 @@ class GenreManager {
             // Using subject search and higher relevance
             const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance`);
 
-            let items = [];
             if (response.ok) {
                 const data = await response.json();
-                items = data.items || [];
-            } else {
-                console.warn(`API Error ${response.status}: Using mock data`);
-                items = MOCK_BOOKS;
-            }
+                const items = data.items || [];
 
-            if (items && items.length > 0) {
-                this.renderBooks(items);
+                if (items.length > 0) {
+                    this.renderBooks(items);
+                } else {
+                    this.booksGrid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>Bookshelf Empty (No books found)</p>
+                        </div>`;
+                }
             } else {
-                // Fallback to mock if no items
-                this.renderBooks(MOCK_BOOKS);
+                console.warn(`API Error ${response.status}`);
+                this.booksGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p>Bookshelf Empty (API Error: ${response.status})</p>
+                    </div>`;
             }
         } catch (error) {
-            console.error('Error fetching genre books, using mock:', error);
-            this.renderBooks(MOCK_BOOKS);
+            console.error('Error fetching genre books:', error);
+            this.booksGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-wifi"></i>
+                    <p>Bookshelf Empty (Connection Failed)</p>
+                </div>`;
         }
     }
 
