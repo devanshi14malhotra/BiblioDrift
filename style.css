@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     /* Day Theme (Default) */
     --bg-color: #f9f7f2;
     --header-bg: rgba(249, 247, 242, 0.8);
@@ -2664,4 +2664,63 @@ main {
     .book-title-large {
         font-size: 1.5rem;
     }
+}
+
+/* Empty State and Error Handling */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted, #888);
+    text-align: center;
+    width: 100%;
+    min-height: 200px;
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--accent-color, #d4af37);
+    opacity: 0.7;
+}
+
+.empty-state p {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Toast Notifications */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--surface-color, #fff);
+    color: var(--text-color, #333);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    font-family: 'Georgia', serif;
+    border-left: 4px solid var(--accent-color, #d4af37);
+    animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toast-notification.error {
+    border-left-color: #d32f2f;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }

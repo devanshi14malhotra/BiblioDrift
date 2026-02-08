@@ -7,54 +7,35 @@
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const MOOD_API_BASE = 'http://localhost:5000/api/v1';
 
-const MOCK_BOOKS = [
-    {
-        id: "mock1",
-        volumeInfo: {
-            title: "The Midnight Library",
-            authors: ["Matt Haig"],
-            description: "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4OVQAQAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
-        }
-    },
-    {
-        id: "mock2",
-        volumeInfo: {
-            title: "The Night Circus",
-            authors: ["Erin Morgenstern"],
-            description: "The circus arrives without warning. No announcements precede it. It is simply there, when yesterday it was not.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4nEOXAOMwDAC&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
-        }
-    },
-    {
-        id: "mock3",
-        volumeInfo: {
-            title: "Piranesi",
-            authors: ["Susanna Clarke"],
-            description: "Piranesi's house is no ordinary building: its rooms are infinite, its corridors endless, its walls are lined with thousands upon thousands of statues.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=h3fdDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
-        }
-    },
-    {
-        id: "mock4",
-        volumeInfo: {
-            title: "The Starless Sea",
-            authors: ["Erin Morgenstern"],
-            description: "Zachary Ezra Rawlins is a graduate student in Vermont when he discovers a mysterious book hidden in the stacks.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=1aWPDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
-        }
-    },
-    {
-        id: "mock5",
-        volumeInfo: {
-            title: "Kafka on the Shore",
-            authors: ["Haruki Murakami"],
-            description: "Kafka on the Shore is powered by two remarkable characters: a teenage boy, Kafka Tamura, who runs away from home...",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=d_wPAQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
-        }
-    }
-];
+let GOOGLE_API_KEY = '';
 
+async function loadConfig() {
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/config`);
+        if (res.ok) {
+            const data = await res.json();
+            GOOGLE_API_KEY = data.google_books_key || '';
+            console.log("Config loaded");
+        }
+    } catch (e) {
+        console.warn("Failed to load backend config", e);
+    }
+}
+
+// Toast Notification Helper
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.innerHTML = `
+        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 class BookRenderer {
     constructor(libraryManager = null) {
@@ -172,12 +153,12 @@ class BookRenderer {
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
-            if (
-                !e.target.closest('.btn-icon') &&
-                !e.target.closest('.reading-progress')
-            ) {
-                bookEl.classList.toggle('flipped');
-            }
+        if (
+            !e.target.closest('.btn-icon') &&
+            !e.target.closest('.reading-progress')
+        ) {
+            bookEl.classList.toggle('flipped');
+        }
         });
 
 
@@ -190,7 +171,7 @@ class BookRenderer {
                 addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
             }
         };
-
+        
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (this.libraryManager.findBook(bookData.id)) {
@@ -212,7 +193,7 @@ class BookRenderer {
                 addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
             }
         });
-
+        
         // Set initial button state
         updateButtonState();
 
@@ -245,63 +226,63 @@ class BookRenderer {
     displayMoodModal(title, moodAnalysis) {
         const modal = document.createElement('div');
         modal.className = 'mood-modal';
-
+       
         // Create modal content safely using DOM methods
         const content = document.createElement('div');
         content.className = 'mood-modal-content';
-
+       
         // Header
         const header = document.createElement('div');
         header.className = 'mood-modal-header';
-
+       
         const headerTitle = document.createElement('h3');
         headerTitle.textContent = `Mood Analysis: ${title}`;
-
+       
         const closeButton = document.createElement('button');
         closeButton.className = 'close-modal';
         closeButton.textContent = '×';
-
+       
         header.appendChild(headerTitle);
         header.appendChild(closeButton);
-
+       
         // Body
         const body = document.createElement('div');
         body.className = 'mood-modal-body';
-
+       
         // Overall Sentiment section
         const overallSection = document.createElement('div');
         overallSection.className = 'mood-section';
-
+       
         const overallHeading = document.createElement('h4');
         overallHeading.textContent = 'Overall Sentiment';
-
+       
         const sentimentBar = document.createElement('div');
         sentimentBar.className = 'sentiment-bar';
-
+       
         const sentimentFill = document.createElement('div');
         sentimentFill.className = 'sentiment-fill';
         const compoundScore = moodAnalysis.overall_sentiment?.compound_score || 0;
         sentimentFill.style.width = `${(compoundScore + 1) * 50}%`;
-
+       
         sentimentBar.appendChild(sentimentFill);
-
+       
         const moodDescription = document.createElement('p');
         moodDescription.textContent = moodAnalysis.mood_description || '';
-
+       
         overallSection.appendChild(overallHeading);
         overallSection.appendChild(sentimentBar);
         overallSection.appendChild(moodDescription);
-
+       
         // Primary Moods section
         const primarySection = document.createElement('div');
         primarySection.className = 'mood-section';
-
+       
         const primaryHeading = document.createElement('h4');
         primaryHeading.textContent = 'Primary Moods';
-
+       
         const moodTagsContainer = document.createElement('div');
         moodTagsContainer.className = 'mood-tags-large';
-
+       
         const primaryMoods = Array.isArray(moodAnalysis.primary_moods) ? moodAnalysis.primary_moods : [];
         primaryMoods.forEach(mood => {
             const span = document.createElement('span');
@@ -310,39 +291,39 @@ class BookRenderer {
             span.textContent = `${moodName} (${mood.confidence || mood.frequency || 0})`;
             moodTagsContainer.appendChild(span);
         });
-
+       
         primarySection.appendChild(primaryHeading);
         primarySection.appendChild(moodTagsContainer);
-
+       
         // BiblioDrift Vibe section
         const vibeSection = document.createElement('div');
         vibeSection.className = 'mood-section';
-
+       
         const vibeHeading = document.createElement('h4');
         vibeHeading.textContent = 'BiblioDrift Vibe';
-
+       
         const vibeQuote = document.createElement('div');
         vibeQuote.className = 'vibe-quote';
         vibeQuote.textContent = `"${moodAnalysis.bibliodrift_vibe || ''}"`;
-
+       
         vibeSection.appendChild(vibeHeading);
         vibeSection.appendChild(vibeQuote);
-
+       
         // Reviews analyzed section
         const reviewsSection = document.createElement('div');
         reviewsSection.className = 'mood-section';
-
+       
         const reviewsInfo = document.createElement('small');
         reviewsInfo.textContent = `Based on ${moodAnalysis.total_reviews_analyzed || 0} GoodReads reviews`;
-
+       
         reviewsSection.appendChild(reviewsInfo);
-
+       
         // Assemble everything
         body.appendChild(overallSection);
         body.appendChild(primarySection);
         body.appendChild(vibeSection);
         body.appendChild(reviewsSection);
-
+       
         content.appendChild(header);
         content.appendChild(body);
         modal.appendChild(content);
@@ -381,7 +362,7 @@ class BookRenderer {
         const title = book.volumeInfo.title;
         const genres = book.volumeInfo.categories || ["General Fiction"];
         const mainGenre = genres[0];
-
+        
         // Templates for "AI" generation
         const templates = [
             `This story explores the nuances of human connection through the lens of ${mainGenre}. Readers often find themselves reflecting on their own journeys after finishing "${title}".Expect a narrative that is both grounding and transcendent.`,
@@ -409,10 +390,10 @@ class BookRenderer {
         title.textContent = volume.title;
         author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
         img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
-
+        
         // Mock AI Generation Effect
         summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
-
+        
         setTimeout(() => {
             summary.textContent = this.generateMockAISummary(book);
         }, 800);
@@ -421,7 +402,7 @@ class BookRenderer {
         // Clone to remove old listeners
         const newAddBtn = addBtn.cloneNode(true);
         addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-
+        
         newAddBtn.addEventListener('click', () => {
             this.libraryManager.addBook(book, 'want');
             newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added';
@@ -434,7 +415,7 @@ class BookRenderer {
         // Close Handlers
         const closeHandler = () => modal.close();
         closeBtn.onclick = closeHandler;
-
+        
         // Close on backdrop click
         modal.onclick = (e) => {
             if (e.target === modal) modal.close();
@@ -447,37 +428,37 @@ class BookRenderer {
         const container = document.getElementById(elementId);
         if (!container) return; // Not on page
 
-
         try {
-            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books`);
+            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books${keyParam}`);
+            
+            if (!res.ok) {
+                throw new Error(`API Error: ${res.statusText}`);
+            }
 
-            let items = [];
-            if (res.ok) {
-                const data = await res.json();
-                items = data.items || [];
+            const data = await res.json();
+
+            if (data.items && data.items.length > 0) {
+                container.innerHTML = '';
+                for (const book of data.items) {
+                    const bookElement = await this.createBookElement(book);
+                    container.appendChild(bookElement);
+                }
             } else {
-                console.warn(`API Error ${res.status}: Using mock data`);
-                items = MOCK_BOOKS;
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-box-open"></i>
+                        <p>No books found. The shelves are empty.</p>
+                    </div>`;
             }
-
-            // Fallback if items is empty (e.g. 429 quota or no results)
-            if (!items || items.length === 0) {
-                items = MOCK_BOOKS;
-            }
-
-            container.innerHTML = '';
-            for (const book of items) {
-                const bookElement = await this.createBookElement(book);
-                container.appendChild(bookElement);
-            }
-
         } catch (err) {
-            console.error("Failed to fetch books, using mock data", err);
-            container.innerHTML = '';
-            for (const book of MOCK_BOOKS) {
-                const bookElement = await this.createBookElement(book);
-                container.appendChild(bookElement);
-            }
+            console.error("Failed to fetch books", err);
+            showToast("Failed to load bookshelf.", "error");
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>The shelves are dusty... (API connection failed)</p>
+                </div>`;
         }
     }
 }
@@ -529,7 +510,7 @@ class LibraryManager {
             finished: []
         };
         this.apiBase = 'http://localhost:5000/api/v1';
-
+        
         // Sync API if user is logged in
         this.syncWithBackend();
     }
@@ -547,52 +528,102 @@ class LibraryManager {
             const res = await fetch(`${this.apiBase}/library/${user.id}`);
             if (res.ok) {
                 const data = await res.json();
-                // Merge backend data into local structures for rendering
-                // Note: To be robust, this should handle duplicates, but for MVP we'll just parse
-                // the backend items into shelves
-                const backendLibrary = { current: [], want: [], finished: [] };
+                
+                // Merge Strategy:
+                // 1. Create a map of existing local books for quick lookup
+                const localBooksMap = new Map();
+                ['current', 'want', 'finished'].forEach(shelf => {
+                    this.library[shelf].forEach(book => {
+                        localBooksMap.set(book.id, { book, shelf });
+                    });
+                });
 
+                // 2. Process backend books
                 data.library.forEach(item => {
-                    // Reconstruct book object structure expected by renderer
-                    const book = {
+                    const existing = localBooksMap.get(item.google_books_id);
+                    
+                    // Construct standard book object
+                    const remoteBook = {
                         id: item.google_books_id,
-                        db_id: item.id, // Database ID for updates/deletes
+                        db_id: item.id,
                         volumeInfo: {
                             title: item.title,
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
-                        // Default progress if not stored in DB yet, or add column later
+                        // Preserve local progress if exists, else default
+                        progress: existing ? existing.book.progress : (item.shelf_type === 'current' ? 0 : null)
                     };
 
-                    if (backendLibrary[item.shelf_type]) {
-                        backendLibrary[item.shelf_type].push(book);
+                    if (existing) {
+                        // Check if shelf matches
+                        if (existing.shelf !== item.shelf_type) {
+                            // Backend wins on shelf conflict (syncing FROM server)
+                            // Remove from old shelf
+                            this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
+                            // Add to new shelf
+                            this.library[item.shelf_type].push(remoteBook);
+                        } else {
+                            // Update details (e.g. db_id might be missing locally if added offline)
+                            Object.assign(existing.book, remoteBook);
+                        }
+                        // Mark as processed/merged
+                        localBooksMap.delete(item.google_books_id); 
+                    } else {
+                        // New book from backend
+                        if (this.library[item.shelf_type]) {
+                            this.library[item.shelf_type].push(remoteBook);
+                        }
                     }
                 });
 
-                // Update local library state (simple override for now to ensure consistency)
-                // In a real app we might merge local+remote
-                if (data.library.length > 0) {
-                    this.library = backendLibrary;
-                    this.saveLocally();
-                    // If we are on library page, trigger re-render
-                    if (document.getElementById('shelf-want')) {
-                        // Prevent infinite reload loop by only reloading once per session
-                        const hasSyncedOnce = sessionStorage.getItem('bibliodrift_synced_once');
-                        if (!hasSyncedOnce) {
-                            sessionStorage.setItem('bibliodrift_synced_once', 'true');
-                            window.location.reload();
+                // 3. Handle remaining local books (not in backend)
+                // These could be:
+                // a) Added offline and not yet synced -> Keep them
+                // b) Deleted on another device -> Should remove?
+                // For this implementation, we will KEEP them to prioritize no data loss (offline first).
+                // Ideally, we'd check timestamps or have a specific "sync queue".
+                
+                this.saveLocally();
+                
+                // Trigger Render
+                if (document.getElementById('shelf-want')) {
+                    const sortSelect = document.getElementById('sortLibrary');
+                    if (sortSelect) {
+                         // use existing sort logic if available
+                        if (typeof this.sortLibrary === 'function') {
+                             this.sortLibrary(sortSelect.value);
                         }
+                    } else {
+                        this.renderShelf('want', 'shelf-want');
+                        this.renderShelf('current', 'shelf-current');
+                        this.renderShelf('finished', 'shelf-finished');
                     }
                 }
             }
         } catch (e) {
             console.error("Sync failed", e);
+            showToast("Sync failed. Using local library.", "error");
         }
     }
 
     async addBook(book, shelf) {
-        if (this.findBook(book.id)) return;
+        // Check if book exists ANYWHERE in library specifically by ID
+        if (this.findBook(book.id)) {
+            // It exists. Check where.
+            const existingShelf = this.findBookShelf(book.id);
+            if (existingShelf === shelf) {
+                showToast("Book already in this shelf!", "info");
+                return;
+            } else if (existingShelf) {
+                // Move logic? For now, prevent duplicates and notify user.
+                // Or allow "moving" implicitly? 
+                // Let's implement move: Remove from old, add to new.
+                this.removeBook(book.id); 
+                // Fall through to add
+                showToast(`Moved book from ${existingShelf} to ${shelf}`, "info");
+            }
+        }
 
         const enrichedBook = {
             ...book,
@@ -616,13 +647,13 @@ class LibraryManager {
                     thumbnail: book.volumeInfo.imageLinks ? book.volumeInfo.imageLinks.thumbnail : "",
                     shelf_type: shelf
                 };
-
+                
                 const res = await fetch(`${this.apiBase}/library`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
+                
                 if (res.ok) {
                     const data = await res.json();
                     // Store the DB ID back to the local object
@@ -631,6 +662,7 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
+                showToast("Saved locally (Sync failed)", "info");
             }
         }
     }
@@ -641,6 +673,13 @@ class LibraryManager {
             if (this.library[shelf].some(b => b.id === id)) return true;
         }
         return false;
+    }
+
+    findBookShelf(id) {
+        for (const shelf in this.library) {
+            if (this.library[shelf].some(b => b.id === id)) return shelf;
+        }
+        return null;
     }
 
     findBookInShelf(id) {
@@ -655,7 +694,7 @@ class LibraryManager {
         const result = this.findBookInShelf(id);
         if (result) {
             const { shelf, book } = result;
-
+            
             // 1. Update Local
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
             this.saveLocally();
@@ -667,17 +706,18 @@ class LibraryManager {
             // but our remove_from_library endpoint uses item_id (DB ID).
             // Do we have it?
             if (user && book.db_id) {
-                try {
+                 try {
                     await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE' });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
+                    showToast("Removed locally (Backend sync failed)", "info");
                 }
             } else if (user) {
-                // Fallback: If we don't have db_id locally (maybe added before login logic), 
-                // we might need to look it up or accept that local-only items can't be remotely deleted easily
-                // without an API change to delete by google_id.
-                // For MVP, we proceed.
-                console.warn("Could not delete from backend: missing db_id");
+                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
+                 // we might need to look it up or accept that local-only items can't be remotely deleted easily
+                 // without an API change to delete by google_id.
+                 // For MVP, we proceed.
+                 console.warn("Could not delete from backend: missing db_id");
             }
 
             return true;
@@ -729,16 +769,16 @@ class ThemeManager {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
         this.currentTheme = localStorage.getItem(this.themeKey) || 'day';
-
+       
         this.init();
     }
 
 
     init() {
         if (!this.toggleBtn) return;
-
+       
         this.applyTheme(this.currentTheme);
-
+       
         this.toggleBtn.addEventListener('click', () => {
             this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
             this.applyTheme(this.currentTheme);
@@ -761,139 +801,14 @@ class ThemeManager {
 }
 
 
-
-class GenreManager {
-    constructor() {
-        this.genreGrid = document.getElementById('genre-grid');
-        this.modal = document.getElementById('genre-modal');
-        this.closeBtn = document.getElementById('close-genre-modal');
-        this.modalTitle = document.getElementById('genre-modal-title');
-        this.booksGrid = document.getElementById('genre-books-grid');
-    }
-
-    init() {
-        if (!this.genreGrid) return;
-
-        // Add click listeners to genre cards
-        const cards = this.genreGrid.querySelectorAll('.genre-card');
-        cards.forEach(card => {
-            card.addEventListener('click', () => {
-                const genre = card.dataset.genre;
-                this.openGenre(genre);
-            });
-        });
-
-        // Close modal listeners
-        if (this.closeBtn) {
-            this.closeBtn.addEventListener('click', () => this.closeModal());
-        }
-
-        if (this.modal) {
-            this.modal.addEventListener('click', (e) => {
-                if (e.target === this.modal) this.closeModal();
-            });
-        }
-    }
-
-    openGenre(genre) {
-        if (!this.modal) return;
-
-        const genreName = genre.charAt(0).toUpperCase() + genre.slice(1);
-        this.modalTitle.textContent = `${genreName} Books`;
-        this.modal.showModal();
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
-
-        this.fetchBooks(genre);
-    }
-
-    closeModal() {
-        if (!this.modal) return;
-        this.modal.close();
-        document.body.style.overflow = ''; // Restore scrolling
-    }
-
-    async fetchBooks(genre) {
-        if (!this.booksGrid) return;
-
-        // Show loading
-        this.booksGrid.innerHTML = `
-            <div class="genre-loading">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                <span>Finding best ${genre} books...</span>
-            </div>
-        `;
-
-        try {
-            // Fetch relevant books from Google Books API
-            // Using subject search and higher relevance
-            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance`);
-
-            let items = [];
-            if (response.ok) {
-                const data = await response.json();
-                items = data.items || [];
-            } else {
-                console.warn(`API Error ${response.status}: Using mock data`);
-                items = MOCK_BOOKS;
-            }
-
-            if (items && items.length > 0) {
-                this.renderBooks(items);
-            } else {
-                // Fallback to mock if no items
-                this.renderBooks(MOCK_BOOKS);
-            }
-        } catch (error) {
-            console.error('Error fetching genre books, using mock:', error);
-            this.renderBooks(MOCK_BOOKS);
-        }
-    }
-
-    renderBooks(books) {
-        this.booksGrid.innerHTML = '';
-
-        books.forEach(book => {
-            const info = book.volumeInfo;
-            const title = info.title || 'Untitled';
-            const author = info.authors ? info.authors[0] : 'Unknown';
-            const thumbnail = info.imageLinks ?
-                (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) :
-                'https://via.placeholder.com/128x196?text=No+Cover';
-
-            const card = document.createElement('div');
-            card.className = 'genre-book-card';
-            card.innerHTML = `
-                <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <div class="genre-book-info">
-                    <h4>${title}</h4>
-                    <p>${author}</p>
-                </div>
-            `;
-
-            // Add click listener to open detailed view (using existing renderer logic if possible, or just mock it)
-            // For now, let's just use the existing BookRenderer's modal if accessible, 
-            // or just simple log. The user asked for "modal should open up with some books". 
-            // The books themselves inside the modal don't necessarily need to open *another* modal, 
-            // but it would be nice.
-
-            this.booksGrid.appendChild(card);
-        });
-    }
-}
-
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load config first to get API keys
+    await loadConfig();
+
     const libManager = new LibraryManager();
     const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
-    const exportBtn = document.getElementById("export-library");
-
-    if (exportBtn) {
-        const isLibraryPage = document.getElementById("shelf-want");
-        exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
-    }
-
-
 
 
     // Search Handler
@@ -936,9 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
         renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
         renderer.renderCuratedSection('subject:classic+fiction', 'row-classics');
-        // Initialize Genre Manager
-        const genreManager = new GenreManager();
-        genreManager.init();
+        renderer.renderCuratedSection('subject:fiction', 'row-genre');
     }
 
 
@@ -950,65 +863,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // Scroll Manager (Back to Top)
-    const backToTopBtn = document.getElementById('backToTop');
-    if (backToTopBtn) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 200) {
-                backToTopBtn.classList.remove('hidden');
-            } else {
-                backToTopBtn.classList.add('hidden');
-            }
-        });
-
-        backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
-    }
-});
-
-// Export Library as JSON
-const exportBtn = document.getElementById("export-library");
-
-if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-        const library = localStorage.getItem("bibliodrift_library");
-        if (!library) {
-            alert("Your library is empty!");
-            return;
+   // Scroll Manager (Back to Top)
+const backToTopBtn = document.getElementById('backToTop');
+if (backToTopBtn) {
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) {
+            backToTopBtn.classList.remove('hidden');
+        } else {
+            backToTopBtn.classList.add('hidden');
         }
+    });
 
-        const blob = new Blob([library], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
 
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        URL.revokeObjectURL(url);
-        alert("Library exported successfully!");
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     });
 }
+});
 
 function handleAuth(event) {
-    event.preventDefault();
+  event.preventDefault();
 
-    const email = document.getElementById("email").value;
+  const email = document.getElementById("email").value;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailRegex.test(email)) {
-        alert("Enter a valid email address");
-        return;
-    }
+  if (!emailRegex.test(email)) {
+    alert("Enter a valid email address");
+    return;
+  }
 
-    window.location.href = "library.html";
+  window.location.href = "library.html";
 }
 
 
@@ -1051,7 +939,7 @@ function enableTapEffects() {
         });
     }
 
-
+   
     document.querySelectorAll('.social_icons a').forEach(icon => {
         icon.addEventListener('click', () => {
             icon.classList.toggle('tap-social-icon');
@@ -1063,8 +951,8 @@ enableTapEffects();
 
 // --- creak and page flip effects ---
 const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
-pageFlipSound.volume = 0.2;
-pageFlipSound.muted = true;
+pageFlipSound.volume = 0.2;  
+pageFlipSound.muted = true;   
 
 
 document.addEventListener("click", (e) => {
@@ -1085,7 +973,6 @@ document.addEventListener("click", (e) => {
     book.classList.toggle("tap-effect");
     if (overlay) overlay.classList.toggle("tap-overlay");
 });
-
 // ============================================
 // Keyboard Shortcuts Module (Issue #103)
 // ============================================
@@ -1191,4 +1078,3 @@ if (document.readyState === 'loading') {
 } else {
   KeyboardShortcuts.init();
 }
-

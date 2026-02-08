@@ -4,6 +4,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+import os
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe
@@ -322,9 +323,16 @@ def health_check():
             "llm_service_available": llm_service.is_available(),
             "openai_configured": llm_service.openai_client is not None,
             "groq_configured": llm_service.groq_client is not None,
-            "gemini_configured": llm_service.gemini_model is not None,
+            "gemini_configured": llm_service.gemini_client is not None,
             "preferred_llm": llm_service.preferred_llm
         }
+    })
+
+@app.route('/api/v1/config', methods=['GET'])
+def get_config():
+    """Expose public configuration."""
+    return jsonify({
+        "google_books_key": os.getenv("GOOGLE_BOOKS_API_KEY")
     })
 
 @app.route('/api/v1/library', methods=['POST'])
