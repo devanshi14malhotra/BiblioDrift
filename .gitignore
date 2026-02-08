@@ -3,6 +3,7 @@ GITHUB_ISSUES.md
 # Mood analysis cache files
 mood_analysis/mood_cache.json
 *.cache
+style-original.backup
 
 # Environment variables
 .env
@@ -12,3 +13,10 @@ mood_analysis/mood_cache.json
 # API keys and secrets
 *.key
 secrets/
+
+# Useless Python Files
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
