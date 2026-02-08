@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -24,10 +22,23 @@
                 <i class="fa-solid fa-search search-icon"></i>
             </div>
             <nav class="nav-links">
-                <a href="index.html">Discovery</a>
-                <a href="library.html" class="active">My Library</a>
-                <a href="chat.html">Chat</a>
-                <a href="auth.html">Sign In</a>
+                <div class="tooltip">
+                    <a href="index.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html" class="active">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <!-- DYNAMIC AUTH LINK -->
+                <div class="tooltip">
+                    <a href="auth.html" id="navAuthLink">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
                 <i class="fa-solid fa-moon"></i>
@@ -36,129 +47,63 @@
     </header>
 
     <main>
-        <section class="hero" style="padding-bottom: 2rem; position: relative;">
-    <h1>My Virtual Library</h1>
-    <p>A quiet sanctuary for your stories.</p>
+        <section class="hero" style="padding-bottom: 2rem;">
+            <h1>My Virtual Library</h1>
+            <p>A quiet sanctuary for your stories.</p>
+        </section>
 
-    <!-- Export button added here -->
-    <button id="export-library" class="btn-icon" style="position: absolute; top: 45; right: 0;" title="Export Library">
-        <i class="fa-solid fa-download"></i> Export Library
-    </button>
-</section>
-
-
-        <!-- 3D Bookshelf Container -->
-        <div class="bookshelf-3d-container" id="library-shelves">
-
-            <!-- Currently Reading Shelf -->
-            <div class="shelf-section-3d">
-                <span class="shelf-label">📖 Currently Immersed</span>
-                <div class="bookshelf-3d">
-                    <div class="books-row-3d" id="shelf-current-3d">
-                        <!-- Books will be injected via JS -->
+        <div class="shelves-container">
+            <div>
+                <span class="shelf-label">Currently Immersed 📖</span>
+                <div class="shelf-row" id="shelf-current">
+                    <div class="empty-state" style="color: #8D6E63; font-style: italic; align-self: center; width: 100%; padding: 2rem;">
+                        Your nightstand is empty...
                     </div>
                 </div>
             </div>
 
-            <!-- Want to Read Shelf -->
-            <div class="shelf-section-3d">
-                <span class="shelf-label">📚 Anticipated Journeys</span>
-                <div class="bookshelf-3d">
-                    <div class="books-row-3d" id="shelf-want-3d">
-                        <!-- Books will be injected via JS -->
+            <div>
+                <span class="shelf-label">Anticipated Journeys 📚</span>
+                <div class="shelf-row" id="shelf-want">
+                    <div class="empty-state" style="color: #8D6E63; font-style: italic; align-self: center; width: 100%; padding: 2rem;">
+                        No books added yet...
                     </div>
                 </div>
             </div>
 
-            <!-- Finished Reading Shelf -->
-            <div class="shelf-section-3d">
-                <span class="shelf-label">✓ Lifetime Favorites</span>
-                <div class="bookshelf-3d">
-                    <div class="books-row-3d" id="shelf-finished-3d">
-                        <!-- Books will be injected via JS -->
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Book Tooltip (positioned dynamically) -->
-        <div class="book-tooltip" id="book-tooltip">
-            <div class="tooltip-header">
-                <img class="tooltip-cover" id="tooltip-cover" src="" alt="Book cover">
-                <div class="tooltip-info">
-                    <div class="tooltip-title" id="tooltip-title"></div>
-                    <div class="tooltip-author" id="tooltip-author"></div>
-                    <div class="tooltip-rating">
-                        <span class="tooltip-stars" id="tooltip-stars">★★★★☆</span>
-                        <span class="tooltip-rating-text" id="tooltip-rating-text">4.2</span>
-                    </div>
-                </div>
-            </div>
-            <div class="tooltip-description" id="tooltip-description"></div>
-            <div class="tooltip-hint">Click to see full details</div>
-        </div>
-
-        <!-- Book Detail Modal -->
-        <div class="book-detail-modal" id="book-detail-modal">
-            <div class="book-detail-content">
-                <button class="modal-close-btn" id="modal-close-btn">
-                    <i class="fa-solid fa-times"></i>
-                </button>
-                <div class="book-detail-grid">
-                    <div class="book-cover-section">
-                        <div class="book-cover-3d">
-                            <img class="book-cover-image" id="modal-cover" src="" alt="Book cover">
-                            <div class="book-cover-spine"></div>
-                        </div>
-                    </div>
-                    <div class="book-info-section">
-                        <h1 class="book-title-large" id="modal-title"></h1>
-                        <p class="book-author-large" id="modal-author"></p>
-
-                        <div class="book-meta">
-                            <div class="book-rating-large">
-                                <span class="rating-stars-large" id="modal-stars">★★★★☆</span>
-                                <span class="rating-score" id="modal-rating-score">4.2</span>
-                                <span class="rating-count" id="modal-rating-count">(1,234 ratings)</span>
-                            </div>
-                            <div class="book-categories" id="modal-categories">
-                                <!-- Categories injected via JS -->
-                            </div>
-                        </div>
-
-                        <div class="book-description-section">
-                            <h3>About this book</h3>
-                            <p class="book-description-text" id="modal-description"></p>
-                        </div>
-
-                        <div class="book-reviews-section">
-                            <h3>Reader Reviews</h3>
-                            <div id="modal-reviews">
-                                <!-- Reviews injected via JS -->
-                            </div>
-                        </div>
-
-                        <div class="book-actions-section">
-                            <button class="action-btn-primary add-to-library" id="modal-add-btn">
-                                <i class="fa-regular fa-heart"></i>
-                                Add to Library
-                            </button>
-                            <button class="action-btn-primary mark-read" id="modal-read-btn">
-                                <i class="fa-solid fa-check"></i>
-                                Mark as Read
-                            </button>
-                        </div>
+            <div>
+                <span class="shelf-label">Lifetime Favorites ✓</span>
+                <div class="shelf-row" id="shelf-finished">
+                    <div class="empty-state" style="color: #8D6E63; font-style: italic; align-self: center; width: 100%; padding: 2rem;">
+                        No books finished yet...
                     </div>
                 </div>
             </div>
         </div>
-
     </main>
 
     <script src="library-3d.js"></script>
     <script src="app.js"></script>
-     <script src="script/header-scroll.js"></script>
+    <script src="footer.js"></script>
+    <script src="script/header-scroll.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            if (isLoggedIn) {
+                const link = document.getElementById('navAuthLink');
+                const tooltip = document.getElementById('navAuthTooltip');
+                
+                if (link) {
+                    link.innerHTML = '<i class="fa-solid fa-user"></i>';
+                    link.href = 'profile.html';
+                    link.classList.remove('active'); // library is active, not profile
+                }
+                if (tooltip) {
+                    tooltip.innerHTML = '<i class="fa-solid fa-address-card"></i> View Profile';
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>
