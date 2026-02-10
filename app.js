@@ -5,52 +5,71 @@
 
 
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
+const API_KEY = 'YOUR_GOOGLE_BOOKS_API_KEY';
 const MOOD_API_BASE = 'http://localhost:5000/api/v1';
 
 const MOCK_BOOKS = [
     {
-        id: "mock1",
+        id: "mock-dune",
         volumeInfo: {
-            title: "The Midnight Library",
-            authors: ["Matt Haig"],
-            description: "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4OVQAQAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "Dune",
+            authors: ["Frank Herbert"],
+            description: "A sweeping science fiction epic set on the desert planet Arrakis. Dune explores complex themes of politics, religion, and man's relationship with nature. Paul Atreides must navigate a treacherous path to becoming the mysterious Muad'Dib.",
+            imageLinks: { thumbnail: "assets/images/dune.jpg" }
         }
     },
     {
-        id: "mock2",
+        id: "mock-1984",
         volumeInfo: {
-            title: "The Night Circus",
-            authors: ["Erin Morgenstern"],
-            description: "The circus arrives without warning. No announcements precede it. It is simply there, when yesterday it was not.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4nEOXAOMwDAC&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "1984",
+            authors: ["George Orwell"],
+            description: "Orwell's chilling prophecy of a totalitarian future where Big Brother is always watching. A profound exploration of surveillance, truth, and the resilience of the human spirit.",
+            imageLinks: { thumbnail: "assets/images/1984.jpg" }
         }
     },
     {
-        id: "mock3",
+        id: "mock-hobbit",
         volumeInfo: {
-            title: "Piranesi",
-            authors: ["Susanna Clarke"],
-            description: "Piranesi's house is no ordinary building: its rooms are infinite, its corridors endless, its walls are lined with thousands upon thousands of statues.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=h3fdDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "The Hobbit",
+            authors: ["J.R.R. Tolkien"],
+            description: "In a hole in the ground there lived a hobbit. Join Bilbo Baggins on an unexpected journey across Middle-earth, encountering dragons, dwarves, and a rigorous test of courage.",
+            imageLinks: { thumbnail: "assets/images/hobbit.jpg" }
         }
     },
     {
-        id: "mock4",
+        id: "mock-pride",
         volumeInfo: {
-            title: "The Starless Sea",
-            authors: ["Erin Morgenstern"],
-            description: "Zachary Ezra Rawlins is a graduate student in Vermont when he discovers a mysterious book hidden in the stacks.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=1aWPDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "Pride and Prejudice",
+            authors: ["Jane Austen"],
+            description: "A timeless romance of manners and misunderstanding. Elizabeth Bennet's wit matches Mr. Darcy's pride in this sharp social commentary that remains one of the most loved novels in English literature.",
+            imageLinks: { thumbnail: "assets/images/pride.jpg" }
         }
     },
     {
-        id: "mock5",
+        id: "mock-gatsby",
         volumeInfo: {
-            title: "Kafka on the Shore",
-            authors: ["Haruki Murakami"],
-            description: "Kafka on the Shore is powered by two remarkable characters: a teenage boy, Kafka Tamura, who runs away from home...",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=d_wPAQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "The Great Gatsby",
+            authors: ["F. Scott Fitzgerald"],
+            description: "The quintessential novel of the Jazz Age. Jay Gatsby's obsessive love for Daisy Buchanan drives a tragic tale of wealth, illusion, and the American Dream.",
+            imageLinks: { thumbnail: "assets/images/gatsby.jpg" }
+        }
+    },
+    {
+        id: "mock-sapiens",
+        volumeInfo: {
+            title: "Sapiens",
+            authors: ["Yuval Noah Harari"],
+            description: "A groundbreaking narrative of humanity's creation and evolution. Harari explores the ways in which biology and history have defined us and enhanced our understanding of what it means to be 'human'.",
+            imageLinks: { thumbnail: "assets/images/sapiens.jpg" }
+        }
+    },
+    {
+        id: "mock-hail-mary",
+        volumeInfo: {
+            title: "Project Hail Mary",
+            authors: ["Andy Weir"],
+            description: "A lone astronaut must save the earth from disaster in this gripping tale of survival and scientific discovery. Full of humor and hard science, it is a celebration of human ingenuity.",
+            imageLinks: { thumbnail: "assets/images/hail_mary.jpg" }
         }
     }
 ];
@@ -449,7 +468,7 @@ class BookRenderer {
 
 
         try {
-            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books`);
+            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books&key=${API_KEY}`);
 
             let items = [];
             if (res.ok) {
@@ -863,7 +882,7 @@ class GenreManager {
         try {
             // Fetch relevant books from Google Books API
             // Using subject search and higher relevance
-            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance`);
+            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance&key=${API_KEY}`);
 
             let items = [];
             if (response.ok) {
