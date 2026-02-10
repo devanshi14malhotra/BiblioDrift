@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -63,9 +62,7 @@
         <h2>Rainy Evening Reads</h2>
         <span><i class="fa-solid fa-cloud-rain"></i> Mystery & Melancholy</span>
       </div>
-
-      <div class="curated-row" id="row-rainy">
-        </div>
+      <div class="curated-row" id="row-rainy"></div>
     </section>
 
     <section class="curated-section">
@@ -73,8 +70,7 @@
         <h2>Indian Authors</h2>
         <span><i class="fa-solid fa-feather"></i> Voices from the Subcontinent</span>
       </div>
-      <div class="curated-row" id="row-indian">
-        </div>
+      <div class="curated-row" id="row-indian"></div>
     </section>
 
     <section class="curated-section">
@@ -82,8 +78,7 @@
         <h2>Forgotten Classics</h2>
         <span><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span>
       </div>
-      <div class="curated-row" id="row-classics">
-        </div>
+      <div class="curated-row" id="row-classics"></div>
     </section>
 
     <section class="curated-section genre-section">
@@ -91,7 +86,6 @@
         <h2>Browse by Genre</h2>
         <span><i class="fa-solid fa-compass"></i> Find your next read</span>
       </div>
-
       <div class="genre-grid" id="genre-grid">
         <div class="genre-card" data-genre="romance">
           <i class="fa-solid fa-heart"></i>
@@ -154,37 +148,66 @@
         </div>
       </div>
     </dialog>
-
   </main>
 
   <button id="backToTop" class="btn-icon back-to-top" title="Back to Top">
     <i class="fa-solid fa-arrow-up"></i>
   </button>
-  
-  <footer class="footer">
-    <div class="social_icons">
-      <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
-      <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-      <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
-      <a href="#" title="X (Twitter)"><i class="fab fa-x"></i></a>
+
+  <!-- Footer -->
+  <footer class="footer" data-theme-aware>
+    <div class="footer-content">
+      <!-- Social Icons  -->
+      <div class="social_icons">
+        <a href="#" aria-label="LinkedIn" title="Connect on LinkedIn">
+          <i class="fab fa-linkedin"></i>
+        </a>
+        <a href="#" aria-label="Instagram" title="Follow on Instagram">
+          <i class="fab fa-instagram"></i>
+        </a>
+        <a href="#" aria-label="Facebook" title="Like on Facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+        <a href="#" aria-label="X (Twitter)" title="Follow on X">
+          <i class="fab fa-x"></i>
+
+        </a>
+      </div>
+
+      <div class="footer-brand">
+        <a href="index.html" class="logo-small">
+          <i class="fa-solid fa-book-open"></i> BiblioDrift
+        </a>
+        <p>Find yourself in the pages</p>
+      </div>
+
+      <div class="footer-links">
+        <div class="quick-links">
+          <a href="index.html">Discovery</a>
+          <a href="library.html">Library</a>
+          <a href="chat.html">Chat</a>
+        </div>
+        <div class="footer-info">
+          <span>&copy; 2026 BiblioDrift</span>
+          <span>Made with <i class="fa-solid fa-heart" style="color: #e53e3e;"></i> for readers</span>
+        </div>
+      </div>
     </div>
   </footer>
 
+  <!-- Book Details Modal -->
   <dialog id="book-details-modal" class="glass-modal">
     <div class="modal-content">
       <button class="close-modal-btn" id="closeModalBtn" title="Close">
         <i class="fa-solid fa-xmark"></i>
       </button>
-
       <div class="modal-body">
         <div class="modal-media">
           <img id="modal-img" src="" alt="Book Cover" />
         </div>
-
         <div class="modal-info">
           <h2 id="modal-title">Book Title</h2>
           <p id="modal-author" class="modal-subtitle">Author Name</p>
-
           <div class="ai-insight-box">
             <div class="ai-header">
               <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -192,7 +215,6 @@
             </div>
             <p id="modal-summary">Loading thoughts...</p>
           </div>
-
           <div class="modal-actions">
             <button id="modal-add-btn" class="btn-primary" title="Add to Library">
               <i class="fa-regular fa-heart"></i> Add to Library
@@ -206,5 +228,4 @@
   <script src="app.js"></script>
   <script src="script/header-scroll.js"></script>
 </body>
-
 </html>
