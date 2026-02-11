@@ -186,12 +186,12 @@ class BookRenderer {
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
-        if (
-            !e.target.closest('.btn-icon') &&
-            !e.target.closest('.reading-progress')
-        ) {
-            bookEl.classList.toggle('flipped');
-        }
+            if (
+                !e.target.closest('.btn-icon') &&
+                !e.target.closest('.reading-progress')
+            ) {
+                bookEl.classList.toggle('flipped');
+            }
         });
 
 
@@ -204,7 +204,7 @@ class BookRenderer {
                 addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
             }
         };
-        
+
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (this.libraryManager.findBook(bookData.id)) {
@@ -226,7 +226,7 @@ class BookRenderer {
                 addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
             }
         });
-        
+
         // Set initial button state
         updateButtonState();
 
@@ -259,63 +259,63 @@ class BookRenderer {
     displayMoodModal(title, moodAnalysis) {
         const modal = document.createElement('div');
         modal.className = 'mood-modal';
-       
+
         // Create modal content safely using DOM methods
         const content = document.createElement('div');
         content.className = 'mood-modal-content';
-       
+
         // Header
         const header = document.createElement('div');
         header.className = 'mood-modal-header';
-       
+
         const headerTitle = document.createElement('h3');
         headerTitle.textContent = `Mood Analysis: ${title}`;
-       
+
         const closeButton = document.createElement('button');
         closeButton.className = 'close-modal';
         closeButton.textContent = '×';
-       
+
         header.appendChild(headerTitle);
         header.appendChild(closeButton);
-       
+
         // Body
         const body = document.createElement('div');
         body.className = 'mood-modal-body';
-       
+
         // Overall Sentiment section
         const overallSection = document.createElement('div');
         overallSection.className = 'mood-section';
-       
+
         const overallHeading = document.createElement('h4');
         overallHeading.textContent = 'Overall Sentiment';
-       
+
         const sentimentBar = document.createElement('div');
         sentimentBar.className = 'sentiment-bar';
-       
+
         const sentimentFill = document.createElement('div');
         sentimentFill.className = 'sentiment-fill';
         const compoundScore = moodAnalysis.overall_sentiment?.compound_score || 0;
         sentimentFill.style.width = `${(compoundScore + 1) * 50}%`;
-       
+
         sentimentBar.appendChild(sentimentFill);
-       
+
         const moodDescription = document.createElement('p');
         moodDescription.textContent = moodAnalysis.mood_description || '';
-       
+
         overallSection.appendChild(overallHeading);
         overallSection.appendChild(sentimentBar);
         overallSection.appendChild(moodDescription);
-       
+
         // Primary Moods section
         const primarySection = document.createElement('div');
         primarySection.className = 'mood-section';
-       
+
         const primaryHeading = document.createElement('h4');
         primaryHeading.textContent = 'Primary Moods';
-       
+
         const moodTagsContainer = document.createElement('div');
         moodTagsContainer.className = 'mood-tags-large';
-       
+
         const primaryMoods = Array.isArray(moodAnalysis.primary_moods) ? moodAnalysis.primary_moods : [];
         primaryMoods.forEach(mood => {
             const span = document.createElement('span');
@@ -324,39 +324,39 @@ class BookRenderer {
             span.textContent = `${moodName} (${mood.confidence || mood.frequency || 0})`;
             moodTagsContainer.appendChild(span);
         });
-       
+
         primarySection.appendChild(primaryHeading);
         primarySection.appendChild(moodTagsContainer);
-       
+
         // BiblioDrift Vibe section
         const vibeSection = document.createElement('div');
         vibeSection.className = 'mood-section';
-       
+
         const vibeHeading = document.createElement('h4');
         vibeHeading.textContent = 'BiblioDrift Vibe';
-       
+
         const vibeQuote = document.createElement('div');
         vibeQuote.className = 'vibe-quote';
         vibeQuote.textContent = `"${moodAnalysis.bibliodrift_vibe || ''}"`;
-       
+
         vibeSection.appendChild(vibeHeading);
         vibeSection.appendChild(vibeQuote);
-       
+
         // Reviews analyzed section
         const reviewsSection = document.createElement('div');
         reviewsSection.className = 'mood-section';
-       
+
         const reviewsInfo = document.createElement('small');
         reviewsInfo.textContent = `Based on ${moodAnalysis.total_reviews_analyzed || 0} GoodReads reviews`;
-       
+
         reviewsSection.appendChild(reviewsInfo);
-       
+
         // Assemble everything
         body.appendChild(overallSection);
         body.appendChild(primarySection);
         body.appendChild(vibeSection);
         body.appendChild(reviewsSection);
-       
+
         content.appendChild(header);
         content.appendChild(body);
         modal.appendChild(content);
@@ -395,7 +395,7 @@ class BookRenderer {
         const title = book.volumeInfo.title;
         const genres = book.volumeInfo.categories || ["General Fiction"];
         const mainGenre = genres[0];
-        
+
         // Templates for "AI" generation
         const templates = [
             `This story explores the nuances of human connection through the lens of ${mainGenre}. Readers often find themselves reflecting on their own journeys after finishing "${title}".Expect a narrative that is both grounding and transcendent.`,
@@ -423,10 +423,10 @@ class BookRenderer {
         title.textContent = volume.title;
         author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
         img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
-        
+
         // Mock AI Generation Effect
         summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
-        
+
         setTimeout(() => {
             summary.textContent = this.generateMockAISummary(book);
         }, 800);
@@ -435,7 +435,7 @@ class BookRenderer {
         // Clone to remove old listeners
         const newAddBtn = addBtn.cloneNode(true);
         addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-        
+
         newAddBtn.addEventListener('click', () => {
             this.libraryManager.addBook(book, 'want');
             newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added';
@@ -448,7 +448,7 @@ class BookRenderer {
         // Close Handlers
         const closeHandler = () => modal.close();
         closeBtn.onclick = closeHandler;
-        
+
         // Close on backdrop click
         modal.onclick = (e) => {
             if (e.target === modal) modal.close();
@@ -463,7 +463,7 @@ class BookRenderer {
 
         try {
             const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books`);
-            
+
             if (!res.ok) {
                 throw new Error(`API Error: ${res.statusText}`);
             }
@@ -546,6 +546,7 @@ class LibraryManager {
 
         // Sync API if user is logged in
         this.syncWithBackend();
+        this.setupSorting();
     }
 
     getUser() {
@@ -576,6 +577,7 @@ class LibraryManager {
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
+                        date_added: item.created_at || new Date().toISOString()
                         // Default progress if not stored in DB yet, or add column later
                     };
 
@@ -587,19 +589,19 @@ class LibraryManager {
                 // Update local library state (simple override for now to ensure consistency)
                 // In a real app we might merge local+remote
                 if (data.library.length > 0) {
-                   this.library = backendLibrary;
-                   this.saveLocally();
-                   // If we are on library page, trigger re-render
-                   if (document.getElementById('shelf-want')) {
-                       const sortSelect = document.getElementById('sortLibrary');
-                       if (sortSelect) {
-                           this.sortLibrary(sortSelect.value);
-                       } else {
-                           this.renderShelf('want', 'shelf-want');
-                           this.renderShelf('current', 'shelf-current');
-                           this.renderShelf('finished', 'shelf-finished');
-                       }
-                   }
+                    this.library = backendLibrary;
+                    this.saveLocally();
+                    // If we are on library page, trigger re-render
+                    if (document.getElementById('shelf-want')) {
+                        const sortSelect = document.getElementById('sortLibrary');
+                        if (sortSelect) {
+                            this.sortLibrary(sortSelect.value);
+                        } else {
+                            this.renderShelf('want', 'shelf-want');
+                            this.renderShelf('current', 'shelf-current');
+                            this.renderShelf('finished', 'shelf-finished');
+                        }
+                    }
                 }
             }
         } catch (e) {
@@ -608,12 +610,50 @@ class LibraryManager {
         }
     }
 
+    setupSorting() {
+        const sortSelect = document.getElementById('sortLibrary');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                this.sortLibrary(e.target.value);
+            });
+        }
+    }
+
+    sortLibrary(criteria) {
+        const sortFn = (a, b) => {
+            switch (criteria) {
+                case 'date_desc':
+                    return new Date(b.date_added || 0) - new Date(a.date_added || 0);
+                case 'date_asc':
+                    return new Date(a.date_added || 0) - new Date(b.date_added || 0);
+                case 'title_asc':
+                    return (a.volumeInfo.title || "").localeCompare(b.volumeInfo.title || "");
+                case 'title_desc':
+                    return (b.volumeInfo.title || "").localeCompare(a.volumeInfo.title || "");
+                case 'author_asc':
+                    const authorA = (a.volumeInfo.authors && a.volumeInfo.authors[0]) || "";
+                    const authorB = (b.volumeInfo.authors && b.volumeInfo.authors[0]) || "";
+                    return authorA.localeCompare(authorB);
+                default:
+                    return 0;
+            }
+        };
+
+        ['current', 'want', 'finished'].forEach(shelf => {
+            if (this.library[shelf]) {
+                this.library[shelf].sort(sortFn);
+                this.renderShelf(shelf, `shelf-${shelf}`);
+            }
+        });
+    }
+
     async addBook(book, shelf) {
         if (this.findBook(book.id)) return;
 
         const enrichedBook = {
             ...book,
-            progress: shelf === 'current' ? 0 : null
+            progress: shelf === 'current' ? 0 : null,
+            date_added: new Date().toISOString()
         };
 
         // 1. Update Local State
@@ -720,17 +760,14 @@ class LibraryManager {
 
 
         const books = this.library[shelfName];
-        if (books.length === 0) return; // Keep empty state if empty
+        if (books.length === 0) {
+            // If we have no books, ensure empty state is visible (if we cleared it previously)
+            container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
+            return;
+        }
 
-
-        // Clear empty state text if we have books
-        // But keep the shelf label which is typically a sibling or parent logic,
-        // In my HTML: span.shelf-label is sibling. container contains books.
-
-
-        // Remove "empty state" div if exists
-        const emptyState = container.querySelector('.empty-state');
-        if (emptyState) emptyState.remove();
+        // Clear container for re-rendering (essential for sorting)
+        container.innerHTML = '';
 
         (async () => {
             for (const book of books) {
@@ -748,16 +785,16 @@ class ThemeManager {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
         this.currentTheme = localStorage.getItem(this.themeKey) || 'day';
-       
+
         this.init();
     }
 
 
     init() {
         if (!this.toggleBtn) return;
-       
+
         this.applyTheme(this.currentTheme);
-       
+
         this.toggleBtn.addEventListener('click', () => {
             this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
             this.applyTheme(this.currentTheme);
@@ -915,6 +952,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const libManager = new LibraryManager();
     const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
+    const genreManager = new GenreManager();
+    genreManager.init();
     const exportBtn = document.getElementById("export-library");
 
     if (exportBtn) {
@@ -975,48 +1014,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-   // Scroll Manager (Back to Top)
-const backToTopBtn = document.getElementById('backToTop');
-if (backToTopBtn) {
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 200) {
-            backToTopBtn.classList.remove('hidden');
-        } else {
-            backToTopBtn.classList.add('hidden');
-        }
-    });
-
-
-    backToTopBtn.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
-
-    const exportBtn = document.getElementById("export-library");
-    if (exportBtn) {
-        exportBtn.addEventListener("click", () => {
-            const library = localStorage.getItem("bibliodrift_library");
-            if (!library) {
-                showToast("Library is empty!", "info");
-                return;
+    // Scroll Manager (Back to Top)
+    const backToTopBtn = document.getElementById('backToTop');
+    if (backToTopBtn) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 200) {
+                backToTopBtn.classList.remove('hidden');
+            } else {
+                backToTopBtn.classList.add('hidden');
             }
-            const blob = new Blob([library], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            URL.revokeObjectURL(url);
-            showToast("Library exported successfully!", "success");
         });
+
+
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        const exportBtn = document.getElementById("export-library");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                const library = localStorage.getItem("bibliodrift_library");
+                if (!library) {
+                    showToast("Library is empty!", "info");
+                    return;
+                }
+                const blob = new Blob([library], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                URL.revokeObjectURL(url);
+                showToast("Library exported successfully!", "success");
+            });
+        }
     }
-}
 });
 
 function handleAuth(event) {
@@ -1116,101 +1155,101 @@ document.addEventListener("click", (e) => {
 // with BiblioDrift library and book management
 
 const KeyboardShortcuts = {
-  // Shortcut configuration mapping
-  shortcuts: {
-    'j': { action: 'navigateNext', description: 'Navigate to next book' },
-    'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
-    'Enter': { action: 'selectBook', description: 'Select/open current book' },
-    'a': { action: 'addToWantRead', description: 'Add to Want to Read' },
-    'r': { action: 'markCurrentlyReading', description: 'Mark as Currently Reading' },
-    'f': { action: 'addToFavorites', description: 'Add to Favorites' },
-    'Escape': { action: 'closeModal', description: 'Close popup/modal' },
-    '?': { action: 'showHelpMenu', description: 'Show keyboard shortcuts help' },
-    '/': { action: 'focusSearch', description: 'Focus search bar' }
-  },
+    // Shortcut configuration mapping
+    shortcuts: {
+        'j': { action: 'navigateNext', description: 'Navigate to next book' },
+        'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
+        'Enter': { action: 'selectBook', description: 'Select/open current book' },
+        'a': { action: 'addToWantRead', description: 'Add to Want to Read' },
+        'r': { action: 'markCurrentlyReading', description: 'Mark as Currently Reading' },
+        'f': { action: 'addToFavorites', description: 'Add to Favorites' },
+        'Escape': { action: 'closeModal', description: 'Close popup/modal' },
+        '?': { action: 'showHelpMenu', description: 'Show keyboard shortcuts help' },
+        '/': { action: 'focusSearch', description: 'Focus search bar' }
+    },
 
-  // Initialize keyboard event listener
-  init() {
-    document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-    console.log('Keyboard shortcuts module initialized');
-  },
+    // Initialize keyboard event listener
+    init() {
+        document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        console.log('Keyboard shortcuts module initialized');
+    },
 
-  // Handle keypress events
-  handleKeyPress(event) {
-    // Don't trigger shortcuts when typing in input fields
-    if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
-      return;
+    // Handle keypress events
+    handleKeyPress(event) {
+        // Don't trigger shortcuts when typing in input fields
+        if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+            return;
+        }
+
+        const key = event.key;
+        const shortcut = this.shortcuts[key];
+
+        if (shortcut) {
+            event.preventDefault();
+            this.executeAction(shortcut.action);
+        }
+    },
+
+    // Execute action based on shortcut
+    executeAction(action) {
+        switch (action) {
+            case 'navigateNext':
+                console.log('Navigating to next book...');
+                // TODO: Implement next book navigation
+                break;
+            case 'navigatePrev':
+                console.log('Navigating to previous book...');
+                // TODO: Implement previous book navigation
+                break;
+            case 'selectBook':
+                console.log('Selecting current book...');
+                // TODO: Implement book selection
+                break;
+            case 'addToWantRead':
+                console.log('Adding to Want to Read list...');
+                // TODO: Implement add to want read
+                break;
+            case 'markCurrentlyReading':
+                console.log('Marking as Currently Reading...');
+                // TODO: Implement mark as reading
+                break;
+            case 'addToFavorites':
+                console.log('Adding to Favorites...');
+                // TODO: Implement add to favorites
+                break;
+            case 'closeModal':
+                console.log('Closing modal...');
+                const modals = document.querySelectorAll('.modal, [role="dialog"]');
+                modals.forEach(modal => modal.style.display = 'none');
+                break;
+            case 'showHelpMenu':
+                console.log('Showing help menu...');
+                this.displayHelpMenu();
+                break;
+            case 'focusSearch':
+                console.log('Focusing search bar...');
+                const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
+                if (searchInput) searchInput.focus();
+                break;
+        }
+    },
+
+    // Display keyboard shortcuts help menu
+    displayHelpMenu() {
+        const helpContent = Object.entries(this.shortcuts)
+            .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
+            .join('<br/>');
+
+        alert('BiblioDrift Keyboard Shortcuts\n\n' +
+            Object.entries(this.shortcuts)
+                .map(([key, data]) => `${key}: ${data.description}`)
+                .join('\n'));
     }
-
-    const key = event.key;
-    const shortcut = this.shortcuts[key];
-
-    if (shortcut) {
-      event.preventDefault();
-      this.executeAction(shortcut.action);
-    }
-  },
-
-  // Execute action based on shortcut
-  executeAction(action) {
-    switch (action) {
-      case 'navigateNext':
-        console.log('Navigating to next book...');
-        // TODO: Implement next book navigation
-        break;
-      case 'navigatePrev':
-        console.log('Navigating to previous book...');
-        // TODO: Implement previous book navigation
-        break;
-      case 'selectBook':
-        console.log('Selecting current book...');
-        // TODO: Implement book selection
-        break;
-      case 'addToWantRead':
-        console.log('Adding to Want to Read list...');
-        // TODO: Implement add to want read
-        break;
-      case 'markCurrentlyReading':
-        console.log('Marking as Currently Reading...');
-        // TODO: Implement mark as reading
-        break;
-      case 'addToFavorites':
-        console.log('Adding to Favorites...');
-        // TODO: Implement add to favorites
-        break;
-      case 'closeModal':
-        console.log('Closing modal...');
-        const modals = document.querySelectorAll('.modal, [role="dialog"]');
-        modals.forEach(modal => modal.style.display = 'none');
-        break;
-      case 'showHelpMenu':
-        console.log('Showing help menu...');
-        this.displayHelpMenu();
-        break;
-      case 'focusSearch':
-        console.log('Focusing search bar...');
-        const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
-        if (searchInput) searchInput.focus();
-        break;
-    }
-  },
-
-  // Display keyboard shortcuts help menu
-  displayHelpMenu() {
-    const helpContent = Object.entries(this.shortcuts)
-      .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
-      .join('<br/>');
-    
-    alert('BiblioDrift Keyboard Shortcuts\n\n' + 
-          Object.entries(this.shortcuts)
-          .map(([key, data]) => `${key}: ${data.description}`)
-          .join('\n'));
-  }
 };
 
 // Initialize keyboard shortcuts when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
+    document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
 } else {
-  KeyboardShortcuts.init();
+    KeyboardShortcuts.init();
 }

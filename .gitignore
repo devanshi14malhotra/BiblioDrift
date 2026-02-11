@@ -12,3 +12,6 @@ mood_analysis/mood_cache.json
 # API keys and secrets
 *.key
 secrets/
+
+__pycache__/
+*.pyc
