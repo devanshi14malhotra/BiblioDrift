@@ -24,7 +24,20 @@ async function loadEnvConfig() {
     }
 }
 
-
+// Toast Notification Helper
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.innerHTML = `
+        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 const MOCK_BOOKS = [
     {
         id: "mock1",
@@ -72,7 +85,6 @@ const MOCK_BOOKS = [
         }
     }
 ];
-
 
 class BookRenderer {
     constructor(libraryManager = null) {
@@ -465,38 +477,38 @@ class BookRenderer {
         const container = document.getElementById(elementId);
         if (!container) return; // Not on page
 
-
         try {
             const apiKeyParam = API_KEY ? `&key=${API_KEY}` : '';
             const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books${apiKeyParam}`);
 
-            let items = [];
-            if (res.ok) {
-                const data = await res.json();
-                items = data.items || [];
+            if (!res.ok) {
+                throw new Error(`API Error: ${res.statusText}`);
+            }
+
+            const data = await res.json();
+
+            if (data.items && data.items.length > 0) {
+                container.innerHTML = '';
+                for (const book of data.items) {
+                    const bookElement = await this.createBookElement(book);
+                    container.appendChild(bookElement);
+                }
             } else {
-                console.warn(`API Error ${res.status}: Using mock data`);
-                items = MOCK_BOOKS;
-            }
-
-            // Fallback if items is empty (e.g. 429 quota or no results)
-            if (!items || items.length === 0) {
-                items = MOCK_BOOKS;
-            }
-
-            container.innerHTML = '';
-            for (const book of items) {
-                const bookElement = await this.createBookElement(book);
-                container.appendChild(bookElement);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-box-open"></i>
+                        <p>No books found. The shelves are empty.</p>
+                    </div>`;
             }
 
         } catch (err) {
-            console.error("Failed to fetch books, using mock data", err);
-            container.innerHTML = '';
-            for (const book of MOCK_BOOKS) {
-                const bookElement = await this.createBookElement(book);
-                container.appendChild(bookElement);
-            }
+            console.error("Failed to fetch books", err);
+            showToast("Failed to load bookshelf.", "error");
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>Bookshelf Empty (API connection failed)</p>
+                </div>`;
         }
     }
 }
@@ -598,17 +610,20 @@ class LibraryManager {
                     this.saveLocally();
                     // If we are on library page, trigger re-render
                     if (document.getElementById('shelf-want')) {
-                        // Prevent infinite reload loop by only reloading once per session
-                        const hasSyncedOnce = sessionStorage.getItem('bibliodrift_synced_once');
-                        if (!hasSyncedOnce) {
-                            sessionStorage.setItem('bibliodrift_synced_once', 'true');
-                            window.location.reload();
+                        const sortSelect = document.getElementById('sortLibrary');
+                        if (sortSelect) {
+                            this.sortLibrary(sortSelect.value);
+                        } else {
+                            this.renderShelf('want', 'shelf-want');
+                            this.renderShelf('current', 'shelf-current');
+                            this.renderShelf('finished', 'shelf-finished');
                         }
                     }
                 }
             }
         } catch (e) {
             console.error("Sync failed", e);
+            showToast("Sync failed. Using local library.", "error");
         }
     }
 
@@ -690,6 +705,7 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
+                showToast("Saved locally (Sync failed)", "info");
             }
         }
     }
@@ -730,6 +746,7 @@ class LibraryManager {
                     await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE' });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
+                    showToast("Removed locally (Backend sync failed)", "info");
                 }
             } else if (user) {
                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
@@ -762,8 +779,8 @@ class LibraryManager {
         const books = this.library[shelfName];
         if (books.length === 0) {
             // If we have no books, ensure empty state is visible (if we cleared it previously)
-             container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
-             return;
+            container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
+            return;
         }
 
         // Clear container for re-rendering (essential for sorting)
@@ -885,24 +902,34 @@ class GenreManager {
             const apiKeyParam = API_KEY ? `&key=${API_KEY}` : '';
             const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${apiKeyParam}`);
 
-            let items = [];
             if (response.ok) {
                 const data = await response.json();
-                items = data.items || [];
-            } else {
-                console.warn(`API Error ${response.status}: Using mock data`);
-                items = MOCK_BOOKS;
-            }
+                const items = data.items || [];
 
-            if (items && items.length > 0) {
-                this.renderBooks(items);
+                if (items.length > 0) {
+                    this.renderBooks(items);
+                } else {
+                    this.booksGrid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>Bookshelf Empty (No books found)</p>
+                        </div>`;
+                }
             } else {
-                // Fallback to mock if no items
-                this.renderBooks(MOCK_BOOKS);
+                console.warn(`API Error ${response.status}`);
+                this.booksGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p>Bookshelf Empty (API Error: ${response.status})</p>
+                    </div>`;
             }
         } catch (error) {
-            console.error('Error fetching genre books, using mock:', error);
-            this.renderBooks(MOCK_BOOKS);
+            console.error('Error fetching genre books:', error);
+            this.booksGrid.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-wifi"></i>
+                    <p>Bookshelf Empty (Connection Failed)</p>
+                </div>`;
         }
     }
 
@@ -946,14 +973,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const libManager = new LibraryManager();
     const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
+    const genreManager = new GenreManager();
+    genreManager.init();
     const exportBtn = document.getElementById("export-library");
 
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
         exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
     }
-
-
 
 
     // Search Handler
@@ -996,9 +1023,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
         renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
         renderer.renderCuratedSection('subject:classic+fiction', 'row-classics');
-        // Initialize Genre Manager
-        const genreManager = new GenreManager();
-        genreManager.init();
+        renderer.renderCuratedSection('subject:fiction', 'row-genre');
     }
 
 
@@ -1021,40 +1046,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
         });
+
+        const exportBtn = document.getElementById("export-library");
+        if (exportBtn) {
+            exportBtn.addEventListener("click", () => {
+                const library = localStorage.getItem("bibliodrift_library");
+                if (!library) {
+                    showToast("Library is empty!", "info");
+                    return;
+                }
+                const blob = new Blob([library], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                URL.revokeObjectURL(url);
+                showToast("Library exported successfully!", "success");
+            });
+        }
     }
 });
-
-// Export Library as JSON
-const exportBtn = document.getElementById("export-library");
-
-if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-        const library = localStorage.getItem("bibliodrift_library");
-        if (!library) {
-            alert("Your library is empty!");
-            return;
-        }
-
-        const blob = new Blob([library], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        URL.revokeObjectURL(url);
-        alert("Library exported successfully!");
-    });
-}
 
 function handleAuth(event) {
     event.preventDefault();
@@ -1153,102 +1176,101 @@ document.addEventListener("click", (e) => {
 // with BiblioDrift library and book management
 
 const KeyboardShortcuts = {
-  // Shortcut configuration mapping
-  shortcuts: {
-    'j': { action: 'navigateNext', description: 'Navigate to next book' },
-    'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
-    'Enter': { action: 'selectBook', description: 'Select/open current book' },
-    'a': { action: 'addToWantRead', description: 'Add to Want to Read' },
-    'r': { action: 'markCurrentlyReading', description: 'Mark as Currently Reading' },
-    'f': { action: 'addToFavorites', description: 'Add to Favorites' },
-    'Escape': { action: 'closeModal', description: 'Close popup/modal' },
-    '?': { action: 'showHelpMenu', description: 'Show keyboard shortcuts help' },
-    '/': { action: 'focusSearch', description: 'Focus search bar' }
-  },
+    // Shortcut configuration mapping
+    shortcuts: {
+        'j': { action: 'navigateNext', description: 'Navigate to next book' },
+        'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
+        'Enter': { action: 'selectBook', description: 'Select/open current book' },
+        'a': { action: 'addToWantRead', description: 'Add to Want to Read' },
+        'r': { action: 'markCurrentlyReading', description: 'Mark as Currently Reading' },
+        'f': { action: 'addToFavorites', description: 'Add to Favorites' },
+        'Escape': { action: 'closeModal', description: 'Close popup/modal' },
+        '?': { action: 'showHelpMenu', description: 'Show keyboard shortcuts help' },
+        '/': { action: 'focusSearch', description: 'Focus search bar' }
+    },
 
-  // Initialize keyboard event listener
-  init() {
-    document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-    console.log('Keyboard shortcuts module initialized');
-  },
+    // Initialize keyboard event listener
+    init() {
+        document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        console.log('Keyboard shortcuts module initialized');
+    },
 
-  // Handle keypress events
-  handleKeyPress(event) {
-    // Don't trigger shortcuts when typing in input fields
-    if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
-      return;
+    // Handle keypress events
+    handleKeyPress(event) {
+        // Don't trigger shortcuts when typing in input fields
+        if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
+            return;
+        }
+
+        const key = event.key;
+        const shortcut = this.shortcuts[key];
+
+        if (shortcut) {
+            event.preventDefault();
+            this.executeAction(shortcut.action);
+        }
+    },
+
+    // Execute action based on shortcut
+    executeAction(action) {
+        switch (action) {
+            case 'navigateNext':
+                console.log('Navigating to next book...');
+                // TODO: Implement next book navigation
+                break;
+            case 'navigatePrev':
+                console.log('Navigating to previous book...');
+                // TODO: Implement previous book navigation
+                break;
+            case 'selectBook':
+                console.log('Selecting current book...');
+                // TODO: Implement book selection
+                break;
+            case 'addToWantRead':
+                console.log('Adding to Want to Read list...');
+                // TODO: Implement add to want read
+                break;
+            case 'markCurrentlyReading':
+                console.log('Marking as Currently Reading...');
+                // TODO: Implement mark as reading
+                break;
+            case 'addToFavorites':
+                console.log('Adding to Favorites...');
+                // TODO: Implement add to favorites
+                break;
+            case 'closeModal':
+                console.log('Closing modal...');
+                const modals = document.querySelectorAll('.modal, [role="dialog"]');
+                modals.forEach(modal => modal.style.display = 'none');
+                break;
+            case 'showHelpMenu':
+                console.log('Showing help menu...');
+                this.displayHelpMenu();
+                break;
+            case 'focusSearch':
+                console.log('Focusing search bar...');
+                const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
+                if (searchInput) searchInput.focus();
+                break;
+        }
+    },
+
+    // Display keyboard shortcuts help menu
+    displayHelpMenu() {
+        const helpContent = Object.entries(this.shortcuts)
+            .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
+            .join('<br/>');
+
+        alert('BiblioDrift Keyboard Shortcuts\n\n' +
+            Object.entries(this.shortcuts)
+                .map(([key, data]) => `${key}: ${data.description}`)
+                .join('\n'));
     }
-
-    const key = event.key;
-    const shortcut = this.shortcuts[key];
-
-    if (shortcut) {
-      event.preventDefault();
-      this.executeAction(shortcut.action);
-    }
-  },
-
-  // Execute action based on shortcut
-  executeAction(action) {
-    switch (action) {
-      case 'navigateNext':
-        console.log('Navigating to next book...');
-        // TODO: Implement next book navigation
-        break;
-      case 'navigatePrev':
-        console.log('Navigating to previous book...');
-        // TODO: Implement previous book navigation
-        break;
-      case 'selectBook':
-        console.log('Selecting current book...');
-        // TODO: Implement book selection
-        break;
-      case 'addToWantRead':
-        console.log('Adding to Want to Read list...');
-        // TODO: Implement add to want read
-        break;
-      case 'markCurrentlyReading':
-        console.log('Marking as Currently Reading...');
-        // TODO: Implement mark as reading
-        break;
-      case 'addToFavorites':
-        console.log('Adding to Favorites...');
-        // TODO: Implement add to favorites
-        break;
-      case 'closeModal':
-        console.log('Closing modal...');
-        const modals = document.querySelectorAll('.modal, [role="dialog"]');
-        modals.forEach(modal => modal.style.display = 'none');
-        break;
-      case 'showHelpMenu':
-        console.log('Showing help menu...');
-        this.displayHelpMenu();
-        break;
-      case 'focusSearch':
-        console.log('Focusing search bar...');
-        const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
-        if (searchInput) searchInput.focus();
-        break;
-    }
-  },
-
-  // Display keyboard shortcuts help menu
-  displayHelpMenu() {
-    const helpContent = Object.entries(this.shortcuts)
-      .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
-      .join('<br/>');
-    
-    alert('BiblioDrift Keyboard Shortcuts\n\n' + 
-          Object.entries(this.shortcuts)
-          .map(([key, data]) => `${key}: ${data.description}`)
-          .join('\n'));
-  }
 };
 
 // Initialize keyboard shortcuts when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
+    document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
 } else {
-  KeyboardShortcuts.init();
+    KeyboardShortcuts.init();
 }
-
