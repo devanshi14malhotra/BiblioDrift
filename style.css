@@ -166,48 +166,48 @@ header {
 
 /* === ANIMATED HOVER TOOLTIPS FOR NAVIGATION (NEW) === */
 .tooltip {
-  position: relative;
-  display: inline-block;
+    position: relative;
+    display: inline-block;
 }
 
 .tooltip-text {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%) scale(0.95) translateY(6px);
-  padding: 10px 14px;
-  background: #fffaf3;
-  color: #2b2b2b;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  border: 1px solid rgba(0,0,0,0.08);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: all 0.25s ease;
-  z-index: 9999;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%) scale(0.95) translateY(6px);
+    padding: 10px 14px;
+    background: #fffaf3;
+    color: #2b2b2b;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 9999;
 }
 
 .tooltip-text::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 12px;
-  height: 12px;
-  background: #fffaf3;
-  border-left: 1px solid rgba(0,0,0,0.08);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: #fffaf3;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tooltip:hover .tooltip-text {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-40%) scale(1) translateY(0);
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-40%) scale(1) translateY(0);
 }
 
 .tooltip-text i {
@@ -2666,6 +2666,7 @@ main {
     }
 }
 
+/* --- Merge Conflict Resolution: Added styles from feat/issue-21-api-errors --- */
 /* Empty State and Error Handling */
 .empty-state {
     display: flex;
@@ -2682,7 +2683,7 @@ main {
 .empty-state i {
     font-size: 2.5rem;
     margin-bottom: 1rem;
-    color: var(--accent-color, #d4af37);
+    color: var(--accent-gold, #d4af37);
     opacity: 0.7;
 }
 
@@ -2697,30 +2698,46 @@ main {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: var(--surface-color, #fff);
-    color: var(--text-color, #333);
+    background: var(--header-bg, #fff);
+    color: var(--text-main, #333);
     padding: 1rem 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     font-family: 'Georgia', serif;
-    border-left: 4px solid var(--accent-color, #d4af37);
-    animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 10px;
+    border-left: 4px solid var(--accent-gold);
+    animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
 }
 
 .toast-notification.error {
     border-left-color: #d32f2f;
 }
 
+.toast-notification.info {
+    border-left-color: var(--accent-gold);
+}
+
 @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }

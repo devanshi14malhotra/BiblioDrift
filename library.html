@@ -40,10 +40,25 @@
     <h1>My Virtual Library</h1>
     <p>A quiet sanctuary for your stories.</p>
 
-    <!-- Export button added here -->
     <button id="export-library" class="btn-icon" style="position: absolute; top: 45; right: 0;" title="Export Library">
         <i class="fa-solid fa-download"></i> Export Library
     </button>
+    <div class="sort-controls" style="position: absolute; top: 45px; right: 180px;">
+        <i class="fa-solid fa-filter"></i>
+        <select id="library-filter" class="sort-select" style="margin-right: 1rem;">
+            <option value="all">All Shelves</option>
+            <option value="current">Currently Immersed</option>
+            <option value="want">Anticipated Journeys</option>
+            <option value="finished">Finished Books</option>
+        </select>
+        <i class="fa-solid fa-arrow-down-short-wide"></i>
+        <select id="library-sort" class="sort-select">
+            <option value="title">Sort by Title</option>
+            <option value="author">Sort by Author</option>
+            <option value="rating">Sort by Rating</option>
+            <option value="pages">Sort by Pages</option>
+        </select>
+    </div>
 </section>
 
 
