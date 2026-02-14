@@ -25,6 +25,43 @@ BiblioDrift is a cozy, visual-first book discovery platform designed to make fin
 - **Backend (Planned)**: Python Flask
 - **AI (Planned)**: LLM integration for "Bookseller Notes"
 
+## 🤖 Project Structure 
+```
+BIBLIODRIFT/
+├── __pycache__/          # Python cache files
+├── assets/               # Images, icons, and static UI assets
+├── instance/             # App instance / runtime files
+├── mood_analysis/        # Mood & emotion analysis logic
+├── purchase_links/       # Book purchase / external links logic
+├── script/               # Utility or helper scripts
+├── venv/                 # Python virtual environment
+│
+├── .env.example          # Environment variables template
+├── .gitignore
+│
+├── ai_service.py         # AI-powered recommendation / analysis service
+├── app.py                # Main backend application entry point
+├── models.py             # Database / data models
+├── requirements.txt      # Python dependencies
+│
+├── app.js                # Frontend JavaScript logic
+├── chat.js               # Chat interaction logic
+├── library-3d.js         # 3D library visualization logic
+│
+├── index.html            # Landing / discovery page
+├── auth.html             # Authentication (Sign In / Sign Up)
+├── chat.html             # Chat interface
+├── library.html          # User’s virtual library page
+│
+├── style.css             # Main stylesheet
+├── style-original.backup # Backup of original styles
+│
+├── CONTRIBUTING.md       # Contribution guidelines
+├── LICENSE
+├── README.md             # Project documentation
+├── TUTORIAL.md           # Setup / usage tutorial
+└── page.png              # Preview / UI reference image
+```
 ## 🤖 AI Recommendation Policy
 
 BiblioDrift follows a **strict AI-only recommendation model**.
@@ -51,6 +88,18 @@ This ensures discovery stays organic, scalable, and aligned with BiblioDrift’s
 
 ### Backend (Future)
 Planned implementation using Python Flask.
+
+##  Screenshots
+
+### Home Page
+<img width="1912" height="921" alt="Screenshot 2026-02-09 212125" src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" />
+
+### Virtual Library
+<img width="1912" height="922" alt="Screenshot 2026-02-09 212207" src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" />
+
+### Sign In Page
+<img width="1917" height="916" alt="Screenshot 2026-02-09 212225" src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" />
+
 
 ## 🧠 AI Service Integration
 To keep the frontend and backend synced, use the following mapping:
