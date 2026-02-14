@@ -135,12 +135,25 @@
                     <i class="fa-solid fa-times"></i>
                 </button>
                 <div class="book-detail-grid">
-                    <div class="book-cover-section">
-                        <div class="book-cover-3d">
-                            <img class="book-cover-image" id="modal-cover" src="" alt="Book cover">
-                            <div class="book-cover-spine"></div>
+                    <div class="book-visuals-section">
+                        <div class="book-cover-wrapper">
+                            <span class="view-label">Front</span>
+                            <div class="book-cover-3d">
+                                <img class="book-cover-image" id="modal-cover" src="" alt="Book cover">
+                                <div class="book-cover-spine"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="book-back-wrapper">
+                             <span class="view-label">Back</span>
+                             <div class="book-back-cover" id="modal-back-cover">
+                                <div class="book-back-content">
+                                    <p class="book-description-text" id="modal-description"></p>
+                                </div>
+                             </div>
                         </div>
                     </div>
+
                     <div class="book-info-section">
                         <h1 class="book-title-large" id="modal-title"></h1>
                         <p class="book-author-large" id="modal-author"></p>
@@ -156,11 +169,8 @@
                             </div>
                         </div>
 
-                        <div class="book-description-section">
-                            <h3>About this book</h3>
-                            <p class="book-description-text" id="modal-description"></p>
-                        </div>
-
+                        <!-- Description moved provided in Back Cover view -->
+                        
                         <div class="book-reviews-section">
                             <h3>Reader Reviews</h3>
                             <div id="modal-reviews">

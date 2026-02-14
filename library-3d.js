@@ -470,12 +470,27 @@ class BookshelfRenderer3D {
 
         // Populate modal content
         document.getElementById('modal-cover').src = book.cover;
+        
+        // Update Back Cover Styles
+        const backCover = document.getElementById('modal-back-cover');
+        if (backCover) {
+            backCover.style.backgroundColor = book.spineColor || '#5d4037';
+            // Add subtle texture overlay if not present via CSS already
+        }
+        
+        // Update Description Text Color
+        const descriptionText = document.getElementById('modal-description');
+        if (descriptionText) {
+            descriptionText.textContent = book.description;
+            if (book.textColor) {
+                descriptionText.style.color = book.textColor;
+                // Also update header if we add one inside back cover
+            } else {
+                 descriptionText.style.color = 'rgba(255,255,255,0.9)';
+            }
+        }
+
         document.getElementById('modal-title').textContent = book.title;
-        document.getElementById('modal-author').textContent = `by ${book.author}`;
-        document.getElementById('modal-stars').textContent = this.getStarRating(book.rating);
-        document.getElementById('modal-rating-score').textContent = book.rating.toFixed(1);
-        document.getElementById('modal-rating-count').textContent = `(${book.ratingCount.toLocaleString()} ratings)`;
-        document.getElementById('modal-description').textContent = book.description;
 
         // Categories
         const categoriesContainer = document.getElementById('modal-categories');
@@ -507,7 +522,16 @@ class BookshelfRenderer3D {
 
     setupModalHandlers() {
         // Close button
-        document.getElementById('modal-close-btn').addEventListener('click', () => this.closeModal());
+        const closeBtn = document.getElementById('modal-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeModal();
+            });
+        } else {
+            console.warn('Modal close button not found');
+        }
 
         // Click outside to close
         this.modal.addEventListener('click', (e) => {

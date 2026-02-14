@@ -2344,32 +2344,100 @@ main {
 
 .book-detail-grid {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 3rem;
-    padding: 2.5rem;
+    padding: 3rem;
+    align-items: start;
 }
 
-.book-cover-section {
-    position: relative;
+.book-visuals-section {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    perspective: 1200px;
+    padding-top: 1rem;
+}
+
+.book-cover-wrapper, .book-back-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.view-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    font-weight: 600;
+    opacity: 0.7;
 }
 
 .book-cover-3d {
     position: relative;
     transform-style: preserve-3d;
-    transform: perspective(800px) rotateY(-15deg);
+    transform: rotateY(-15deg);
     transition: transform 0.5s ease;
+    width: 200px;
+    /* Ensure height matches aspect ratio roughly */
 }
 
 .book-cover-3d:hover {
-    transform: perspective(800px) rotateY(-5deg);
+    transform: rotateY(-5deg) scale(1.02);
+    z-index: 5;
 }
 
+.book-back-cover {
+    width: 200px;
+    min-height: 300px; /* Match typical cover height */
+    height: 100%; /* Stretch to align if needed */
+    background-color: var(--wood-dark);
+    border-radius: 2px 6px 6px 2px;
+    box-shadow:
+        10px 10px 30px rgba(0, 0, 0, 0.3),
+        2px 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    overflow-y: auto;
+    position: relative;
+    transform: rotateY(15deg); 
+    transition: transform 0.5s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-back-cover:hover {
+    transform: rotateY(5deg) scale(1.02);
+    z-index: 5;
+}
+
+.book-back-content {
+    color: rgba(255, 255, 255, 0.9); 
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: 'Georgia', serif;
+    height: 100%;
+}
+
+/* Scrollbar for back cover text */
+.book-back-cover::-webkit-scrollbar {
+    width: 4px;
+}
+.book-back-cover::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+}
+.book-back-cover::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+}
+
+/* Ensure images fit the fixed width */
 .book-cover-image {
     width: 100%;
     height: auto;
-    border-radius: 8px;
+    display: block;
+    border-radius: 2px 6px 6px 2px;
     box-shadow:
-        15px 15px 40px rgba(0, 0, 0, 0.3),
         5px 5px 15px rgba(0, 0, 0, 0.2);
 }
 
@@ -2580,13 +2648,18 @@ main {
         gap: 2rem;
     }
 
-    .book-cover-section {
-        max-width: 250px;
+    .book-visuals-section {
+        max-width: 100%;
         margin: 0 auto;
+        /* Allow wrapping on very small screens */
+        flex-wrap: wrap; 
     }
 
     .book-cover-3d {
-        transform: perspective(800px) rotateY(0);
+        transform: rotateY(0);
+    }
+    .book-back-cover {
+        transform: rotateY(0);
     }
 
     .book-title-large {
