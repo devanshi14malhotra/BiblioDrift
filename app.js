@@ -1,26 +1,24 @@
 /**
- * BiblioDrift Core Logic with GoodReads Mood Analysis
- * Handles 3D rendering, API fetching, mood analysis, and LocalStorage management.
+ * BiblioDrift Core Logic
+ * Handles 3D rendering, API fetching, Persistent Auth, and Genre Browsing.
  */
 
-
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
+const API_KEY = 'YOUR_GOOGLE_BOOKS_API_KEY';
 const MOOD_API_BASE = 'http://localhost:5000/api/v1';
 
-let API_KEY = '';
+let GOOGLE_API_KEY = '';
 
-async function loadEnvConfig() {
+async function loadConfig() {
     try {
         const res = await fetch(`${MOOD_API_BASE}/config`);
         if (res.ok) {
             const data = await res.json();
-            API_KEY = data.google_books_key || '';
-            if (API_KEY) {
-                console.log('Google Books API Key loaded securely.');
-            }
+            GOOGLE_API_KEY = data.google_books_key || '';
+            console.log("Config loaded");
         }
-    } catch (err) {
-        console.warn('Failed to load secure config:', err);
+    } catch (e) {
+        console.warn("Failed to load backend config", e);
     }
 }
 
@@ -40,56 +38,74 @@ function showToast(message, type = 'info') {
 }
 const MOCK_BOOKS = [
     {
-        id: "mock1",
+        id: "mock-dune",
         volumeInfo: {
-            title: "The Midnight Library",
-            authors: ["Matt Haig"],
-            description: "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4OVQAQAAMAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "Dune",
+            authors: ["Frank Herbert"],
+            description: "A sweeping science fiction epic set on the desert planet Arrakis. Dune explores complex themes of politics, religion, and man's relationship with nature. Paul Atreides must navigate a treacherous path to becoming the mysterious Muad'Dib.",
+            imageLinks: { thumbnail: "assets/images/dune.jpg" }
         }
     },
     {
-        id: "mock2",
+        id: "mock-1984",
         volumeInfo: {
-            title: "The Night Circus",
-            authors: ["Erin Morgenstern"],
-            description: "The circus arrives without warning. No announcements precede it. It is simply there, when yesterday it was not.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=4nEOXAOMwDAC&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "1984",
+            authors: ["George Orwell"],
+            description: "Orwell's chilling prophecy of a totalitarian future where Big Brother is always watching. A profound exploration of surveillance, truth, and the resilience of the human spirit.",
+            imageLinks: { thumbnail: "assets/images/1984.jpg" }
         }
     },
     {
-        id: "mock3",
+        id: "mock-hobbit",
         volumeInfo: {
-            title: "Piranesi",
-            authors: ["Susanna Clarke"],
-            description: "Piranesi's house is no ordinary building: its rooms are infinite, its corridors endless, its walls are lined with thousands upon thousands of statues.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=h3fdDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "The Hobbit",
+            authors: ["J.R.R. Tolkien"],
+            description: "In a hole in the ground there lived a hobbit. Join Bilbo Baggins on an unexpected journey across Middle-earth, encountering dragons, dwarves, and a rigorous test of courage.",
+            imageLinks: { thumbnail: "assets/images/hobbit.jpg" }
         }
     },
     {
-        id: "mock4",
+        id: "mock-pride",
         volumeInfo: {
-            title: "The Starless Sea",
-            authors: ["Erin Morgenstern"],
-            description: "Zachary Ezra Rawlins is a graduate student in Vermont when he discovers a mysterious book hidden in the stacks.",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=1aWPDwAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "Pride and Prejudice",
+            authors: ["Jane Austen"],
+            description: "A timeless romance of manners and misunderstanding. Elizabeth Bennet's wit matches Mr. Darcy's pride in this sharp social commentary that remains one of the most loved novels in English literature.",
+            imageLinks: { thumbnail: "assets/images/pride.jpg" }
         }
     },
     {
-        id: "mock5",
+        id: "mock-gatsby",
         volumeInfo: {
-            title: "Kafka on the Shore",
-            authors: ["Haruki Murakami"],
-            description: "Kafka on the Shore is powered by two remarkable characters: a teenage boy, Kafka Tamura, who runs away from home...",
-            imageLinks: { thumbnail: "https://books.google.com/books/content?id=d_wPAQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api" }
+            title: "The Great Gatsby",
+            authors: ["F. Scott Fitzgerald"],
+            description: "The quintessential novel of the Jazz Age. Jay Gatsby's obsessive love for Daisy Buchanan drives a tragic tale of wealth, illusion, and the American Dream.",
+            imageLinks: { thumbnail: "assets/images/gatsby.jpg" }
+        }
+    },
+    {
+        id: "mock-sapiens",
+        volumeInfo: {
+            title: "Sapiens",
+            authors: ["Yuval Noah Harari"],
+            description: "A groundbreaking narrative of humanity's creation and evolution. Harari explores the ways in which biology and history have defined us and enhanced our understanding of what it means to be 'human'.",
+            imageLinks: { thumbnail: "assets/images/sapiens.jpg" }
+        }
+    },
+    {
+        id: "mock-hail-mary",
+        volumeInfo: {
+            title: "Project Hail Mary",
+            authors: ["Andy Weir"],
+            description: "A lone astronaut must save the earth from disaster in this gripping tale of survival and scientific discovery. Full of humor and hard science, it is a celebration of human ingenuity.",
+            imageLinks: { thumbnail: "assets/images/hail_mary.jpg" }
         }
     }
 ];
 
+
 class BookRenderer {
     constructor(libraryManager = null) {
         this.libraryManager = libraryManager;
-        // this.moodAnalyzer = new MoodAnalyzer();
     }
 
     async createBookElement(bookData, shelf = null) {
@@ -100,64 +116,30 @@ class BookRenderer {
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
         const description = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
 
-
-        // Try to get mood analysis for this book
-        let vibe = this.generateVibe(description);
-        let moodTags = [];
-
-
-        // Randomize spine color slightly for variety
+        const vibe = this.generateVibe(description);
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
 
-
-        // Create Container
         const scene = document.createElement('div');
         scene.className = 'book-scene';
 
-
-        // Generate mood tags HTML
-        const moodTagsHTML = moodTags.length > 0
-            ? `<div class="mood-tags">${moodTags.slice(0, 2).map(tag => `<span class="mood-tag mood-${tag.mood}">${tag.mood}</span>`).join('')}</div>`
-            : '';
-
-
-        // Structure
         scene.innerHTML = `
             <div class="book" data-id="${id}">
                 <div class="book__face book__face--front">
                     <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
-                    ${moodTagsHTML}
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book_face--right"></div>
                 <div class="book__face book__face--back">
                     <div>
                         <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem;">${title}</div>
-                        <div class="handwritten-note">
-                            Bookseller's Note: "${vibe}"
-                        </div>
-                        ${moodTags.length > 0 ? `
-                        <div class="mood-analysis">
-                            <small>Mood Analysis:</small>
-                            <div class="mood-tags-back">
-                                ${moodTags.slice(0, 3).map(tag => `<span class="mood-tag-small">${tag.mood}</span>`).join('')}
-                            </div>
-                        </div>` : ''}
+                        <div class="handwritten-note">Bookseller's Note: "${vibe}"</div>
                     </div>
                     ${shelf === 'current' ? `
-                <div class="reading-progress">
-                        <input 
-                        type="range" 
-                        min="0" 
-                        max="100" 
-                        value="${progress}" 
-                        class="progress-slider"
-                    />
-                <small>${progress}% read</small>
-                </div>
-                ` : ''}
-
+                    <div class="reading-progress">
+                        <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
+                        <small>${progress}% read</small>
+                    </div>` : ''}
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
@@ -166,89 +148,37 @@ class BookRenderer {
                 </div>
             </div>
             <div class="glass-overlay">
-                <strong>${title}</strong><br>
-                <small>${authors}</small>
-                ${moodTags.length > 0 ? `<div class="glass-mood-tags">${moodTags.slice(0, 2).map(tag => `<span class="glass-mood-tag">${tag.mood}</span>`).join('')}</div>` : ''}
+                <strong>${title}</strong><br><small>${authors}</small>
             </div>
         `;
-
-        // Store reference for mood analysis
-        const bookScene = scene.querySelector('.book-scene');
-        if (bookScene) bookScene.bookRenderer = this;
-
-        // Progress slider logic
-        const slider = scene.querySelector('.progress-slider');
-        if (slider) {
-            slider.addEventListener('input', (e) => {
-                const value = parseInt(e.target.value, 10);
-                const lib = JSON.parse(localStorage.getItem('bibliodrift_library'));
-
-                for (const shelfKey in lib) {
-                    const book = lib[shelfKey].find(b => b.id === id);
-                    if (book) {
-                        book.progress = value;
-                        break;
-                    }
-                }
-                this.libraryManager.library = lib;
-
-                localStorage.setItem('bibliodrift_library', JSON.stringify(lib));
-
-                const label = slider.nextElementSibling;
-                if (label) label.textContent = `${value}% read`;
-            });
-        }
 
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
-            if (
-                !e.target.closest('.btn-icon') &&
-                !e.target.closest('.reading-progress')
-            ) {
+            if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
                 bookEl.classList.toggle('flipped');
             }
         });
 
-
-        // Interaction: Add to Library (Toggle)
+        // Interaction: Add to Library Logic
         const addBtn = scene.querySelector('.add-btn');
-        const updateButtonState = () => {
-            if (this.libraryManager.findBook(bookData.id)) {
-                addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
-            } else {
-                addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
-            }
+        const updateBtn = () => {
+            addBtn.innerHTML = this.libraryManager.findBook(id) ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-regular fa-heart"></i>';
         };
+        updateBtn();
 
         addBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (this.libraryManager.findBook(bookData.id)) {
-                // Book is in library - remove it
-                this.libraryManager.removeBook(bookData.id);
-                addBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
-
-                // If currently on a shelf (Library Page), remove the book element visually
-                // Check if the parent container is a shelf
-                const parentShelf = scene.closest('.shelf-row, .library-shelf, [id^="shelf-"]');
-                if (parentShelf) {
-                    scene.style.opacity = '0';
-                    scene.style.transform = 'scale(0.8)';
-                    setTimeout(() => scene.remove(), 300); // Wait for transition
-                }
+            if (this.libraryManager.findBook(id)) {
+                this.libraryManager.removeBook(id);
             } else {
-                // Book not in library - add it
-                this.libraryManager.addBook(bookData, 'current');
-                addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                this.libraryManager.addBook(bookData, shelf || 'want');
             }
+            updateBtn();
         });
 
-        // Set initial button state
-        updateButtonState();
-
-        // Interaction: Open Details Modal
-        const infoBtn = scene.querySelector('.info-btn');
-        infoBtn.addEventListener('click', (e) => {
+        // Info Button
+        scene.querySelector('.info-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
         });
@@ -256,230 +186,30 @@ class BookRenderer {
         return scene;
     }
 
-
-    async showMoodAnalysis(title, author) {
-        try {
-            const moodData = await this.moodAnalyzer.analyzeMood(title, author);
-            if (moodData && moodData.success) {
-                this.displayMoodModal(title, moodData.mood_analysis);
-            } else {
-                alert('Mood analysis not available for this book.');
-            }
-        } catch (error) {
-            console.error('Error showing mood analysis:', error);
-            alert('Error loading mood analysis.');
-        }
-    }
-
-
-    displayMoodModal(title, moodAnalysis) {
-        const modal = document.createElement('div');
-        modal.className = 'mood-modal';
-
-        // Create modal content safely using DOM methods
-        const content = document.createElement('div');
-        content.className = 'mood-modal-content';
-
-        // Header
-        const header = document.createElement('div');
-        header.className = 'mood-modal-header';
-
-        const headerTitle = document.createElement('h3');
-        headerTitle.textContent = `Mood Analysis: ${title}`;
-
-        const closeButton = document.createElement('button');
-        closeButton.className = 'close-modal';
-        closeButton.textContent = '×';
-
-        header.appendChild(headerTitle);
-        header.appendChild(closeButton);
-
-        // Body
-        const body = document.createElement('div');
-        body.className = 'mood-modal-body';
-
-        // Overall Sentiment section
-        const overallSection = document.createElement('div');
-        overallSection.className = 'mood-section';
-
-        const overallHeading = document.createElement('h4');
-        overallHeading.textContent = 'Overall Sentiment';
-
-        const sentimentBar = document.createElement('div');
-        sentimentBar.className = 'sentiment-bar';
-
-        const sentimentFill = document.createElement('div');
-        sentimentFill.className = 'sentiment-fill';
-        const compoundScore = moodAnalysis.overall_sentiment?.compound_score || 0;
-        sentimentFill.style.width = `${(compoundScore + 1) * 50}%`;
-
-        sentimentBar.appendChild(sentimentFill);
-
-        const moodDescription = document.createElement('p');
-        moodDescription.textContent = moodAnalysis.mood_description || '';
-
-        overallSection.appendChild(overallHeading);
-        overallSection.appendChild(sentimentBar);
-        overallSection.appendChild(moodDescription);
-
-        // Primary Moods section
-        const primarySection = document.createElement('div');
-        primarySection.className = 'mood-section';
-
-        const primaryHeading = document.createElement('h4');
-        primaryHeading.textContent = 'Primary Moods';
-
-        const moodTagsContainer = document.createElement('div');
-        moodTagsContainer.className = 'mood-tags-large';
-
-        const primaryMoods = Array.isArray(moodAnalysis.primary_moods) ? moodAnalysis.primary_moods : [];
-        primaryMoods.forEach(mood => {
-            const span = document.createElement('span');
-            const moodName = String(mood.mood || '');
-            span.className = `mood-tag-large mood-${moodName}`;
-            span.textContent = `${moodName} (${mood.confidence || mood.frequency || 0})`;
-            moodTagsContainer.appendChild(span);
-        });
-
-        primarySection.appendChild(primaryHeading);
-        primarySection.appendChild(moodTagsContainer);
-
-        // BiblioDrift Vibe section
-        const vibeSection = document.createElement('div');
-        vibeSection.className = 'mood-section';
-
-        const vibeHeading = document.createElement('h4');
-        vibeHeading.textContent = 'BiblioDrift Vibe';
-
-        const vibeQuote = document.createElement('div');
-        vibeQuote.className = 'vibe-quote';
-        vibeQuote.textContent = `"${moodAnalysis.bibliodrift_vibe || ''}"`;
-
-        vibeSection.appendChild(vibeHeading);
-        vibeSection.appendChild(vibeQuote);
-
-        // Reviews analyzed section
-        const reviewsSection = document.createElement('div');
-        reviewsSection.className = 'mood-section';
-
-        const reviewsInfo = document.createElement('small');
-        reviewsInfo.textContent = `Based on ${moodAnalysis.total_reviews_analyzed || 0} GoodReads reviews`;
-
-        reviewsSection.appendChild(reviewsInfo);
-
-        // Assemble everything
-        body.appendChild(overallSection);
-        body.appendChild(primarySection);
-        body.appendChild(vibeSection);
-        body.appendChild(reviewsSection);
-
-        content.appendChild(header);
-        content.appendChild(body);
-        modal.appendChild(content);
-
-
-        document.body.appendChild(modal);
-
-
-        // Close modal functionality
-        closeButton.addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
-    }
-
-
     generateVibe(text) {
-        // Simple heuristic to mock "AI" vibes (fallback)
-        const vibes = [
-            "Perfect for a rainy afternoon.",
-            "Smells like old paper and adventure.",
-            "A quiet companion for coffee.",
-            "Heartwarming and gentle.",
-            "Will make you travel without moving."
-        ];
+        const vibes = ["Perfect for a rainy afternoon.", "A quiet companion for coffee.", "Heartwarming and gentle.", "Intense and thought-provoking."];
         return vibes[Math.floor(Math.random() * vibes.length)];
-    }
-
-    generateMockAISummary(book) {
-        const title = book.volumeInfo.title;
-        const genres = book.volumeInfo.categories || ["General Fiction"];
-        const mainGenre = genres[0];
-
-        // Templates for "AI" generation
-        const templates = [
-            `This story explores the nuances of human connection through the lens of ${mainGenre}. Readers often find themselves reflecting on their own journeys after finishing "${title}".Expect a narrative that is both grounding and transcendent.`,
-            `A defining work in ${mainGenre} that asks difficult questions without providing easy answers. "${title}" is best enjoyed in a single sitting, preferably with a hot beverage. The pacing is deliberate, allowing the atmosphere to settle around you.`,
-            `If you appreciate lyrical prose and character-driven plots, this is a must-read. The themes of "${title}" resonate long after the final page is turned. A beautiful examination of what it means to be alive.`,
-            `An intellectual puzzle wrapped in an emotional narrative. "${title}" challenges conventions of ${mainGenre} while paying homage to its roots. Prepare for a twist that recontextualizes the entire opening chapter.`
-        ];
-
-        return templates[Math.floor(Math.random() * templates.length)];
     }
 
     openModal(book) {
         const modal = document.getElementById('book-details-modal');
-        const img = document.getElementById('modal-img');
-        const title = document.getElementById('modal-title');
-        const author = document.getElementById('modal-author');
-        const summary = document.getElementById('modal-summary');
-        const addBtn = document.getElementById('modal-add-btn');
-        const closeBtn = document.getElementById('closeModalBtn');
-
         if (!modal) return;
 
-        // Populate Data
-        const volume = book.volumeInfo;
-        title.textContent = volume.title;
-        author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
-        img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
+        document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
+        document.getElementById('modal-title').textContent = book.volumeInfo.title;
+        document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
+        document.getElementById('modal-summary').textContent = book.volumeInfo.description || "No description available.";
 
-        // Mock AI Generation Effect
-        summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
-
-        setTimeout(() => {
-            summary.textContent = this.generateMockAISummary(book);
-        }, 800);
-
-        // Handle Add Button inside Modal
-        // Clone to remove old listeners
-        const newAddBtn = addBtn.cloneNode(true);
-        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-
-        newAddBtn.addEventListener('click', () => {
-            this.libraryManager.addBook(book, 'want');
-            newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added';
-            setTimeout(() => newAddBtn.innerHTML = '<i class="fa-regular fa-heart"></i> Add to Library', 2000);
-        });
-
-        // Show Modal
         modal.showModal();
-
-        // Close Handlers
-        const closeHandler = () => modal.close();
-        closeBtn.onclick = closeHandler;
-
-        // Close on backdrop click
-        modal.onclick = (e) => {
-            if (e.target === modal) modal.close();
-        };
+        document.getElementById('closeModalBtn').onclick = () => modal.close();
     }
-
-
 
     async renderCuratedSection(query, elementId) {
         const container = document.getElementById(elementId);
-        if (!container) return; // Not on page
-
+        if (!container) return;
         try {
-            const apiKeyParam = API_KEY ? `&key=${API_KEY}` : '';
-            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books${apiKeyParam}`);
+            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books${keyParam}`);
 
             if (!res.ok) {
                 throw new Error(`API Error: ${res.statusText}`);
@@ -500,7 +230,6 @@ class BookRenderer {
                         <p>No books found. The shelves are empty.</p>
                     </div>`;
             }
-
         } catch (err) {
             console.error("Failed to fetch books", err);
             showToast("Failed to load bookshelf.", "error");
@@ -512,44 +241,6 @@ class BookRenderer {
         }
     }
 }
-
-
-class MoodAnalyzer {
-    async getBookMood(title, author) {
-        try {
-            const response = await fetch(`${MOOD_API_BASE}/mood-tags`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ title, author })
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching mood tags:', error);
-            return null;
-        }
-    }
-
-
-    async analyzeMood(title, author) {
-        try {
-            const response = await fetch(`${MOOD_API_BASE}/analyze-mood`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ title, author })
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Error analyzing mood:', error);
-            return null;
-        }
-    }
-}
-
-
 
 class LibraryManager {
     constructor() {
@@ -579,45 +270,74 @@ class LibraryManager {
             const res = await fetch(`${this.apiBase}/library/${user.id}`);
             if (res.ok) {
                 const data = await res.json();
-                // Merge backend data into local structures for rendering
-                // Note: To be robust, this should handle duplicates, but for MVP we'll just parse
-                // the backend items into shelves
-                const backendLibrary = { current: [], want: [], finished: [] };
 
+                // Merge Strategy:
+                // 1. Create a map of existing local books for quick lookup
+                const localBooksMap = new Map();
+                ['current', 'want', 'finished'].forEach(shelf => {
+                    this.library[shelf].forEach(book => {
+                        localBooksMap.set(book.id, { book, shelf });
+                    });
+                });
+
+                // 2. Process backend books
                 data.library.forEach(item => {
-                    // Reconstruct book object structure expected by renderer
-                    const book = {
+                    const existing = localBooksMap.get(item.google_books_id);
+
+                    // Construct standard book object
+                    const remoteBook = {
                         id: item.google_books_id,
-                        db_id: item.id, // Database ID for updates/deletes
+                        db_id: item.id,
                         volumeInfo: {
                             title: item.title,
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
+                        // Preserve local progress if exists, else default
+                        progress: existing ? existing.book.progress : (item.shelf_type === 'current' ? 0 : null),
                         date_added: item.created_at || new Date().toISOString()
-                        // Default progress if not stored in DB yet, or add column later
                     };
 
-                    if (backendLibrary[item.shelf_type]) {
-                        backendLibrary[item.shelf_type].push(book);
+                    if (existing) {
+                        // Check if shelf matches
+                        if (existing.shelf !== item.shelf_type) {
+                            // Backend wins on shelf conflict (syncing FROM server)
+                            // Remove from old shelf
+                            this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
+                            // Add to new shelf
+                            this.library[item.shelf_type].push(remoteBook);
+                        } else {
+                            // Update details (e.g. db_id might be missing locally if added offline)
+                            Object.assign(existing.book, remoteBook);
+                        }
+                        // Mark as processed/merged
+                        localBooksMap.delete(item.google_books_id);
+                    } else {
+                        // New book from backend
+                        if (this.library[item.shelf_type]) {
+                            this.library[item.shelf_type].push(remoteBook);
+                        }
                     }
                 });
 
-                // Update local library state (simple override for now to ensure consistency)
-                // In a real app we might merge local+remote
-                if (data.library.length > 0) {
-                    this.library = backendLibrary;
-                    this.saveLocally();
-                    // If we are on library page, trigger re-render
-                    if (document.getElementById('shelf-want')) {
-                        const sortSelect = document.getElementById('sortLibrary');
-                        if (sortSelect) {
-                            this.sortLibrary(sortSelect.value);
-                        } else {
-                            this.renderShelf('want', 'shelf-want');
-                            this.renderShelf('current', 'shelf-current');
-                            this.renderShelf('finished', 'shelf-finished');
-                        }
+                // 3. Handle remaining local books (not in backend)
+                // These could be:
+                // a) Added offline and not yet synced -> Keep them
+                // b) Deleted on another device -> Should remove?
+                // For this implementation, we will KEEP them to prioritize no data loss (offline first).
+                // Ideally, we'd check timestamps or have a specific "sync queue".
+
+                this.saveLocally();
+
+                // Trigger Render
+                if (document.getElementById('shelf-want')) {
+                    const sortSelect = document.getElementById('sortLibrary');
+                    if (sortSelect && typeof this.sortLibrary === 'function') {
+                        this.sortLibrary(sortSelect.value);
+                    } else {
+                        this.renderShelf('want', 'shelf-want');
+                        this.renderShelf('current', 'shelf-current');
+                        this.renderShelf('finished', 'shelf-finished');
                     }
                 }
             }
@@ -716,7 +436,22 @@ class LibraryManager {
     }
 
     async addBook(book, shelf) {
-        if (this.findBook(book.id)) return;
+        // Check if book exists ANYWHERE in library specifically by ID
+        if (this.findBook(book.id)) {
+            // It exists. Check where.
+            const existingShelf = this.findBookShelf(book.id);
+            if (existingShelf === shelf) {
+                showToast("Book already in this shelf!", "info");
+                return;
+            } else if (existingShelf) {
+                // Move logic? For now, prevent duplicates and notify user.
+                // Or allow "moving" implicitly? 
+                // Let's implement move: Remove from old, add to new.
+                this.removeBook(book.id);
+                // Fall through to add
+                showToast(`Moved book from ${existingShelf} to ${shelf}`, "info");
+            }
+        }
 
         const enrichedBook = {
             ...book,
@@ -769,6 +504,13 @@ class LibraryManager {
         return false;
     }
 
+    findBookShelf(id) {
+        for (const shelf in this.library) {
+            if (this.library[shelf].some(b => b.id === id)) return shelf;
+        }
+        return null;
+    }
+
     findBookInShelf(id) {
         for (const shelf in this.library) {
             const book = this.library[shelf].find(b => b.id === id);
@@ -776,7 +518,6 @@ class LibraryManager {
         }
         return null;
     }
-
     async removeBook(id) {
         const result = this.findBookInShelf(id);
         if (result) {
@@ -816,17 +557,9 @@ class LibraryManager {
         localStorage.setItem(this.storageKey, JSON.stringify(this.library));
     }
 
-
-    save() {
-        this.saveLocally();
-    }
-
-
-    renderShelf(shelfName, elementId) {
+    async renderShelf(shelfName, elementId) {
         const container = document.getElementById(elementId);
         if (!container) return;
-
-
         const books = this.library[shelfName];
         if (books.length === 0) {
             // If we have no books, ensure empty state is visible (if we cleared it previously)
@@ -950,8 +683,8 @@ class GenreManager {
         try {
             // Fetch relevant books from Google Books API
             // Using subject search and higher relevance
-            const apiKeyParam = API_KEY ? `&key=${API_KEY}` : '';
-            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${apiKeyParam}`);
+            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
 
             if (response.ok) {
                 const data = await response.json();
@@ -1018,8 +751,8 @@ class GenreManager {
 
 // Init
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load secure config first
-    await loadEnvConfig();
+    // Load config first to get API keys
+    await loadConfig();
 
     const libManager = new LibraryManager();
     window.libManager = libManager; // Expose for Auth
@@ -1080,57 +813,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // Search Handler
+
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const authLink = document.getElementById('navAuthLink');
+    if (isLoggedIn && authLink) {
+        authLink.innerHTML = '<i class="fa-solid fa-user"></i>';
+        authLink.href = 'profile.html';
+        const tooltip = document.getElementById('navAuthTooltip');
+        if (tooltip) tooltip.innerHTML = '<i class="fa-solid fa-id-card"></i> Profile';
+    }
+
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = searchInput.value.trim();
-                if (query) {
-                    window.location.href = `index.html?q=${encodeURIComponent(query)}`;
-                }
+            if (e.key === 'Enter' && searchInput.value.trim()) {
+                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
             }
         });
     }
 
-
-    // Check URL Params for Search
     const urlParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlParams.get('q');
+    const query = urlParams.get('q');
 
-
-    if (searchQuery && document.getElementById('row-rainy')) {
-        // We are on Discovery page and have a query
+    if (query && document.getElementById('row-rainy')) {
         document.querySelector('main').innerHTML = `
-            <section class="hero" style="padding: 2rem 0;">
-                <h1>Results for "${searchQuery}"</h1>
-            </section>
-            <section class="curated-section">
-                <div class="curated-row" id="search-results" style="flex-wrap: wrap;"></div>
-            </section>
-        `;
-        renderer.renderCuratedSection(searchQuery, 'search-results');
-        if (searchInput) searchInput.value = searchQuery;
-        return; // Stop default rendering
-    }
-
-
-    // Check if Home (Default)
-    if (document.getElementById('row-rainy')) {
+            <section class="hero"><h1>Results for "${query}"</h1></section>
+            <section class="curated-section"><div class="curated-row" id="search-results"></div></section>`;
+        renderer.renderCuratedSection(query, 'search-results');
+    } else if (document.getElementById('row-rainy')) {
         renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
         renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
         renderer.renderCuratedSection('subject:classic+fiction', 'row-classics');
         renderer.renderCuratedSection('subject:fiction', 'row-genre');
     }
 
-
-    // Check if Library
     if (document.getElementById('shelf-want')) {
         libManager.renderShelf('want', 'shelf-want');
         libManager.renderShelf('current', 'shelf-current');
         libManager.renderShelf('finished', 'shelf-finished');
     }
-
 
     // Scroll Manager (Back to Top)
     const backToTopBtn = document.getElementById('backToTop');
@@ -1324,12 +1045,9 @@ document.addEventListener("click", (e) => {
 
     pageFlipSound.pause();
     pageFlipSound.currentTime = 0;
-    pageFlipSound.play().catch(err => console.log("PLAY ERROR", err));
-
     book.classList.toggle("tap-effect");
     if (overlay) overlay.classList.toggle("tap-overlay");
 });
-
 // ============================================
 // Keyboard Shortcuts Module (Issue #103)
 // ============================================
@@ -1353,8 +1071,9 @@ const KeyboardShortcuts = {
     // Initialize keyboard event listener
     init() {
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        console.log('Keyboard shortcuts module initialized');
+        console.log('BiblioDrift Keyboard Shortcuts Initialized');
     },
+
 
     // Handle keypress events
     handleKeyPress(event) {
