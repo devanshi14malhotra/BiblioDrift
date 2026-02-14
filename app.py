@@ -7,12 +7,10 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
-from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe
 from models import db, User, ShelfItem, register_user, login_user
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
