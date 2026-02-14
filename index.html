@@ -178,35 +178,20 @@
 
       <div class="modal-body">
         <div class="modal-media">
-        <div class="book-3d-wrapper">
-          <div class="book-3d-card" id="modal-book-card">
-            <div class="book-face face-front">
-              <img id="modal-img" src="" alt="Book Cover" />
+          <img id="modal-img" src="" alt="Book Cover" />
+        </div>
+
+        <div class="modal-info">
+          <h2 id="modal-title">Book Title</h2>
+          <p id="modal-author" class="modal-subtitle">Author Name</p>
+
+          <div class="ai-insight-box">
+            <div class="ai-header">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>AI Insight (Spoiler-Free)</span>
             </div>
-            <div class="book-face face-back" id="modal-book-back">
-              <!-- Back content populated by JS -->
-            </div>
+            <p id="modal-summary">Loading thoughts...</p>
           </div>
-        </div>
-        <button id="modal-flip-btn" class="btn-flip" title="Flip View"><i class="fa-solid fa-rotate"></i> Flip View</button>
-      </div>
-
-      <div class="modal-info">
-        <h2 id="modal-title">Book Title</h2>
-        <p id="modal-author" class="modal-subtitle">Author Name</p>
-
-        <div class="book-description-box">
-          <h3><i class="fa-solid fa-align-left"></i> Blurb</h3>
-          <p id="modal-description" class="modal-description-text">Description goes here...</p>
-        </div>
-
-        <div class="ai-insight-box">
-          <div class="ai-header">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>AI Insight (Spoiler-Free)</span>
-          </div>
-          <p id="modal-summary">Loading thoughts...</p>
-        </div>
 
           <div class="modal-actions">
             <button id="modal-add-btn" class="btn-primary" title="Add to Library">

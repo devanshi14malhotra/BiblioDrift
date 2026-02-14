@@ -114,9 +114,7 @@ class BookRenderer {
         // Create Container
         const scene = document.createElement('div');
         scene.className = 'book-scene';
-        
-        // Add random animation delay for organic idle floating
-        scene.style.animationDelay = `-${(Math.random() * 5).toFixed(2)}s`;
+
 
         // Generate mood tags HTML
         const moodTagsHTML = moodTags.length > 0
@@ -135,7 +133,7 @@ class BookRenderer {
                 <div class="book__face book_face--right"></div>
                 <div class="book__face book__face--back">
                     <div>
-                        <div class="book-back-title">${title}</div>
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem;">${title}</div>
                         <div class="handwritten-note">
                             Bookseller's Note: "${vibe}"
                         </div>
@@ -431,10 +429,6 @@ class BookRenderer {
         const title = document.getElementById('modal-title');
         const author = document.getElementById('modal-author');
         const summary = document.getElementById('modal-summary');
-        const descriptionEl = document.getElementById('modal-description');
-        const backContent = document.getElementById('modal-book-back');
-        const flipBtn = document.getElementById('modal-flip-btn');
-        const bookCard = document.getElementById('modal-book-card');
         const addBtn = document.getElementById('modal-add-btn');
         const closeBtn = document.getElementById('closeModalBtn');
 
@@ -445,38 +439,6 @@ class BookRenderer {
         title.textContent = volume.title;
         author.textContent = volume.authors ? volume.authors.join(", ") : "Unknown Author";
         img.src = volume.imageLinks ? volume.imageLinks.thumbnail.replace('http:', 'https:') : 'https://via.placeholder.com/300x450?text=No+Cover';
-
-        // Populate Description (Blurb)
-        if (descriptionEl) {
-            descriptionEl.textContent = volume.description || "No description available for this book.";
-        }
-
-        // Populate Back Content
-        if (backContent) {
-            const vibe = this.generateVibe(volume.description || "");
-            backContent.innerHTML = `
-                <div class="modal-back-title">${volume.title}</div>
-                <div class="handwritten-note">
-                    Bookseller's Note: "${vibe}"
-                </div>
-                <!-- Reusing mood tags logic if possible, or just simple footer -->
-                <div style="margin-top: auto; font-size: 0.8rem; opacity: 0.7;">
-                    ${volume.pageCount ? `${volume.pageCount} pages` : ''}
-                </div>
-            `;
-        }
-
-        // Reset Flip State
-        if (bookCard) bookCard.classList.remove('flipped');
-
-        // Setup Flip Button
-        if (flipBtn && bookCard) {
-            const newFlipBtn = flipBtn.cloneNode(true);
-            flipBtn.parentNode.replaceChild(newFlipBtn, flipBtn);
-            newFlipBtn.addEventListener('click', () => {
-                bookCard.classList.toggle('flipped');
-            });
-        }
 
         // Mock AI Generation Effect
         summary.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing narrative structure...';
