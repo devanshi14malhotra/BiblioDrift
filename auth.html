@@ -4,67 +4,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In | BiblioDrift</title>
+    <title>Auth | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Georgia&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .auth-container {
             max-width: 400px;
-            margin: 6rem auto;
-            background: var(--book-bg);
+            margin: 8rem auto;
+            background: var(--book-bg, #fff);
             padding: 3rem;
-            border-radius: 8px;
-            box-shadow: var(--shadow-soft);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             text-align: center;
-            border: 1px solid var(--input-border);
-            color: var(--text-main);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .auth-input {
             width: 100%;
             padding: 1rem;
             margin-bottom: 1rem;
-            border: 1px solid var(--input-border);
-            border-radius: 4px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-family: 'Georgia', serif;
-            background: var(--input-bg);
-            color: var(--text-main);
         }
 
         .auth-btn {
             width: 100%;
             padding: 1rem;
-            background: var(--text-main);
+            background: #2c2c2c;
             color: #fff;
             border: none;
+            border-radius: 6px;
             cursor: pointer;
             font-family: 'Playfair Display', serif;
             font-size: 1.1rem;
-            transition: background 0.3s;
-        }
-
-        .auth-btn:hover {
-            background: var(--wood-dark);
         }
 
         .toggle-link {
             display: block;
-            margin-top: 1rem;
-            color: var(--text-muted);
+            margin-top: 1.5rem;
+            color: #666;
             font-size: 0.9rem;
             cursor: pointer;
+            text-decoration: underline;
+        }
+
+        #nameField {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-
     <header>
         <a href="index.html" class="logo">
-            <i class="fa-solid fa-book-open"></i> BiblioDrift
+            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -72,9 +68,22 @@
                 <i class="fa-solid fa-search search-icon"></i>
             </div>
             <nav class="nav-links">
-                <a href="index.html">Discovery</a>
-                <a href="library.html">My Library</a>
-                <a href="auth.html" class="active">Sign In</a>
+                <div class="tooltip">
+                    <a href="index.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <div class="tooltip">
+                    <a href="auth.html" class="active">Sign In</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
                 <i class="fa-solid fa-moon"></i>
@@ -84,19 +93,43 @@
 
     <main>
         <div class="auth-container">
-            <h2 style="margin-bottom: 2rem;">Welcome Back</h2>
-            <form onsubmit="handleAuth(event)">
+            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">Welcome Back</h2>
+            <form id="authForm">
+                <div id="nameField"><input type="text" id="userName" class="auth-input" placeholder="Full Name"></div>
                 <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
                 <input type="password" class="auth-input" placeholder="Password" required>
-                <button type="submit" class="auth-btn">Sign In</button>
+                <button type="submit" id="submitBtn" class="auth-btn">Sign In</button>
             </form>
-            <span class="toggle-link">No account? Create one.</span>
+            <span id="toggleText" class="toggle-link">No account? Create one.</span>
         </div>
     </main>
 
-    <script src="js/header-scroll.js"></script>
+    <script src="footer.js"></script>
+    <script src="app.js"></script>
+    <script src="script/header-scroll.js"></script>
+    <script>
+        const toggleText = document.getElementById('toggleText');
+        const nameField = document.getElementById('nameField');
+        const authTitle = document.getElementById('authTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        let isLogin = true;
 
+        toggleText.addEventListener('click', () => {
+            isLogin = !isLogin;
+            authTitle.innerText = isLogin ? "Welcome Back" : "Create Account";
+            submitBtn.innerText = isLogin ? "Sign In" : "Sign Up";
+            nameField.style.display = isLogin ? "none" : "block";
+            toggleText.innerText = isLogin ? "No account? Create one." : "Already have an account? Sign In.";
+        });
 
+        document.getElementById('authForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = isLogin ? "Reader" : document.getElementById('userName').value;
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userDisplayName', name);
+            window.location.href = "profile.html";
+        });
+    </script>
 </body>
 
 </html>

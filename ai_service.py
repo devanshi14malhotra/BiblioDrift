@@ -25,7 +25,8 @@ except ImportError:
     GROQ_AVAILABLE = False
 
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
@@ -93,7 +94,7 @@ class LLMService:
     def __init__(self):
         self.openai_client = None
         self.groq_client = None
-        self.gemini_model = None
+        self.gemini_client = None
         self.preferred_llm = os.getenv('PREFERRED_LLM', 'groq').lower()
         
         # Configuration from environment
@@ -104,7 +105,7 @@ class LLMService:
             'groq_model': os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b'),
             'groq_temperature': float(os.getenv('GROQ_TEMPERATURE', '0.7')),
             'groq_max_tokens': int(os.getenv('GROQ_MAX_TOKENS', '150')),
-            'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-1.5-flash'),
+            'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-2.0-flash'),
             'gemini_temperature': float(os.getenv('GEMINI_TEMPERATURE', '0.7')),
             'gemini_max_tokens': int(os.getenv('GEMINI_MAX_TOKENS', '150')),
             'default_max_tokens': int(os.getenv('DEFAULT_MAX_TOKENS', '150')),
@@ -145,15 +146,14 @@ class LLMService:
         api_key = os.getenv('GEMINI_API_KEY')
         if api_key and GEMINI_AVAILABLE:
             try:
-                genai.configure(api_key=api_key)
-                self.gemini_model = genai.GenerativeModel(self.config['gemini_model'])
-                logger.info(f"Gemini client initialized with model: {self.config['gemini_model']}")
+                self.gemini_client = genai.Client(api_key=api_key)
+                logger.info(f"Gemini client initialized. configured model: {self.config['gemini_model']}")
             except Exception as e:
                 logger.error(f"Failed to setup Gemini: {e}")
     
     def is_available(self) -> bool:
         """Check if any LLM service is available."""
-        return (self.openai_client is not None) or (self.groq_client is not None) or (self.gemini_model is not None)
+        return (self.openai_client is not None) or (self.groq_client is not None) or (self.gemini_client is not None)
     
     def generate_text(self, prompt: str, max_tokens: Optional[int] = None, retry_count: int = 0) -> Optional[str]:
         """
@@ -181,7 +181,7 @@ class LLMService:
                 return self._generate_with_openai(prompt, max_tokens)
             elif self.preferred_llm == 'groq' and self.groq_client:
                 return self._generate_with_groq(prompt, max_tokens)
-            elif self.preferred_llm == 'gemini' and self.gemini_model:
+            elif self.preferred_llm == 'gemini' and self.gemini_client:
                 return self._generate_with_gemini(prompt, max_tokens)
             
             # Fallback to any available LLM (priority: Groq > OpenAI > Gemini)
@@ -189,7 +189,7 @@ class LLMService:
                 return self._generate_with_groq(prompt, max_tokens)
             elif self.openai_client:
                 return self._generate_with_openai(prompt, max_tokens)
-            elif self.gemini_model:
+            elif self.gemini_client:
                 return self._generate_with_gemini(prompt, max_tokens)
                 
         except Exception as e:
@@ -252,9 +252,10 @@ class LLMService:
     def _generate_with_gemini(self, prompt: str, max_tokens: int) -> Optional[str]:
         """Generate text using Gemini."""
         try:
-            response = self.gemini_model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
+            response = self.gemini_client.models.generate_content(
+                model=self.config['gemini_model'],
+                contents=prompt,
+                config=types.GenerateContentConfig(
                     max_output_tokens=min(max_tokens, self.config['gemini_max_tokens']),
                     temperature=self.config['gemini_temperature']
                 )
