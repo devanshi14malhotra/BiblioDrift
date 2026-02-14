@@ -6467,3 +6467,11 @@ main {
         position: fixed; /* Keep it visible */
     }
 }
+/* Fix modal hidden state */
+.modal-overlay {
+    display: none;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
