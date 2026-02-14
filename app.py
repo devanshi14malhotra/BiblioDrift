@@ -4,14 +4,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+import os
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
-from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe
 from models import db, User, Book, ShelfItem, register_user, login_user
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -329,10 +328,12 @@ def health_check():
             "llm_service_available": llm_service.is_available(),
             "openai_configured": llm_service.openai_client is not None,
             "groq_configured": llm_service.groq_client is not None,
-            "gemini_configured": llm_service.gemini_model is not None,
+            "gemini_configured": llm_service.gemini_client is not None,
             "preferred_llm": llm_service.preferred_llm
         }
     })
+
+
 
 @app.route('/api/v1/library', methods=['POST'])
 def add_to_library():
@@ -418,7 +419,7 @@ def remove_from_library(item_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-import os
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///biblio.db')
 if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)

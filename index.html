@@ -13,19 +13,17 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 
 <body>
   <header>
     <a href="index.html" class="logo">
-      <i class="fa-solid fa-book-open"></i> BiblioDrift
+      <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
       <div class="search-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling..." />
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
         <i class="fa-solid fa-search search-icon"></i>
       </div>
       <nav class="nav-links">
@@ -41,13 +39,17 @@
           <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
+        <!-- DYNAMIC AUTH LINK -->
         <div class="tooltip">
-          <a href="auth.html">Sign In</a>
-          <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
+          <a href="auth.html" id="navAuthLink">Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
         </div>
       </nav>
       <button id="themeToggle" class="btn-icon" title="Toggle Theme">
         <i class="fa-solid fa-moon"></i>
+      </button>
+      <button id="export-library" class="btn-icon" title="Export Library">
+        <i class="fa-solid fa-download"></i>
       </button>
     </div>
   </header>
@@ -58,23 +60,21 @@
       <p>A curated sanctuary for those who read through emotions.</p>
     </section>
 
+    <!-- Curated Sections -->
     <section class="curated-section">
       <div class="section-header">
         <h2>Rainy Evening Reads</h2>
         <span><i class="fa-solid fa-cloud-rain"></i> Mystery & Melancholy</span>
       </div>
-
-      <div class="curated-row" id="row-rainy">
-        </div>
+      <div class="curated-row" id="row-rainy"></div>
     </section>
 
     <section class="curated-section">
       <div class="section-header">
         <h2>Indian Authors</h2>
-        <span><i class="fa-solid fa-feather"></i> Voices from the Subcontinent</span>
+        <span><i class="fa-solid fa-feather"></i> Subcontinent Voices</span>
       </div>
-      <div class="curated-row" id="row-indian">
-        </div>
+      <div class="curated-row" id="row-indian"></div>
     </section>
 
     <section class="curated-section">
@@ -82,129 +82,120 @@
         <h2>Forgotten Classics</h2>
         <span><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span>
       </div>
-      <div class="curated-row" id="row-classics">
-        </div>
+      <div class="curated-row" id="row-classics"></div>
     </section>
 
+    <!-- Genre Grid Section -->
     <section class="curated-section genre-section">
       <div class="section-header">
         <h2>Browse by Genre</h2>
         <span><i class="fa-solid fa-compass"></i> Find your next read</span>
       </div>
-
       <div class="genre-grid" id="genre-grid">
-        <div class="genre-card" data-genre="romance">
-          <i class="fa-solid fa-heart"></i>
-          <span>Romance</span>
+        <div class="genre-card" data-genre="romance"><i class="fa-solid fa-heart"></i><span>Romance</span></div>
+        <div class="genre-card" data-genre="mystery"><i class="fa-solid fa-magnifying-glass"></i><span>Mystery</span>
         </div>
-        <div class="genre-card" data-genre="mystery">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <span>Mystery</span>
-        </div>
-        <div class="genre-card" data-genre="fiction">
-          <i class="fa-solid fa-book"></i>
-          <span>Fiction</span>
-        </div>
-        <div class="genre-card" data-genre="crime">
-          <i class="fa-solid fa-user-secret"></i>
-          <span>Crime</span>
-        </div>
-        <div class="genre-card" data-genre="fantasy">
-          <i class="fa-solid fa-wand-sparkles"></i>
-          <span>Fantasy</span>
-        </div>
-        <div class="genre-card" data-genre="thriller">
-          <i class="fa-solid fa-skull"></i>
-          <span>Thriller</span>
-        </div>
-        <div class="genre-card" data-genre="biography">
-          <i class="fa-solid fa-user"></i>
-          <span>Biography</span>
-        </div>
-        <div class="genre-card" data-genre="self-help">
-          <i class="fa-solid fa-hand-holding-heart"></i>
-          <span>Self-Help</span>
-        </div>
-        <div class="genre-card" data-genre="science">
-          <i class="fa-solid fa-flask"></i>
-          <span>Science</span>
-        </div>
-        <div class="genre-card" data-genre="history">
-          <i class="fa-solid fa-landmark"></i>
-          <span>History</span>
-        </div>
+        <div class="genre-card" data-genre="fiction"><i class="fa-solid fa-book"></i><span>Fiction</span></div>
+        <div class="genre-card" data-genre="crime"><i class="fa-solid fa-user-secret"></i><span>Crime</span></div>
+        <div class="genre-card" data-genre="fantasy"><i class="fa-solid fa-wand-sparkles"></i><span>Fantasy</span></div>
+        <div class="genre-card" data-genre="thriller"><i class="fa-solid fa-skull"></i><span>Thriller</span></div>
+        <div class="genre-card" data-genre="biography"><i class="fa-solid fa-user"></i><span>Biography</span></div>
+        <div class="genre-card" data-genre="self-help"><i
+            class="fa-solid fa-hand-holding-heart"></i><span>Self-Help</span></div>
+        <div class="genre-card" data-genre="science"><i class="fa-solid fa-flask"></i><span>Science</span></div>
+        <div class="genre-card" data-genre="history"><i class="fa-solid fa-landmark"></i><span>History</span></div>
       </div>
     </section>
 
+    <!-- Genre Modal -->
     <dialog id="genre-modal" class="genre-modal">
       <div class="genre-modal-content">
         <div class="genre-modal-header">
           <h2 id="genre-modal-title">Genre Books</h2>
-          <button class="close-genre-modal" id="close-genre-modal" title="Close">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+          <button class="close-genre-modal" id="close-genre-modal"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="genre-modal-body">
-          <div class="genre-books-grid" id="genre-books-grid">
-            <div class="genre-loading">
-              <i class="fa-solid fa-spinner fa-spin"></i>
-              <span>Loading books...</span>
+          <div class="genre-books-grid" id="genre-books-grid"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Book Details Modal -->
+    <dialog id="book-details-modal" class="glass-modal">
+      <div class="modal-content">
+        <button class="close-modal-btn" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body">
+          <div class="modal-media"><img id="modal-img" src="" alt="Book Cover" /></div>
+          <div class="modal-info">
+            <h2 id="modal-title">Book Title</h2>
+            <p id="modal-author" class="modal-subtitle">Author Name</p>
+            <div class="ai-insight-box">
+              <div class="ai-header"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI Insight</span></div>
+              <p id="modal-summary">Loading thoughts...</p>
+            </div>
+            <div class="modal-actions">
+              <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
             </div>
           </div>
         </div>
       </div>
     </dialog>
-
   </main>
 
   <button id="backToTop" class="btn-icon back-to-top" title="Back to Top">
     <i class="fa-solid fa-arrow-up"></i>
   </button>
-  
-  <footer class="footer">
-    <div class="social_icons">
-      <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
-      <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-      <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
-      <a href="#" title="X (Twitter)"><i class="fab fa-x"></i></a>
-    </div>
-  </footer>
 
-  <dialog id="book-details-modal" class="glass-modal">
-    <div class="modal-content">
-      <button class="close-modal-btn" id="closeModalBtn" title="Close">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
 
-      <div class="modal-body">
-        <div class="modal-media">
-          <img id="modal-img" src="" alt="Book Cover" />
-        </div>
-
-        <div class="modal-info">
-          <h2 id="modal-title">Book Title</h2>
-          <p id="modal-author" class="modal-subtitle">Author Name</p>
-
-          <div class="ai-insight-box">
-            <div class="ai-header">
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
-              <span>AI Insight (Spoiler-Free)</span>
-            </div>
-            <p id="modal-summary">Loading thoughts...</p>
-          </div>
-
-          <div class="modal-actions">
-            <button id="modal-add-btn" class="btn-primary" title="Add to Library">
-              <i class="fa-regular fa-heart"></i> Add to Library
-            </button>
-          </div>
+  <!-- Enhanced Footer -->
+  <footer class="main-footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <a href="index.html" class="logo"><i class="fa-solid fa-book-open"></i> BiblioDrift</a>
+        <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
+        <p class="footer-subtext">— Emily Dickinson</p>
+      </div>
+      <div class="footer-nav">
+        <h3>Explore</h3>
+        <ul>
+          <li><a href="index.html">Discovery</a></li>
+          <li><a href="library.html">My Library</a></li>
+          <li><a href="chat.html">Literary Chat</a></li>
+        </ul>
+      </div>
+      <div class="footer-social">
+        <h3>Connect</h3>
+        <div class="social-icons">
+          <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" title="GitHub"><i
+              class="fa-brands fa-github"></i></a>
         </div>
       </div>
     </div>
-  </dialog>
+    <div class="footer-bottom">
+      <p>&copy; 2026 BiblioDrift. Curated with <i class="fa-solid fa-heart"></i> for book lovers.</p>
+    </div>
+  </footer>
 
   <script src="app.js"></script>
   <script src="script/header-scroll.js"></script>
+  <script>
+    // Persistent Login Status Check
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('isLoggedIn') === 'true') {
+        const link = document.getElementById('navAuthLink');
+        const tooltip = document.getElementById('navAuthTooltip');
+        if (link) {
+          link.innerHTML = '<i class="fa-solid fa-user"></i>';
+          link.href = 'profile.html';
+        }
+        if (tooltip) {
+          tooltip.innerHTML = '<i class="fa-solid fa-id-card"></i> View Profile';
+        }
+      }
+    });
+  </script>
 </body>
 
 </html>
