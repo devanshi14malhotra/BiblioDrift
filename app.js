@@ -349,7 +349,7 @@ class LibraryManager {
 
     async syncLocalToBackend(user) {
         if (!user) return;
-        
+
         // Flatten local library into a list of items with 'shelf' property
         const itemsToSync = [];
         ['current', 'want', 'finished'].forEach(shelf => {
@@ -386,9 +386,9 @@ class LibraryManager {
                 const data = await res.json();
                 console.log("Sync result:", data);
                 showToast(`Synced ${data.message}`, "success");
-                
+
                 // After upload, pull fresh state from backend to get the new DB IDs
-                await this.syncWithBackend(); 
+                await this.syncWithBackend();
             } else {
                 console.error("Backend refused sync");
             }
@@ -774,7 +774,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         usernameInput.className = 'auth-input';
         usernameInput.placeholder = 'Username';
         usernameInput.style.display = 'none';
-        
+
         // Insert before email
         const emailInput = document.getElementById('email');
         if (emailInput) {
@@ -784,7 +784,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
             authForm.dataset.mode = isLogin ? 'login' : 'register';
-            
+
             if (isLogin) {
                 authTitle.textContent = 'Welcome Back';
                 authBtn.textContent = 'Sign In';
@@ -853,6 +853,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         libManager.renderShelf('finished', 'shelf-finished');
     }
 
+
+    // Check if Profile Page
+    if (document.getElementById('profile-page')) {
+        const user = libManager.getUser();
+        if (!user) {
+            window.location.href = 'auth.html';
+            return;
+        }
+
+        // populate User Info
+        document.getElementById('profile-username').textContent = user.username || 'Bookworm';
+        document.getElementById('profile-email').textContent = user.email || '';
+        document.getElementById('profile-joined').textContent = user.created_at ? new Date(user.created_at).getFullYear() : '2024';
+
+        // populate Stats
+        const currentCount = libManager.library.current?.length || 0;
+        const wantCount = libManager.library.want?.length || 0;
+        const finishedCount = libManager.library.finished?.length || 0;
+
+        document.getElementById('stat-current').textContent = currentCount;
+        document.getElementById('stat-want').textContent = wantCount;
+        document.getElementById('stat-finished').textContent = finishedCount;
+
+        // Calculate "Day Streak" (Mock for now, or based on last activity dates if available)
+        // For MVP, randomly generate a streak to encourage user
+        document.getElementById('stat-streak').textContent = Math.floor(Math.random() * 14) + 1;
+
+        // Populate Achievements
+        const achievementsGrid = document.getElementById('achievements-grid');
+        achievementsGrid.innerHTML = '';
+
+        const achievements = [
+            { id: 'reader', icon: 'fa-book', title: 'Avid Reader', desc: 'Finished 5 books', condition: finishedCount >= 5 },
+            { id: 'collector', icon: 'fa-layer-group', title: 'Curator', desc: 'Added 10 books', condition: (currentCount + wantCount + finishedCount) >= 10 },
+            { id: 'critic', icon: 'fa-pen-fancy', title: 'Critic', desc: 'Saved 3 reviews', condition: false }, // Mock
+            { id: 'focused', icon: 'fa-glasses', title: 'Focused', desc: 'Reading 3 at once', condition: currentCount >= 3 }
+        ];
+
+        achievements.forEach(ach => {
+            const card = document.createElement('div');
+            card.className = `achievement-card ${ach.condition ? 'unlocked' : 'locked'}`;
+            card.innerHTML = `
+                <i class="fa-solid ${ach.icon}"></i>
+                <h4>${ach.title}</h4>
+                <p>${ach.desc}</p>
+            `;
+            achievementsGrid.appendChild(card);
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('bibliodrift_user');
+            window.location.href = 'index.html';
+        });
+    }
     // Scroll Manager (Back to Top)
     const backToTopBtn = document.getElementById('backToTop');
     if (backToTopBtn) {
@@ -906,7 +961,7 @@ async function handleAuth(event) {
     const email = document.getElementById("email").value;
     const password = form.querySelector('input[type="password"]').value;
     const usernameInput = document.getElementById("username");
-    
+
     // Validate Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -918,7 +973,7 @@ async function handleAuth(event) {
     // Prepare Payload
     let payload = {};
     let endpoint = "";
-    
+
     if (mode === 'register') {
         const username = usernameInput ? usernameInput.value : email.split('@')[0];
         endpoint = '/api/v1/register';
@@ -941,15 +996,15 @@ async function handleAuth(event) {
         });
 
         const data = await res.json();
-        
+
         btn.textContent = originalText;
         btn.disabled = false;
 
         if (res.ok) {
             // Success!
             localStorage.setItem('bibliodrift_user', JSON.stringify(data.user));
-            
-            if (typeof showToast === 'function') 
+
+            if (typeof showToast === 'function')
                 showToast(`${mode === 'login' ? 'Welcome back' : 'Welcome'}, ${data.user.username}!`, "success");
 
             // SYNC LOGIC

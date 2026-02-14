@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
-from models import db, User, ShelfItem, register_user, login_user
+from models import db, User, Book, ShelfItem, register_user, login_user
 from collections import defaultdict, deque
 from math import ceil
 from time import time
@@ -344,15 +344,32 @@ def add_to_library():
         return jsonify({"error": "Missing required fields"}), 400
     
     try:
-        item = ShelfItem(
-            user_id=data['user_id'],
-            google_books_id=data['google_books_id'],
-            title=data['title'],
-            authors=data.get('authors', ''),
-            thumbnail=data.get('thumbnail', ''),
-            shelf_type=data['shelf_type']
-        )
-        db.session.add(item)
+        # Check if the book exists in the Book table
+        book = Book.query.filter_by(google_books_id=data['google_books_id']).first()
+        if not book:
+            book = Book(
+                google_books_id=data['google_books_id'],
+                title=data['title'],
+                authors=data.get('authors', ''),
+                thumbnail=data.get('thumbnail', '')
+            )
+            db.session.add(book)
+            db.session.commit() # Commit to get book.id
+
+        # Check if ShelfItem exists
+        existing_item = ShelfItem.query.filter_by(user_id=data['user_id'], book_id=book.id).first()
+        if existing_item:
+            # Update shelf if exists
+            existing_item.shelf_type = data['shelf_type']
+            item = existing_item
+        else:
+            item = ShelfItem(
+                user_id=data['user_id'],
+                book_id=book.id,
+                shelf_type=data['shelf_type']
+            )
+            db.session.add(item)
+        
         db.session.commit()
         return jsonify({"message": "Book added to shelf", "item": item.to_dict()}), 201
     except Exception as e:
@@ -364,6 +381,7 @@ def get_library(user_id):
     """Get all books in a user's library."""
     try:
         items = ShelfItem.query.filter_by(user_id=user_id).all()
+        # Ensure join loads correctly or use manual load if lazy loading fails
         return jsonify({"library": [item.to_dict() for item in items]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -423,32 +441,41 @@ def sync_library():
     errors = 0
     
     for item_data in items:
-        # Check if already exists to avoid duplicates
-        existing = ShelfItem.query.filter_by(
-            user_id=user_id, 
-            google_books_id=item_data.get('id')
-        ).first()
-        
-        if not existing:
-            try:
+        try:
+            # 1. Ensure Book Exists
+            google_id = item_data.get('id')
+            book = Book.query.filter_by(google_books_id=google_id).first()
+            
+            if not book:
                 volume_info = item_data.get('volumeInfo', {})
                 image_links = volume_info.get('imageLinks', {})
                 authors = volume_info.get('authors', [])
                 if isinstance(authors, list):
                     authors = ", ".join(authors)
-                
-                new_item = ShelfItem(
-                    user_id=user_id,
-                    google_books_id=item_data.get('id'),
+
+                book = Book(
+                    google_books_id=google_id,
                     title=volume_info.get('title', 'Untitled'),
                     authors=authors,
-                    thumbnail=image_links.get('thumbnail', ''),
+                    thumbnail=image_links.get('thumbnail', '')
+                )
+                db.session.add(book)
+                db.session.commit() # Need ID for next step
+
+            # 2. Check ShelfItem
+            existing_item = ShelfItem.query.filter_by(user_id=user_id, book_id=book.id).first()
+            if not existing_item:
+                new_item = ShelfItem(
+                    user_id=user_id,
+                    book_id=book.id,
                     shelf_type=item_data.get('shelf', 'want')
                 )
                 db.session.add(new_item)
                 synced_count += 1
-            except Exception:
-                errors += 1
+                
+        except Exception:
+            errors += 1
+            db.session.rollback() # Rollback on individual item error but continue
     
     try:
         db.session.commit()

@@ -1,186 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Georgia&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .profile-card { 
-            max-width: 500px; 
-            margin: 6rem auto; 
-            text-align: center; 
-            padding: 3rem; 
-            background: var(--book-bg, #fff); 
-            border-radius: 15px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08); 
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .avatar { 
-            width: 90px; height: 90px; 
-            background: #2c2c2c; color: white; 
-            border-radius: 50%; display: flex; 
-            align-items: center; justify-content: center; 
-            font-size: 2.5rem; margin: 0 auto 1.5rem; 
-            font-family: 'Playfair Display', serif;
-        }
-
-        #userBio { font-style: italic; color: #666; margin-bottom: 2rem; }
-        #editMode { display: none; }
-        
-        .edit-input {
-            width: 100%; padding: 0.8rem; margin-bottom: 1rem;
-            border: 1px solid #ddd; border-radius: 6px;
-            font-family: 'Georgia', serif;
-        }
-
-        .btn-profile {
-            padding: 0.6rem 1.5rem; border-radius: 6px;
-            cursor: pointer; font-family: 'Playfair Display', serif;
-            transition: 0.3s; border: 1px solid transparent;
-        }
-
-        .save-btn { background: #2c2c2c; color: white; margin-right: 10px; }
-        .cancel-btn { background: #eee; color: #333; }
-
-        .stats-row {
-            display: flex; justify-content: space-around;
-            border-top: 1px solid #eee; padding-top: 2rem; margin-top: 2rem;
-        }
-
-        .stat-item h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin: 0; }
-        .stat-item p { font-size: 0.8rem; opacity: 0.7; margin: 5px 0 0; }
-
-        .logout-btn { 
-            margin-top: 3rem; color: #e74c3c; 
-            background: transparent; border: 1px solid #e74c3c;
-            width: 100%;
-        }
-        .logout-btn:hover { background: #e74c3c; color: white; }
-    </style>
 </head>
+
 <body>
+
     <header>
-        <a href="index.html" class="logo"><i class="fa-solid fa-book-open"></i> BiblioDrift</a>
-        <nav class="nav-links">
-            <div class="tooltip">
+        <a href="index.html" class="logo">
+            <i class="fa-solid fa-book-open"></i> BiblioDrift
+        </a>
+        <div class="header-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+                <i class="fa-solid fa-search search-icon"></i>
+            </div>
+            <nav class="nav-links">
                 <a href="index.html">Discovery</a>
-                <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore</span>
-            </div>
-            <div class="tooltip">
                 <a href="library.html">My Library</a>
-                <span class="tooltip-text"><i class="fa-solid fa-book"></i> Library</span>
-            </div>
-            <div class="tooltip">
-                <a href="profile.html" class="active"><i class="fa-solid fa-user"></i></a>
-                <span class="tooltip-text"><i class="fa-solid fa-id-card"></i> Profile</span>
-            </div>
-        </nav>
-    </header>
-
-    <main>
-        <div class="profile-card">
-            <div class="avatar" id="avatarLetter">?</div>
-            
-            <!-- VIEW MODE -->
-            <div id="viewMode">
-                <h1 id="welcomeTitle" style="font-family: 'Playfair Display';">Welcome</h1>
-                <p id="userBio">"Lost in the chapters of time."</p>
-                <button class="btn-profile" style="text-decoration: underline; background: none; color: #666;" onclick="toggleEdit(true)">
-                    <i class="fa-solid fa-pen-to-square"></i> Edit Profile
-                </button>
-            </div>
-
-            <!-- EDIT MODE -->
-            <div id="editMode">
-                <input type="text" id="editName" class="edit-input" placeholder="Your Name">
-                <textarea id="editBioInput" class="edit-input" placeholder="Your bio..." rows="2"></textarea>
-                <div>
-                    <button class="btn-profile save-btn" onclick="saveProfile()">Save Changes</button>
-                    <button class="btn-profile cancel-btn" onclick="toggleEdit(false)">Cancel</button>
-                </div>
-            </div>
-
-            <!-- DYNAMIC STATS -->
-            <div class="stats-row">
-                <div class="stat-item">
-                    <h3 id="stat-finished">0</h3>
-                    <p>Finished</p>
-                </div>
-                <div class="stat-item">
-                    <h3 id="stat-total">0</h3>
-                    <p>In Library</p>
-                </div>
-                <div class="stat-item">
-                    <h3 id="stat-reviews">0</h3>
-                    <p>Reviews</p>
-                </div>
-            </div>
-
-            <button class="btn-profile logout-btn" onclick="logout()">
-                <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                <a href="chat.html">Chat</a>
+                <a href="profile.html" class="active">Profile</a>
+            </nav>
+            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
             </button>
         </div>
+    </header>
+
+    <main id="profile-page">
+        <section class="profile-header">
+            <div class="profile-card">
+                <div class="profile-avatar-wrapper">
+                    <div id="profile-avatar" class="profile-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="profile-badge">
+                        <i class="fa-solid fa-medal" title="BiblioDrift Explorer"></i>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <h1 id="profile-username">Reader</h1>
+                    <p id="profile-email" class="profile-email">reader@example.com</p>
+                    <p class="profile-since">Member since <span id="profile-joined">2024</span></p>
+                    <div class="profile-actions">
+                        <button id="logout-btn" class="action-btn-primary logout-btn">
+                            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-stats-container">
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                    <h3 id="stat-current">0</h3>
+                    <span>Reading</span>
+                </div>
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-check-double"></i>
+                    <h3 id="stat-finished">0</h3>
+                    <span>Finished</span>
+                </div>
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <h3 id="stat-want">0</h3>
+                    <span>To Read</span>
+                </div>
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-fire"></i>
+                    <h3 id="stat-streak">3</h3>
+                    <span>Day Streak</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-content">
+            <div class="achievements-section">
+                <h2><i class="fa-solid fa-trophy"></i> Reading Achievements</h2>
+                <div class="achievements-grid" id="achievements-grid">
+                    <!-- Achievements injected via JS -->
+                    <div class="achievement-card locked">
+                        <i class="fa-solid fa-book"></i>
+                        <h4>Bookworm</h4>
+                        <p>Read 10 books</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-activity-section">
+                <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h2>
+                <div class="activity-feed" id="activity-feed">
+                    <div class="empty-state">
+                        <p>No recent activity recorded.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <script src="footer.js"></script>
-    <script>
-        // Check login status
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
-            window.location.href = "auth.html";
-        }
-
-        function loadProfileData() {
-            
-            const name = localStorage.getItem('userDisplayName') || "Reader";
-            const bio = localStorage.getItem('userBio') || "Lost in the chapters of time.";
-            
-            document.getElementById('welcomeTitle').innerText = `Welcome, ${name}`;
-            document.getElementById('userBio').innerText = bio;
-            document.getElementById('avatarLetter').innerText = name.charAt(0).toUpperCase();
-            document.getElementById('editName').value = name;
-            document.getElementById('editBioInput').value = bio;
-
-            const finishedShelf = JSON.parse(localStorage.getItem('shelf-finished')) || [];
-            const currentShelf = JSON.parse(localStorage.getItem('shelf-current')) || [];
-            const wantShelf = JSON.parse(localStorage.getItem('shelf-want')) || [];
-
-            const totalBooks = finishedShelf.length + currentShelf.length + wantShelf.length;
-
-            // Update Statistics
-            document.getElementById('stat-finished').innerText = finishedShelf.length;
-            document.getElementById('stat-total').innerText = totalBooks;
-            const reviewsCount = finishedShelf.filter(b => b.userNote).length;
-            document.getElementById('stat-reviews').innerText = reviewsCount;
-        }
-
-        function toggleEdit(show) {
-            document.getElementById('viewMode').style.display = show ? 'none' : 'block';
-            document.getElementById('editMode').style.display = show ? 'block' : 'none';
-        }
-
-        function saveProfile() {
-            const newName = document.getElementById('editName').value;
-            const newBio = document.getElementById('editBioInput').value;
-            
-            if(newName.trim()) {
-                localStorage.setItem('userDisplayName', newName);
-                localStorage.setItem('userBio', newBio);
-                loadProfileData();
-                toggleEdit(false);
-            }
-        }
-
-        function logout() {
-            localStorage.clear();
-            window.location.href = "index.html";
-        }
-
-        // Initialize on load
-        loadProfileData();
-    </script>
+    <script src="js/header-scroll.js"></script>
+    <script src="app.js"></script>
 </body>
+
 </html>

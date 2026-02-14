@@ -1,3 +1,4 @@
+ours
 :root {
     /* Day Theme (Default) */
     --bg-color: #f9f7f2;
@@ -2814,8 +2815,226 @@ main {
         opacity: 0;
     }
 }
+/* --- User Profile Styles --- */
+.profile-header {
+    background: linear-gradient(135deg, var(--header-bg), var(--bg-color));
+    padding: 3rem 2rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
 
-/* ===== ENHANCED FOOTER STYLES ===== */
+.profile-card {
+    background: var(--book-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    box-shadow: var(--shadow-soft);
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, var(--wood-dark), var(--wood-light), var(--accent-gold));
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--wood-light);
+    color: var(--paper-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    border: 4px solid var(--bg-color);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.profile-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: var(--accent-gold);
+    color: var(--wood-dark);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border: 3px solid var(--book-bg);
+}
+
+.profile-info h1 {
+    font-size: 2.2rem;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.profile-email {
+    color: var(--text-muted);
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    opacity: 0.8;
+}
+
+.profile-since {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+.profile-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.logout-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    background: var(--wood-dark); 
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #d32f2f;
+    transform: translateY(-2px);
+}
+
+.profile-stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+    max-width: 800px;
+    flex-wrap: wrap;
+}
+
+.profile-stat-box {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    flex: 1;
+    min-width: 140px;
+    transition: transform 0.3s ease;
+}
+
+.profile-stat-box:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-gold);
+}
+
+.profile-stat-box i {
+    font-size: 1.8rem;
+    color: var(--accent-gold);
+    margin-bottom: 0.8rem;
+}
+
+.profile-stat-box h3 {
+    font-size: 1.8rem;
+    margin: 0.5rem 0;
+    color: var(--text-main);
+}
+
+.profile-stat-box span {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.profile-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    display: grid;
+    gap: 3rem;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.achievement-card {
+    background: var(--input-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 2px solid transparent;
+    opacity: 0.6;
+    filter: grayscale(100%);
+    transition: all 0.3s;
+}
+
+.achievement-card.unlocked {
+    opacity: 1;
+    filter: grayscale(0%);
+    border-color: var(--accent-gold);
+    background: var(--book-bg);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+}
+
+.achievement-card i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--wood-light);
+}
+
+.achievement-card.unlocked i {
+    color: var(--accent-gold);
+}
+
+.activity-feed {
+    background: var(--book-bg);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: var(--shadow-soft);
+}
+
+@media (max-width: 768px) {
+    .profile-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+    
+    .profile-actions {
+        justify-content: center;
+    }
+}
+
+/* --- MERGED MAIN --- */
+}/* ========================================= */
+> /* ===== ENHANCED FOOTER STYLES ===== */
 .main-footer {
     background: var(--card-bg);
     /* Use card-bg for better contrast in dark mode */
@@ -2963,7 +3182,10 @@ main {
     .social-icons {
         justify-content: center;
     }
-}/* ========================================= */
+}
+theirs
+
+
 /*      BOOK SPINE VARIATIONS (#12)         */
 /* ========================================= */
 
