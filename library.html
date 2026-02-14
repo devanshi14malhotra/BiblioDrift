@@ -16,7 +16,7 @@
 
     <header>
         <a href="index.html" class="logo">
-            <i class="fa-solid fa-book-open"></i> BiblioDrift
+            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -24,10 +24,23 @@
                 <i class="fa-solid fa-search search-icon"></i>
             </div>
             <nav class="nav-links">
-                <a href="index.html">Discovery</a>
-                <a href="library.html" class="active">My Library</a>
-                <a href="chat.html">Chat</a>
-                <a href="auth.html">Sign In</a>
+                <div class="tooltip">
+                    <a href="index.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html" class="active">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <!-- DYNAMIC AUTH LINK -->
+                <div class="tooltip">
+                    <a href="auth.html" id="navAuthLink">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
                 <i class="fa-solid fa-moon"></i>
@@ -37,29 +50,30 @@
 
     <main>
         <section class="hero" style="padding-bottom: 2rem; position: relative;">
-    <h1>My Virtual Library</h1>
-    <p>A quiet sanctuary for your stories.</p>
+            <h1>My Virtual Library</h1>
+            <p>A quiet sanctuary for your stories.</p>
 
-    <button id="export-library" class="btn-icon" style="position: absolute; top: 45; right: 0;" title="Export Library">
-        <i class="fa-solid fa-download"></i> Export Library
-    </button>
-    <div class="sort-controls" style="position: absolute; top: 45px; right: 180px;">
-        <i class="fa-solid fa-filter"></i>
-        <select id="library-filter" class="sort-select" style="margin-right: 1rem;">
-            <option value="all">All Shelves</option>
-            <option value="current">Currently Immersed</option>
-            <option value="want">Anticipated Journeys</option>
-            <option value="finished">Finished Books</option>
-        </select>
-        <i class="fa-solid fa-arrow-down-short-wide"></i>
-        <select id="library-sort" class="sort-select">
-            <option value="title">Sort by Title</option>
-            <option value="author">Sort by Author</option>
-            <option value="rating">Sort by Rating</option>
-            <option value="pages">Sort by Pages</option>
-        </select>
-    </div>
-</section>
+            <button id="export-library" class="btn-icon" style="position: absolute; top: 45; right: 0;"
+                title="Export Library">
+                <i class="fa-solid fa-download"></i> Export Library
+            </button>
+            <div class="sort-controls" style="position: absolute; top: 45px; right: 180px;">
+                <i class="fa-solid fa-filter"></i>
+                <select id="library-filter" class="sort-select" style="margin-right: 1rem;">
+                    <option value="all">All Shelves</option>
+                    <option value="current">Currently Immersed</option>
+                    <option value="want">Anticipated Journeys</option>
+                    <option value="finished">Finished Books</option>
+                </select>
+                <i class="fa-solid fa-arrow-down-short-wide"></i>
+                <select id="library-sort" class="sort-select">
+                    <option value="title">Sort by Title</option>
+                    <option value="author">Sort by Author</option>
+                    <option value="rating">Sort by Rating</option>
+                    <option value="pages">Sort by Pages</option>
+                </select>
+            </div>
+        </section>
 
 
         <!-- 3D Bookshelf Container -->
@@ -168,53 +182,31 @@
                 </div>
             </div>
         </div>
-        
 
     </main>
-    <!-- Footer -->
-  <footer class="footer" data-theme-aware>
-    <div class="footer-content">
-      <!-- Social Icons  -->
-      <div class="social_icons">
-        <a href="#" aria-label="LinkedIn" title="Connect on LinkedIn">
-          <i class="fab fa-linkedin"></i>
-        </a>
-        <a href="#" aria-label="Instagram" title="Follow on Instagram">
-          <i class="fab fa-instagram"></i>
-        </a>
-        <a href="#" aria-label="Facebook" title="Like on Facebook">
-          <i class="fab fa-facebook"></i>
-        </a>
-        <a href="#" aria-label="X (Twitter)" title="Follow on X">
-          <i class="fab fa-x"></i>
-
-        </a>
-      </div>
-
-      <div class="footer-brand">
-        <a href="index.html" class="logo-small">
-          <i class="fa-solid fa-book-open"></i> BiblioDrift
-        </a>
-        <p>Find yourself in the pages</p>
-      </div>
-
-      <div class="footer-links">
-        <div class="quick-links">
-          <a href="index.html">Discovery</a>
-          <a href="library.html">Library</a>
-          <a href="chat.html">Chat</a>
-        </div>
-        <div class="footer-info">
-          <span>&copy; 2026 BiblioDrift</span>
-          <span>Made with <i class="fa-solid fa-heart" style="color: #e53e3e;"></i> for readers</span>
-        </div>
-      </div>
-    </div>
-  </footer>
 
     <script src="library-3d.js"></script>
     <script src="app.js"></script>
-     <script src="script/header-scroll.js"></script>
+    <script src="footer.js"></script>
+    <script src="script/header-scroll.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            if (isLoggedIn) {
+                const link = document.getElementById('navAuthLink');
+                const tooltip = document.getElementById('navAuthTooltip');
+
+                if (link) {
+                    link.innerHTML = '<i class="fa-solid fa-user"></i>';
+                    link.href = 'profile.html';
+                    link.classList.remove('active'); // library is active, not profile
+                }
+                if (tooltip) {
+                    tooltip.innerHTML = '<i class="fa-solid fa-address-card"></i> View Profile';
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>
