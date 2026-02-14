@@ -317,16 +317,22 @@ class GoodReadsReviewScraper:
             # Log summary statistics
             if reviews:
                 avg_length = sum(r['length'] for r in reviews) / len(reviews)
-                ratings = [r['rating'] for r in reviews if r['rating']]
+                ratings = [r['rating'] for r in reviews if r['rating'] is not None]
                 avg_rating = sum(ratings) / len(ratings) if ratings else None
-                
-                self.logger.info(
-                    f"Collection complete: {len(reviews)} reviews, "
-                    f"avg length: {avg_length:.0f} chars, "
-                    f"avg rating: {avg_rating:.1f}" if avg_rating else "no ratings"
-                )
-            else:
-                self.logger.warning("No reviews collected")
+            
+                if avg_rating is not None:
+                    self.logger.info(
+                        f"Collection complete: {len(reviews)} reviews, "
+                        f"avg length: {avg_length:.0f} chars, "
+                        f"avg rating: {avg_rating:.1f}"
+                    )
+                else:
+                    self.logger.info(
+                        f"Collection complete: {len(reviews)} reviews, "
+                        f"avg length: {avg_length:.0f} chars, "
+                        "no ratings available"
+                    )
+
             
             return reviews
             
