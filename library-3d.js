@@ -255,16 +255,44 @@ class BookshelfRenderer3D {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        let books = [...(SAMPLE_BOOKS[shelfType] || [])]; // Clone array
+        // Fetch real library data
+        const storageKey = 'bibliodrift_library';
+        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
+            current: [],
+            want: [],
+            finished: []
+        };
+        let books = [...(localLibrary[shelfType] || [])];
+
+        // Map to expected format if needed (local storage format usually matches)
+        // Ensure volumeInfo is flattened for 3D renderer expectations if they differ
+        books = books.map(b => {
+            // If it's already flat (like sample), keep it. If it's Google Books style (volumeInfo), flatten it.
+            if (b.volumeInfo) {
+                return {
+                    id: b.id,
+                    title: b.volumeInfo.title || 'Untitled',
+                    author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
+                    cover: b.volumeInfo.imageLinks?.thumbnail || '',
+                    description: b.volumeInfo.description || '',
+                    rating: 4.0, // Default for now
+                    ratingCount: 0,
+                    categories: b.volumeInfo.categories || [],
+                    spineColor: b.spineColor, // Might be undefined, generator handles it
+                    reviews: []
+                };
+            }
+            return b;
+        });
 
         // Sort books
         books.sort((a, b) => {
             if (this.sortCriteria === 'title') return a.title.localeCompare(b.title);
             if (this.sortCriteria === 'author') return a.author.localeCompare(b.author);
             if (this.sortCriteria === 'rating') return b.rating - a.rating;
-             // Sort by 'pages'. Since SAMPLE_BOOKS doesn't have page count, we'll strip 'pages' option or just map it to something else
-             // But let's assume title for now or mock it? 
-             return a.title.localeCompare(b.title);
+            // Sort by 'pages'. Since SAMPLE_BOOKS doesn't have page count, we'll strip 'pages' option or just map it to something else
+            // But let's assume title for now or mock it? 
+            return a.title.localeCompare(b.title);
         });
 
         if (!books || books.length === 0) {
@@ -282,10 +310,10 @@ class BookshelfRenderer3D {
 
     createBookSpine(book, index) {
         const spine = document.createElement('div');
-        
+
         // Generate deterministic traits
         const traits = this.generateSpineTraits(book);
-        
+
         spine.className = `book-spine-3d ${traits.texture} ${traits.pattern}`;
         spine.dataset.bookId = book.id;
 
@@ -293,7 +321,7 @@ class BookshelfRenderer3D {
         // Wider spines for longer titles to fit full text
         const baseWidth = Math.min(55, 38 + book.title.length * 0.5);
         const spineWidth = baseWidth + Math.floor(this._seededRandom(traits.seed + 10) * 5); // Use deterministic random
-        
+
         // MUCH taller books so full title is readable
         const baseHeight = Math.min(280, 220 + book.title.length * 2.5);
         const spineHeight = baseHeight + Math.floor(this._seededRandom(traits.seed + 20) * 10);
@@ -340,23 +368,23 @@ class BookshelfRenderer3D {
         }
         return Math.abs(hash);
     }
-    
+
     _seededRandom(seed) {
         const x = Math.sin(seed) * 10000;
         return x - Math.floor(x);
     }
-    
+
     generateSpineTraits(book) {
         // Use title + author as seed for deterministic randomness
         const seedStr = (book.title + (book.author || '')).replace(/\s/g, '');
         const seed = this._hashString(seedStr);
-        
+
         const rand = (offset) => this._seededRandom(seed + offset);
 
         // 1. Color (if not set or just to ensure coverage)
         let spineColor = book.spineColor;
         let textColor = book.textColor;
-        
+
         // If no spine color, generate one
         if (!spineColor) {
             const hue = Math.floor(rand(1) * 360);
@@ -389,7 +417,7 @@ class BookshelfRenderer3D {
         if (rPat < 0.2) pattern = 'spine-pattern-bands';
         else if (rPat < 0.3) pattern = 'spine-pattern-frame';
         else if (rPat < 0.4) pattern = 'spine-pattern-ornament';
-        else pattern = ''; 
+        else pattern = '';
 
         // 5. Title Modifiers
         const rMod = rand(7);

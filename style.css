@@ -2741,6 +2741,7 @@ main {
         opacity: 0;
     }
 }
+
 /* ========================================= */
 /*      BOOK SPINE VARIATIONS (#12)         */
 /* ========================================= */
@@ -2749,31 +2750,31 @@ main {
 
 /* Leather Texture: subtle noise */
 .spine-texture-leather .spine-face {
-    background-image: 
+    background-image:
         url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E"),
-        linear-gradient(to right, rgba(0,0,0,0.3) 0%, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.2) 100%);
+        linear-gradient(to right, rgba(0, 0, 0, 0.3) 0%, rgba(255, 255, 255, 0.1) 40%, rgba(0, 0, 0, 0.2) 100%);
     background-blend-mode: overlay;
 }
 
 /* Cloth Texture: cross-hatch */
 .spine-texture-cloth .spine-face {
-    background-image: 
-        repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 4px),
-        repeating-linear-gradient(-45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 4px),
-        linear-gradient(to right, rgba(0,0,0,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.2) 100%);
+    background-image:
+        repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0px, rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.05) 0px, rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 4px),
+        linear-gradient(to right, rgba(0, 0, 0, 0.2) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(0, 0, 0, 0.2) 100%);
 }
 
 /* Paper/Matte Texture: flat with slight gradient */
 .spine-texture-paper .spine-face {
-    background-image: linear-gradient(to right, rgba(0,0,0,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.1) 100%);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0.1) 100%);
 }
 
 /* Worn/Rough Texture: scratches */
 .spine-texture-worn .spine-face {
-    background-image: 
+    background-image:
         url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10 L20 20 M50 50 L60 40 M80 20 L70 30' stroke='rgba(0,0,0,0.2)' stroke-width='1' fill='none'/%3E%3C/svg%3E"),
-        linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 10%, transparent 90%, rgba(0,0,0,0.2) 100%),
-        linear-gradient(to right, rgba(0,0,0,0.3) 0%, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.2) 100%);
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, transparent 10%, transparent 90%, rgba(0, 0, 0, 0.2) 100%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.3) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0.2) 100%);
 }
 
 
@@ -2783,34 +2784,40 @@ main {
     content: '';
     position: absolute;
     top: 15%;
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: var(--accent-gold);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     pointer-events: none;
 }
+
 .spine-pattern-bands::after {
     content: '';
     position: absolute;
     bottom: 20%;
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     height: 3px;
     background: var(--accent-gold);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     pointer-events: none;
 }
 
 .spine-pattern-frame::before {
     content: '';
     position: absolute;
-    top: 10%; bottom: 15%;
-    left: 6px; right: 6px;
-    border: 1px solid rgba(255,255,255,0.3);
+    top: 10%;
+    bottom: 15%;
+    left: 6px;
+    right: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     pointer-events: none;
 }
 
 .spine-pattern-ornament::before {
-    content: '?'; /* Floral heart ornament */
+    content: '?';
+    /* Floral heart ornament */
     position: absolute;
     bottom: 25%;
     left: 50%;
@@ -2836,7 +2843,7 @@ main {
     text-overflow: ellipsis;
     margin-top: auto;
     margin-bottom: auto;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Serif Classic */
@@ -2857,7 +2864,8 @@ main {
 
 /* Handwritten/Personal */
 .font-hand .spine-title {
-    font-family: 'Georgia', serif; /* Fallback for now */
+    font-family: 'Georgia', serif;
+    /* Fallback for now */
     font-style: italic;
     font-weight: 400;
 }
@@ -2905,7 +2913,10 @@ main {
 .profile-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0; height: 6px;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
     background: linear-gradient(90deg, var(--wood-dark), var(--wood-light), var(--accent-gold));
 }
 
@@ -2924,7 +2935,7 @@ main {
     justify-content: center;
     font-size: 3.5rem;
     border: 4px solid var(--bg-color);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .profile-badge {
@@ -2972,7 +2983,7 @@ main {
 .logout-btn {
     padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
-    background: var(--wood-dark); 
+    background: var(--wood-dark);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -3087,7 +3098,7 @@ main {
         text-align: center;
         padding: 2rem 1rem;
     }
-    
+
     .profile-actions {
         justify-content: center;
     }
@@ -5414,9 +5425,9 @@ main {
 }
 
 .modal-close-btn {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -5427,15 +5438,18 @@ main {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    color: var(--text-muted);
+    color: var(--text-main);
+    /* Ensure contrast */
     transition: all 0.3s ease;
-    z-index: 10;
+    z-index: 20000;
+    /* Ensure it's above everything */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .modal-close-btn:hover {
     background: var(--accent-gold);
     color: white;
-    transform: rotate(90deg);
+    transform: rotate(90deg) scale(1.1);
 }
 
 .book-detail-grid {
