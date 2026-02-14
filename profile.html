@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | BiblioDrift</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+
+    <header>
+        <a href="index.html" class="logo">
+            <i class="fa-solid fa-book-open"></i> BiblioDrift
+        </a>
+        <div class="header-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+                <i class="fa-solid fa-search search-icon"></i>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html">Discovery</a>
+                <a href="library.html">My Library</a>
+                <a href="chat.html">Chat</a>
+                <a href="profile.html" class="active">Profile</a>
+            </nav>
+            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main id="profile-page">
+        <section class="profile-header">
+            <div class="profile-card">
+                <div class="profile-avatar-wrapper">
+                    <div id="profile-avatar" class="profile-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="profile-badge">
+                        <i class="fa-solid fa-medal" title="BiblioDrift Explorer"></i>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <h1 id="profile-username">Reader</h1>
+                    <p id="profile-email" class="profile-email">reader@example.com</p>
+                    <p class="profile-since">Member since <span id="profile-joined">2024</span></p>
+                    <div class="profile-actions">
+                        <button id="logout-btn" class="action-btn-primary logout-btn">
+                            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-stats-container">
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                    <h3 id="stat-current">0</h3>
+                    <span>Reading</span>
+                </div>
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-check-double"></i>
+                    <h3 id="stat-finished">0</h3>
+                    <span>Finished</span>
+                </div>
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <h3 id="stat-want">0</h3>
+                    <span>To Read</span>
+                </div>
+                <div class="profile-stat-box">
+                    <i class="fa-solid fa-fire"></i>
+                    <h3 id="stat-streak">3</h3>
+                    <span>Day Streak</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-content">
+            <div class="achievements-section">
+                <h2><i class="fa-solid fa-trophy"></i> Reading Achievements</h2>
+                <div class="achievements-grid" id="achievements-grid">
+                    <!-- Achievements injected via JS -->
+                    <div class="achievement-card locked">
+                        <i class="fa-solid fa-book"></i>
+                        <h4>Bookworm</h4>
+                        <p>Read 10 books</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-activity-section">
+                <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h2>
+                <div class="activity-feed" id="activity-feed">
+                    <div class="empty-state">
+                        <p>No recent activity recorded.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/header-scroll.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

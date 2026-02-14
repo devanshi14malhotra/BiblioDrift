@@ -19,28 +19,52 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+class Book(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    google_books_id = db.Column(db.String(50), unique=True, nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    authors = db.Column(db.String(500))
+    thumbnail = db.Column(db.String(500))
+    description = db.Column(db.Text)
+    categories = db.Column(db.String(255))
+    average_rating = db.Column(db.Float)
+    page_count = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "google_books_id": self.google_books_id,
+            "title": self.title,
+            "authors": self.authors,
+            "thumbnail": self.thumbnail,
+            "description": self.description
+        }
+
 class ShelfItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    google_books_id = db.Column(db.String(50), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
-    authors = db.Column(db.String(255))
-    thumbnail = db.Column(db.String(500))
-    shelf_type = db.Column(db.String(50), nullable=False)  # 'want-to-read', 'currently-reading', 'favorites'
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    shelf_type = db.Column(db.String(50), nullable=False)  # 'want', 'current', 'finished'
+    progress = db.Column(db.Integer, default=0)
+    rating = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship to access user details if needed
+    # Relationships
     user = db.relationship('User', backref=db.backref('shelf_items', lazy=True))
+    book = db.relationship('Book', backref=db.backref('shelf_items', lazy=True))
 
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "google_books_id": self.google_books_id,
-            "title": self.title,
-            "authors": self.authors,
-            "thumbnail": self.thumbnail,
+            "google_books_id": self.book.google_books_id,
+            "title": self.book.title,
+            "authors": self.book.authors,
+            "thumbnail": self.book.thumbnail,
             "shelf_type": self.shelf_type,
+            "progress": self.progress,
+            "rating": self.rating,
             "created_at": self.created_at.isoformat()
         }
 
