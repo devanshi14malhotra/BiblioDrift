@@ -209,7 +209,8 @@ class BookRenderer {
         if (!container) return;
         try {
             const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books${keyParam}`);
+            const encodedQuery = encodeURIComponent(query);
+            const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=5&printType=books${keyParam}`);
 
             if (!res.ok) {
                 throw new Error(`API Error: ${res.statusText}`);
@@ -824,12 +825,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const searchInput = document.getElementById('searchInput');
+    const searchIcon = document.querySelector('.search-bar .search-icon');
+
+    const performSearch = () => {
+        if (searchInput && searchInput.value.trim()) {
+            window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+        }
+    };
+
     if (searchInput) {
         searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && searchInput.value.trim()) {
-                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
-            }
+            if (e.key === 'Enter') performSearch();
         });
+    }
+
+    if (searchIcon) {
+        searchIcon.addEventListener('click', performSearch);
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -841,9 +852,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             <section class="curated-section"><div class="curated-row" id="search-results"></div></section>`;
         renderer.renderCuratedSection(query, 'search-results');
     } else if (document.getElementById('row-rainy')) {
-        renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
-        renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
-        renderer.renderCuratedSection('subject:classic+fiction', 'row-classics');
+        renderer.renderCuratedSection('subject:mystery atmosphere', 'row-rainy');
+        renderer.renderCuratedSection('authors:amitav ghosh|authors:arundhati roy|subject:india', 'row-indian');
+        renderer.renderCuratedSection('subject:classic fiction', 'row-classics');
         renderer.renderCuratedSection('subject:fiction', 'row-genre');
     }
 
