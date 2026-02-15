@@ -68,6 +68,17 @@ class ShelfItem(db.Model):
             "created_at": self.created_at.isoformat()
         }
 
+class BookNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    book_title = db.Column(db.String(255), nullable=False)
+    book_author = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.Index('idx_book_note_title_author', 'book_title', 'book_author'),
+    )
+
 def register_user(username, email, password):
     user = User(username=username, email=email)
     user.set_password(password)

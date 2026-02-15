@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
-from models import db, User, Book, ShelfItem, register_user, login_user
+from models import db, User, Book, ShelfItem, BookNote, register_user, login_user
 from collections import defaultdict, deque
 from math import ceil
 from time import time
@@ -260,7 +260,24 @@ def handle_generate_note():
         title = data.get('title', '')
         author = data.get('author', '')
         
+        # Check cache
+        cached_note = BookNote.query.filter_by(book_title=title, book_author=author).first()
+        if cached_note:
+            print(f"Cache hit for {title} by {author}")
+            return jsonify({"vibe": cached_note.content})
+        
         vibe = generate_book_note(description, title, author)
+        
+        # Save to cache
+        try:
+            if vibe and title and author: # Ensure we have valid data to cache
+                new_note = BookNote(book_title=title, book_author=author, content=vibe)
+                db.session.add(new_note)
+                db.session.commit()
+        except Exception as e:
+            print(f"Failed to cache note: {e}")
+            db.session.rollback()
+
         return jsonify({"vibe": vibe})
         
     except Exception as e:
