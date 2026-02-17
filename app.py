@@ -5,6 +5,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import re
+import html
 from datetime import datetime
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from models import db, User, Book, ShelfItem, BookNote, register_user, login_user
@@ -25,7 +27,16 @@ except ImportError:
     logging.getLogger(__name__).warning("Mood analysis package not available - some endpoints will be disabled")
 
 app = Flask(__name__)
-CORS(app)
+
+# CORS configuration - restrict to specific origins in production
+# Set ALLOWED_ORIGINS environment variable for production
+allowed_origins = os.getenv('ALLOWED_ORIGINS', '*')
+if allowed_origins != '*':
+    allowed_origins = allowed_origins.split(',')
+CORS(app, origins=allowed_origins, supports_credentials=True)
+
+# Limit request body size to 1MB to prevent DoS attacks
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB
 
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX_REQUESTS = 30
@@ -64,15 +75,59 @@ def _rate_limited(endpoint: str) -> tuple[bool, int]:
 
     return False, 0
 
+
+# Input validation and sanitization
+def sanitize_string(value: str, max_length: int = 1000) -> str:
+    """Sanitize string input to prevent injection attacks."""
+    if not value or not isinstance(value, str):
+        return ""
+    # Truncate to max length
+    value = value[:max_length]
+    # Remove any control characters except newlines and tabs
+    value = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', value)
+    # HTML escape to prevent XSS
+    value = html.escape(value)
+    return value.strip()
+
+
+def validate_book_data(title: str, author: str, description: str) -> tuple[bool, str]:
+    """Validate book data inputs."""
+    if not title or len(title.strip()) == 0:
+        return False, "Title is required"
+    if len(title) > 500:
+        return False, "Title too long (max 500 characters)"
+    if author and len(author) > 500:
+        return False, "Author name too long (max 500 characters)"
+    if description and len(description) > 5000:
+        return False, "Description too long (max 5000 characters)"
+    return True, ""
+
+
+def validate_chat_message(message: str, history: list) -> tuple[bool, str]:
+    """Validate chat message and history."""
+    if not message or len(message.strip()) == 0:
+        return False, "Message is required"
+    if len(message) > 2000:
+        return False, "Message too long (max 2000 characters)"
+    if not isinstance(history, list):
+        return False, "History must be a list"
+    if len(history) > 50:
+        return False, "Conversation history too long (max 50 messages)"
+    return True, ""
+
+
 # Initialize AI service if available
 if MOOD_ANALYSIS_AVAILABLE:
     ai_service = AIBookService()
 
 @app.route('/api/v1/config', methods=['GET'])
 def get_config():
-    """Serve public configuration values like Google Books API Key."""
+    """Serve public configuration values. API keys should NOT be exposed to frontend."""
+    # SECURITY: Never expose API keys to frontend
+    # Frontend should make requests to backend which calls Google Books API
     return jsonify({
-        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', '')
+        "status": "ok",
+        "note": "API keys are managed server-side for security"
     })
 
 @app.route('/')
@@ -141,11 +196,14 @@ def handle_analyze_mood():
         if not data:
             return jsonify({"error": "Invalid JSON or missing request body"}), 400
             
-        title = data.get('title', '')
-        author = data.get('author', '')
+        # Get and sanitize inputs
+        title = sanitize_string(data.get('title', ''), max_length=500)
+        author = sanitize_string(data.get('author', ''), max_length=500)
         
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        # Validate inputs
+        valid, error_msg = validate_book_data(title, author, "")
+        if not valid:
+            return jsonify({"error": error_msg}), 400
         
         mood_analysis = ai_service.analyze_book_mood(title, author)
         
@@ -161,9 +219,10 @@ def handle_analyze_mood():
             }), 404
             
     except Exception as e:
+        print(f"Error in analyze_mood: {e}")
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "An error occurred while analyzing mood"
         }), 500
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
@@ -184,11 +243,14 @@ def handle_mood_tags():
         if not data:
             return jsonify({"error": "Invalid JSON or missing request body"}), 400
             
-        title = data.get('title', '')
-        author = data.get('author', '')
+        # Get and sanitize inputs
+        title = sanitize_string(data.get('title', ''), max_length=500)
+        author = sanitize_string(data.get('author', ''), max_length=500)
         
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        # Validate inputs
+        valid, error_msg = validate_book_data(title, author, "")
+        if not valid:
+            return jsonify({"error": error_msg}), 400
         
         mood_tags = get_book_mood_tags_safe(title, author)
         return jsonify({
@@ -197,9 +259,10 @@ def handle_mood_tags():
         })
         
     except Exception as e:
+        print(f"Error in mood_tags: {e}")
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "An error occurred while getting mood tags"
         }), 500
 
 @app.route('/api/v1/mood-search', methods=['POST'])
@@ -220,9 +283,10 @@ def handle_mood_search():
         if not data:
             return jsonify({"error": "Invalid JSON or missing request body"}), 400
             
-        mood_query = data.get('query', '')
+        # Get and sanitize input
+        mood_query = sanitize_string(data.get('query', ''), max_length=500)
         
-        if not mood_query:
+        if not mood_query or len(mood_query.strip()) == 0:
             return jsonify({"error": "Query is required"}), 400
         
         recommendations = get_ai_recommendations(mood_query)
@@ -233,9 +297,10 @@ def handle_mood_search():
         })
         
     except Exception as e:
+        print(f"Error in mood_search: {e}")
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "An error occurred while searching for mood-based recommendations"
         }), 500
 
 @app.route('/api/v1/generate-note', methods=['POST'])
@@ -256,9 +321,15 @@ def handle_generate_note():
         if not data:
             return jsonify({"error": "Invalid JSON or missing request body"}), 400
             
-        description = data.get('description', '')
-        title = data.get('title', '')
-        author = data.get('author', '')
+        # Get and sanitize inputs
+        title = sanitize_string(data.get('title', ''), max_length=500)
+        author = sanitize_string(data.get('author', ''), max_length=500)
+        description = sanitize_string(data.get('description', ''), max_length=5000)
+        
+        # Validate inputs
+        valid, error_msg = validate_book_data(title, author, description)
+        if not valid:
+            return jsonify({"error": error_msg}), 400
         
         # Check cache
         cached_note = BookNote.query.filter_by(book_title=title, book_author=author).first()
@@ -281,9 +352,11 @@ def handle_generate_note():
         return jsonify({"vibe": vibe})
         
     except Exception as e:
+        # Don't expose internal error details
+        print(f"Error in generate_note: {e}")
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "An error occurred while generating the note"
         }), 500
 
 @app.route('/api/v1/chat', methods=['POST'])
@@ -294,25 +367,28 @@ def handle_chat():
         if not data:
             return jsonify({"error": "Invalid JSON or missing request body"}), 400
             
-        user_message = data.get('message', '')
+        # Get and sanitize inputs
+        user_message = sanitize_string(data.get('message', ''), max_length=2000)
         conversation_history = data.get('history', [])
         
-        if not user_message:
-            return jsonify({"error": "Message is required"}), 400
-        
-        # Validate and limit conversation history
-        if not isinstance(conversation_history, list):
-            conversation_history = []
+        # Validate inputs
+        valid, error_msg = validate_chat_message(user_message, conversation_history)
+        if not valid:
+            return jsonify({"error": error_msg}), 400
         
         # Limit history size for security and performance
         conversation_history = conversation_history[-10:]  # Only keep last 10 messages
         
-        # Validate each message in history
+        # Validate and sanitize each message in history
         validated_history = []
         for msg in conversation_history:
             if isinstance(msg, dict) and 'type' in msg and 'content' in msg:
-                if len(str(msg.get('content', ''))) <= 1000:  # Limit message size
-                    validated_history.append(msg)
+                sanitized_content = sanitize_string(str(msg.get('content', '')), max_length=1000)
+                if sanitized_content:
+                    validated_history.append({
+                        'type': msg.get('type'),
+                        'content': sanitized_content
+                    })
         
         # Generate contextual response based on conversation history
         response = generate_chat_response(user_message, validated_history)
@@ -328,9 +404,11 @@ def handle_chat():
         })
         
     except Exception as e:
+        # Don't expose internal error details
+        print(f"Error in chat: {e}")
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "An error occurred while processing your message"
         }), 500
 
 @app.route('/api/v1/health', methods=['GET'])
