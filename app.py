@@ -83,8 +83,8 @@ def sanitize_string(value: str, max_length: int = 1000) -> str:
         return ""
     # Truncate to max length
     value = value[:max_length]
-    # Remove any control characters except newlines and tabs
-    value = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', value)
+    # Remove any control characters (including newlines/tabs since we're using this in JSON/HTML context)
+    value = re.sub(r'[\x00-\x1F\x7F]', '', value)
     # HTML escape to prevent XSS
     value = html.escape(value)
     return value.strip()
@@ -111,8 +111,9 @@ def validate_chat_message(message: str, history: list) -> tuple[bool, str]:
         return False, "Message too long (max 2000 characters)"
     if not isinstance(history, list):
         return False, "History must be a list"
-    if len(history) > 50:
-        return False, "Conversation history too long (max 50 messages)"
+    # Limit to 10 messages since that's what we actually use
+    if len(history) > 10:
+        return False, "Conversation history too long (max 10 messages)"
     return True, ""
 
 
@@ -383,7 +384,11 @@ def handle_chat():
         validated_history = []
         for msg in conversation_history:
             if isinstance(msg, dict) and 'type' in msg and 'content' in msg:
-                sanitized_content = sanitize_string(str(msg.get('content', '')), max_length=1000)
+                content = msg.get('content', '')
+                # Ensure content is a string before sanitizing
+                if not isinstance(content, str):
+                    continue  # Skip non-string content
+                sanitized_content = sanitize_string(content, max_length=1000)
                 if sanitized_content:
                     validated_history.append({
                         'type': msg.get('type'),
