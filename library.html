@@ -200,13 +200,15 @@
                         </div>
 
                         <div class="book-actions-section">
-                            <button class="action-btn-primary add-to-library" id="modal-add-btn">
-                                <i class="fa-regular fa-heart"></i>
-                                Add to Library
-                            </button>
-                            <button class="action-btn-primary mark-read" id="modal-read-btn">
-                                <i class="fa-solid fa-check"></i>
-                                Mark as Read
+                            <label for="modal-shelf-select" style="margin-right: 10px; font-weight: bold;">Move to Shelf:</label>
+                            <select id="modal-shelf-select" class="shelf-select" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
+                                <option value="current">Currently Immersed</option>
+                                <option value="want">Anticipated Journeys</option>
+                                <option value="finished">Lifetime Favorites</option>
+                            </select>
+                            <button class="action-btn-primary remove-from-library" id="modal-remove-btn" style="margin-left: 10px; background-color: #ff4d4d;">
+                                <i class="fa-solid fa-trash"></i>
+                                Remove
                             </button>
                         </div>
                     </div>
