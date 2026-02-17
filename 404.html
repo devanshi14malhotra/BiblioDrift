@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Not Found | BiblioDrift</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+
+<body class="error-page-body">
+  <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon" style="cursor: pointer;"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html">Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html">My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+            <a href="chat.html">Chat</a>
+            <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+          </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink">Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="error-content-wrapper">
+        <h1 class="error-code">404</h1>
+        
+        <div class="error-book-icon">
+            <i class="fa-solid fa-book-open"></i>
+            <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; margin-left: -20px; color: var(--accent-gold);"></i>
+        </div>
+
+        <h2 class="error-heading">This book is missing from the shelf.</h2>
+        
+        <p class="error-subtext">
+            We've searched every aisle, checked behind the classics, and even looked in the return bin. 
+            The page you're looking for seems to have wandered off into another story.
+        </p>
+
+        <div class="error-actions">
+            <a href="index.html" class="btn-primary">Return to Library</a>
+            <a href="javascript:history.back()" class="btn-outline">Go Back</a>
+        </div>
+    </section>
+  </main>
+
+  <script src="footer.js"></script>
+  <script src="app.js"></script>
+  <script src="script/header-scroll.js"></script>
+</body>
+
+</html>

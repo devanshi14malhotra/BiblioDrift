@@ -25,11 +25,19 @@ except ImportError:
     import logging
     logging.getLogger(__name__).warning("Mood analysis package not available - some endpoints will be disabled")
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'default-dev-secret-key')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 jwt = JWTManager(app)
 CORS(app)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # Check if request accepts JSON (API)
+    if request.path.startswith('/api/'):
+        return jsonify({"error": "Endpoint not found"}), 404
+    # Serve custom HTML for browser requests
+    return app.send_static_file('404.html'), 404
 
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX_REQUESTS = 30
