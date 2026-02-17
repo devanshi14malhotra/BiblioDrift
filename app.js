@@ -273,12 +273,12 @@ class BookRenderer {
         document.getElementById('closeModalBtn').onclick = () => modal.close();
     }
 
-    async renderCuratedSection(query, elementId) {
+    async renderCuratedSection(query, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
         if (!container) return;
         try {
             const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const res = await fetch(`${API_BASE}?q=${query}&maxResults=5&printType=books${keyParam}`);
+            const res = await fetch(`${API_BASE}?q=${query}&maxResults=${maxResults}&printType=books${keyParam}`);
 
             if (!res.ok) {
                 throw new Error(`API Error: ${res.statusText}`);
@@ -893,22 +893,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const searchInput = document.getElementById('searchInput');
+    const searchIcon = document.querySelector('.search-icon'); // Or better, get the one inside search-bar if generic
+
+    const performSearch = () => {
+        if (searchInput && searchInput.value.trim()) {
+            window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+        }
+    };
+
     if (searchInput) {
         searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && searchInput.value.trim()) {
-                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
-            }
+            if (e.key === 'Enter') performSearch();
         });
+    }
+
+    if (searchIcon) {
+        searchIcon.style.cursor = 'pointer';
+        searchIcon.addEventListener('click', performSearch);
     }
 
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q');
+    
+    // Fill search box if query exists
+    if (query && searchInput) {
+        searchInput.value = query;
+    }
 
     if (query && document.getElementById('row-rainy')) {
         document.querySelector('main').innerHTML = `
-            <section class="hero"><h1>Results for "${query}"</h1></section>
-            <section class="curated-section"><div class="curated-row" id="search-results"></div></section>`;
-        renderer.renderCuratedSection(query, 'search-results');
+            <section class="hero">
+                <h1>Results for "${query}"</h1>
+                <p>Found specific books matching your vibe.</p>
+            </section>
+            <section class="curated-section">
+                <div class="curated-row" id="search-results" style="flex-wrap: wrap; justify-content: center;"></div>
+            </section>`;
+        renderer.renderCuratedSection(query, 'search-results', 20);
     } else if (document.getElementById('row-rainy')) {
         renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
         renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
