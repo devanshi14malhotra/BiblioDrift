@@ -115,13 +115,18 @@ class BookRenderer {
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
         const description = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
+        const categories = volumeInfo.categories || [];
 
-        const vibe = this.generateVibe(description);
+        const vibe = this.generateVibe(description, categories);
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
 
         const scene = document.createElement('div');
         scene.className = 'book-scene';
+
+        // Load flip sound
+        const flipSound = new Audio('assets/sounds/page-flip.mp3');
+        flipSound.volume = 0.5;
 
         scene.innerHTML = `
             <div class="book" data-id="${id}">
@@ -131,9 +136,10 @@ class BookRenderer {
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book_face--right"></div>
                 <div class="book__face book__face--back">
-                    <div>
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem;">${title}</div>
-                        <div class="handwritten-note">Bookseller's Note: "${vibe}"</div>
+                    <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${vibe}</div>
+                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${description}</div>
                     </div>
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
@@ -143,7 +149,7 @@ class BookRenderer {
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped')"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
             </div>
@@ -157,6 +163,9 @@ class BookRenderer {
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
                 bookEl.classList.toggle('flipped');
+                // Play sound
+                flipSound.currentTime = 0;
+                flipSound.play().catch(e => console.log("Audio play failed", e));
             }
         });
 
@@ -183,12 +192,72 @@ class BookRenderer {
             this.openModal(bookData);
         });
 
+        // Async fetch AI Vibe - Hydrate the UI
+        this.fetchAIVibe(title, authors, volumeInfo.description || "").then(aiVibe => {
+             if (aiVibe) {
+                 // Strip any accidental prefix the AI might return
+                 const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+                 
+                 const noteEl = scene.querySelector('.handwritten-note');
+                 if (noteEl) {
+                    noteEl.innerHTML = cleanVibe;
+                    noteEl.classList.add('fade-in'); // Optional animation hook
+                 }
+             }
+        });
+
         return scene;
     }
 
-    generateVibe(text) {
-        const vibes = ["Perfect for a rainy afternoon.", "A quiet companion for coffee.", "Heartwarming and gentle.", "Intense and thought-provoking."];
-        return vibes[Math.floor(Math.random() * vibes.length)];
+    async fetchAIVibe(title, author, description) {
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, author, description })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                return data.vibe;
+            }
+        } catch (e) {
+            // Silently fail to mock vibe
+        }
+        return null;
+    }
+
+    generateVibe(text, categories = []) {
+        // Fallback vibes if AI hasn't loaded yet.
+        const lowerText = text.toLowerCase();
+        const lowerCats = categories.join(' ').toLowerCase();
+
+        // 1. Context-aware fallbacks
+        if (lowerCats.includes('classic') || lowerText.includes('classic')) return "A timeless tale that defined a genre.";
+        if (lowerCats.includes('romance') || lowerText.includes('love')) return "A heartwarming story of connection.";
+        if (lowerCats.includes('mystery') || lowerText.includes('murder') || lowerText.includes('detective')) return "Full of twists that keep you guessing.";
+        if (lowerCats.includes('fantasy') || lowerText.includes('magic')) return "A magical escape to another world.";
+        if (lowerCats.includes('fiction') || lowerText.includes('novel')) return "A compelling narrative voice.";
+        if (lowerCats.includes('history') || lowerText.includes('war')) return "A journey into the past.";
+        if (lowerCats.includes('science') || lowerText.includes('space')) return "Opens your mind to new possibilities.";
+        
+        // 2. Generic fallbacks (Deterministic hash)
+        const vibes = [
+            "Perfect for a rainy afternoon.", 
+            "A quiet companion for coffee.", 
+            "Intense and thought-provoking.",
+            "Will make you laugh and cry.",
+            "Best devoured in one sitting.",
+            "Prepare to be surprised."
+        ];
+        
+        // Simple hash to pick a stable vibe for this book text
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = ((hash << 5) - hash) + text.charCodeAt(i);
+            hash |= 0; // Convert to 32bit integer
+        }
+        
+        return vibes[Math.abs(hash) % vibes.length];
     }
 
     openModal(book) {

@@ -694,6 +694,18 @@ class BookshelfRenderer3D {
     }
 
     setupModalHandlers() {
+        // Book flip interaction
+        const bookObject = document.getElementById('book-3d-object');
+        if (bookObject) {
+            bookObject.addEventListener('click', (e) => {
+                // If user is selecting text (e.g. description), don't flip
+                if (window.getSelection().toString().length > 0) {
+                    return;
+                }
+                bookObject.classList.toggle('flipped');
+            });
+        }
+
         // Close button
         const closeBtn = document.getElementById('modal-close-btn');
         if (closeBtn) {
