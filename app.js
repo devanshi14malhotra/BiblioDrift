@@ -331,12 +331,22 @@ class LibraryManager {
         return userStr ? JSON.parse(userStr) : null;
     }
 
+    getAuthHeaders() {
+        const token = localStorage.getItem('bibliodrift_token');
+        return new Headers({
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        });
+    }
+
     async syncWithBackend() {
         const user = this.getUser();
         if (!user) return;
 
         try {
-            const res = await fetch(`${this.apiBase}/library/${user.id}`);
+            const res = await fetch(`${this.apiBase}/library/${user.id}`, {
+                headers: this.getAuthHeaders()
+            });
             if (res.ok) {
                 const data = await res.json();
 
@@ -444,7 +454,7 @@ class LibraryManager {
             console.log(`Syncing ${itemsToSync.length} items to backend...`);
             const res = await fetch(`${this.apiBase}/library/sync`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getAuthHeaders(),
                 body: JSON.stringify({
                     user_id: user.id,
                     items: itemsToSync
@@ -548,7 +558,7 @@ class LibraryManager {
 
                 const res = await fetch(`${this.apiBase}/library`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: this.getAuthHeaders(),
                     body: JSON.stringify(payload)
                 });
 
@@ -604,7 +614,7 @@ class LibraryManager {
             // Do we have it?
             if (user && book.db_id) {
                 try {
-                    await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE' });
+                    await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE', headers: this.getAuthHeaders() });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
                     showToast("Removed locally (Backend sync failed)", "info");
@@ -1092,6 +1102,10 @@ async function handleAuth(event) {
 
         if (res.ok) {
             // Success!
+            // Store Access Token and User Info
+            if (data.access_token) {
+                localStorage.setItem('bibliodrift_token', data.access_token);
+            }
             localStorage.setItem('bibliodrift_user', JSON.stringify(data.user));
 
             if (typeof showToast === 'function')
