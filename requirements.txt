@@ -3,6 +3,7 @@
 flask==3.1.2
 flask-cors==6.0.2
 python-dotenv==1.0.1
+Flask-JWT-Extended==4.7.1
 
 # Database
 Flask-SQLAlchemy==3.1.1

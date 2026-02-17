@@ -3,9 +3,10 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from models import db, User, Book, ShelfItem, BookNote, register_user, login_user
 from collections import defaultdict, deque
@@ -24,8 +25,19 @@ except ImportError:
     import logging
     logging.getLogger(__name__).warning("Mood analysis package not available - some endpoints will be disabled")
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'default-dev-secret-key')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
+jwt = JWTManager(app)
 CORS(app)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # Check if request accepts JSON (API)
+    if request.path.startswith('/api/'):
+        return jsonify({"error": "Endpoint not found"}), 404
+    # Serve custom HTML for browser requests
+    return app.send_static_file('404.html'), 404
 
 RATE_LIMIT_WINDOW = 60  # seconds
 RATE_LIMIT_MAX_REQUESTS = 30
@@ -353,12 +365,19 @@ def health_check():
 
 
 @app.route('/api/v1/library', methods=['POST'])
+@jwt_required()
 def add_to_library():
     """Add a book to the user's shelf."""
     data = request.json
+    current_user_id = get_jwt_identity()
+    
     required_fields = ['user_id', 'google_books_id', 'title', 'shelf_type']
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
+    
+    # Ensure user matches token
+    if str(data['user_id']) != str(current_user_id):
+        return jsonify({"error": "Unauthorized access to another user's library"}), 403
     
     try:
         # Check if the book exists in the Book table
@@ -394,8 +413,13 @@ def add_to_library():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/library/<int:user_id>', methods=['GET'])
+@jwt_required()
 def get_library(user_id):
     """Get all books in a user's library."""
+    current_user_id = get_jwt_identity()
+    if str(user_id) != str(current_user_id):
+        return jsonify({"error": "Unauthorized"}), 403
+        
     try:
         items = ShelfItem.query.filter_by(user_id=user_id).all()
         # Ensure join loads correctly or use manual load if lazy loading fails
@@ -404,14 +428,20 @@ def get_library(user_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/library/<int:item_id>', methods=['PUT'])
+@jwt_required()
 def update_library_item(item_id):
     """Update a library item (e.g. move to different shelf)."""
     data = request.json
+    current_user_id = get_jwt_identity()
+    
     try:
         item = ShelfItem.query.get(item_id)
         if not item:
             return jsonify({"error": "Item not found"}), 404
             
+        if str(item.user_id) != str(current_user_id):
+             return jsonify({"error": "Unauthorized"}), 403
+
         if 'shelf_type' in data:
             item.shelf_type = data['shelf_type']
             
@@ -422,12 +452,17 @@ def update_library_item(item_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/v1/library/<int:item_id>', methods=['DELETE'])
+@jwt_required()
 def remove_from_library(item_id):
     """Remove a book from the library."""
+    current_user_id = get_jwt_identity()
     try:
         item = ShelfItem.query.get(item_id)
         if not item:
             return jsonify({"error": "Item not found"}), 404
+        
+        if str(item.user_id) != str(current_user_id):
+            return jsonify({"error": "Unauthorized"}), 403
             
         db.session.delete(item)
         db.session.commit()
@@ -445,10 +480,16 @@ db.init_app(app)
 
 
 @app.route('/api/v1/library/sync', methods=['POST'])
+@jwt_required()
 def sync_library():
     """Sync a list of books from local storage to the user's account."""
+    current_user_id = get_jwt_identity()
     data = request.json
     user_id = data.get('user_id')
+    
+    if str(user_id) != str(current_user_id):
+        return jsonify({"error": "Unauthorized"}), 403
+        
     items = data.get('items', [])
     
     if not user_id:
@@ -503,18 +544,30 @@ def sync_library():
 
 @app.route('/api/v1/register', methods=['POST'])
 def register():
+    # Register a new user and return JWT token
     data = request.json
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+    
     if not username or not email or not password:
         return jsonify({"error": "Missing fields"}), 400
 
+    # check if user exists
+    if User.query.filter((User.username==username) | (User.email==email)).first():
+        return jsonify({"error": "User already exists"}), 409
+
     try:
         register_user(username, email, password)
+        # Fetch the user to get ID
         user = User.query.filter_by(username=username).first()
+        
+        # Create JWT token
+        access_token = create_access_token(identity=str(user.id))
+        
         return jsonify({
             "message": "User registered successfully",
+            "access_token": access_token,
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -526,22 +579,31 @@ def register():
 
 @app.route('/api/v1/login', methods=['POST'])
 def login():
+    # Authenticate user and return JWT token
     data = request.json
-    username = data.get('username')
+    username_or_email = data.get('username')
     password = data.get('password')
-    if not username or not password:
+    
+    if not username_or_email or not password:
         return jsonify({"error": "Missing fields"}), 400
 
-    user = login_user(username, password)
-    if user:
+    # Try to find user by username or email
+    user = User.query.filter((User.username==username_or_email) | (User.email==username_or_email)).first()
+    
+    if user and user.check_password(password):
+        # Create JWT token
+        access_token = create_access_token(identity=str(user.id))
+        
         return jsonify({
             "message": "Login successful",
+            "access_token": access_token,
             "user": {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email
             }
         }), 200
+        
     return jsonify({"error": "Invalid username or password"}), 401
 
 with app.app_context():
