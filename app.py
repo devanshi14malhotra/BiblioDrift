@@ -384,14 +384,20 @@ def handle_chat():
         validated_history = []
         for msg in conversation_history:
             if isinstance(msg, dict) and 'type' in msg and 'content' in msg:
+                msg_type = msg.get('type', '')
                 content = msg.get('content', '')
-                # Ensure content is a string before sanitizing
-                if not isinstance(content, str):
-                    continue  # Skip non-string content
+                
+                # Ensure both type and content are strings before sanitizing
+                if not isinstance(msg_type, str) or not isinstance(content, str):
+                    continue  # Skip invalid messages
+                
+                # Sanitize both fields
+                sanitized_type = sanitize_string(msg_type, max_length=50)
                 sanitized_content = sanitize_string(content, max_length=1000)
-                if sanitized_content:
+                
+                if sanitized_type and sanitized_content:
                     validated_history.append({
-                        'type': msg.get('type'),
+                        'type': sanitized_type,
                         'content': sanitized_content
                     })
         
