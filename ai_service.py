@@ -48,17 +48,18 @@ class PromptTemplates:
     def get_book_note_prompt(title: str, author: str, description: str, mood_context: str = "") -> str:
         """Generate book note prompt template."""
         template = os.getenv('BOOK_NOTE_PROMPT_TEMPLATE', 
-            """Generate a cozy, bookstore-style recommendation for this book.
-            
+            """Write a short, evocative "vibe check" for this book, like a handwritten note from a passionate bookseller.
+
 Book: "{title}" by {author}
 Description: {description}
 {mood_context}
 
-Write a warm, personal note as if you're a knowledgeable bookseller recommending this book. 
-Keep it under {max_words} words and capture the book's essence and mood.
-Style: Warm, inviting, no clichés.""")
+Constraint: Strictly under {max_words} words.
+Style: Atmospheric, emotional, and specific to this book's unique feeling.
+Avoid generic praise (e.g., "great book"). Focus on the *experience* of reading it (e.g., "Perfect for rainy afternoons," "A slow-burn heartbreak," "Feels like a warm hug").
+Output ONLY the vibe check text. Do NOT include "Bookseller's Note:" or any other prefix.""")
         
-        max_words = os.getenv('BOOK_NOTE_MAX_WORDS', '50')
+        max_words = os.getenv('BOOK_NOTE_MAX_WORDS', '30')
         
         return template.format(
             title=title,
