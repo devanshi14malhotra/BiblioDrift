@@ -185,7 +185,24 @@ const SAMPLE_BOOKS = {
                 { name: 'MemoirLover', rating: 5, text: 'An incredible story of resilience and determination.' },
                 { name: 'Educator', rating: 4, text: 'Shows the transformative power of education.' }
             ]
-        }
+        },
+        {
+    id: 'sample-12',
+    title: 'The Alchemist',
+    author: 'Paulo Coelho',
+    cover: 'https://covers.openlibrary.org/b/id/8225261-M.jpg',
+    rating: 4.3,
+    ratingCount: 5124,
+    description: 'Santiago, a young Andalusian shepherd, dreams of discovering a worldly treasure. His journey takes him across the deserts of Egypt, teaching him about destiny, love, and listening to his heart.',
+    categories: ['Fiction', 'Adventure', 'Inspirational'],
+    spineColor: '#DAA520',
+    textColor: '#1C1C1C',
+    reviews: [
+        { name: 'DreamChaser', rating: 5, text: 'A beautiful and inspiring tale about following your dreams.' },
+        { name: 'BookWorm99', rating: 4, text: 'Simple yet powerful storytelling with deep meaning.' }
+    ]
+}
+
     ]
 };
 
