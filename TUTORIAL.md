@@ -6,6 +6,23 @@ Welcome to BiblioDrift! This comprehensive tutorial will guide you through disco
 
 BiblioDrift is more than just a book finder—it's a sanctuary for readers who discover books through emotions and vibes rather than rigid categories. Imagine wandering through a warm, quiet bookstore where books practically whisper their stories to you.
 
+
+## Why BiblioDrift is Different
+
+Unlike traditional platforms that focus heavily on categories and algorithms, BiblioDrift emphasizes:
+
+🎨 Visual-first discovery – Explore beautiful book covers and curated collections
+
+💫 Emotion-based browsing – Find books by how you feel, not just by genre
+
+📖 Curated recommendations – Thoughtfully selected reads instead of endless scrolling
+
+🧘 Calm, cozy experience – A distraction-free space designed for mindful browsing
+
+It’s not about finding the most popular book.
+It’s about finding the right book for you.
+
+
 ### Core Philosophy
 - **"Zero UI Noise"**: Clean, distraction-free browsing experience
 - **Tactile Interaction**: 3D books you can pull from shelves and flip over

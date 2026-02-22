@@ -488,51 +488,64 @@ class BookMoodAnalyzer:
         
         vibes = []
         
-        # Base vibe on sentiment
+        # Base vibe on sentiment - Bookseller Style
         if compound_score >= 0.5:
             vibes.extend([
-                "A book that wraps you in warmth.",
-                "Perfect for lifting spirits on any day.",
-                "Readers consistently fall in love with this one."
+                "Feels like a warm hug on a cold day.",
+                "Pure sunshine in paperback form.",
+                "A guaranteed mood-lifter you'll want to share."
             ])
         elif compound_score >= 0.1:
             vibes.extend([
-                "A gentle companion for quiet moments.",
-                "Leaves most readers with a satisfied smile.",
-                "The kind of book you recommend to friends."
+                "Quietly brilliant and deeply satisfying.",
+                "A gentle companion perfect for Sunday mornings.",
+                "The literary equivalent of a perfect cup of tea."
             ])
         elif compound_score >= -0.1:
             vibes.extend([
-                "A book that divides readers - in the best way.",
-                "Complex emotions await within these pages.",
-                "Not for everyone, but unforgettable for some."
+                "Complicated, messy, and absolutely human.",
+                "A conversation starter that lingers.",
+                "Divisive in the best way possible."
             ])
         else:
             vibes.extend([
-                "A challenging read that stays with you.",
-                "Prepare for an emotionally intense journey.",
-                "Not a comfort read, but deeply impactful."
+                "Hauntingly beautiful and emotionally raw.",
+                "Prepare for a storm of feelings.",
+                "Not an easy read, but an essential one."
             ])
         
         # Add mood-specific vibes
         if dynamic_moods:
-            primary_mood = max(dynamic_moods.items(), key=lambda x: x[1])[0]
+            # Find the primary mood (highest score)
+            if isinstance(dynamic_moods, dict):
+                 # Handle dictionary case
+                 primary_mood = max(dynamic_moods.items(), key=lambda x: x[1])[0]
+            else:
+                 # Handle simplistic string handling if it ever happens
+                 primary_mood = str(dynamic_moods)
             
             mood_vibes = {
-                'cozy': "Like a warm blanket on a rainy day.",
-                'dark': "Best read with all the lights on.",
-                'mysterious': "Will keep you guessing until the very end.",
-                'romantic': "Have tissues ready for the swoony moments.",
-                'adventurous': "Pack your bags - you're going on a journey.",
-                'melancholy': "Beautiful in its sadness, like autumn leaves.",
-                'uplifting': "A ray of sunshine in book form.",
-                'intense': "Buckle up for an emotional rollercoaster.",
-                'whimsical': "Delightfully odd in all the right ways.",
-                'thought-provoking': "Will have you pondering long after the last page."
+                'cozy': "Best enjoyed with rain against the window.",
+                'dark': "Atmospheric and shadowy—keep the lights on.",
+                'mysterious': "A puzzle box of a book that refuses to solve itself.",
+                'romantic': "Swoon-worthy and full of heart.",
+                'adventurous': "A ticket to somewhere else entirely.",
+                'melancholy': "Beautifully sad, like a fading photograph.",
+                'uplifting': "Restores your faith in... everything.",
+                'intense': "Reads like a fever dream you won't wake up from.",
+                'whimsical': "A little magic for your mundane Tuesday.",
+                'thought-provoking': "Will live rent-free in your head for weeks."
             }
             
-            if primary_mood in mood_vibes:
-                vibes.append(mood_vibes[primary_mood])
+            # Check for substring match or exact match
+            matched_vibe = None
+            for key, val in mood_vibes.items():
+                if key in str(primary_mood).lower():
+                    matched_vibe = val
+                    break
+            
+            if matched_vibe:
+                vibes.append(matched_vibe)
         
         # Return a random vibe
         import random
