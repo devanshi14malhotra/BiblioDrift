@@ -9,6 +9,20 @@ import os
 from datetime import datetime, timedelta
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from models import db, User, Book, ShelfItem, BookNote, register_user, login_user
+from validators import (
+    validate_request,
+    AnalyzeMoodRequest,
+    MoodTagsRequest,
+    MoodSearchRequest,
+    GenerateNoteRequest,
+    ChatRequest,
+    AddToLibraryRequest,
+    UpdateLibraryItemRequest,
+    SyncLibraryRequest,
+    RegisterRequest,
+    LoginRequest,
+    format_validation_errors
+)
 from collections import defaultdict, deque
 from math import ceil
 from time import time
@@ -150,14 +164,14 @@ def handle_analyze_mood():
     
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON or missing request body"}), 400
-            
-        title = data.get('title', '')
-        author = data.get('author', '')
         
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        # Validate request using Pydantic
+        is_valid, validated_data = validate_request(AnalyzeMoodRequest, data)
+        if not is_valid:
+            return jsonify(validated_data), 400
+        
+        title = validated_data.title
+        author = validated_data.author
         
         mood_analysis = ai_service.analyze_book_mood(title, author)
         
@@ -193,14 +207,14 @@ def handle_mood_tags():
         return response
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON or missing request body"}), 400
-            
-        title = data.get('title', '')
-        author = data.get('author', '')
         
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        # Validate request using Pydantic
+        is_valid, validated_data = validate_request(MoodTagsRequest, data)
+        if not is_valid:
+            return jsonify(validated_data), 400
+        
+        title = validated_data.title
+        author = validated_data.author
         
         mood_tags = get_book_mood_tags_safe(title, author)
         return jsonify({
