@@ -61,10 +61,67 @@ Enhancement suggestions are tracked as GitHub issues. Only recommendations that 
 
 ## 📥 Pull Request Process
 
-1.  Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-2.  Update the `README.md` with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters.
-3.  Increase the version numbers in any example files and the README.md to the new version that this Pull Request would represent.
-4.  You may merge the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
+To keep the project organized and maintain high-quality contributions, please follow the process below before submitting a pull request.
+
+### 1️⃣ Prepare Your Changes
+
+Before creating a pull request:
+
+* Ensure your code runs correctly and does not introduce errors.
+* Remove any unnecessary files such as temporary files, logs, or build artifacts.
+* Make sure dependencies are clean and only required packages remain.
+
+### 2️⃣ Keep the Project Clean
+
+* Avoid committing compiled files, node modules, or environment-specific files.
+* Ensure your code follows the project's existing structure and naming conventions.
+* Test the application locally to verify that everything works as expected.
+
+### 3️⃣ Update Documentation
+
+If your changes affect the system, make sure to update the documentation:
+
+* Update the **README.md** with clear explanations of the changes.
+* Document any new environment variables, configuration steps, or setup instructions.
+* Mention any new folders, APIs, or features introduced in your contribution.
+
+### 4️⃣ Version Updates
+
+If your contribution introduces noticeable improvements:
+
+* Update version numbers where applicable.
+* Mention the version update in the README or relevant configuration files.
+* Provide a short summary of what changed in that version.
+
+### 5️⃣ Write a Clear Pull Request
+
+When submitting your PR:
+
+* Use a clear and meaningful title.
+* Provide a detailed description explaining what your changes do.
+* Reference related issues if applicable.
+* Add screenshots or examples when UI changes are involved.
+
+### 6️⃣ Code Review Process
+
+* Your pull request will be reviewed by project maintainers.
+* Be open to feedback and make necessary improvements if requested.
+* Ensure that your contribution aligns with the project's goals and coding standards.
+
+### 7️⃣ Approval and Merge
+
+* Once your PR receives approval from at least **two maintainers or reviewers**, it can be merged.
+* If you do not have merge permissions, a maintainer will merge it for you after approval.
+* Make sure all checks and discussions are resolved before requesting a merge.
+
+### 8️⃣ After Merge
+
+After your pull request is merged:
+
+* Pull the latest changes from the main branch.
+* Continue contributing by working on new issues or improvements.
+* Help review other contributions if possible.
+
 
 ## 🎨 Code Style
 
