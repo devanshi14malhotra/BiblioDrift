@@ -9,6 +9,22 @@ import os
 from datetime import datetime, timedelta
 from ai_service import generate_book_note, get_ai_recommendations, get_book_mood_tags_safe, generate_chat_response, llm_service
 from models import db, User, Book, ShelfItem, BookNote, register_user, login_user
+from validators import (
+    validate_request,
+    AnalyzeMoodRequest,
+    MoodTagsRequest,
+    MoodSearchRequest,
+    GenerateNoteRequest,
+    ChatRequest,
+    AddToLibraryRequest,
+    UpdateLibraryItemRequest,
+    SyncLibraryRequest,
+    RegisterRequest,
+    LoginRequest,
+    format_validation_errors,
+    validate_jwt_secret,
+    is_production_mode
+)
 from collections import defaultdict, deque
 from math import ceil
 from time import time
@@ -76,9 +92,77 @@ def _rate_limited(endpoint: str) -> tuple[bool, int]:
 
     return False, 0
 
+
+def rate_limit(endpoint_name: str):
+    """Decorator to apply rate limiting to an endpoint."""
+    def decorator(f):
+        def wrapped(*args, **kwargs):
+            limited, retry_after = _rate_limited(endpoint_name)
+            if limited:
+                response = jsonify({
+                    "success": False,
+                    "error": "Rate limit exceeded. Try again shortly.",
+                    "retry_after": retry_after
+                })
+                response.status_code = 429
+                response.headers['Retry-After'] = retry_after
+                return response
+            return f(*args, **kwargs)
+        wrapped.__name__ = f.__name__
+        return wrapped
+    return decorator
+
 # Initialize AI service if available
 if MOOD_ANALYSIS_AVAILABLE:
     ai_service = AIBookService()
+
+
+# ==================== JWT SECRET VALIDATION AT STARTUP ====================
+def _validate_jwt_secret_startup():
+    """
+    Validate JWT_SECRET_KEY at application startup.
+    This function runs before the server starts to prevent insecure configurations.
+    """
+    is_prod = is_production_mode()
+    is_valid, message = validate_jwt_secret()
+    
+    if not is_valid:
+        if is_prod:
+            # In production, refuse to start with insecure configuration
+            print("\n" + "="*70)
+            print("CRITICAL SECURITY ERROR - APPLICATION REFUSING TO START")
+            print("="*70)
+            print(f"\n{message}")
+            print("\nFor production deployment, you MUST:")
+            print("  1. Set JWT_SECRET_KEY environment variable to a secure value")
+            print("  2. Use a minimum of 32 characters for the secret key")
+            print("  3. Use a cryptographically strong random string")
+            print("\nExample:")
+            print("  export JWT_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')")
+            print("="*70 + "\n")
+            import sys
+            sys.exit(1)
+        else:
+            # In development, show warning but allow startup
+            print("\n" + "="*70)
+            print("WARNING: INSECURE JWT SECRET KEY CONFIGURATION")
+            print("="*70)
+            print(f"\n{message}")
+            print("\nThis is acceptable for DEVELOPMENT only.")
+            print("For production, you MUST set a secure JWT_SECRET_KEY.")
+            print("="*70 + "\n")
+    else:
+        # Secret is valid, show confirmation in development mode
+        if not is_prod:
+            print("\n" + "="*70)
+            print("JWT SECRET KEY CONFIGURATION: OK")
+            print("="*70)
+            print("Using a secure JWT secret key.")
+            print("="*70 + "\n")
+
+
+# Run JWT secret validation at module load time (before any requests)
+_validate_jwt_secret_startup()
 
 @app.route('/api/v1/config', methods=['GET'])
 def get_config():
@@ -130,18 +214,9 @@ def index():
     return jsonify(endpoints_info)
 
 @app.route('/api/v1/analyze-mood', methods=['POST'])
+@rate_limit('analyze_mood')
 def handle_analyze_mood():
     """Analyze book mood using GoodReads reviews."""
-    limited, retry_after = _rate_limited('analyze_mood')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     if not MOOD_ANALYSIS_AVAILABLE:
         return jsonify({
             "success": False,
@@ -150,14 +225,14 @@ def handle_analyze_mood():
     
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON or missing request body"}), 400
-            
-        title = data.get('title', '')
-        author = data.get('author', '')
         
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        # Validate request using Pydantic
+        is_valid, validated_data = validate_request(AnalyzeMoodRequest, data)
+        if not is_valid:
+            return jsonify(validated_data), 400
+        
+        title = validated_data.title
+        author = validated_data.author
         
         mood_analysis = ai_service.analyze_book_mood(title, author)
         
@@ -179,28 +254,19 @@ def handle_analyze_mood():
         }), 500
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
+@rate_limit('mood_tags')
 def handle_mood_tags():
     """Get mood tags for a book."""
-    limited, retry_after = _rate_limited('mood_tags')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON or missing request body"}), 400
-            
-        title = data.get('title', '')
-        author = data.get('author', '')
         
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        # Validate request using Pydantic
+        is_valid, validated_data = validate_request(MoodTagsRequest, data)
+        if not is_valid:
+            return jsonify(validated_data), 400
+        
+        title = validated_data.title
+        author = validated_data.author
         
         mood_tags = get_book_mood_tags_safe(title, author)
         return jsonify({
@@ -215,18 +281,9 @@ def handle_mood_tags():
         }), 500
 
 @app.route('/api/v1/mood-search', methods=['POST'])
+@rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe."""
-    limited, retry_after = _rate_limited('mood_search')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     try:
         data = request.get_json()
         if not data:
@@ -251,18 +308,9 @@ def handle_mood_search():
         }), 500
 
 @app.route('/api/v1/generate-note', methods=['POST'])
+@rate_limit('generate_note')
 def handle_generate_note():
     """Generate AI-powered book note with optional mood analysis."""
-    limited, retry_after = _rate_limited('generate_note')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     try:
         data = request.get_json()
         if not data:
