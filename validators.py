@@ -2,6 +2,8 @@
 Request validation schemas using Pydantic.
 Provides input validation for all API endpoints.
 """
+import os
+import sys
 from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 from typing import Optional, List, Dict, Any, Literal
 from enum import Enum
@@ -207,3 +209,65 @@ def validate_request(schema_class, data: Optional[Dict[str, Any]]) -> tuple[bool
                 'error': str(e),
                 'validation_errors': []
             }
+
+
+# ==================== JWT SECRET VALIDATION ====================
+# Default insecure key that should NEVER be used in production
+DEFAULT_INSECURE_KEY = 'default-dev-secret-key'
+# Minimum recommended secret key length (256 bits / 8 = 32 characters for HS256)
+MIN_SECRET_KEY_LENGTH = 32
+
+
+def validate_jwt_secret() -> tuple[bool, str]:
+    """
+    Validate JWT_SECRET_KEY environment variable at startup.
+    
+    Checks:
+    1. JWT_SECRET_KEY is set (not None/empty)
+    2. Not using the default insecure key
+    3. Meets minimum length requirement
+    
+    Returns:
+        Tuple of (is_valid, message)
+    """
+    secret_key = os.getenv('JWT_SECRET_KEY')
+    
+    # Check 1: Secret key must be set
+    if not secret_key:
+        return False, "JWT_SECRET_KEY environment variable is not set. Please set a secure secret key."
+    
+    # Check 2: Must not be the default insecure key
+    if secret_key == DEFAULT_INSECURE_KEY:
+        return False, "FATAL: Using default insecure JWT secret key. This is a critical security vulnerability. Set JWT_SECRET_KEY to a secure value."
+    
+    # Check 3: Minimum length validation
+    if len(secret_key) < MIN_SECRET_KEY_LENGTH:
+        return False, f"JWT_SECRET_KEY must be at least {MIN_SECRET_KEY_LENGTH} characters. Current length: {len(secret_key)}"
+    
+    return True, "JWT_SECRET_KEY is properly configured."
+
+
+def is_production_mode() -> bool:
+    """
+    Check if the application is running in production mode.
+    
+    Production is determined by:
+    - FLASK_DEBUG is set to 'false' or 'False' or '0'
+    - FLASK_ENV is set to 'production'
+    - APP_ENV is set to 'production'
+    
+    Returns:
+        True if running in production mode, False otherwise
+    """
+    flask_debug = os.getenv('FLASK_DEBUG', '').lower()
+    flask_env = os.getenv('FLASK_ENV', '').lower()
+    app_env = os.getenv('APP_ENV', '').lower()
+    
+    # If any explicitly set to production, or debug is explicitly false
+    if flask_env == 'production' or app_env == 'production':
+        return True
+    if flask_debug in ('false', '0', 'no'):
+        return True
+    
+    # Default to False (development mode)
+    return False

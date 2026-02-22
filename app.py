@@ -21,7 +21,9 @@ from validators import (
     SyncLibraryRequest,
     RegisterRequest,
     LoginRequest,
-    format_validation_errors
+    format_validation_errors,
+    validate_jwt_secret,
+    is_production_mode
 )
 from collections import defaultdict, deque
 from math import ceil
@@ -113,6 +115,54 @@ def rate_limit(endpoint_name: str):
 # Initialize AI service if available
 if MOOD_ANALYSIS_AVAILABLE:
     ai_service = AIBookService()
+
+
+# ==================== JWT SECRET VALIDATION AT STARTUP ====================
+def _validate_jwt_secret_startup():
+    """
+    Validate JWT_SECRET_KEY at application startup.
+    This function runs before the server starts to prevent insecure configurations.
+    """
+    is_prod = is_production_mode()
+    is_valid, message = validate_jwt_secret()
+    
+    if not is_valid:
+        if is_prod:
+            # In production, refuse to start with insecure configuration
+            print("\n" + "="*70)
+            print("CRITICAL SECURITY ERROR - APPLICATION REFUSING TO START")
+            print("="*70)
+            print(f"\n{message}")
+            print("\nFor production deployment, you MUST:")
+            print("  1. Set JWT_SECRET_KEY environment variable to a secure value")
+            print("  2. Use a minimum of 32 characters for the secret key")
+            print("  3. Use a cryptographically strong random string")
+            print("\nExample:")
+            print("  export JWT_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')")
+            print("="*70 + "\n")
+            import sys
+            sys.exit(1)
+        else:
+            # In development, show warning but allow startup
+            print("\n" + "="*70)
+            print("WARNING: INSECURE JWT SECRET KEY CONFIGURATION")
+            print("="*70)
+            print(f"\n{message}")
+            print("\nThis is acceptable for DEVELOPMENT only.")
+            print("For production, you MUST set a secure JWT_SECRET_KEY.")
+            print("="*70 + "\n")
+    else:
+        # Secret is valid, show confirmation in development mode
+        if not is_prod:
+            print("\n" + "="*70)
+            print("JWT SECRET KEY CONFIGURATION: OK")
+            print("="*70)
+            print("Using a secure JWT secret key.")
+            print("="*70 + "\n")
+
+
+# Run JWT secret validation at module load time (before any requests)
+_validate_jwt_secret_startup()
 
 @app.route('/api/v1/config', methods=['GET'])
 def get_config():
