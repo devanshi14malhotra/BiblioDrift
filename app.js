@@ -278,7 +278,8 @@ class BookRenderer {
         if (!container) return;
         try {
             const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const res = await fetch(`${API_BASE}?q=${query}&maxResults=${maxResults}&printType=books${keyParam}`);
+            const encodedQuery = encodeURIComponent(query);
+            const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
 
             if (!res.ok) {
                 throw new Error(`API Error: ${res.statusText}`);
@@ -903,7 +904,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const searchInput = document.getElementById('searchInput');
-    const searchIcon = document.querySelector('.search-icon'); // Or better, get the one inside search-bar if generic
+    const searchIcon = document.querySelector('.search-bar .search-icon');
 
     const performSearch = () => {
         if (searchInput && searchInput.value.trim()) {
@@ -941,9 +942,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             </section>`;
         renderer.renderCuratedSection(query, 'search-results', 20);
     } else if (document.getElementById('row-rainy')) {
-        renderer.renderCuratedSection('subject:mystery+atmosphere', 'row-rainy');
-        renderer.renderCuratedSection('authors:amitav+ghosh|authors:arundhati+roy|subject:india', 'row-indian');
-        renderer.renderCuratedSection('subject:classic+fiction', 'row-classics');
+        renderer.renderCuratedSection('subject:mystery atmosphere', 'row-rainy');
+        renderer.renderCuratedSection('authors:amitav ghosh|authors:arundhati roy|subject:india', 'row-indian');
+        renderer.renderCuratedSection('subject:classic fiction', 'row-classics');
         renderer.renderCuratedSection('subject:fiction', 'row-genre');
     }
 
