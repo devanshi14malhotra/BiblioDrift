@@ -218,7 +218,6 @@ const SAMPLE_BOOKS = {
     { name: 'DailyLearner', rating: 4, text: 'Clear concepts and actionable advice for everyday life.' }
   ]
 }
-
     ]
 };
 

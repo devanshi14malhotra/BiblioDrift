@@ -5,6 +5,10 @@ flask-cors==6.0.2
 python-dotenv==1.0.1
 Flask-JWT-Extended==4.7.1
 
+# Validation
+pydantic>=2.0.0
+email-validator>=2.0.0
+
 # Database
 Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.46

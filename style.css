@@ -139,7 +139,12 @@ header {
     position: absolute;
     right: 10px;
     color: var(--text-muted);
-    pointer-events: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.search-icon:hover {
+    color: var(--text-main);
 }
 
 .logo {
@@ -3246,7 +3251,12 @@ header {
     position: absolute;
     right: 10px;
     color: var(--text-muted);
-    pointer-events: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.search-icon:hover {
+    color: var(--text-main);
 }
 
 .logo {

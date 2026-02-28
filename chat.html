@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with Bookseller | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-responsive.css">
     <!-- Unified Font Imports -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,6 +33,16 @@
             overflow-x: hidden;
             overflow-y: auto;
         }
+
+        header {
+    position: sticky;
+    top: 0;
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.75);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.8rem 2rem;
+    z-index: 1000;
+}
 
         body {
             display: flex;

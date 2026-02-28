@@ -1,4 +1,5 @@
 GITHUB_ISSUES.md
+.github/CODEOWNERS.md
 
 # Mood analysis cache files
 mood_analysis/mood_cache.json
