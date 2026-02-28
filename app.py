@@ -90,6 +90,26 @@ def _rate_limited(endpoint: str) -> tuple[bool, int]:
 
     return False, 0
 
+
+def rate_limit(endpoint_name: str):
+    """Decorator to apply rate limiting to an endpoint."""
+    def decorator(f):
+        def wrapped(*args, **kwargs):
+            limited, retry_after = _rate_limited(endpoint_name)
+            if limited:
+                response = jsonify({
+                    "success": False,
+                    "error": "Rate limit exceeded. Try again shortly.",
+                    "retry_after": retry_after
+                })
+                response.status_code = 429
+                response.headers['Retry-After'] = retry_after
+                return response
+            return f(*args, **kwargs)
+        wrapped.__name__ = f.__name__
+        return wrapped
+    return decorator
+
 # Initialize AI service if available
 if MOOD_ANALYSIS_AVAILABLE:
     ai_service = AIBookService()
@@ -144,18 +164,9 @@ def index():
     return jsonify(endpoints_info)
 
 @app.route('/api/v1/analyze-mood', methods=['POST'])
+@rate_limit('analyze_mood')
 def handle_analyze_mood():
     """Analyze book mood using GoodReads reviews."""
-    limited, retry_after = _rate_limited('analyze_mood')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     if not MOOD_ANALYSIS_AVAILABLE:
         return jsonify({
             "success": False,
@@ -193,18 +204,9 @@ def handle_analyze_mood():
         }), 500
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
+@rate_limit('mood_tags')
 def handle_mood_tags():
     """Get mood tags for a book."""
-    limited, retry_after = _rate_limited('mood_tags')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     try:
         data = request.get_json()
         
@@ -229,18 +231,9 @@ def handle_mood_tags():
         }), 500
 
 @app.route('/api/v1/mood-search', methods=['POST'])
+@rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe."""
-    limited, retry_after = _rate_limited('mood_search')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     try:
         data = request.get_json()
         if not data:
@@ -265,18 +258,9 @@ def handle_mood_search():
         }), 500
 
 @app.route('/api/v1/generate-note', methods=['POST'])
+@rate_limit('generate_note')
 def handle_generate_note():
     """Generate AI-powered book note with optional mood analysis."""
-    limited, retry_after = _rate_limited('generate_note')
-    if limited:
-        response = jsonify({
-            "success": False,
-            "error": "Rate limit exceeded. Try again shortly.",
-            "retry_after": retry_after
-        })
-        response.status_code = 429
-        response.headers['Retry-After'] = retry_after
-        return response
     try:
         data = request.get_json()
         if not data:
