@@ -163,7 +163,8 @@
 
     /* Target the specific elements using ID and class to override inline styles */
     #export-library[style],
-    .sort-controls[style] {
+    .sort-controls,
+    #export-library {
         position: static !important; /* Force static positioning */
         width: 100%;
         max-width: 300px;
@@ -184,6 +185,11 @@
 
     #export-library {
         order: 2; /* Put export button below sort controls */
+    }
+
+    .sort-controls .filter-group {
+        width: 100%;
+        justify-content: space-between;
     }
 
     .sort-controls select {
