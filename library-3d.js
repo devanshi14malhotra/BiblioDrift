@@ -728,12 +728,34 @@ class BookshelfRenderer3D {
             // Remove old listeners
             const newRemoveBtn = removeBtn.cloneNode(true);
             removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
-            
+
             newRemoveBtn.addEventListener('click', () => {
                 if(confirm('Are you sure you want to remove this book from your library?')) {
                     this.removeBook(book.id);
                     this.closeModal();
                 }
+            });
+        }
+
+        const shareBtn = document.getElementById('modal-share-btn-lib');
+        if (shareBtn) {
+            const newShareBtn = shareBtn.cloneNode(true);
+            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+
+            newShareBtn.addEventListener('click', () => {
+                const title = book.title || 'Unknown Title';
+                const author = book.author || 'Unknown Author';
+                const shareText = `Check out this book: ${title} by ${author}`;
+                navigator.clipboard.writeText(shareText).then(() => {
+                    // Temporarily change button text to show success
+                    const originalHTML = newShareBtn.innerHTML;
+                    newShareBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        newShareBtn.innerHTML = originalHTML;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
             });
         }
 

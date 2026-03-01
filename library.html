@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -82,7 +82,7 @@
 
             <!-- Currently Reading Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">📖 Currently Immersed</span>
+                <span class="shelf-label">ðŸ“– Currently Immersed</span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-current-3d">
                         <!-- Books will be injected via JS -->
@@ -92,7 +92,7 @@
 
             <!-- Want to Read Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">📚 Anticipated Journeys</span>
+                <span class="shelf-label">ðŸ“š Anticipated Journeys</span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-want-3d">
                         <!-- Books will be injected via JS -->
@@ -102,7 +102,7 @@
 
             <!-- Finished Reading Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">✓ Lifetime Favorites</span>
+                <span class="shelf-label">âœ“ Lifetime Favorites</span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-finished-3d">
                         <!-- Books will be injected via JS -->
@@ -120,7 +120,7 @@
                     <div class="tooltip-title" id="tooltip-title"></div>
                     <div class="tooltip-author" id="tooltip-author"></div>
                     <div class="tooltip-rating">
-                        <span class="tooltip-stars" id="tooltip-stars">★★★★☆</span>
+                        <span class="tooltip-stars" id="tooltip-stars">â˜…â˜…â˜…â˜…â˜†</span>
                         <span class="tooltip-rating-text" id="tooltip-rating-text">4.2</span>
                     </div>
                 </div>
@@ -183,7 +183,7 @@
                         <div class="book-stats-row">
                             <div class="stat-item">
                                 <div class="book-rating-large">
-                                    <span class="rating-stars-large" id="modal-stars">★★★★☆</span>
+                                    <span class="rating-stars-large" id="modal-stars">â˜…â˜…â˜…â˜…â˜†</span>
                                     <span class="rating-score" id="modal-rating-score">4.2</span>
                                 </div>
                                 <span class="stat-label" id="modal-rating-count">1,234 ratings</span>
@@ -210,6 +210,9 @@
                             <button class="action-btn-primary remove-from-library" id="modal-remove-btn" style="margin-left: 10px; background-color: #ff4d4d;">
                                 <i class="fa-solid fa-trash"></i>
                                 Remove
+                            </button>
+                            <button class="action-btn-secondary" id="modal-share-btn-lib" style="margin-left: 10px; border: 1px solid var(--glass-border); background-color: transparent; color: var(--text-main); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; transition: all 0.3s ease;">
+                                <i class="fa-solid fa-share-nodes"></i> Share
                             </button>
                         </div>
                     </div>

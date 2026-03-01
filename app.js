@@ -134,7 +134,9 @@ class BookRenderer {
                     <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
-                <div class="book__face book_face--right"></div>
+                <div class="book__face book__face--right"></div>
+                <div class="book__face book__face--top"></div>
+                <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
                         <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
@@ -149,6 +151,7 @@ class BookRenderer {
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
+                        <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
                         <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -190,6 +193,18 @@ class BookRenderer {
         scene.querySelector('.info-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
+        });
+
+        // Share Button
+        scene.querySelector('.share-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const shareText = `Check out this book: ${title} by ${authors}`;
+            navigator.clipboard.writeText(shareText).then(() => {
+                showToast('Book details copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                showToast('Failed to copy book details.', 'error');
+            });
         });
 
         // Async fetch AI Vibe - Hydrate the UI
@@ -268,6 +283,19 @@ class BookRenderer {
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
         document.getElementById('modal-summary').textContent = book.volumeInfo.description || "No description available.";
+
+        const shareBtn = document.getElementById('modal-share-btn');
+        if (shareBtn) {
+            shareBtn.onclick = () => {
+                const shareText = `Check out this book: ${book.volumeInfo.title} by ${book.volumeInfo.authors?.join(", ") || "Unknown Author"}`;
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showToast('Book title and author copied!', 'success');
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showToast('Failed to copy book details.', 'error');
+                });
+            };
+        }
 
         modal.showModal();
         document.getElementById('closeModalBtn').onclick = () => modal.close();
@@ -797,35 +825,13 @@ class GenreManager {
         }
     }
 
-    renderBooks(books) {
+    async renderBooks(books) {
         this.booksGrid.innerHTML = '';
-
-        books.forEach(book => {
-            const info = book.volumeInfo;
-            const title = info.title || 'Untitled';
-            const author = info.authors ? info.authors[0] : 'Unknown';
-            const thumbnail = info.imageLinks ?
-                (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) :
-                'https://via.placeholder.com/128x196?text=No+Cover';
-
-            const card = document.createElement('div');
-            card.className = 'genre-book-card';
-            card.innerHTML = `
-                <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <div class="genre-book-info">
-                    <h4>${title}</h4>
-                    <p>${author}</p>
-                </div>
-            `;
-
-            // Add click listener to open detailed view (using existing renderer logic if possible, or just mock it)
-            // For now, let's just use the existing BookRenderer's modal if accessible, 
-            // or just simple log. The user asked for "modal should open up with some books". 
-            // The books themselves inside the modal don't necessarily need to open *another* modal, 
-            // but it would be nice.
-
-            this.booksGrid.appendChild(card);
-        });
+        const renderer = new BookRenderer(new LibraryManager());
+        for (const book of books) {
+            const el = await renderer.createBookElement(book);
+            this.booksGrid.appendChild(el);
+        }
     }
 }
 
