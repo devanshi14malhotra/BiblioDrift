@@ -598,6 +598,7 @@ class LibraryManager {
         }
         return null;
     }
+    // Issue #23: Implements removing a book from local array and database
     async removeBook(id) {
         const result = this.findBookInShelf(id);
         if (result) {

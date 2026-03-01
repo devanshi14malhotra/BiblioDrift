@@ -648,6 +648,7 @@ class BookshelfRenderer3D {
 
         // Handle Shelf Selection
         const shelfSelect = document.getElementById('modal-shelf-select');
+        // Issue #23: Element binding for the remove button
         const removeBtn = document.getElementById('modal-remove-btn');
         
         if (shelfSelect) {
