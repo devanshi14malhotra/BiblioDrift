@@ -134,7 +134,9 @@ class BookRenderer {
                     <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
-                <div class="book__face book_face--right"></div>
+                <div class="book__face book__face--right"></div>
+                <div class="book__face book__face--top"></div>
+                <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
                         <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
@@ -797,35 +799,13 @@ class GenreManager {
         }
     }
 
-    renderBooks(books) {
+    async renderBooks(books) {
         this.booksGrid.innerHTML = '';
-
-        books.forEach(book => {
-            const info = book.volumeInfo;
-            const title = info.title || 'Untitled';
-            const author = info.authors ? info.authors[0] : 'Unknown';
-            const thumbnail = info.imageLinks ?
-                (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) :
-                'https://via.placeholder.com/128x196?text=No+Cover';
-
-            const card = document.createElement('div');
-            card.className = 'genre-book-card';
-            card.innerHTML = `
-                <img src="${thumbnail}" alt="${title}" loading="lazy">
-                <div class="genre-book-info">
-                    <h4>${title}</h4>
-                    <p>${author}</p>
-                </div>
-            `;
-
-            // Add click listener to open detailed view (using existing renderer logic if possible, or just mock it)
-            // For now, let's just use the existing BookRenderer's modal if accessible, 
-            // or just simple log. The user asked for "modal should open up with some books". 
-            // The books themselves inside the modal don't necessarily need to open *another* modal, 
-            // but it would be nice.
-
-            this.booksGrid.appendChild(card);
-        });
+        const renderer = new BookRenderer(new LibraryManager());
+        for (const book of books) {
+            const el = await renderer.createBookElement(book);
+            this.booksGrid.appendChild(el);
+        }
     }
 }
 
