@@ -3266,7 +3266,15 @@ header {
     text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.5rem;  
+}
+.logo img{
+    width:3.5em;
+    height: 3.5em;
+    min-height: 3.5em;
+    min-width: 3.5em;
+    object-fit: contain;
+    flex-shrink:0;
 }
 
 .nav-links a {
