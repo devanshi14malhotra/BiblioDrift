@@ -58,14 +58,14 @@ class ShelfItem(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "google_books_id": self.book.google_books_id,
-            "title": self.book.title,
-            "authors": self.book.authors,
-            "thumbnail": self.book.thumbnail,
+            "google_books_id": self.book.google_books_id if self.book else None,
+            "title": self.book.title if self.book else None,
+            "authors": self.book.authors if self.book else None,
+            "thumbnail": self.book.thumbnail if self.book else None,
             "shelf_type": self.shelf_type,
             "progress": self.progress,
             "rating": self.rating,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
 class BookNote(db.Model):
