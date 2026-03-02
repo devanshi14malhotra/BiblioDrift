@@ -4,6 +4,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
@@ -100,11 +101,27 @@ def _rate_limited(endpoint: str) -> tuple[bool, int]:
     return False, 0
 
 
-def rate_limit(endpoint_name: str):
-    """Decorator to apply rate limiting to an endpoint."""
+def rate_limit(endpoint_name: str, max_requests: int = None):
+    """Decorator to apply rate limiting to an endpoint.
+    
+    Args:
+        endpoint_name: The name of the endpoint for rate limiting
+        max_requests: Optional custom max requests limit (uses RATE_LIMIT_MAX_REQUESTS if not provided)
+    """
     def decorator(f):
         def wrapped(*args, **kwargs):
-            limited, retry_after = _rate_limited(endpoint_name)
+            # Use custom max_requests if provided, otherwise use global default
+            global RATE_LIMIT_MAX_REQUESTS
+            original_max = RATE_LIMIT_MAX_REQUESTS
+            try:
+                if max_requests is not None:
+                    RATE_LIMIT_MAX_REQUESTS = max_requests
+                
+                limited, retry_after = _rate_limited(endpoint_name)
+            finally:
+                if max_requests is not None:
+                    RATE_LIMIT_MAX_REQUESTS = original_max
+                    
             if limited:
                 response = jsonify({
                     "success": False,
@@ -335,6 +352,7 @@ def handle_generate_note():
         return internal_error(str(e))
 
 @app.route('/api/v1/chat', methods=['POST'])
+@rate_limit('chat')
 def handle_chat():
     """Handle chat messages and generate bookseller responses."""
     try:
@@ -458,7 +476,7 @@ def get_library(user_id):
         return forbidden_error("Cannot access another user's library")
         
     try:
-        items = ShelfItem.query.filter_by(user_id=user_id).all()
+        items = ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id).all()
         # Ensure join loads correctly or use manual load if lazy loading fails
         return success_response(data={"library": [item.to_dict() for item in items]})
     except Exception as e:
@@ -580,6 +598,7 @@ def sync_library():
         return internal_error(str(e))
 
 @app.route('/api/v1/register', methods=['POST'])
+@rate_limit('auth', max_requests=5)
 def register():
     # Register a new user and return JWT token
     data = request.json
@@ -618,6 +637,7 @@ def register():
         return validation_error(str(e))
 
 @app.route('/api/v1/login', methods=['POST'])
+@rate_limit('auth', max_requests=5)
 def login():
     # Authenticate user and return JWT token
     data = request.json
