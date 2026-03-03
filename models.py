@@ -48,6 +48,7 @@ class ShelfItem(db.Model):
     shelf_type = db.Column(db.String(50), nullable=False)  # 'want', 'current', 'finished'
     progress = db.Column(db.Integer, default=0)
     rating = db.Column(db.Integer)
+    finished_at = db.Column(db.DateTime, nullable=True)  # Timestamp when book was marked as finished
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -58,14 +59,15 @@ class ShelfItem(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "google_books_id": self.book.google_books_id,
-            "title": self.book.title,
-            "authors": self.book.authors,
-            "thumbnail": self.book.thumbnail,
+            "google_books_id": self.book.google_books_id if self.book else None,
+            "title": self.book.title if self.book else None,
+            "authors": self.book.authors if self.book else None,
+            "thumbnail": self.book.thumbnail if self.book else None,
             "shelf_type": self.shelf_type,
             "progress": self.progress,
             "rating": self.rating,
-            "created_at": self.created_at.isoformat()
+            "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
 class BookNote(db.Model):
@@ -78,6 +80,126 @@ class BookNote(db.Model):
     __table_args__ = (
         db.Index('idx_book_note_title_author', 'book_title', 'book_author'),
     )
+
+
+class ReadingGoal(db.Model):
+    """Model for tracking user's annual reading goals."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    target_books = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('reading_goals', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'year', name='uq_user_year_goal'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "year": self.year,
+            "target_books": self.target_books,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class ReadingStats(db.Model):
+    """Model for tracking user's monthly reading statistics."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    books_completed = db.Column(db.Integer, default=0)
+    pages_read = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('reading_stats', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'year', 'month', name='uq_user_year_month_stats'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "year": self.year,
+            "month": self.month,
+            "books_completed": self.books_completed,
+            "pages_read": self.pages_read,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class Collection(db.Model):
+    """Model for user's custom book collections."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+    is_public = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('collections', lazy=True))
+    items = db.relationship('CollectionItem', backref='collection', lazy=True, cascade='all, delete-orphan')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'name', name='uq_user_collection_name'),
+    )
+
+    def to_dict(self, include_items=False):
+        result = {
+            "id": self.id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "description": self.description,
+            "is_public": self.is_public,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "item_count": len(self.items)
+        }
+        if include_items:
+            result["items"] = [item.to_dict() for item in self.items]
+        return result
+
+
+class CollectionItem(db.Model):
+    """Model for items in a user's collection."""
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(db.Integer, db.ForeignKey('collection.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    book = db.relationship('Book', backref=db.backref('collection_items', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('collection_id', 'book_id', name='uq_collection_book'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "collection_id": self.collection_id,
+            "book_id": self.book_id,
+            "google_books_id": self.book.google_books_id if self.book else None,
+            "title": self.book.title if self.book else None,
+            "authors": self.book.authors if self.book else None,
+            "thumbnail": self.book.thumbnail if self.book else None,
+            "added_at": self.added_at.isoformat() if self.added_at else None
+        }
+
 
 def register_user(username, email, password):
     user = User(username=username, email=email)
