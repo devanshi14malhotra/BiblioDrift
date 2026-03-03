@@ -147,6 +147,20 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1, description="Password")
 
 
+# ==================== READING STATS & GOALS ====================
+class SetGoalRequest(BaseModel):
+    """Request schema for POST /api/v1/stats/goal endpoint."""
+    user_id: int = Field(..., description="User ID")
+    year: int = Field(..., ge=2020, le=2100, description="Year for the reading goal")
+    target_books: int = Field(..., ge=1, le=1000, description="Target number of books for the year")
+
+
+class GetStatsRequest(BaseModel):
+    """Request schema for GET /api/v1/stats endpoint."""
+    user_id: int = Field(..., description="User ID")
+    year: Optional[int] = Field(default=None, ge=2020, le=2100, description="Year for stats (defaults to current year)")
+
+
 # ==================== VALIDATION ERROR HANDLER ====================
 def format_validation_errors(errors: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
