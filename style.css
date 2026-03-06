@@ -6710,20 +6710,164 @@ main {
     font-family: inherit;
     font-size: 0.95rem;
     color: var(--text-main);
-    cursor: pointer;
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    padding-right: 1.5rem;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right center;
-    background-size: 1rem;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
 }
 
-.sort-select option {
-    background: var(--bg-color);
+.book-rec-info p {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 80%;
+}
+
+.typing-indicator .message-avatar {
+    width: 35px;
+    height: 35px;
+    background: var(--accent-gold);
+    color: var(--wood-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.typing-bubble {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 15px 18px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 60px);
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .chat-header {
+        padding: 15px 20px;
+    }
+    
+    .bookseller-details h2 {
+        font-size: 1.2rem;
+    }
+    
+    .chat-messages {
+        padding: 15px 20px;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    .suggestions-list {
+        flex-direction: column;
+    }
+    
+    .suggestion-btn {
+        justify-content: center;
+    }
+    
+    .book-rec-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-header {
+        padding: 12px 15px;
+    }
+    
+    .bookseller-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .bookseller-details h2 {
+        font-size: 1.1rem;
+    }
+    
+    .chat-messages {
+        padding: 12px 15px;
+    }
+    
+    .chat-input-container {
+        padding: 15px;
+    }
+    
+    .book-rec-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+/* --- Hover Effects --- */
+.tap-effect {
+    transform: translateZ(30px) translateY(-10px) rotateY(-10deg);
+}
+
+.tap-overlay {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tap-btn-icon {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.tap-nav-link {
     color: var(--text-main);
     padding: 10px;
 }
