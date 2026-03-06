@@ -147,6 +147,67 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1, description="Password")
 
 
+# ==================== READING STATS & GOALS ====================
+class SetGoalRequest(BaseModel):
+    """Request schema for POST /api/v1/stats/goal endpoint."""
+    user_id: int = Field(..., description="User ID")
+    year: int = Field(..., ge=2020, le=2100, description="Year for the reading goal")
+    target_books: int = Field(..., ge=1, le=1000, description="Target number of books for the year")
+
+
+class GetStatsRequest(BaseModel):
+    """Request schema for GET /api/v1/stats endpoint."""
+    user_id: int = Field(..., description="User ID")
+    year: Optional[int] = Field(default=None, ge=2020, le=2100, description="Year for stats (defaults to current year)")
+
+
+# ==================== COLLECTIONS ====================
+class CollectionRequest(BaseModel):
+    """Request schema for POST /api/v1/collections endpoint."""
+    user_id: int = Field(..., description="User ID")
+    name: str = Field(..., min_length=1, max_length=100, description="Collection name (required)")
+    description: Optional[str] = Field(default="", max_length=500, description="Collection description")
+    is_public: bool = Field(default=False, description="Whether collection is public")
+    
+    @field_validator('name')
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        """Ensure name is not just whitespace."""
+        if not v.strip():
+            raise ValueError('Collection name cannot be empty or whitespace')
+        return v.strip()
+
+
+class UpdateCollectionRequest(BaseModel):
+    """Request schema for PUT /api/v1/collections/<collection_id> endpoint."""
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="Collection name")
+    description: Optional[str] = Field(default=None, max_length=500, description="Collection description")
+    is_public: Optional[bool] = Field(default=None, description="Whether collection is public")
+    
+    @field_validator('name')
+    @classmethod
+    def name_not_empty(cls, v: Optional[str]) -> Optional[str]:
+        """Ensure name is not just whitespace if provided."""
+        if v is not None and not v.strip():
+            raise ValueError('Collection name cannot be empty or whitespace')
+        return v.strip() if v else v
+
+
+class AddToCollectionRequest(BaseModel):
+    """Request schema for POST /api/v1/collections/<collection_id>/books endpoint."""
+    user_id: int = Field(..., description="User ID")
+    google_books_id: str = Field(..., min_length=1, max_length=50, description="Google Books ID")
+    title: str = Field(..., min_length=1, max_length=255, description="Book title")
+    authors: str = Field(default="", max_length=500, description="Author names")
+    thumbnail: str = Field(default="", max_length=500, description="Book thumbnail URL")
+    
+    @field_validator('google_books_id', 'title', 'authors', 'thumbnail')
+    @classmethod
+    def sanitize_strings(cls, v: str) -> str:
+        """Strip whitespace from string fields."""
+        return v.strip() if v else v
+
+
 # ==================== VALIDATION ERROR HANDLER ====================
 def format_validation_errors(errors: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
@@ -271,3 +332,56 @@ def is_production_mode() -> bool:
     
     # Default to False (development mode)
     return False
+
+
+# ==================== PRICE ALERTS ====================
+
+class SetPriceAlertRequest(BaseModel):
+    """Request schema for POST /api/v1/books/<book_id>/alert endpoint."""
+    user_id: int = Field(..., description="User ID")
+    shelf_item_id: int = Field(..., description="Shelf item ID")
+    target_price: float = Field(..., gt=0, description="Target price for alert (must be positive)")
+    
+    @field_validator('target_price')
+    @classmethod
+    def target_price_positive(cls, v: float) -> float:
+        """Ensure target price is positive."""
+        if v <= 0:
+            raise ValueError('Target price must be positive')
+        return v
+
+
+class GetPriceHistoryRequest(BaseModel):
+    """Request schema for GET /api/v1/books/<book_id>/prices endpoint."""
+    retailer: Optional[str] = Field(default=None, description="Filter by retailer")
+    limit: Optional[int] = Field(default=30, ge=1, le=100, description="Limit number of records")
+
+
+class GetAlertsRequest(BaseModel):
+    """Request schema for GET /api/v1/alerts endpoint."""
+    user_id: int = Field(..., description="User ID")
+    active_only: bool = Field(default=True, description="Only return active alerts")
+
+
+# ==================== BOOK REVIEWS & RATINGS ====================
+
+class ReviewRequest(BaseModel):
+    """Request schema for POST /api/v1/reviews endpoint."""
+    user_id: int = Field(..., description="User ID")
+    google_books_id: str = Field(..., min_length=1, max_length=50, description="Google Books ID")
+    rating: int = Field(..., ge=1, le=5, description="Rating (1-5)")
+    review_text: Optional[str] = Field(default="", max_length=2000, description="Review text (max 2000 chars)")
+    
+    @field_validator('google_books_id', 'review_text')
+    @classmethod
+    def sanitize_strings(cls, v: str) -> str:
+        """Strip whitespace from string fields."""
+        return v.strip() if v else v
+    
+    @field_validator('rating')
+    @classmethod
+    def rating_valid(cls, v: int) -> int:
+        """Ensure rating is between 1 and 5."""
+        if v < 1 or v > 5:
+            raise ValueError('Rating must be between 1 and 5')
+        return v
