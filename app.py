@@ -29,6 +29,9 @@ from validators import (
     UpdateCollectionRequest,
     AddToCollectionRequest,
     ReviewRequest,
+    SetPriceAlertRequest,
+    GetPriceHistoryRequest,
+    GetAlertsRequest,
     format_validation_errors,
     validate_jwt_secret,
     is_production_mode
@@ -654,6 +657,9 @@ if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
+# Initialize price tracker with database
+price_tracker = get_price_tracker(db)
 
 
 @app.route('/api/v1/library/sync', methods=['POST'])
@@ -1359,6 +1365,183 @@ def delete_review(review_id):
         return jsonify({"message": "Review deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+# ==================== PRICE ALERT ENDPOINTS ====================
+
+@app.route('/api/v1/books/<book_id>/alert', methods=['POST'])
+@jwt_required()
+def create_price_alert(book_id):
+    """Create a price alert for a book (requires JWT)."""
+    data = request.json
+    current_user_id = get_jwt_identity()
+    
+    # Validate request using Pydantic
+    is_valid, validated_data = validate_request(SetPriceAlertRequest, data)
+    if not is_valid:
+        return jsonify(validated_data), 400
+    
+    # Ensure user matches token
+    if str(data['user_id']) != str(current_user_id):
+        return jsonify({"error": "Unauthorized access to another user's alerts"}), 403
+    
+    try:
+        # Verify book exists
+        book = None
+        if book_id.isdigit():
+            book = Book.query.get(int(book_id))
+        else:
+            book = Book.query.filter_by(google_books_id=book_id).first()
+        
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+        
+        # Verify shelf item belongs to user
+        shelf_item = ShelfItem.query.get(data['shelf_item_id'])
+        if not shelf_item:
+            return jsonify({"error": "Shelf item not found"}), 404
+        
+        if str(shelf_item.user_id) != str(current_user_id):
+            return jsonify({"error": "Unauthorized - shelf item belongs to another user"}), 403
+        
+        # Verify shelf item belongs to the same book
+        if shelf_item.book_id != book.id:
+            return jsonify({"error": "Shelf item does not match the specified book"}), 400
+        
+        # Create price alert using price tracker
+        result = price_tracker.create_price_alert(
+            user_id=data['user_id'],
+            shelf_item_id=data['shelf_item_id'],
+            target_price=data['target_price']
+        )
+        
+        if result.get('success'):
+            return jsonify({
+                "message": "Price alert created successfully",
+                "alert": result['alert']
+            }), 201
+        else:
+            return jsonify({
+                "error": result.get('error', 'Failed to create price alert')
+            }), 400
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/v1/books/<book_id>/prices', methods=['GET'])
+@jwt_required()
+def get_price_history(book_id):
+    """Get price history for a book (requires JWT)."""
+    current_user_id = get_jwt_identity()
+    
+    # Get optional query parameters
+    retailer = request.args.get('retailer')
+    limit = request.args.get('limit', 30, type=int)
+    
+    # Validate limit
+    if limit < 1 or limit > 100:
+        limit = 30
+    
+    try:
+        # Verify book exists
+        book = None
+        if book_id.isdigit():
+            book = Book.query.get(int(book_id))
+        else:
+            book = Book.query.filter_by(google_books_id=book_id).first()
+        
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+        
+        # Get price history using price tracker
+        history = price_tracker.get_price_history(
+            book_id=book.id,
+            retailer=retailer,
+            limit=limit
+        )
+        
+        # Also try to get latest prices
+        latest_prices = price_tracker.get_latest_prices(book.id)
+        
+        return jsonify({
+            "book_id": book.id,
+            "google_books_id": book.google_books_id,
+            "title": book.title,
+            "authors": book.authors,
+            "price_history": history,
+            "latest_prices": latest_prices
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/v1/alerts', methods=['GET'])
+@jwt_required()
+def get_user_alerts():
+    """Get user's price alerts (requires JWT)."""
+    current_user_id = get_jwt_identity()
+    user_id = request.args.get('user_id', type=int)
+    active_only = request.args.get('active_only', 'true').lower() == 'true'
+    
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+    
+    # Ensure user matches token
+    if str(user_id) != str(current_user_id):
+        return jsonify({"error": "Unauthorized - you can only view your own alerts"}), 403
+    
+    try:
+        # Get alerts using price tracker
+        alerts = price_tracker.get_user_alerts(
+            user_id=user_id,
+            active_only=active_only
+        )
+        
+        return jsonify({
+            "user_id": user_id,
+            "active_only": active_only,
+            "total_alerts": len(alerts),
+            "alerts": alerts
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/v1/alerts/<int:alert_id>', methods=['DELETE'])
+@jwt_required()
+def delete_price_alert(alert_id):
+    """Delete a price alert (requires JWT, user can only delete their own alerts)."""
+    current_user_id = get_jwt_identity()
+    
+    try:
+        alert = PriceAlert.query.get(alert_id)
+        if not alert:
+            return jsonify({"error": "Alert not found"}), 404
+        
+        # Check if user owns the alert
+        if str(alert.user_id) != str(current_user_id):
+            return jsonify({"error": "Unauthorized - you can only delete your own alerts"}), 403
+        
+        # Delete using price tracker
+        result = price_tracker.delete_price_alert(
+            alert_id=alert_id,
+            user_id=current_user_id
+        )
+        
+        if result.get('success'):
+            return jsonify({
+                "message": "Price alert deleted successfully"
+            }), 200
+        else:
+            return jsonify({
+                "error": result.get('error', 'Failed to delete price alert')
+            }), 400
+            
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
