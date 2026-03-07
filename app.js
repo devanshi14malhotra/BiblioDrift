@@ -3,9 +3,13 @@
  * Handles 3D rendering, API fetching, Persistent Auth, and Genre Browsing.
  */
 
-const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
-const API_KEY = 'YOUR_GOOGLE_BOOKS_API_KEY';
-const MOOD_API_BASE = 'http://localhost:5000/api/v1';
+// Load configuration from config.js
+// Note: config.js should be loaded before app.js in HTML
+const API_BASE = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE : 'https://www.googleapis.com/books/v1/volumes';
+const MOOD_API_BASE = typeof CONFIG !== 'undefined' ? CONFIG.MOOD_API_BASE : '/api/v1';
+
+// Expose MOOD_API_BASE globally for chat.js
+window.MOOD_API_BASE = MOOD_API_BASE;
 
 let GOOGLE_API_KEY = '';
 
@@ -337,7 +341,8 @@ class LibraryManager {
             want: [],
             finished: []
         };
-        this.apiBase = 'http://localhost:5000/api/v1';
+        // Use relative path from config for proxy-aware deployment
+        this.apiBase = typeof CONFIG !== 'undefined' ? CONFIG.MOOD_API_BASE : '/api/v1';
 
         // Sync API if user is logged in
         this.syncWithBackend();
@@ -1125,7 +1130,9 @@ async function handleAuth(event) {
         btn.textContent = 'Processing...';
         btn.disabled = true;
 
-        const res = await fetch(`http://localhost:5000${endpoint}`, {
+        // Use dynamic base URL for proxy-aware deployment
+        const API_BASE_URL = window.location.origin;
+        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
