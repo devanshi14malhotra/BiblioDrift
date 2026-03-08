@@ -3,6 +3,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import logging
+
+logger = logging.getLogger(__name__)
 
 db = SQLAlchemy()
 
@@ -85,10 +88,10 @@ def register_user(username, email, password):
     db.session.add(user)
     try:
         db.session.commit()
-        print("User registered successfully!")
+        logger.info("User registered successfully")
     except Exception as e:
         db.session.rollback()
-        print(f"Error registering user: {e}")
+        logger.error(f"Error registering user: {e}")
 
 def login_user(identifier, password):
     # Try finding by username first
@@ -99,7 +102,7 @@ def login_user(identifier, password):
         user = User.query.filter_by(email=identifier).first()
 
     if user and user.check_password(password):
-        print("Login successful!")
+        logger.info("Login successful")
         return user
-    print("Invalid username/email or password.")
+    logger.warning("Invalid username/email or password")
     return None
