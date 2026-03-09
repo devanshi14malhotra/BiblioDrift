@@ -16,3 +16,7 @@ secrets/
 
 __pycache__/
 *.pyc
+
+# Database files
+instance/
+*.db

@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with Bookseller | BiblioDrift</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style-responsive.css">
     <!-- Unified Font Imports -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -295,21 +294,6 @@
         </div>
     </main>
 
-    <!-- Book Recommendation Modal -->
-    <div class="modal-overlay" id="bookModal">
-        <div class="modal-content book-modal">
-            <div class="modal-header">
-                <button class="close-btn" onclick="closeBookModal()">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="bookModalContent">
-                <!-- Book details populated by chat.js -->
-            </div>
-        </div>
-    </div>
-
-
     <script>
         window.MOOD_API_BASE = 'http://localhost:5001/api/v1';
 
@@ -329,6 +313,7 @@
             }
         });
     </script>
+    <script src="config.js"></script>
     <script src="chat.js"></script>
     <script src="app.js"></script>
     <script src="footer.js"></script>
