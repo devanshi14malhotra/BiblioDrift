@@ -1,134 +1,88 @@
 # Contributing to BiblioDrift 📚☕
 
-First off, thanks for taking the time to contribute! 🎉
+Thanks for taking the time to contribute.
 
-BiblioDrift is a cozy, visual-first book discovery platform. We want to make finding your next read feel like wandering through a warm, quiet bookstore. We welcome contributions that help us achieve this "Zero UI Noise" and "Vibe-First" philosophy.
+BiblioDrift is a cozy, visual-first book discovery platform. Contributions should improve the calm, shelf-based browsing experience without breaking the existing mood-driven flow.
 
-## 🌟 How to Contribute
+## What You Can Contribute
 
-We welcome contributions of all kinds, including:
+- Bug fixes
+- UI and accessibility improvements
+- Better mood or search logic
+- AI note and recommendation refinements
+- Documentation updates
+- Test coverage for important flows
 
-- **Bug Reports**: Found a glitch in the shelves? Let us know.
-- **Feature Suggestions**: Have an idea for a "Vibe"? Tell us!
-- **Code Contributions**: Help us build the 3D interactions or the AI backend.
-- **Documentation**: Help improve our guides and tutorials.
+## Getting Started
 
-## 🛠️ Getting Started
+Before you begin, make sure you are familiar with the current stack:
 
-Before you start, make sure you are familiar with our tech stack:
-- **Frontend**: Vanilla JavaScript, CSS3 (3D Transforms), HTML5
-- **Backend**: Python Flask
-- **API**: Google Books API
+- **Frontend:** HTML5, CSS3, Vanilla JavaScript
+- **Backend:** Python
+- **API Source:** Google Books API
 
 ### Prerequisites
 
-1.  Python 3.x installed
-2.  A modern web browser
+1. Python 3.9+ if you plan to run the backend
+2. A modern web browser
+3. Git
 
-### Installation
+### Local Setup
 
-1.  **Fork the repository** on GitHub.
-2.  **Clone your fork** locally:
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/BiblioDrift.git
-    cd BiblioDrift
-    ```
-3.  **Install dependencies** (if working on the backend):
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  **Run the application**:
-    ```bash
-    python app.py
-    ```
-    Or simply open `index.html` in your browser for frontend-only work.
+1. Fork the repository if you plan to contribute from your own account.
+2. Clone your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/BiblioDrift.git
+   cd BiblioDrift
+   ```
+3. Install backend dependencies if needed:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Run the app or open the frontend directly:
+   ```bash
+   python app.py
+   ```
+   Or open `index.html` in your browser for frontend-only changes.
 
-## 🐛 Reporting Bugs
+## Bug Reports
 
-Bugs are tracked as GitHub issues. When filing an issue, please explain the problem and include additional details to help maintainers reproduce the problem:
+When opening an issue, include:
 
-- Use a clear and descriptive title for the issue to identify the problem.
-- Describe the exact steps which reproduce the problem in as many details as possible.
-- Provide specific examples to demonstrate the steps.
+- A clear title
+- The page or flow affected
+- Exact steps to reproduce
+- What you expected to happen
+- What actually happened
 
-## 💡 Suggesting Enhancements
+## Feature Suggestions
 
-Enhancement suggestions are tracked as GitHub issues. Only recommendations that strictly follow our **AI-Powered Recommendations** policy (see README) will be considered for core features.
+When proposing an enhancement, describe:
 
-- Use a clear and descriptive title.
-- Provide a step-by-step description of the suggested enhancement.
-- Explain why this enhancement would be useful to most BiblioDrift users.
+- The user problem you are solving
+- Why the change fits BiblioDrift
+- Any relevant screenshots or examples
 
-## 📥 Pull Request Process
+## Pull Request Process
 
-To keep the project organized and maintain high-quality contributions, please follow the process below before submitting a pull request.
+1. Keep changes focused and easy to review.
+2. Test your changes locally before submitting.
+3. Update documentation if behavior or setup changes.
+4. Include screenshots for visible UI changes.
+5. Reference the related issue if one exists.
 
-### 1️⃣ Prepare Your Changes
+## Code Style
 
-Before creating a pull request:
+- Keep the frontend vanilla unless a change explicitly needs otherwise.
+- Preserve the calm, tactile visual style.
+- Follow existing Python style and naming patterns.
 
-* Ensure your code runs correctly and does not introduce errors.
-* Remove any unnecessary files such as temporary files, logs, or build artifacts.
-* Make sure dependencies are clean and only required packages remain.
+## Notes on Documentation
 
-### 2️⃣ Keep the Project Clean
+- The main project overview lives in [PROJECT_DETAILS.md](PROJECT_DETAILS.md).
+- This repository does not use a separate TUTORIAL.md file.
+- If you need to explain setup or workflows, update this file or the README.
 
-* Avoid committing compiled files, node modules, or environment-specific files.
-* Ensure your code follows the project's existing structure and naming conventions.
-* Test the application locally to verify that everything works as expected.
+## License
 
-### 3️⃣ Update Documentation
-
-If your changes affect the system, make sure to update the documentation:
-
-* Update the **README.md** with clear explanations of the changes.
-* Document any new environment variables, configuration steps, or setup instructions.
-* Mention any new folders, APIs, or features introduced in your contribution.
-
-### 4️⃣ Version Updates
-
-If your contribution introduces noticeable improvements:
-
-* Update version numbers where applicable.
-* Mention the version update in the README or relevant configuration files.
-* Provide a short summary of what changed in that version.
-
-### 5️⃣ Write a Clear Pull Request
-
-When submitting your PR:
-
-* Use a clear and meaningful title.
-* Provide a detailed description explaining what your changes do.
-* Reference related issues if applicable.
-* Add screenshots or examples when UI changes are involved.
-
-### 6️⃣ Code Review Process
-
-* Your pull request will be reviewed by project maintainers.
-* Be open to feedback and make necessary improvements if requested.
-* Ensure that your contribution aligns with the project's goals and coding standards.
-
-### 7️⃣ Approval and Merge
-
-* Once your PR receives approval from at least **two maintainers or reviewers**, it can be merged.
-* If you do not have merge permissions, a maintainer will merge it for you after approval.
-* Make sure all checks and discussions are resolved before requesting a merge.
-
-### 8️⃣ After Merge
-
-After your pull request is merged:
-
-* Pull the latest changes from the main branch.
-* Continue contributing by working on new issues or improvements.
-* Help review other contributions if possible.
-
-
-## 🎨 Code Style
-
-- **Frontend**: Keep it "Vanilla". Avoid heavy frameworks unless discussed.
-- **UI/UX**: Remember "Zero UI Noise". Smooth, tactile, and glassmorphism.
-- **Backend**: Follow PEP 8 style guide for Python code.
-
-## 📜 License
-
-By contributing, you agree that your contributions will be licensed under its MIT License.
+By contributing, you agree that your contributions will be licensed under the project’s MIT License.

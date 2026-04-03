@@ -4,6 +4,10 @@
 
 BiblioDrift is a cozy, visual-first book discovery platform designed to make finding your next read feel like wandering through a warm, quiet bookstore rather than scrolling through a database.
 
+## ACM Sourcery Navigation
+
+[![ACM Sourcery - Contributor Guide](https://img.shields.io/badge/ACM%20Sourcery-Contributor%20Guide-1D4ED8?style=for-the-badge)](PROJECT_DETAILS.md)
+
 ## 🌟 Core Philosophy
 - **"Zero UI Noise"**: No popups, no aggressive metrics. Just calm browsing.
 - **Tactile Interaction**: 3D books that you can pull from the shelf and flip over.
@@ -59,7 +63,8 @@ BIBLIODRIFT/
 ├── CONTRIBUTING.md       # Contribution guidelines
 ├── LICENSE
 ├── README.md             # Project documentation
-├── TUTORIAL.md           # Setup / usage tutorial
+├── CONTRIBUTING.md       # Contribution guide and setup notes
+├── PROJECT_DETAILS.md    # Contributor-facing project guide
 └── page.png              # Preview / UI reference image
 ```
 ## 🤖 AI Recommendation Policy
@@ -116,12 +121,19 @@ To keep the frontend and backend synced, use the following mapping:
 We welcome contributions to make BiblioDrift cozier!
 
 1. Fork the repo.
-2. Create a feature branch (`e.g. git checkout -b feature/cozy-mode`).
-3. Commit your changes.
-4. Push and open a Pull Request.
+2. Create a feature branch such as `feature/cozy-mode`.
+3. Make your changes and test them locally.
+4. Push your branch and open a Pull Request.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the fuller workflow and contribution rules.
 
 ## 📄 License
 MIT License.
 
 ---
 *Built by Devanshi Malhotra and contributors, with ☕ and code.*
+
+
+```bash
+If you like this project, please consider giving the repository a ⭐ STAR ⭐.
+```
