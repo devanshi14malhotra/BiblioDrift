@@ -277,7 +277,16 @@ class LLMService:
             return None
     
     def _generate_with_groq(self, prompt: str, max_tokens: int) -> Optional[str]:
-        """Generate text using Groq."""
+        """
+        Generate text using Groq LLM service.
+        
+        Args:
+            prompt (str): The input text prompt for the model.
+            max_tokens (int): Maximum number of tokens to generate.
+            
+        Returns:
+            Optional[str]: The generated text response, or None if generation fails.
+        """
         try:
             response = self.groq_client.chat.completions.create(
                 model=self.config['groq_model'],
@@ -309,7 +318,16 @@ class LLMService:
                 return None
     
     def _generate_with_gemini(self, prompt: str, max_tokens: int) -> Optional[str]:
-        """Generate text using Gemini."""
+        """
+        Generate text using Google Gemini LLM service.
+        
+        Args:
+            prompt (str): The input text prompt for the model.
+            max_tokens (int): Maximum number of tokens to generate.
+            
+        Returns:
+            Optional[str]: The generated text response, or None if generation fails.
+        """
         try:
             from google.genai import types
             response = self.gemini_client.models.generate_content(

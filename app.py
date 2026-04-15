@@ -91,7 +91,16 @@ CORS(app)
 cache_service.init_app(app)
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(e: Exception):
+    """
+    Custom 404 error handler that returns JSON for API requests and HTML for others.
+    
+    Args:
+        e (Exception): The exception object.
+        
+    Returns:
+        tuple: A tuple containing the response and the HTTP status code.
+    """
     # Check if request accepts JSON (API)
     if request.path.startswith('/api/'):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
@@ -114,7 +123,16 @@ def _cleanup_expired_keys(cutoff: float) -> None:
 
 
 def _rate_limited(endpoint: str) -> tuple[bool, int]:
-    """Sliding window limiter per IP/endpoint, returns limit flag and wait time."""
+    """
+    Sliding window limiter per IP/endpoint.
+    
+    Args:
+        endpoint (str): The API endpoint being accessed.
+        
+    Returns:
+        tuple[bool, int]: A tuple containing a boolean flag (True if limited) 
+                          and the wait time in seconds.
+    """
     if not app_config.rate_limit.enabled:
         return False, 0
     
