@@ -1,0 +1,47 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-bibliouser}:${POSTGRES_PASSWORD:-bibliopass}@db:5432/${POSTGRES_DB:-bibliodb}
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_TYPE=redis
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-super-secret-production-key-change-this}
+      - FLASK_DEBUG=False
+      - FLASK_HOST=0.0.0.0
+      - PORT=5000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+    restart: always
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-bibliouser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bibliopass}
+      - POSTGRES_DB=${POSTGRES_DB:-bibliodb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bibliouser} -d ${POSTGRES_DB:-bibliodb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: always
+
+volumes:
+  postgres_data:
+  redis_data:
