@@ -11,6 +11,7 @@ import requests
 
 import logging
 from datetime import datetime, timedelta
+from sanitizer import sanitize_payload
 
 # Load environment variables from .env file BEFORE importing config
 load_dotenv()
@@ -701,7 +702,8 @@ def sync_library():
             return jsonify(validated_data), 400
         
         user_id = validated_data.user_id
-        items = validated_data.items
+        # Manually sanitize the items list since it's a generic dict list
+        items = sanitize_payload(validated_data.items)
         
         if str(user_id) != str(current_user_id):
             return forbidden_error("Cannot sync to another user's library")
@@ -861,23 +863,23 @@ def set_reading_goal():
         return jsonify(validated_data), 400
     
     # Ensure user matches token
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
         # Check if goal already exists for this year
         existing_goal = ReadingGoal.query.filter_by(
-            user_id=data['user_id'], year=data['year']
+            user_id=validated_data.user_id, year=validated_data.year
         ).first()
         
         if existing_goal:
-            existing_goal.target_books = data['target_books']
+            existing_goal.target_books = validated_data.target_books
             goal = existing_goal
         else:
             goal = ReadingGoal(
-                user_id=data['user_id'],
-                year=data['year'],
-                target_books=data['target_books']
+                user_id=validated_data.user_id,
+                year=validated_data.year,
+                target_books=validated_data.target_books
             )
             db.session.add(goal)
         
@@ -989,23 +991,23 @@ def create_collection():
         return jsonify(validated_data), 400
     
     # Ensure user matches token
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
         # Check if collection with same name already exists
         existing = Collection.query.filter_by(
-            user_id=data['user_id'], name=data['name']
+            user_id=validated_data.user_id, name=validated_data.name
         ).first()
         
         if existing:
             return jsonify({"error": "Collection with this name already exists"}), 409
         
         collection = Collection(
-            user_id=data['user_id'],
-            name=data['name'],
-            description=data.get('description', ''),
-            is_public=data.get('is_public', False)
+            user_id=validated_data.user_id,
+            name=validated_data.name,
+            description=validated_data.description or '',
+            is_public=validated_data.is_public
         )
         db.session.add(collection)
         db.session.commit()
@@ -1084,22 +1086,22 @@ def update_collection(collection_id):
             return jsonify({"error": "Unauthorized"}), 403
         
         # Update fields if provided
-        if 'name' in data and data['name']:
+        if validated_data.name:
             # Check if new name already exists for this user
             existing = Collection.query.filter(
                 Collection.user_id == collection.user_id,
-                Collection.name == data['name'],
+                Collection.name == validated_data.name,
                 Collection.id != collection_id
             ).first()
             if existing:
                 return jsonify({"error": "Collection with this name already exists"}), 409
-            collection.name = data['name']
+            collection.name = validated_data.name
         
-        if 'description' in data:
-            collection.description = data['description']
+        if validated_data.description is not None:
+            collection.description = validated_data.description
         
-        if 'is_public' in data:
-            collection.is_public = data['is_public']
+        if validated_data.is_public is not None:
+            collection.is_public = validated_data.is_public
         
         db.session.commit()
         
@@ -1156,13 +1158,13 @@ def add_book_to_collection(collection_id):
             return jsonify({"error": "Unauthorized"}), 403
         
         # Check if book exists in Book table
-        book = Book.query.filter_by(google_books_id=data['google_books_id']).first()
+        book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
         if not book:
             book = Book(
-                google_books_id=data['google_books_id'],
-                title=data['title'],
-                authors=data.get('authors', ''),
-                thumbnail=data.get('thumbnail', '')
+                google_books_id=validated_data.google_books_id,
+                title=validated_data.title,
+                authors=validated_data.authors or '',
+                thumbnail=validated_data.thumbnail or ''
             )
             db.session.add(book)
             db.session.flush()
@@ -1296,35 +1298,35 @@ def create_or_update_review():
     
     try:
         # Check if book exists in Book table
-        book = Book.query.filter_by(google_books_id=data['google_books_id']).first()
+        book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
         if not book:
             book = Book(
-                google_books_id=data['google_books_id'],
-                title=data.get('title', 'Unknown'),
-                authors=data.get('authors', ''),
-                thumbnail=data.get('thumbnail', '')
+                google_books_id=validated_data.google_books_id,
+                title=getattr(validated_data, 'title', 'Unknown'),
+                authors=getattr(validated_data, 'authors', ''),
+                thumbnail=getattr(validated_data, 'thumbnail', '')
             )
             db.session.add(book)
             db.session.flush()
         
         # Check if review already exists for this user/book combination
         existing_review = Review.query.filter_by(
-            user_id=data['user_id'], book_id=book.id
+            user_id=validated_data.user_id, book_id=book.id
         ).first()
         
         if existing_review:
             # Update existing review
-            existing_review.rating = data['rating']
-            existing_review.review_text = data.get('review_text', '')
+            existing_review.rating = validated_data.rating
+            existing_review.review_text = validated_data.review_text or ''
             review = existing_review
             message = "Review updated successfully"
         else:
             # Create new review
             review = Review(
-                user_id=data['user_id'],
+                user_id=validated_data.user_id,
                 book_id=book.id,
-                rating=data['rating'],
-                review_text=data.get('review_text', '')
+                rating=validated_data.rating,
+                review_text=validated_data.review_text or ''
             )
             db.session.add(review)
             message = "Review created successfully"
@@ -1438,7 +1440,7 @@ def create_price_alert(book_id):
         return jsonify(validated_data), 400
     
     # Ensure user matches token
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return jsonify({"error": "Unauthorized access to another user's alerts"}), 403
     
     try:
@@ -1453,7 +1455,7 @@ def create_price_alert(book_id):
             return jsonify({"error": "Book not found"}), 404
         
         # Verify shelf item belongs to user
-        shelf_item = ShelfItem.query.get(data['shelf_item_id'])
+        shelf_item = ShelfItem.query.get(validated_data.shelf_item_id)
         if not shelf_item:
             return jsonify({"error": "Shelf item not found"}), 404
         
@@ -1466,9 +1468,9 @@ def create_price_alert(book_id):
         
         # Create price alert using price tracker
         result = price_tracker.create_price_alert(
-            user_id=data['user_id'],
-            shelf_item_id=data['shelf_item_id'],
-            target_price=data['target_price']
+            user_id=validated_data.user_id,
+            shelf_item_id=validated_data.shelf_item_id,
+            target_price=validated_data.target_price
         )
         
         if result.get('success'):

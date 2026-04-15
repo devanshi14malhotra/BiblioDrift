@@ -7,6 +7,7 @@ import sys
 from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 from typing import Optional, List, Dict, Any, Literal
 from enum import Enum
+from sanitizer import sanitize_string, sanitize_for_ai
 
 
 class ShelfType(str, Enum):
@@ -20,6 +21,18 @@ class ChatMessage(BaseModel):
     """Schema for chat message history items."""
     type: str = Field(..., description="Message type (user/bot)")
     content: str = Field(..., max_length=1000, description="Message content")
+    
+    @field_validator('content')
+    @classmethod
+    def sanitize_content(cls, v: str) -> str:
+        """Sanitize message content for AI and storage."""
+        return sanitize_for_ai(v)
+
+    @field_validator('type')
+    @classmethod
+    def sanitize_type(cls, v: str) -> str:
+        """Sanitize message type."""
+        return sanitize_string(v, max_len=50)
 
 
 # ==================== ANALYZE MOOD ====================
@@ -28,13 +41,14 @@ class AnalyzeMoodRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=255, description="Book title (required)")
     author: str = Field(default="", max_length=255, description="Author name (optional)")
     
-    @field_validator('title')
+    @field_validator('title', 'author')
     @classmethod
-    def title_not_empty(cls, v: str) -> str:
-        """Ensure title is not just whitespace."""
-        if not v.strip():
-            raise ValueError('Title cannot be empty or whitespace')
-        return v.strip()
+    def sanitize_fields(cls, v: str) -> str:
+        """Ensure fields are sanitized."""
+        if not v or not v.strip():
+             return v
+        return sanitize_string(v, max_len=255)
+
 
 
 # ==================== MOOD TAGS ====================
@@ -43,13 +57,13 @@ class MoodTagsRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=255, description="Book title (required)")
     author: str = Field(default="", max_length=255, description="Author name (optional)")
     
-    @field_validator('title')
+    @field_validator('title', 'author')
     @classmethod
-    def title_not_empty(cls, v: str) -> str:
-        """Ensure title is not just whitespace."""
-        if not v.strip():
-            raise ValueError('Title cannot be empty or whitespace')
-        return v.strip()
+    def sanitize_fields(cls, v: str) -> str:
+        """Ensure fields are sanitized."""
+        if not v or not v.strip():
+             return v
+        return sanitize_string(v, max_len=255)
 
 
 # ==================== MOOD SEARCH ====================
@@ -59,11 +73,11 @@ class MoodSearchRequest(BaseModel):
     
     @field_validator('query')
     @classmethod
-    def query_not_empty(cls, v: str) -> str:
-        """Ensure query is not just whitespace."""
-        if not v.strip():
+    def sanitize_query(cls, v: str) -> str:
+        """Sanitize search query for AI."""
+        if not v or not v.strip():
             raise ValueError('Query cannot be empty or whitespace')
-        return v.strip()
+        return sanitize_for_ai(v)
 
 
 # ==================== GENERATE NOTE ====================
@@ -73,11 +87,11 @@ class GenerateNoteRequest(BaseModel):
     title: str = Field(default="", max_length=255, description="Book title")
     author: str = Field(default="", max_length=255, description="Author name")
     
-    @field_validator('title', 'author')
+    @field_validator('title', 'author', 'description')
     @classmethod
-    def sanitize_strings(cls, v: str) -> str:
-        """Strip whitespace from string fields."""
-        return v.strip() if v else v
+    def sanitize_fields(cls, v: str) -> str:
+        """Sanitize strings for AI note generation."""
+        return sanitize_for_ai(v)
 
 
 # ==================== CHAT ====================
@@ -88,11 +102,11 @@ class ChatRequest(BaseModel):
     
     @field_validator('message')
     @classmethod
-    def message_not_empty(cls, v: str) -> str:
-        """Ensure message is not just whitespace."""
-        if not v.strip():
+    def sanitize_message(cls, v: str) -> str:
+        """Sanitize message for AI."""
+        if not v or not v.strip():
             raise ValueError('Message cannot be empty or whitespace')
-        return v.strip()
+        return sanitize_for_ai(v)
 
 
 # ==================== LIBRARY ====================
@@ -107,9 +121,10 @@ class AddToLibraryRequest(BaseModel):
     
     @field_validator('google_books_id', 'title', 'authors', 'thumbnail')
     @classmethod
-    def sanitize_strings(cls, v: str) -> str:
-        """Strip whitespace from string fields."""
-        return v.strip() if v else v
+    def sanitize_fields(cls, v: str) -> str:
+        """Sanitize strings for database storage."""
+        return sanitize_string(v)
+
 
 
 class UpdateLibraryItemRequest(BaseModel):
@@ -169,13 +184,13 @@ class CollectionRequest(BaseModel):
     description: Optional[str] = Field(default="", max_length=500, description="Collection description")
     is_public: bool = Field(default=False, description="Whether collection is public")
     
-    @field_validator('name')
+    @field_validator('name', 'description')
     @classmethod
-    def name_not_empty(cls, v: str) -> str:
-        """Ensure name is not just whitespace."""
-        if not v.strip():
-            raise ValueError('Collection name cannot be empty or whitespace')
-        return v.strip()
+    def sanitize_fields(cls, v: Optional[str]) -> Optional[str]:
+        """Sanitize collection metadata."""
+        if v is None:
+            return None
+        return sanitize_string(v, max_len=500)
 
 
 class UpdateCollectionRequest(BaseModel):
@@ -184,13 +199,13 @@ class UpdateCollectionRequest(BaseModel):
     description: Optional[str] = Field(default=None, max_length=500, description="Collection description")
     is_public: Optional[bool] = Field(default=None, description="Whether collection is public")
     
-    @field_validator('name')
+    @field_validator('name', 'description')
     @classmethod
-    def name_not_empty(cls, v: Optional[str]) -> Optional[str]:
-        """Ensure name is not just whitespace if provided."""
-        if v is not None and not v.strip():
-            raise ValueError('Collection name cannot be empty or whitespace')
-        return v.strip() if v else v
+    def sanitize_fields(cls, v: Optional[str]) -> Optional[str]:
+        """Sanitize collection metadata."""
+        if v is None:
+             return None
+        return sanitize_string(v, max_len=500)
 
 
 class AddToCollectionRequest(BaseModel):
@@ -203,9 +218,10 @@ class AddToCollectionRequest(BaseModel):
     
     @field_validator('google_books_id', 'title', 'authors', 'thumbnail')
     @classmethod
-    def sanitize_strings(cls, v: str) -> str:
-        """Strip whitespace from string fields."""
-        return v.strip() if v else v
+    def sanitize_fields(cls, v: str) -> str:
+        """Sanitize book metadata for collections."""
+        return sanitize_string(v)
+
 
 
 # ==================== VALIDATION ERROR HANDLER ====================
@@ -374,9 +390,9 @@ class ReviewRequest(BaseModel):
     
     @field_validator('google_books_id', 'review_text')
     @classmethod
-    def sanitize_strings(cls, v: str) -> str:
-        """Strip whitespace from string fields."""
-        return v.strip() if v else v
+    def sanitize_fields(cls, v: str) -> str:
+        """Sanitize review data."""
+        return sanitize_string(v, max_len=2000)
     
     @field_validator('rating')
     @classmethod
