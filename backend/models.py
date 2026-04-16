@@ -1,6 +1,7 @@
 # Placeholder for database models.
 # Define SQLAlchemy models for 'User' and 'ShelfItem' here.
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
@@ -223,9 +224,12 @@ def register_user(username, email, password):
     try:
         db.session.commit()
         logger.info("User registered successfully")
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f"Database error registering user: {e}")
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error registering user: {e}")
+        logger.error(f"Unexpected error registering user: {e}")
 
 def login_user(identifier, password):
     # Try finding by username first
