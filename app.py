@@ -98,7 +98,10 @@ def page_not_found(e):
     # Serve custom HTML for browser requests
     return app.send_static_file('404.html'), 404
 
-# Rate limiting configuration from centralized config
+# Rate limiting configuration
+RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
+RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30'))
+
 _request_log = defaultdict(deque)
 _request_calls = 0
 
@@ -118,16 +121,16 @@ def _rate_limited(endpoint: str) -> tuple[bool, int]:
     global _request_calls
     key = f"{request.remote_addr}|{endpoint}"
     now = time()
-    window_start = now - app_config.rate_limit.window_seconds
+    window_start = now - RATE_LIMIT_WINDOW
     _request_calls += 1
 
     dq = _request_log[key]
     while dq and dq[0] <= window_start:
         dq.popleft()
 
-    if len(dq) >= app_config.rate_limit.max_requests:
+    if len(dq) >= RATE_LIMIT_MAX_REQUESTS:
         oldest = dq[0]
-        retry_after = max(1, ceil(app_config.rate_limit.window_seconds - (now - oldest)))
+        retry_after = max(1, ceil(RATE_LIMIT_WINDOW - (now - oldest)))
         return True, retry_after
 
     dq.append(now)
@@ -1617,8 +1620,8 @@ if __name__ == '__main__':
         logger.info("  GET  /api/v1/health - Health check")
         logger.info("Rate limiting: %s (window: %ds, max: %d requests)", 
                    "Enabled" if app_config.rate_limit.enabled else "Disabled",
-                   app_config.rate_limit.window_seconds,
-                   app_config.rate_limit.max_requests)
+                   RATE_LIMIT_WINDOW,
+                   RATE_LIMIT_MAX_REQUESTS)
 
 
     
