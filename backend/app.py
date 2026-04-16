@@ -861,28 +861,33 @@ def register():
         if User.query.filter((User.username==username) | (User.email==email)).first():
             return resource_exists_error("User")
 
-        register_user(username, email, password)
-        # Fetch the user to get ID
-        user = User.query.filter_by(username=username).first()
-        
-        # Create JWT token
-        access_token = create_access_token(identity=str(user.id))
-        
-        resp, status = success_response(
-            data={
-                "message": "User registered successfully",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email
-                }
-            },
-            status_code=201
-        )
-        set_access_cookies(resp, access_token)
-        return resp, status
+        try:
+            user = register_user(username, email, password)
+            if not user:
+                return internal_error("Failed to create user record after registration.")
+            
+            # Create JWT token
+            access_token = create_access_token(identity=str(user.id))
+            
+            resp, status = success_response(
+                data={
+                    "message": "User registered successfully",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email
+                    }
+                },
+                status_code=201
+            )
+            set_access_cookies(resp, access_token)
+            return resp, status
+        except SQLAlchemyError as e:
+            logger.error(f"Database error during registration: {e}")
+            return internal_error("A database error occurred during registration.")
     except Exception as e:
-        return validation_error(str(e))
+        logger.error(f"Unexpected error in register endpoint: {e}")
+        return internal_error(str(e))
 
 @app.route('/api/v1/login', methods=['POST'])
 @rate_limit('auth')

@@ -218,18 +218,22 @@ class CollectionItem(db.Model):
 
 
 def register_user(username, email, password):
+    """Register a new user in the database."""
     user = User(username=username, email=email)
     user.set_password(password)
     db.session.add(user)
     try:
         db.session.commit()
-        logger.info("User registered successfully")
+        logger.info(f"User {username} registered successfully")
+        return user
     except SQLAlchemyError as e:
         db.session.rollback()
-        logger.error(f"Database error registering user: {e}")
+        logger.error(f"Database error registering user {username}: {e}")
+        raise
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Unexpected error registering user: {e}")
+        logger.error(f"Unexpected error registering user {username}: {e}")
+        raise
 
 def login_user(identifier, password):
     # Try finding by username first
