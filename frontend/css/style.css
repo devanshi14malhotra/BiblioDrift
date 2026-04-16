@@ -1937,6 +1937,48 @@ main {
     perspective: 1200px;
     perspective-origin: center 40%;
     padding: 2rem 0;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Empty State Placeholder */
+.library-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    max-width: 600px;
+    margin: 2rem auto;
+    animation: fadeIn 0.8s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: var(--shadow-soft);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--accent-gold);
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+}
+
+.library-empty-state h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+}
+
+.library-empty-state p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    max-width: 40ch;
+    margin-bottom: 1rem;
 }
 
 /* Individual shelf section */

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -83,6 +83,18 @@
 
         <!-- 3D Bookshelf Container -->
         <div class="bookshelf-3d-container" id="library-shelves">
+
+            <!-- Empty State Placeholder (Visible when filter returns no books) -->
+            <div id="library-empty-state" class="library-empty-state" style="display: none;">
+                <div class="empty-state-icon">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <h2>No books found here</h2>
+                <p>Your search for adventure continues... try a different shelf or explore new titles!</p>
+                <a href="index.html" class="btn-primary" style="margin-top: 1.5rem; text-decoration: none;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Explore Books
+                </a>
+            </div>
 
             <!-- Currently Reading Shelf -->
             <div class="shelf-section-3d">

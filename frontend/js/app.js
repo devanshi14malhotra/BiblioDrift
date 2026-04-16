@@ -15,7 +15,9 @@ async function loadConfig() {
         if (res.ok) {
             const data = await res.json();
             GOOGLE_API_KEY = data.google_books_key || '';
-            console.log("Config loaded");
+            if (process.env.NODE_ENV === 'development') {
+                console.log("Config loaded");
+            }
         }
     } catch (e) {
         console.warn("Failed to load backend config", e);
@@ -239,8 +241,11 @@ class BookRenderer {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
                 bookEl.classList.toggle('flipped');
                 // Play sound
-                flipSound.currentTime = 0;
-                flipSound.play().catch(e => console.log("Audio play failed", e));
+                flipSound.play().catch(e => {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log("Audio play failed", e);
+                    }
+                });
             }
         });
 
@@ -553,7 +558,9 @@ class LibraryManager {
         if (itemsToSync.length === 0) return; // Nothing to sync
 
         try {
-            console.log(`Syncing ${itemsToSync.length} items to backend...`);
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`Syncing ${itemsToSync.length} items to backend...`);
+            }
             const res = await fetch(`${this.apiBase}/library/sync`, {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
@@ -565,7 +572,9 @@ class LibraryManager {
 
             if (res.ok) {
                 const data = await res.json();
-                console.log("Sync result:", data);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log("Sync result:", data);
+                }
                 showToast(`Synced ${data.message}`, "success");
 
                 // After upload, pull fresh state from backend to get the new DB IDs
@@ -643,7 +652,9 @@ class LibraryManager {
         // 1. Update Local State
         this.library[shelf].push(enrichedBook);
         this.saveLocally();
-        console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
+        }
 
         // 2. Update Backend
         const user = this.getUser();
@@ -707,7 +718,9 @@ class LibraryManager {
             // 1. Update Local
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
             this.saveLocally();
-            console.log(`Removed book ${id} from ${shelf}`);
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`Removed book ${id} from ${shelf}`);
+            }
 
             // 2. Update Backend
             const user = this.getUser();
@@ -1276,7 +1289,9 @@ document.addEventListener("click", (e) => {
     const scene = e.target.closest(".book-scene");
     if (!scene) return;
 
-    console.log("BOOK CLICK");
+    if (process.env.NODE_ENV === 'development') {
+        console.log("BOOK CLICK");
+    }
 
     const book = scene.querySelector(".book");
     const overlay = scene.querySelector(".glass-overlay");
@@ -1311,7 +1326,9 @@ const KeyboardShortcuts = {
     // Initialize keyboard event listener
     init() {
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        console.log('BiblioDrift Keyboard Shortcuts Initialized');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('BiblioDrift Keyboard Shortcuts Initialized');
+        }
     },
 
 
@@ -1335,40 +1352,58 @@ const KeyboardShortcuts = {
     executeAction(action) {
         switch (action) {
             case 'navigateNext':
-                console.log('Navigating to next book...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Navigating to next book...');
+                }
                 // TODO: Implement next book navigation
                 break;
             case 'navigatePrev':
-                console.log('Navigating to previous book...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Navigating to previous book...');
+                }
                 // TODO: Implement previous book navigation
                 break;
             case 'selectBook':
-                console.log('Selecting current book...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Selecting current book...');
+                }
                 // TODO: Implement book selection
                 break;
             case 'addToWantRead':
-                console.log('Adding to Want to Read list...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Adding to Want to Read list...');
+                }
                 // TODO: Implement add to want read
                 break;
             case 'markCurrentlyReading':
-                console.log('Marking as Currently Reading...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Marking as Currently Reading...');
+                }
                 // TODO: Implement mark as reading
                 break;
             case 'addToFavorites':
-                console.log('Adding to Favorites...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Adding to Favorites...');
+                }
                 // TODO: Implement add to favorites
                 break;
             case 'closeModal':
-                console.log('Closing modal...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Closing modal...');
+                }
                 const modals = document.querySelectorAll('.modal, [role="dialog"]');
                 modals.forEach(modal => modal.style.display = 'none');
                 break;
             case 'showHelpMenu':
-                console.log('Showing help menu...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Showing help menu...');
+                }
                 this.displayHelpMenu();
                 break;
             case 'focusSearch':
-                console.log('Focusing search bar...');
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('Focusing search bar...');
+                }
                 const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
                 if (searchInput) searchInput.focus();
                 break;

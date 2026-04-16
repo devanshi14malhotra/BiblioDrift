@@ -296,13 +296,49 @@ class BookshelfRenderer3D {
         const showWant = this.filterCriteria === 'all' || this.filterCriteria === 'want';
         const showFinished = this.filterCriteria === 'all' || this.filterCriteria === 'finished';
 
-        this.updateShelfVisibility('shelf-current-3d', showCurrent);
-        this.updateShelfVisibility('shelf-want-3d', showWant);
-        this.updateShelfVisibility('shelf-finished-3d', showFinished);
+        // Count books first
+        const currentCount = this.getShelfBookCount('current');
+        const wantCount = this.getShelfBookCount('want');
+        const finishedCount = this.getShelfBookCount('finished');
 
-        if (showCurrent) this.renderShelf('current', 'shelf-current-3d');
-        if (showWant) this.renderShelf('want', 'shelf-want-3d');
-        if (showFinished) this.renderShelf('finished', 'shelf-finished-3d');
+        let totalVisibleBooks = 0;
+        if (showCurrent) totalVisibleBooks += currentCount;
+        if (showWant) totalVisibleBooks += wantCount;
+        if (showFinished) totalVisibleBooks += finishedCount;
+
+        const isEmpty = totalVisibleBooks === 0;
+
+        // Update shelf visibility: Show shelf only if filter includes it AND (it has books OR we are specifically searching THIS shelf)
+        // Actually, if we are in 'all' view, only show shelves that have books. 
+        // If we are in specific shelf view, show it even if empty (but global empty state will override if total is 0)
+        
+        const forceShowSpecific = this.filterCriteria !== 'all';
+
+        this.updateShelfVisibility('shelf-current-3d', !isEmpty && showCurrent && (currentCount > 0 || forceShowSpecific));
+        this.updateShelfVisibility('shelf-want-3d', !isEmpty && showWant && (wantCount > 0 || forceShowSpecific));
+        this.updateShelfVisibility('shelf-finished-3d', !isEmpty && showFinished && (finishedCount > 0 || forceShowSpecific));
+
+        if (!isEmpty) {
+            if (showCurrent && (currentCount > 0 || forceShowSpecific)) this.renderShelf('current', 'shelf-current-3d');
+            if (showWant && (wantCount > 0 || forceShowSpecific)) this.renderShelf('want', 'shelf-want-3d');
+            if (showFinished && (finishedCount > 0 || forceShowSpecific)) this.renderShelf('finished', 'shelf-finished-3d');
+        }
+
+        // Show/Hide Global Empty State
+        const emptyState = document.getElementById('library-empty-state');
+        if (emptyState) {
+            emptyState.style.display = isEmpty ? 'flex' : 'none';
+        }
+    }
+
+    getShelfBookCount(shelfType) {
+        const storageKey = 'bibliodrift_library';
+        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
+            current: [],
+            want: [],
+            finished: []
+        };
+        return (localLibrary[shelfType] || []).length;
     }
 
     updateShelfVisibility(containerId, isVisible) {

@@ -7,8 +7,11 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import os
+import requests
+
 import logging
 from datetime import datetime, timedelta
+from sanitizer import sanitize_payload
 
 # Load environment variables from .env file BEFORE importing config
 load_dotenv()
@@ -89,14 +92,26 @@ CORS(app)
 cache_service.init_app(app)
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(e: Exception):
+    """
+    Custom 404 error handler that returns JSON for API requests and HTML for others.
+    
+    Args:
+        e (Exception): The exception object.
+        
+    Returns:
+        tuple: A tuple containing the response and the HTTP status code.
+    """
     # Check if request accepts JSON (API)
     if request.path.startswith('/api/'):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
     # Serve custom HTML for browser requests
     return app.send_static_file('404.html'), 404
 
-# Rate limiting configuration from centralized config
+# Rate limiting configuration
+RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
+RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30'))
+
 _request_log = defaultdict(deque)
 _request_calls = 0
 
@@ -109,23 +124,32 @@ def _cleanup_expired_keys(cutoff: float) -> None:
 
 
 def _rate_limited(endpoint: str) -> tuple[bool, int]:
-    """Sliding window limiter per IP/endpoint, returns limit flag and wait time."""
+    """
+    Sliding window limiter per IP/endpoint.
+    
+    Args:
+        endpoint (str): The API endpoint being accessed.
+        
+    Returns:
+        tuple[bool, int]: A tuple containing a boolean flag (True if limited) 
+                          and the wait time in seconds.
+    """
     if not app_config.rate_limit.enabled:
         return False, 0
     
     global _request_calls
     key = f"{request.remote_addr}|{endpoint}"
     now = time()
-    window_start = now - app_config.rate_limit.window_seconds
+    window_start = now - RATE_LIMIT_WINDOW
     _request_calls += 1
 
     dq = _request_log[key]
     while dq and dq[0] <= window_start:
         dq.popleft()
 
-    if len(dq) >= app_config.rate_limit.max_requests:
+    if len(dq) >= RATE_LIMIT_MAX_REQUESTS:
         oldest = dq[0]
-        retry_after = max(1, ceil(app_config.rate_limit.window_seconds - (now - oldest)))
+        retry_after = max(1, ceil(RATE_LIMIT_WINDOW - (now - oldest)))
         return True, retry_after
 
     dq.append(now)
@@ -678,7 +702,8 @@ def sync_library():
             return jsonify(validated_data), 400
         
         user_id = validated_data.user_id
-        items = validated_data.items
+        # Manually sanitize the items list since it's a generic dict list
+        items = sanitize_payload(validated_data.items)
         
         if str(user_id) != str(current_user_id):
             return forbidden_error("Cannot sync to another user's library")
@@ -838,23 +863,23 @@ def set_reading_goal():
         return jsonify(validated_data), 400
     
     # Ensure user matches token
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
         # Check if goal already exists for this year
         existing_goal = ReadingGoal.query.filter_by(
-            user_id=data['user_id'], year=data['year']
+            user_id=validated_data.user_id, year=validated_data.year
         ).first()
         
         if existing_goal:
-            existing_goal.target_books = data['target_books']
+            existing_goal.target_books = validated_data.target_books
             goal = existing_goal
         else:
             goal = ReadingGoal(
-                user_id=data['user_id'],
-                year=data['year'],
-                target_books=data['target_books']
+                user_id=validated_data.user_id,
+                year=validated_data.year,
+                target_books=validated_data.target_books
             )
             db.session.add(goal)
         
@@ -966,23 +991,23 @@ def create_collection():
         return jsonify(validated_data), 400
     
     # Ensure user matches token
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return jsonify({"error": "Unauthorized"}), 403
     
     try:
         # Check if collection with same name already exists
         existing = Collection.query.filter_by(
-            user_id=data['user_id'], name=data['name']
+            user_id=validated_data.user_id, name=validated_data.name
         ).first()
         
         if existing:
             return jsonify({"error": "Collection with this name already exists"}), 409
         
         collection = Collection(
-            user_id=data['user_id'],
-            name=data['name'],
-            description=data.get('description', ''),
-            is_public=data.get('is_public', False)
+            user_id=validated_data.user_id,
+            name=validated_data.name,
+            description=validated_data.description or '',
+            is_public=validated_data.is_public
         )
         db.session.add(collection)
         db.session.commit()
@@ -1061,22 +1086,22 @@ def update_collection(collection_id):
             return jsonify({"error": "Unauthorized"}), 403
         
         # Update fields if provided
-        if 'name' in data and data['name']:
+        if validated_data.name:
             # Check if new name already exists for this user
             existing = Collection.query.filter(
                 Collection.user_id == collection.user_id,
-                Collection.name == data['name'],
+                Collection.name == validated_data.name,
                 Collection.id != collection_id
             ).first()
             if existing:
                 return jsonify({"error": "Collection with this name already exists"}), 409
-            collection.name = data['name']
+            collection.name = validated_data.name
         
-        if 'description' in data:
-            collection.description = data['description']
+        if validated_data.description is not None:
+            collection.description = validated_data.description
         
-        if 'is_public' in data:
-            collection.is_public = data['is_public']
+        if validated_data.is_public is not None:
+            collection.is_public = validated_data.is_public
         
         db.session.commit()
         
@@ -1133,13 +1158,13 @@ def add_book_to_collection(collection_id):
             return jsonify({"error": "Unauthorized"}), 403
         
         # Check if book exists in Book table
-        book = Book.query.filter_by(google_books_id=data['google_books_id']).first()
+        book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
         if not book:
             book = Book(
-                google_books_id=data['google_books_id'],
-                title=data['title'],
-                authors=data.get('authors', ''),
-                thumbnail=data.get('thumbnail', '')
+                google_books_id=validated_data.google_books_id,
+                title=validated_data.title,
+                authors=validated_data.authors or '',
+                thumbnail=validated_data.thumbnail or ''
             )
             db.session.add(book)
             db.session.flush()
@@ -1273,35 +1298,35 @@ def create_or_update_review():
     
     try:
         # Check if book exists in Book table
-        book = Book.query.filter_by(google_books_id=data['google_books_id']).first()
+        book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
         if not book:
             book = Book(
-                google_books_id=data['google_books_id'],
-                title=data.get('title', 'Unknown'),
-                authors=data.get('authors', ''),
-                thumbnail=data.get('thumbnail', '')
+                google_books_id=validated_data.google_books_id,
+                title=getattr(validated_data, 'title', 'Unknown'),
+                authors=getattr(validated_data, 'authors', ''),
+                thumbnail=getattr(validated_data, 'thumbnail', '')
             )
             db.session.add(book)
             db.session.flush()
         
         # Check if review already exists for this user/book combination
         existing_review = Review.query.filter_by(
-            user_id=data['user_id'], book_id=book.id
+            user_id=validated_data.user_id, book_id=book.id
         ).first()
         
         if existing_review:
             # Update existing review
-            existing_review.rating = data['rating']
-            existing_review.review_text = data.get('review_text', '')
+            existing_review.rating = validated_data.rating
+            existing_review.review_text = validated_data.review_text or ''
             review = existing_review
             message = "Review updated successfully"
         else:
             # Create new review
             review = Review(
-                user_id=data['user_id'],
+                user_id=validated_data.user_id,
                 book_id=book.id,
-                rating=data['rating'],
-                review_text=data.get('review_text', '')
+                rating=validated_data.rating,
+                review_text=validated_data.review_text or ''
             )
             db.session.add(review)
             message = "Review created successfully"
@@ -1415,7 +1440,7 @@ def create_price_alert(book_id):
         return jsonify(validated_data), 400
     
     # Ensure user matches token
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return jsonify({"error": "Unauthorized access to another user's alerts"}), 403
     
     try:
@@ -1430,7 +1455,7 @@ def create_price_alert(book_id):
             return jsonify({"error": "Book not found"}), 404
         
         # Verify shelf item belongs to user
-        shelf_item = ShelfItem.query.get(data['shelf_item_id'])
+        shelf_item = ShelfItem.query.get(validated_data.shelf_item_id)
         if not shelf_item:
             return jsonify({"error": "Shelf item not found"}), 404
         
@@ -1443,9 +1468,9 @@ def create_price_alert(book_id):
         
         # Create price alert using price tracker
         result = price_tracker.create_price_alert(
-            user_id=data['user_id'],
-            shelf_item_id=data['shelf_item_id'],
-            target_price=data['target_price']
+            user_id=validated_data.user_id,
+            shelf_item_id=validated_data.shelf_item_id,
+            target_price=validated_data.target_price
         )
         
         if result.get('success'):
@@ -1580,6 +1605,22 @@ def delete_price_alert(alert_id):
 with app.app_context():
     db.create_all()  # creates User & ShelfItem tables
 
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    query = request.args.get('q')
+    max_results = request.args.get('maxResults', 10)
+
+    API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
+
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}&key={API_KEY}"
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch books"}), 500
+
 if __name__ == '__main__':
     # Use centralized configuration for server settings
     server_config = app_config.server
@@ -1599,7 +1640,12 @@ if __name__ == '__main__':
         logger.info("  GET  /api/v1/health - Health check")
         logger.info("Rate limiting: %s (window: %ds, max: %d requests)", 
                    "Enabled" if app_config.rate_limit.enabled else "Disabled",
-                   app_config.rate_limit.window_seconds,
-                   app_config.rate_limit.max_requests)
+                   RATE_LIMIT_WINDOW,
+                   RATE_LIMIT_MAX_REQUESTS)
+
+
     
     app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+
+
+    
