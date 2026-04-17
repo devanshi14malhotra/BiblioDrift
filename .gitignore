@@ -28,4 +28,6 @@ dist/
 # Database files
 instance/
 *.db
+# Virtual Environment
+venv/
 .env
