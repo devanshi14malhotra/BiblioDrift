@@ -1,0 +1,44 @@
+name: 🚀 Feature Request
+description: Suggest a new feature
+title: "[FEATURE]: "
+labels: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚀 Feature Request
+
+        This feature is proposed under **NSoC'26 (Nexus Spring of Code)**.
+        Kindly consider assigning it to me if relevant.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 📌 Feature Summary
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: ❓ Problem Statement
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💡 Proposed Solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives Considered
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📎 Additional Context
