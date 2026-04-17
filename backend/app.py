@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 import os
 import requests
@@ -357,7 +358,11 @@ def handle_mood_search():
             }
         )
         
+    except SQLAlchemyError as e:
+        logger.error(f"Database error searching mood: {e}")
+        return internal_error("A database error occurred during search.")
     except Exception as e:
+        logger.error(f"Unexpected error searching mood: {e}")
         return internal_error(str(e))
 
 @app.route('/api/v1/generate-note', methods=['POST'])
@@ -400,8 +405,11 @@ def handle_generate_note():
                 new_note = BookNote(book_title=title, book_author=author, content=recommendation)
                 db.session.add(new_note)
                 db.session.commit()
+        except SQLAlchemyError as e:
+            logger.error(f"Database error caching note: {e}")
+            db.session.rollback()
         except Exception as e:
-            logger.error(f"Failed to cache note: {e}")
+            logger.error(f"Unexpected error caching note: {e}")
             db.session.rollback()
 
         return success_response(data=recommendation)
@@ -521,7 +529,12 @@ def add_to_library():
             data={"message": "Book added to shelf", "item": item.to_dict()},
             status_code=201
         )
+    except SQLAlchemyError as e:
+        logger.error(f"Database error adding to library: {e}")
+        db.session.rollback()
+        return internal_error("A database error occurred while adding the book.")
     except Exception as e:
+        logger.error(f"Unexpected error adding to library: {e}")
         db.session.rollback()
         return internal_error(str(e))
 
@@ -678,7 +691,12 @@ def update_library_item(item_id):
             
         db.session.commit()
         return success_response(data={"message": "Item updated", "item": item.to_dict()})
+    except SQLAlchemyError as e:
+        logger.error(f"Database error updating library item: {e}")
+        db.session.rollback()
+        return internal_error("A database error occurred while updating the item.")
     except Exception as e:
+        logger.error(f"Unexpected error updating library item: {e}")
         db.session.rollback()
         return internal_error(str(e))
 
@@ -698,7 +716,12 @@ def remove_from_library(item_id):
         db.session.delete(item)
         db.session.commit()
         return success_response(data={"message": "Item removed"})
+    except SQLAlchemyError as e:
+        logger.error(f"Database error removing from library: {e}")
+        db.session.rollback()
+        return internal_error("A database error occurred while removing the item.")
     except Exception as e:
+        logger.error(f"Unexpected error removing from library: {e}")
         db.session.rollback()
         return internal_error(str(e))
 
@@ -796,8 +819,12 @@ def sync_library():
                         existing_item.version += 1
                         synced_count += 1
                     
+            except SQLAlchemyError as e:
+                logger.error(f"Database error syncing item {item_data.get('id', 'unknown')}: {e}")
+                # Savepoint will be rolled back by the nested transaction block
+                errors += 1
             except Exception as e:
-                logger.error(f"Sync error for item {item_data.get('id', 'unknown')}: {e}")
+                logger.error(f"Unexpected error syncing item {item_data.get('id', 'unknown')}: {e}")
                 errors += 1
                 # begin_nested() automatically rolls back on exception within the block
         
