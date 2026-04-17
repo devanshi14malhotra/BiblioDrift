@@ -1,0 +1,25 @@
+name: 📝 Blank Issue
+description: Open a general issue
+title: "[ISSUE]: "
+labels: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📝 General Issue
+
+        This issue is created under **NSoC'26 (Nexus Spring of Code)**.
+        If relevant, kindly consider assigning it to me.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📌 Description
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📎 Additional Context

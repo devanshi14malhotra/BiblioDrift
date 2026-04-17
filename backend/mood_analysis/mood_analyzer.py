@@ -458,8 +458,8 @@ class BookMoodAnalyzer:
     
     def _get_timestamp(self) -> str:
         """Get current timestamp for metadata"""
-        from datetime import datetime
-        return datetime.utcnow().isoformat() + 'Z'
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc).isoformat() + 'Z'
     
     def _generate_mood_description(self, overall_sentiment: Dict, dynamic_moods: Dict) -> str:
         """Generate a human-readable mood description."""

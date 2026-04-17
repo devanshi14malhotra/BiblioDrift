@@ -24,11 +24,40 @@ BiblioDrift is a cozy, visual-first book discovery platform designed to make fin
 - **Curated Tables**: Horizontal scrolling lists based on moods like "Monsoon Reads".
 
 ## 🛠️ Tech Stack
-- **Frontend**: Vanilla JavaScript, CSS3 (3D Transforms), HTML5
-- **API**: Google Books API (Real-time data)
-- **Storage**: LocalStorage (MVP), PostgreSQL (Planned)
-- **Backend (Planned)**: Python Flask
-- **AI (Planned)**: LLM integration for "Bookseller Notes"
+
+<div align="center">
+<table style="border: none; border-collapse: collapse;">
+<tr>
+<td align="center"><b>Frontend</b>
+
+
+<code>Vanilla JS</code> • <code>CSS3 3D</code> • <code>HTML5</code></td>
+<td align="center"><b>API & Data</b>
+
+
+<code>Google Books API</code> • <code>LocalStorage</code></td>
+<td align="center"><b>Backend & AI</b>
+
+
+<code>Python Flask</code> • <code>FAISS / LLM</code></td>
+</tr>
+</table>
+</div>
+
+## System Architecture
+To maintain our strict AI-driven model, BiblioDrift utilizes a decoupled flow where the backend acts as the "Curator" and the frontend acts as the "Librarian."
+```mermaid
+graph TD
+    A[Vanilla JS Frontend] -->|Vibe Query| B[Flask Backend]
+    B -->|Prompt Engineering| C[AI Service / LLM]
+    C -->|Generated Blurb| B
+    B -->|JSON Response| A
+    A -->|Book Details| D[Google Books API]
+    A -->|Persistence| E[LocalStorage]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+```
 
 ## 🤖 Project Structure 
 ```
@@ -129,17 +158,22 @@ This ensures discovery stays organic, scalable, and aligned with BiblioDrift’s
 ### Backend (Future)
 Planned implementation using Python Flask.
 
+## 🚢 Deployment Notes
+
+- Netlify should serve the static frontend from the generated `dist/` bundle.
+- The Flask backend, database, Redis, and AI services are not hosted by Netlify.
+- To make the API work in production, deploy the backend separately and point the frontend `MOOD_API_BASE` to that host.
+
 ##  Screenshots
 
-### Home Page
-<img width="1912" height="921" alt="Screenshot 2026-02-09 212125" src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" />
-
-### Virtual Library
-<img width="1912" height="922" alt="Screenshot 2026-02-09 212207" src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" />
-
-### Sign In Page
-<img width="1917" height="916" alt="Screenshot 2026-02-09 212225" src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" />
-
+<div align="center">
+  <h3>Discovery & Virtual Library</h3>
+  <img src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" width="85%" alt="Home Page" />
+  <br><br>
+  <img src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" width="47%" alt="Virtual Library" />
+  <img src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" width="47%" alt="Sign In Page" />
+  <p><i>Capturing the tactile, vibe-first essence of BiblioDrift.</i></p>
+</div>
 
 ## 🧠 AI Service Integration
 To keep the frontend and backend synced, use the following mapping:

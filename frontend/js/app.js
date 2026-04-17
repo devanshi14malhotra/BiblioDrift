@@ -10,10 +10,21 @@ const MOOD_API_BASE = 'http://localhost:5000/api/v1';
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 let GOOGLE_API_KEY = '';
+const MOOD_API_BASE = '/api/v1'; // Standardized path
+
+/**
+ * Utility to extract a cookie value by name.
+ */
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
 
 async function loadConfig() {
     try {
-        const res = await fetch(`${MOOD_API_BASE}/config`);
+        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
             GOOGLE_API_KEY = data.google_books_key || '';
@@ -45,19 +56,59 @@ function showToast(message, type = 'info') {
  * Robust Wrapper for LocalStorage
  * Prevents application crashes when the 5MB quota is exceeded.
  */
+/**
+ * Robust Wrapper for Storage (LocalStorage + IndexedDB Fallback)
+ * Prevents application data loss and handles browser storage wipes/quotas.
+ */
 const SafeStorage = {
+    _dbName: 'BiblioDriftDB',
+    _storeName: 'library_backup',
+
     /**
-     * Attempts to save data to localStorage with error handling.
+     * Attempts to request persistent storage from the browser.
+     * This prevents the browser from clearing storage when disk space is low.
+     */
+    async requestPersistence() {
+        if (navigator.storage && navigator.storage.persist) {
+            try {
+                const isPersisted = await navigator.storage.persist();
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`[Storage] Persistent status: ${isPersisted}`);
+                }
+            } catch (e) {
+                console.warn("[Storage] Persist request failed", e);
+            }
+        }
+    },
+
+    /**
+     * Internal: Opens the IndexedDB for backup.
+     */
+    async _openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this._dbName, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this._storeName)) {
+                    db.createObjectStore(this._storeName);
+                }
+            };
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    },
+
+    /**
+     * Attempts to save data to localStorage with IndexedDB backup.
      * @param {string} key 
      * @param {string} value 
      * @returns {boolean} Success status
      */
     set(key, value) {
+        // 1. Primary: LocalStorage
         try {
             localStorage.setItem(key, value);
-            return true;
         } catch (error) {
-            // Check specifically for QuotaExceededError across different browsers
             const isQuotaError = 
                 error instanceof DOMException && (
                 error.code === 22 || 
@@ -66,12 +117,31 @@ const SafeStorage = {
                 error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
 
             if (isQuotaError) {
-                showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+                showToast("Local storage full! Saving to secure backup.", "info");
             } else {
                 console.error("LocalStorage Error:", error);
             }
-            return false;
         }
+
+        // 2. Secondary: IndexedDB (Durable Backup for Library)
+        if (key === 'bibliodrift_library') {
+            this._saveToDB(key, value);
+        }
+        return true;
+    },
+
+    async _saveToDB(key, value) {
+        try {
+            const db = await this._openDB();
+            const transaction = db.transaction(this._storeName, 'readwrite');
+            const store = transaction.objectStore(this._storeName);
+            store.put(value, key);
+        } catch (e) {
+            console.error("IndexedDB Backup Failed", e);
+        }
+
+        showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+        return false;
     },
 
     /**
@@ -79,22 +149,56 @@ const SafeStorage = {
      */
     get(key) {
         try {
-            return localStorage.getItem(key);
+            const value = localStorage.getItem(key);
+            if (value !== null) {
+                this.touchKey(key, value);
+            }
+            return value;
         } catch (e) {
             return null;
         }
     },
 
     /**
-     * Safely removes data from localStorage.
+     * Retrieves data with IndexedDB fallback if LocalStorage is wiped.
+     */
+    async getAsync(key) {
+        let val = this.get(key);
+        if (!val && key === 'bibliodrift_library') {
+            try {
+                const db = await this._openDB();
+                const transaction = db.transaction(this._storeName, 'readonly');
+                const store = transaction.objectStore(this._storeName);
+                val = await new Promise((resolve) => {
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => resolve(null);
+                });
+                
+                if (val) {
+                    if (process.env.NODE_ENV === 'development') console.log("[Storage] Restored from IndexedDB backup");
+                    // Try to restore to LocalStorage for future sync calls
+                    try { localStorage.setItem(key, val); } catch(e) {}
+                }
+            } catch (e) {
+                console.warn("Backup retrieval failed", e);
+            }
+        }
+        return val;
+    },
+
+    /**
+     * Safely removes data from storage.
      * @param {string} key 
      */
     remove(key) {
         try {
             localStorage.removeItem(key);
+            if (key === 'bibliodrift_library') {
+                this._saveToDB(key, null);
+            }
             return true;
         } catch (e) {
-            console.error("LocalStorage Remove Error:", e);
             return false;
         }
     },
@@ -105,9 +209,9 @@ const SafeStorage = {
     clear() {
         try {
             localStorage.clear();
+            this.setMeta({});
             return true;
         } catch (e) {
-            console.error("LocalStorage Clear Error:", e);
             return false;
         }
     }
@@ -237,6 +341,20 @@ class BookRenderer {
             </div>
         `;
 
+        // Interaction: Progress Slider
+        const slider = scene.querySelector('.progress-slider');
+        if (slider) {
+            slider.addEventListener('change', (e) => {
+                const newProgress = parseInt(e.target.value);
+                if (this.libraryManager) {
+                    this.libraryManager.updateBook(id, { progress: newProgress });
+                }
+                // Update small tag
+                const small = slider.nextElementSibling;
+                if (small) small.textContent = `${newProgress}% read`;
+            });
+        }
+
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
@@ -308,6 +426,7 @@ class BookRenderer {
             const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ title, author, description })
             });
             if (res.ok) {
@@ -428,17 +547,44 @@ class BookRenderer {
 class LibraryManager {
     constructor() {
         this.storageKey = 'bibliodrift_library';
-        const stored = SafeStorage.get(this.storageKey);
-        this.library = stored ? JSON.parse(stored) : {
+        // Initialize with empty library to prevent crashes during async load
+        this.library = {
             current: [],
             want: [],
             finished: []
         };
-        this.apiBase = 'http://localhost:5000/api/v1';
+        this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
 
-        // Sync API if user is logged in
-        this.syncWithBackend();
+        // Asynchronous initialization
+        this._initPromise = this.init();
+    }
+
+    async init() {
+        // 1. Request persistent storage to prevent wipes
+        await SafeStorage.requestPersistence();
+
+        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
+        const stored = await SafeStorage.getAsync(this.storageKey);
+        if (stored) {
+            try {
+                this.library = JSON.parse(stored);
+            } catch (e) {
+                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+            }
+        }
+
+        // 3. Setup sorting and trigger initial fast render
         this.setupSorting();
+        
+        if (document.getElementById('shelf-want')) {
+            // Fast Render from local data
+            this.renderShelf('want', 'shelf-want');
+            this.renderShelf('current', 'shelf-current');
+            this.renderShelf('finished', 'shelf-finished');
+        }
+
+        // 4. Sync with backend if available (Full Refresh)
+        await this.syncWithBackend();
     }
 
     getUser() {
@@ -447,11 +593,15 @@ class LibraryManager {
     }
 
     getAuthHeaders() {
-        const token = SafeStorage.get('bibliodrift_token');
-        return new Headers({
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        });
+        const csrfToken = getCookie('csrf_access_token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        // CSRF protection for cookie-based auth
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        return new Headers(headers);
     }
 
     async syncWithBackend() {
@@ -460,7 +610,8 @@ class LibraryManager {
 
         try {
             const res = await fetch(`${this.apiBase}/library/${user.id}`, {
-                headers: this.getAuthHeaders()
+                headers: this.getAuthHeaders(),
+                credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
@@ -482,28 +633,39 @@ class LibraryManager {
                     const remoteBook = {
                         id: item.google_books_id,
                         db_id: item.id,
+                        version: item.version,
                         volumeInfo: {
                             title: item.title,
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
-                        // Preserve local progress if exists, else default
-                        progress: existing ? existing.book.progress : (item.shelf_type === 'current' ? 0 : null),
+                        // Backend data is authoritative during sync DOWN
+                        progress: item.progress,
                         date_added: item.created_at || new Date().toISOString()
                     };
 
                     if (existing) {
-                        // Check if shelf matches
-                        if (existing.shelf !== item.shelf_type) {
-                            // Backend wins on shelf conflict (syncing FROM server)
-                            // Remove from old shelf
-                            this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
-                            // Add to new shelf
-                            this.library[item.shelf_type].push(remoteBook);
-                        } else {
-                            // Update details (e.g. db_id might be missing locally if added offline)
-                            Object.assign(existing.book, remoteBook);
+                        const localBook = existing.book;
+                        
+                        // Conflict Resolution Logic:
+                        // If backend has a higher version, it wins.
+                        if (item.version > (localBook.version || 0)) {
+                            if (existing.shelf !== item.shelf_type) {
+                                // Remove from old shelf
+                                this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
+                                // Add to new shelf
+                                this.library[item.shelf_type].push(remoteBook);
+                            } else {
+                                // Update details in place
+                                Object.assign(localBook, remoteBook);
+                            }
+                        } else if (item.version === (localBook.version || 0)) {
+                            // Versions match, just ensure db_id is set
+                            localBook.db_id = item.id;
                         }
+                        // If item.version < localBook.version, we have unsynced local changes.
+                        // syncLocalToBackend will handle pushing these.
+
                         // Mark as processed/merged
                         localBooksMap.delete(item.google_books_id);
                     } else {
@@ -549,16 +711,14 @@ class LibraryManager {
         ['current', 'want', 'finished'].forEach(shelf => {
             if (this.library[shelf]) {
                 this.library[shelf].forEach(book => {
-                    // Avoid syncing items that obviously came from backend (have db_id) 
-                    // UNLESS you want to support offline updates (which is harder).
-                    // The requirement is "upload anonymous local library when user signs up".
-                    // Anonymous items won't have db_id.
-                    if (!book.db_id) {
-                        itemsToSync.push({
-                            ...book,
-                            shelf: shelf
-                        });
-                    }
+                    // Sync both new (anonymous) items and potentially updated items (with db_id)
+                    // If book.db_id is present, it's an update. If not, it's a new item.
+                    itemsToSync.push({
+                        ...book,
+                        shelf: shelf,
+                        // Ensure version is sent if present
+                        version: book.version || 0
+                    });
                 });
             }
         });
@@ -572,6 +732,7 @@ class LibraryManager {
             const res = await fetch(`${this.apiBase}/library/sync`, {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     user_id: user.id,
                     items: itemsToSync
@@ -583,12 +744,19 @@ class LibraryManager {
                 if (process.env.NODE_ENV === 'development') {
                     console.log("Sync result:", data);
                 }
-                showToast(`Synced ${data.message}`, "success");
+                
+                if (data.conflicts > 0) {
+                    showToast(`Synced ${data.message} (${data.conflicts} conflicts resolved by server)`, "info");
+                } else {
+                    showToast(`Synced ${data.message}`, "success");
+                }
 
-                // After upload, pull fresh state from backend to get the new DB IDs
+                // After upload, pull fresh state from backend to get the new DB IDs and versions
                 await this.syncWithBackend();
             } else {
-                console.error("Backend refused sync");
+                const data = await res.json();
+                console.error("Backend refused sync", data);
+                showToast("Sync failed: " + (data.error || "Server error"), "error");
             }
         } catch (e) {
             console.error("Sync upload failed", e);
@@ -680,17 +848,73 @@ class LibraryManager {
                 const res = await fetch(`${this.apiBase}/library`, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),
+                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Store the DB ID back to the local object
+                    // Store the DB ID and version back to the local object
                     enrichedBook.db_id = data.item.id;
+                    enrichedBook.version = data.item.version;
                     this.saveLocally();
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
+                showToast("Saved locally (Sync failed)", "info");
+            }
+        }
+    }
+
+
+    async updateBook(id, updates) {
+        const result = this.findBookInShelf(id);
+        if (!result) return;
+
+        const { shelf, book } = result;
+
+        // 1. Update Local State
+        Object.assign(book, updates);
+        
+        // Local "Finished" logic
+        if (updates.progress === 100 && shelf !== 'finished') {
+            // Remove from current, add to finished
+            this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
+            this.library.finished.push(book);
+            showToast(`Congrats! You finished ${book.volumeInfo.title}!`, "success");
+        }
+        
+        this.saveLocally();
+
+        // 2. Update Backend
+        const user = this.getUser();
+        if (user && book.db_id) {
+            try {
+                const res = await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                    method: 'PUT',
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        ...updates,
+                        version: book.version // Optimistic locking
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    book.version = data.item.version;
+                    this.saveLocally();
+                } else if (res.status === 409) {
+                    const data = await res.json();
+                    showToast("Conflict detected! Syncing with server...", "error");
+                    // Optionally show a more detailed merge UI here
+                    await this.syncWithBackend();
+                } else {
+                    const data = await res.json();
+                    console.error("Update failed:", data.error);
+                }
+            } catch (e) {
+                console.error("Failed to update backend", e);
                 showToast("Saved locally (Sync failed)", "info");
             }
         }
@@ -737,7 +961,11 @@ class LibraryManager {
             // Do we have it?
             if (user && book.db_id) {
                 try {
-                    await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE', headers: this.getAuthHeaders() });
+                    await fetch(`${this.apiBase}/library/${book.db_id}`, { 
+                        method: 'DELETE', 
+                        headers: this.getAuthHeaders(),
+                        credentials: 'include'
+                    });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
                     showToast("Removed locally (Backend sync failed)", "info");
@@ -822,7 +1050,8 @@ class ThemeManager {
 
 
 class GenreManager {
-    constructor() {
+    constructor(libraryManager = null) {
+        this.libraryManager = libraryManager;
         this.genreGrid = document.getElementById('genre-grid');
         this.modal = document.getElementById('genre-modal');
         this.closeBtn = document.getElementById('close-genre-modal');
@@ -921,7 +1150,7 @@ class GenreManager {
 
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
-        const renderer = new BookRenderer(new LibraryManager());
+        const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
             this.booksGrid.appendChild(el);
@@ -983,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
-    const genreManager = new GenreManager();
+    const genreManager = new GenreManager(libManager);
     genreManager.init();
     const exportBtn = document.getElementById("export-library");
 
@@ -994,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-    const isLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
+    const isLoggedIn = !!libManager.getUser(); // Rely on user object instead of forgeable flag
     const authLink = document.getElementById('navAuthLink');
     if (isLoggedIn && authLink) {
         authLink.innerHTML = '<i class="fa-solid fa-user"></i>';
@@ -1055,11 +1284,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 })();
     }
 
-    if (document.getElementById('shelf-want')) {
-        libManager.renderShelf('want', 'shelf-want');
-        libManager.renderShelf('current', 'shelf-current');
-        libManager.renderShelf('finished', 'shelf-finished');
-    }
+    // Re-rendering is now handled by libManager.init() asynchronously to ensure
+    // data is loaded from IndexedDB backup if LocalStorage was wiped.
+    // if (document.getElementById('shelf-want')) {
+    //     libManager.renderShelf('want', 'shelf-want');
+    //     libManager.renderShelf('current', 'shelf-current');
+    //     libManager.renderShelf('finished', 'shelf-finished');
+    // }
 
 
     // Check if Profile Page
@@ -1111,9 +1342,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                // Clear backend cookies
+                await fetch(`${MOOD_API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+            } catch (e) {
+                console.warn("Backend logout failed", e);
+            }
             SafeStorage.remove('bibliodrift_user');
             SafeStorage.remove('bibliodrift_token');
+            SafeStorage.remove('isLoggedIn');
             window.location.href = 'index.html';
         });
     }
@@ -1185,10 +1423,10 @@ async function handleAuth(event) {
 
     if (mode === 'register') {
         const username = usernameInput ? usernameInput.value : email.split('@')[0];
-        endpoint = '/api/v1/register';
+        endpoint = '/register';
         payload = { username, email, password };
     } else {
-        endpoint = '/api/v1/login';
+        endpoint = '/login';
         payload = { username: email, password: password };
     }
 
@@ -1198,9 +1436,10 @@ async function handleAuth(event) {
         btn.textContent = 'Processing...';
         btn.disabled = true;
 
-        const res = await fetch(`http://localhost:5000${endpoint}`, {
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(payload)
         });
 
@@ -1211,10 +1450,7 @@ async function handleAuth(event) {
 
         if (res.ok) {
             // Success!
-            // Store Access Token and User Info
-            if (data.access_token) {
-                SafeStorage.set('bibliodrift_token', data.access_token);
-            }
+            // Token is now in an HttpOnly cookie (managed by backend)
             SafeStorage.set('bibliodrift_user', JSON.stringify(data.user));
 
             if (typeof showToast === 'function')
