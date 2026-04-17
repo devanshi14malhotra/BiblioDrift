@@ -44,6 +44,145 @@ function showToast(message, type = 'info') {
  * Prevents application crashes when the 5MB quota is exceeded.
  */
 const SafeStorage = {
+    metaKey: '__bibliodrift_storage_meta__',
+    cachePrefixes: [
+        'bibliodrift_cache_',
+        'cached_books_',
+        'books_cache_',
+        'genre_cache_',
+        'search_cache_',
+        'cache_'
+    ],
+    protectedKeys: new Set([
+        'bibliodrift_library',
+        'bibliodrift_user',
+        'bibliodrift_token',
+        'bibliodrift_theme',
+        'isLoggedIn'
+    ]),
+
+    isQuotaError(error) {
+        return error instanceof DOMException && (
+            error.code === 22 ||
+            error.code === 1014 ||
+            error.name === 'QuotaExceededError' ||
+            error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+        );
+    },
+
+    getMeta() {
+        try {
+            const raw = localStorage.getItem(this.metaKey);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object') ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    },
+
+    setMeta(meta) {
+        try {
+            localStorage.setItem(this.metaKey, JSON.stringify(meta));
+        } catch (e) {
+            // Ignore metadata write failures; data writes still succeed.
+        }
+    },
+
+    estimateSize(value) {
+        if (typeof value === 'string') return value.length;
+        try {
+            return JSON.stringify(value).length;
+        } catch (e) {
+            return 0;
+        }
+    },
+
+    isCacheKey(key) {
+        if (!key || key === this.metaKey) return false;
+        return this.cachePrefixes.some(prefix => key.startsWith(prefix));
+    },
+
+    touchKey(key, value) {
+        if (!key || key === this.metaKey) return;
+        const meta = this.getMeta();
+        meta[key] = {
+            lastAccess: Date.now(),
+            size: this.estimateSize(value)
+        };
+        this.setMeta(meta);
+    },
+
+    dropMetaKey(key) {
+        const meta = this.getMeta();
+        if (meta[key]) {
+            delete meta[key];
+            this.setMeta(meta);
+        }
+    },
+
+    removeKeys(keys) {
+        if (!Array.isArray(keys) || keys.length === 0) return 0;
+
+        const meta = this.getMeta();
+        let removed = 0;
+
+        keys.forEach(key => {
+            if (!key || key === this.metaKey) return;
+            try {
+                localStorage.removeItem(key);
+                removed += 1;
+            } catch (e) {
+                // Skip keys that cannot be removed.
+            }
+            delete meta[key];
+        });
+
+        this.setMeta(meta);
+        return removed;
+    },
+
+    getLRUCandidates({ cacheOnly = true, excludeKey = null } = {}) {
+        const meta = this.getMeta();
+        const candidates = [];
+
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || key === this.metaKey || key === excludeKey) continue;
+            if (this.protectedKeys.has(key)) continue;
+            if (cacheOnly && !this.isCacheKey(key)) continue;
+
+            const entryMeta = meta[key] || {};
+            candidates.push({
+                key,
+                lastAccess: typeof entryMeta.lastAccess === 'number' ? entryMeta.lastAccess : 0
+            });
+        }
+
+        candidates.sort((a, b) => a.lastAccess - b.lastAccess);
+        return candidates;
+    },
+
+    recoverQuotaSpace(targetKey, attempt) {
+        if (attempt === 1) {
+            const oldestCacheKeys = this.getLRUCandidates({ cacheOnly: true, excludeKey: targetKey })
+                .slice(0, 3)
+                .map(item => item.key);
+            return this.removeKeys(oldestCacheKeys);
+        }
+
+        if (attempt === 2) {
+            const allCacheKeys = this.getLRUCandidates({ cacheOnly: true, excludeKey: targetKey })
+                .map(item => item.key);
+            return this.removeKeys(allCacheKeys);
+        }
+
+        const oldestNonCritical = this.getLRUCandidates({ cacheOnly: false, excludeKey: targetKey })
+            .slice(0, 2)
+            .map(item => item.key);
+        return this.removeKeys(oldestNonCritical);
+    },
+
     /**
      * Attempts to save data to localStorage with error handling.
      * @param {string} key 
@@ -51,25 +190,30 @@ const SafeStorage = {
      * @returns {boolean} Success status
      */
     set(key, value) {
-        try {
-            localStorage.setItem(key, value);
-            return true;
-        } catch (error) {
-            // Check specifically for QuotaExceededError across different browsers
-            const isQuotaError = 
-                error instanceof DOMException && (
-                error.code === 22 || 
-                error.code === 1014 || 
-                error.name === 'QuotaExceededError' || 
-                error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+        let recovered = 0;
 
-            if (isQuotaError) {
-                showToast("Local storage full! Please sync to cloud and clear cache.", "error");
-            } else {
-                console.error("LocalStorage Error:", error);
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                localStorage.setItem(key, value);
+                this.touchKey(key, value);
+                if (recovered > 0) {
+                    showToast(`Storage was full. Cleared ${recovered} old cached entr${recovered === 1 ? 'y' : 'ies'}.`, 'info');
+                }
+                return true;
+            } catch (error) {
+                if (!this.isQuotaError(error)) {
+                    console.error("LocalStorage Error:", error);
+                    return false;
+                }
+
+                const removed = this.recoverQuotaSpace(key, attempt + 1);
+                recovered += removed;
+                if (removed === 0) break;
             }
-            return false;
         }
+
+        showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+        return false;
     },
 
     /**
@@ -77,7 +221,11 @@ const SafeStorage = {
      */
     get(key) {
         try {
-            return localStorage.getItem(key);
+            const value = localStorage.getItem(key);
+            if (value !== null) {
+                this.touchKey(key, value);
+            }
+            return value;
         } catch (e) {
             return null;
         }
@@ -90,6 +238,7 @@ const SafeStorage = {
     remove(key) {
         try {
             localStorage.removeItem(key);
+            this.dropMetaKey(key);
             return true;
         } catch (e) {
             console.error("LocalStorage Remove Error:", e);
@@ -103,6 +252,7 @@ const SafeStorage = {
     clear() {
         try {
             localStorage.clear();
+            this.setMeta({});
             return true;
         } catch (e) {
             console.error("LocalStorage Clear Error:", e);
