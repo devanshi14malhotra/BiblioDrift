@@ -6746,3 +6746,103 @@ main {
     transform: translateY(-20px) translateZ(100px) rotateY(180deg) scale(1.1) !important;
     z-index: 100 !important;
 }
+/* === HERO CONTROLS UPGRADE (MATCH YOUR THEME) === */
+
+.sort-controls {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+/* Glass dropdown cards */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+
+    padding: 10px 16px;
+
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+}
+
+/* Hover = premium lift */
+.filter-group:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: var(--accent-gold);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+/* Icons glow */
+.filter-group i {
+    color: var(--accent-gold);
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.filter-group:hover i {
+    transform: scale(1.2);
+}
+
+/* Select styling */
+.sort-select {
+    background: transparent;
+    border: none;
+    outline: none;
+
+    font-family: "Georgia", serif;
+    font-size: 14px;
+    color: var(--text-main);
+
+    cursor: pointer;
+}
+
+/* Fancy focus */
+.sort-select:focus {
+    color: var(--accent-gold);
+}
+
+/* EXPORT BUTTON UPGRADE */
+#export-library {
+    position: absolute;
+    top: 30px;
+    right: 0;
+
+    background: linear-gradient(135deg, var(--wood-dark), var(--wood-light));
+    color: #fff;
+
+    border: none;
+    border-radius: 12px;
+
+    padding: 10px 16px;
+    font-family: "Georgia", serif;
+    font-size: 13px;
+
+    cursor: pointer;
+
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+}
+
+/* Hover = golden premium */
+#export-library:hover {
+    background: linear-gradient(135deg, var(--accent-gold), #c89b2f);
+    transform: translateY(-3px);
+    color: #2c2420;
+}
+
+/* Responsive fix */
+@media (max-width: 600px) {
+    #export-library {
+        position: static;
+        margin-bottom: 1rem;
+    }
+}
