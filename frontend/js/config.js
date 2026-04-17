@@ -23,6 +23,11 @@ const CONFIG = {
     }
 };
 
+if (typeof window !== 'undefined') {
+    window.CONFIG = CONFIG;
+    window.MOOD_API_BASE = CONFIG.MOOD_API_BASE;
+}
+
 // Export for module systems (if needed)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;

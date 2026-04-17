@@ -129,6 +129,12 @@ This ensures discovery stays organic, scalable, and aligned with BiblioDrift’s
 ### Backend (Future)
 Planned implementation using Python Flask.
 
+## 🚢 Deployment Notes
+
+- Netlify should serve the static frontend from the generated `dist/` bundle.
+- The Flask backend, database, Redis, and AI services are not hosted by Netlify.
+- To make the API work in production, deploy the backend separately and point the frontend `MOOD_API_BASE` to that host.
+
 ##  Screenshots
 
 ### Home Page

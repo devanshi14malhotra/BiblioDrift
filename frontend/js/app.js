@@ -5,7 +5,7 @@
 
 const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const API_KEY = 'YOUR_GOOGLE_BOOKS_API_KEY';
-const MOOD_API_BASE = 'http://localhost:5000/api/v1';
+const MOOD_API_BASE = (typeof window !== 'undefined' && window.MOOD_API_BASE) || (typeof CONFIG !== 'undefined' ? CONFIG.MOOD_API_BASE : '/api/v1');
 
 let GOOGLE_API_KEY = '';
 
@@ -126,6 +126,9 @@ const SafeStorage = {
         } catch (e) {
             console.error("IndexedDB Backup Failed", e);
         }
+
+        showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+        return false;
     },
 
     /**
@@ -133,7 +136,11 @@ const SafeStorage = {
      */
     get(key) {
         try {
-            return localStorage.getItem(key);
+            const value = localStorage.getItem(key);
+            if (value !== null) {
+                this.touchKey(key, value);
+            }
+            return value;
         } catch (e) {
             return null;
         }
@@ -189,6 +196,7 @@ const SafeStorage = {
     clear() {
         try {
             localStorage.clear();
+            this.setMeta({});
             return true;
         } catch (e) {
             return false;
@@ -1369,10 +1377,10 @@ async function handleAuth(event) {
 
     if (mode === 'register') {
         const username = usernameInput ? usernameInput.value : email.split('@')[0];
-        endpoint = '/api/v1/register';
+        endpoint = '/register';
         payload = { username, email, password };
     } else {
-        endpoint = '/api/v1/login';
+        endpoint = '/login';
         payload = { username: email, password: password };
     }
 
@@ -1382,7 +1390,7 @@ async function handleAuth(event) {
         btn.textContent = 'Processing...';
         btn.disabled = true;
 
-        const res = await fetch(`http://localhost:5000${endpoint}`, {
+        const res = await fetch(`${MOOD_API_BASE}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
