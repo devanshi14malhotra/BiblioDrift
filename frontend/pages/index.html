@@ -1,8 +1,16 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8" />
+  <script>
+    (function () {
+        const theme = localStorage.getItem('bibliodrift_theme');
+        if (theme === 'night') {
+            document.documentElement.setAttribute('data-theme', 'night');
+        }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BiblioDrift | Find yourself in the pages</title>
   <link rel="stylesheet" href="../css/style.css" />

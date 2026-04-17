@@ -929,7 +929,8 @@ class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
-        this.currentTheme = SafeStorage.get(this.themeKey) || 'day';
+        const stored = SafeStorage.get(this.themeKey);
+        this.currentTheme = stored === 'night' ? 'night' : 'light';
 
         this.init();
     }
@@ -941,7 +942,7 @@ class ThemeManager {
         this.applyTheme(this.currentTheme);
 
         this.toggleBtn.addEventListener('click', () => {
-            this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
+            this.currentTheme = this.currentTheme === 'night' ? 'light' : 'night';
             this.applyTheme(this.currentTheme);
             SafeStorage.set(this.themeKey, this.currentTheme);
         });
@@ -949,12 +950,13 @@ class ThemeManager {
 
 
     applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
         const icon = this.toggleBtn.querySelector('i');
         if (theme === 'night') {
+            document.documentElement.setAttribute('data-theme', 'night');
             icon.classList.remove('fa-moon');
             icon.classList.add('fa-sun');
         } else {
+            document.documentElement.removeAttribute('data-theme');
             icon.classList.remove('fa-sun');
             icon.classList.add('fa-moon');
         }
