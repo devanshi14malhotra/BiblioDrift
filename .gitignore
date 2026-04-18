@@ -22,6 +22,12 @@ secrets/
 __pycache__/
 *.pyc
 
+# Netlify build output
+dist/
+
 # Database files
 instance/
 *.db
+# Virtual Environment
+venv/
+.env

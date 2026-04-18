@@ -132,6 +132,7 @@ class UpdateLibraryItemRequest(BaseModel):
     shelf_type: Optional[ShelfType] = Field(default=None, description="Shelf type (want/current/finished)")
     progress: Optional[int] = Field(default=None, ge=0, le=100, description="Reading progress (0-100)")
     rating: Optional[int] = Field(default=None, ge=1, le=5, description="Book rating (1-5)")
+    version: Optional[int] = Field(default=None, description="Current version for optimistic locking")
 
 
 class SyncLibraryRequest(BaseModel):
@@ -150,10 +151,11 @@ class RegisterRequest(BaseModel):
     @field_validator('username')
     @classmethod
     def username_alphanumeric(cls, v: str) -> str:
-        """Ensure username is alphanumeric."""
+        """Ensure username contains only letters, numbers, and underscores."""
+        v = v.strip()
         if not v.replace('_', '').isalnum():
-            raise ValueError('Username must be alphanumeric (letters, numbers, underscores only)')
-        return v.strip()
+            raise ValueError('Username must contain only letters, numbers, and underscores.')
+        return v
 
 
 class LoginRequest(BaseModel):

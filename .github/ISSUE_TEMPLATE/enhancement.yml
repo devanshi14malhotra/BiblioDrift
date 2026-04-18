@@ -1,0 +1,39 @@
+name: ✨ Enhancement
+description: Suggest an improvement
+title: "[ENHANCEMENT]: "
+labels: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Enhancement Request
+
+        This enhancement is suggested under **NSoC'26 (Nexus Spring of Code)**.
+        Kindly consider assigning it to me if appropriate.
+
+  - type: textarea
+    id: current
+    attributes:
+      label: 📌 Current Behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: improvement
+    attributes:
+      label: 🚀 Suggested Improvement
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: 🎯 Benefits
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: ⚙️ Possible Implementation

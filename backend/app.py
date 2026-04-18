@@ -3,17 +3,19 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import (
+    JWTManager, create_access_token, jwt_required, 
+    get_jwt_identity, set_access_cookies, unset_jwt_cookies
+)
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 import os
 import requests
 
 import logging
-from datetime import datetime, timedelta
-from sanitizer import sanitize_payload, sanitize_string
-from security_parsers import safe_get_json, get_request_arg_safe, validate_content_type, JSONParseError
-from middleware import safe_request_handler, validate_content_type_middleware, require_json_content_type
+from datetime import datetime, timedelta, timezone
+from sanitizer import sanitize_payload
 
 # Load environment variables from .env file BEFORE importing config
 load_dotenv()
@@ -88,7 +90,7 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 app.config.update(app_config.flask_config)
 
 jwt = JWTManager(app)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Initialize cache service
 cache_service.init_app(app)
@@ -239,7 +241,8 @@ _validate_jwt_secret_startup()
 def get_config():
     """Serve public configuration values like Google Books API Key."""
     return jsonify({
-        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', '')
+        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
+        "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
     })
 
 @app.route('/')
@@ -385,15 +388,12 @@ def handle_mood_search():
             }
         )
         
-    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
-        logger.error(f"AI service error in handle_mood_search: {e}", exc_info=True)
-        return handle_exception(e, "handle_mood_search")
-    except (ValidationException, InvalidInputError) as e:
-        logger.warning(f"Validation error in handle_mood_search: {e}")
-        return handle_exception(e, "handle_mood_search")
+    except SQLAlchemyError as e:
+        logger.error(f"Database error searching mood: {e}")
+        return internal_error("A database error occurred during search.")
     except Exception as e:
-        logger.error(f"Unexpected error in handle_mood_search: {type(e).__name__}: {e}", exc_info=True)
-        return handle_exception(e, "handle_mood_search")
+        logger.error(f"Unexpected error searching mood: {e}")
+        return internal_error(str(e))
 
 @app.route('/api/v1/generate-note', methods=['POST'])
 @rate_limit('generate_note')
@@ -449,12 +449,11 @@ def handle_generate_note():
                 new_note = BookNote(book_title=title, book_author=author, content=recommendation)
                 db.session.add(new_note)
                 db.session.commit()
-        except (DatabaseQueryError, DatabaseIntegrityError) as e:
+        except SQLAlchemyError as e:
             logger.error(f"Database error caching note: {e}")
             db.session.rollback()
-            return handle_exception(e, "handle_generate_note (cache)")
         except Exception as e:
-            logger.error(f"Failed to cache note: {type(e).__name__}: {e}")
+            logger.error(f"Unexpected error caching note: {e}")
             db.session.rollback()
             # Don't fail the request if caching fails - still return the recommendation
 
@@ -571,53 +570,46 @@ def add_to_library():
         if str(validated_data.user_id) != str(current_user_id):
             return unauthorized_access_error("Cannot access another user's library")
         
-        try:
-            # Check if the book exists in the Book table
-            book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
-            if not book:
-                book = Book(
-                    google_books_id=validated_data.google_books_id,
-                    title=validated_data.title,
-                    authors=validated_data.authors,
-                    thumbnail=validated_data.thumbnail
-                )
-                db.session.add(book)
-                db.session.flush() # Flush to get book.id without committing
-
-            # Check if ShelfItem exists
-            existing_item = ShelfItem.query.filter_by(user_id=validated_data.user_id, book_id=book.id).first()
-            if existing_item:
-                # Update shelf if exists
-                existing_item.shelf_type = validated_data.shelf_type.value
-                item = existing_item
-            else:
-                item = ShelfItem(
-                    user_id=validated_data.user_id,
-                    book_id=book.id,
-                    shelf_type=validated_data.shelf_type.value
-                )
-                db.session.add(item)
-            
-            db.session.commit()
-            return success_response(
-                data={"message": "Book added to shelf", "item": item.to_dict()},
-                status_code=201
+        # Check if the book exists in the Book table
+        book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
+        if not book:
+            book = Book(
+                google_books_id=validated_data.google_books_id,
+                title=validated_data.title,
+                authors=validated_data.authors,
+                thumbnail=validated_data.thumbnail
             )
-        except IntegrityError as e:
-            logger.error(f"Database integrity error in add_to_library: {e}")
-            db.session.rollback()
-            return handle_exception(DatabaseIntegrityError(str(e)), "add_to_library")
-        except Exception as e:
-            logger.error(f"Database error in add_to_library: {type(e).__name__}: {e}")
-            db.session.rollback()
-            return handle_exception(DatabaseQueryError(str(e)), "add_to_library")
-    
-    except ValidationException as e:
-        logger.warning(f"Validation error in add_to_library: {e}")
-        return handle_exception(e, "add_to_library")
+            db.session.add(book)
+            db.session.flush() # Flush to get book.id without committing
+
+        # Check if ShelfItem exists
+        existing_item = ShelfItem.query.filter_by(user_id=validated_data.user_id, book_id=book.id).with_for_update().first()
+        if existing_item:
+            # Update shelf if exists
+            existing_item.shelf_type = validated_data.shelf_type.value
+            existing_item.version += 1
+            item = existing_item
+        else:
+            item = ShelfItem(
+                user_id=validated_data.user_id,
+                book_id=book.id,
+                shelf_type=validated_data.shelf_type.value
+            )
+            db.session.add(item)
+        
+        db.session.commit()
+        return success_response(
+            data={"message": "Book added to shelf", "item": item.to_dict()},
+            status_code=201
+        )
+    except SQLAlchemyError as e:
+        logger.error(f"Database error adding to library: {e}")
+        db.session.rollback()
+        return internal_error("A database error occurred while adding the book.")
     except Exception as e:
-        logger.error(f"Unexpected error in add_to_library: {type(e).__name__}: {e}", exc_info=True)
-        return handle_exception(e, "add_to_library")
+        logger.error(f"Unexpected error adding to library: {e}")
+        db.session.rollback()
+        return internal_error(str(e))
 
 @app.route('/api/v1/library/<int:user_id>', methods=['GET'])
 @jwt_required()
@@ -637,7 +629,7 @@ def get_library(user_id):
 # ==================== READING STATS HELPER FUNCTIONS ====================
 def _update_reading_stats(user_id, book):
     """Update reading stats when a book is finished."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     year = now.year
     month = now.month
     
@@ -679,7 +671,7 @@ def _calculate_reading_streak(user_id):
         return 0
     
     # Check if the most recent finish was today or yesterday
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today = now.date()
     most_recent = finished_items[0].finished_at.date()
     
@@ -738,20 +730,46 @@ def update_library_item(item_id):
         if not is_valid:
             return jsonify(validated_data), 400
         
-        item = ShelfItem.query.get(item_id)
+        item = ShelfItem.query.with_for_update().get(item_id)
         if not item:
             return not_found_error("Library item")
             
         if str(item.user_id) != str(current_user_id):
              return forbidden_error("Cannot modify another user's library item")
 
+        # Optimistic locking check
+        if validated_data.version is not None and item.version != validated_data.version:
+            return error_response(
+                ErrorCodes.CONFLICT, 
+                "The item has been modified on another device. Please refresh and try again.", 
+                409,
+                additional_data={"current_version": item.version, "server_item": item.to_dict()}
+            )
+
         # Update fields if provided
         if validated_data.shelf_type is not None:
             item.shelf_type = validated_data.shelf_type.value
+        
+        if validated_data.progress is not None:
+            item.progress = validated_data.progress
+            if item.progress == 100:
+                item.shelf_type = 'finished'
+                item.finished_at = datetime.now(timezone.utc)
+        
+        if validated_data.rating is not None:
+            item.rating = validated_data.rating
+
+        # Increment version on update
+        item.version += 1
             
         db.session.commit()
         return success_response(data={"message": "Item updated", "item": item.to_dict()})
+    except SQLAlchemyError as e:
+        logger.error(f"Database error updating library item: {e}")
+        db.session.rollback()
+        return internal_error("A database error occurred while updating the item.")
     except Exception as e:
+        logger.error(f"Unexpected error updating library item: {e}")
         db.session.rollback()
         return internal_error(str(e))
 
@@ -771,7 +789,12 @@ def remove_from_library(item_id):
         db.session.delete(item)
         db.session.commit()
         return success_response(data={"message": "Item removed"})
+    except SQLAlchemyError as e:
+        logger.error(f"Database error removing from library: {e}")
+        db.session.rollback()
+        return internal_error("A database error occurred while removing the item.")
     except Exception as e:
+        logger.error(f"Unexpected error removing from library: {e}")
         db.session.rollback()
         return internal_error(str(e))
 
@@ -809,66 +832,86 @@ def sync_library():
             return forbidden_error("Cannot sync to another user's library")
         
         synced_count = 0
+        conflicts = 0
         errors = 0
         
         for item_data in items:
             try:
-                # Validate required fields for each item
-                if not isinstance(item_data, dict):
-                    errors += 1
-                    continue
+                # Use savepoint for each item so one failure doesn't roll back the whole sync
+                with db.session.begin_nested():
+                    # Validate required fields for each item
+                    if not isinstance(item_data, dict):
+                        errors += 1
+                        continue
+                        
+                    google_id = item_data.get('id')
+                    if not google_id:
+                        errors += 1
+                        continue
                     
-                google_id = item_data.get('id')
-                if not google_id:
-                    errors += 1
-                    continue
-                
-                # Sanitize google_id to prevent injection
-                google_id = sanitize_string(str(google_id), max_len=100)
-                
-                # 1. Ensure Book Exists
-                book = Book.query.filter_by(google_books_id=google_id).first()
-                
-                if not book:
-                    volume_info = item_data.get('volumeInfo', {})
-                    image_links = volume_info.get('imageLinks', {})
-                    authors = volume_info.get('authors', [])
-                    if isinstance(authors, list):
-                        authors = ", ".join(sanitize_string(str(a)) for a in authors)
-                    else:
-                        authors = sanitize_string(str(authors))
+                    # 1. Ensure Book Exists
+                    book = Book.query.filter_by(google_books_id=google_id).first()
+                    
+                    if not book:
+                        volume_info = item_data.get('volumeInfo', {})
+                        image_links = volume_info.get('imageLinks', {})
+                        authors = volume_info.get('authors', [])
+                        if isinstance(authors, list):
+                            authors = ", ".join(authors)
 
-                    book = Book(
-                        google_books_id=google_id,
-                        title=sanitize_string(str(volume_info.get('title', 'Untitled'))),
-                        authors=authors,
-                        thumbnail=sanitize_string(str(image_links.get('thumbnail', '')), max_len=500)
-                    )
-                    db.session.add(book)
-                    db.session.commit() # Need ID for next step
+                        book = Book(
+                            google_books_id=google_id,
+                            title=volume_info.get('title', 'Untitled'),
+                            authors=authors,
+                            thumbnail=image_links.get('thumbnail', '')
+                        )
+                        db.session.add(book)
+                        db.session.flush() # Get ID
 
-                # 2. Check ShelfItem
-                existing_item = ShelfItem.query.filter_by(user_id=user_id, book_id=book.id).first()
-                if not existing_item:
+                    # 2. Check ShelfItem with lock
+                    existing_item = ShelfItem.query.filter_by(user_id=user_id, book_id=book.id).with_for_update().first()
                     shelf_type = item_data.get('shelf', 'want')
-                    # Validate shelf type against whitelist
                     if shelf_type not in ['want', 'current', 'finished']:
                         shelf_type = 'want'
+
+                    if not existing_item:
+                        new_item = ShelfItem(
+                            user_id=user_id,
+                            book_id=book.id,
+                            shelf_type=shelf_type,
+                            progress=item_data.get('progress', 0)
+                        )
+                        db.session.add(new_item)
+                        synced_count += 1
+                    else:
+                        # Conflict Handling / Merge Strategy
+                        remote_version = item_data.get('version')
+                        if remote_version and remote_version < existing_item.version:
+                            # Backend is newer, consider this a potential collision
+                            conflicts += 1
+                            continue 
                         
-                    new_item = ShelfItem(
-                        user_id=user_id,
-                        book_id=book.id,
-                        shelf_type=shelf_type
-                    )
-                    db.session.add(new_item)
-                    synced_count += 1
+                        # Update existing
+                        existing_item.shelf_type = shelf_type
+                        existing_item.progress = item_data.get('progress', existing_item.progress)
+                        existing_item.version += 1
+                        synced_count += 1
                     
-            except Exception:
+            except SQLAlchemyError as e:
+                logger.error(f"Database error syncing item {item_data.get('id', 'unknown')}: {e}")
+                # Savepoint will be rolled back by the nested transaction block
                 errors += 1
-                db.session.rollback() # Rollback on individual item error but continue
+            except Exception as e:
+                logger.error(f"Unexpected error syncing item {item_data.get('id', 'unknown')}: {e}")
+                errors += 1
+                # begin_nested() automatically rolls back on exception within the block
         
         db.session.commit()
-        return success_response(data={"message": f"Synced {synced_count} items", "errors": errors})
+        return success_response(data={
+            "message": f"Synced {synced_count} items", 
+            "errors": errors,
+            "conflicts": conflicts
+        })
     except Exception as e:
         db.session.rollback()
         return internal_error(str(e))
@@ -898,17 +941,17 @@ def register():
             if User.query.filter((User.username==username) | (User.email==email)).first():
                 return resource_exists_error("User")
 
-            register_user(username, email, password)
-            # Fetch the user to get ID
-            user = User.query.filter_by(username=username).first()
+        try:
+            user = register_user(username, email, password)
+            if not user:
+                return internal_error("Failed to create user record after registration.")
             
             # Create JWT token
             access_token = create_access_token(identity=str(user.id))
             
-            return success_response(
+            resp, status = success_response(
                 data={
                     "message": "User registered successfully",
-                    "access_token": access_token,
                     "user": {
                         "id": user.id,
                         "username": user.username,
@@ -917,21 +960,14 @@ def register():
                 },
                 status_code=201
             )
-        except IntegrityError as e:
-            logger.error(f"Integrity error during registration: {e}")
-            db.session.rollback()
-            return handle_exception(DatabaseIntegrityError(str(e)), "register")
-        except Exception as e:
-            logger.error(f"Database error during registration: {type(e).__name__}: {e}")
-            db.session.rollback()
-            return handle_exception(DatabaseQueryError(str(e)), "register")
-    
-    except ValidationException as e:
-        logger.warning(f"Validation error in register: {e}")
-        return handle_exception(e, "register")
+            set_access_cookies(resp, access_token)
+            return resp, status
+        except SQLAlchemyError as e:
+            logger.error(f"Database error during registration: {e}")
+            return internal_error("A database error occurred during registration.")
     except Exception as e:
-        logger.error(f"Unexpected error in register: {type(e).__name__}: {e}", exc_info=True)
-        return handle_exception(e, "register")
+        logger.error(f"Unexpected error in register endpoint: {e}")
+        return internal_error(str(e))
 
 @app.route('/api/v1/login', methods=['POST'])
 @rate_limit('auth')
@@ -955,33 +991,31 @@ def login():
             # Try to find user by username or email
             user = User.query.filter((User.username==username_or_email) | (User.email==username_or_email)).first()
             
-            if user and user.check_password(password):
-                # Create JWT token
-                access_token = create_access_token(identity=str(user.id))
-                
-                return success_response(
-                    data={
-                        "message": "Login successful",
-                        "access_token": access_token,
-                        "user": {
-                            "id": user.id,
-                            "username": user.username,
-                            "email": user.email
-                        }
+            resp, status = success_response(
+                data={
+                    "message": "Login successful",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email
                     }
-                )
-                
-            return auth_error("Invalid username or password")
-        except Exception as e:
-            logger.error(f"Database error during login: {type(e).__name__}: {e}")
-            return handle_exception(DatabaseQueryError(str(e)), "login")
-    
-    except ValidationException as e:
-        logger.warning(f"Validation error in login: {e}")
-        return handle_exception(e, "login")
+                }
+            )
+            set_access_cookies(resp, access_token)
+            return resp, status
+            
+        return auth_error("Invalid username or password")
     except Exception as e:
         logger.error(f"Unexpected error in login: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "login")
+
+
+@app.route('/api/v1/logout', methods=['POST'])
+def logout():
+    """Clear JWT cookies for logout."""
+    resp, status = success_response(message="Logout successful")
+    unset_jwt_cookies(resp)
+    return resp, status
 
 
 # ==================== READING STATS ENDPOINTS ====================
@@ -1059,7 +1093,7 @@ def get_reading_stats():
         goal = ReadingGoal.query.filter_by(user_id=user_id, year=year).first()
         
         # Get this month's stats
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         current_month_stats = ReadingStats.query.filter_by(
             user_id=user_id, year=year, month=now.month
         ).first()
