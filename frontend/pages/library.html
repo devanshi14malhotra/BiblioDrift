@@ -5,8 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Library | BiblioDrift</title>
+<<<<<<< HEAD:library.html
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style-responsive.css">
+=======
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
+>>>>>>> 073887275bd4543e992e21bb954d52977bd1b7c1:frontend/pages/library.html
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
         rel="stylesheet">
@@ -61,7 +66,7 @@
             <div class="sort-controls">
                 <div class="filter-group">
                     <i class="fa-solid fa-filter"></i>
-                    <select id="library-filter" class="sort-select">
+                    <select id="library-filter" class="select-controls select">
                         <option value="all">All Shelves</option>
                         <option value="current">Currently Immersed</option>
                         <option value="want">Anticipated Journeys</option>
@@ -70,7 +75,7 @@
                 </div>
                 <div class="filter-group">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
-                    <select id="library-sort" class="sort-select">
+                    <select id="library-sort" class="select-controls select">
                         <option value="title">Sort by Title</option>
                         <option value="author">Sort by Author</option>
                         <option value="rating">Sort by Rating</option>
@@ -98,7 +103,10 @@
 
             <!-- Currently Reading Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">ðŸ“– Currently Immersed</span>
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-icon lucide-book-open"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+                    Currently Immersed
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-current-3d">
                         <!-- Books will be injected via JS -->
@@ -108,7 +116,10 @@
 
             <!-- Want to Read Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">ðŸ“š Anticipated Journeys</span>
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked-icon lucide-book-marked"><path d="M10 2v8l3-3 3 3V2"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
+                    Anticipated Journeys
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-want-3d">
                         <!-- Books will be injected via JS -->
@@ -118,7 +129,10 @@
 
             <!-- Finished Reading Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">âœ“ Lifetime Favorites</span>
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-check-icon lucide-book-check"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg>
+                    Lifetime Favorites
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-finished-3d">
                         <!-- Books will be injected via JS -->

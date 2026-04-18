@@ -396,7 +396,7 @@ class BookshelfRenderer3D {
         });
 
         if (!books || books.length === 0) {
-            container.innerHTML = '<div class="empty-shelf-3d">No books yet... Start your collection!</div>';
+            container.innerHTML = '<div class="empty-shelf-3d" style="text-align: center; padding: 150px;">No books yet... Start your collection!</div>';
             return;
         }
 
