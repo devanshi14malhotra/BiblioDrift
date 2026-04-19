@@ -1,4 +1,4 @@
-name: 🐞 Bug Report
+name: Bug Report
 description: Report a bug to help improve the project
 title: "[BUG]: "
 labels: []
@@ -7,15 +7,16 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 🐞 Bug Report
+        ## Bug Report
 
         This issue is raised as part of **NSoC'26 (Nexus Spring of Code)**.
+        If you are contributing through another open source event such as Apertre 3.0 or GSSoC'26, mention it here as well.
         Kindly consider assigning it to me if relevant.
 
   - type: textarea
     id: description
     attributes:
-      label: 📌 Description
+      label: Description
       placeholder: Describe the bug clearly
     validations:
       required: true
@@ -23,7 +24,7 @@ body:
   - type: textarea
     id: steps
     attributes:
-      label: 🔁 Steps to Reproduce
+      label: Steps to Reproduce
       placeholder: |
         1. Go to...
         2. Click on...
@@ -34,34 +35,34 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: ✅ Expected Behavior
+      label: Expected Behavior
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: ❌ Actual Behavior
+      label: Actual Behavior
     validations:
       required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: 📸 Screenshots / Logs
+      label: Screenshots / Logs
       placeholder: Add screenshots or logs
 
   - type: input
     id: os
     attributes:
-      label: 💻 OS
+      label: OS
 
   - type: input
     id: browser
     attributes:
-      label: 🌐 Browser
+      label: Browser
 
   - type: input
     id: version
     attributes:
-      label: 🔢 Version
+      label: Version

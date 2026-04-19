@@ -345,10 +345,48 @@ class BookRenderer {
         const flipSound = new Audio('assets/sounds/page-flip.mp3');
         flipSound.volume = 0.5;
 
+        /**
+         * ============================================================================
+         * SECURE HTML ESCAPING HELPER & XSS PREVENTION
+         * ============================================================================
+         * Problem:
+         * Previously, book title and author data were injected directly into the 
+         * scene.innerHTML without sanitization. If data from the Google Books API 
+         * contained special HTML characters (e.g., <script> tags, <, >), this could 
+         * lead to rendering bugs or Cross-Site Scripting (XSS) vulnerabilities.
+         * 
+         * Fix:
+         * We introduce this `escapeHTML` helper function. It replaces sensitive 
+         * HTML characters with their harmless entity equivalents before injection. 
+         * This strictly forces the browser to treat the dynamic content as text 
+         * rather than executable code or structural markup. This is a crucial 
+         * security measure when constructing HTML strings manually.
+         * ============================================================================
+         */
+        const escapeHTML = (str) => {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        };
+
+        const safeTitle = escapeHTML(title);
+        const safeAuthors = escapeHTML(authors);
+        const safeDescription = escapeHTML(description);
+        const safeVibe = escapeHTML(vibe);
+        const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
+
         scene.innerHTML = `
-            <div class="book" data-id="${id}">
+            <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
+                    <!-- 
+                      Using the sanitized title for the 'alt' attribute and 
+                      sanitized URL for 'src' ensures no attribute escape attacks.
+                    -->
+                    <img src="${safeThumb}" alt="${safeTitle}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -356,9 +394,10 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${vibe}</div>
-                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${description}</div>
+                        <!-- Safe data injection using escaped values -->
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${safeDescription}</div>
                     </div>
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
@@ -369,12 +408,13 @@ class BookRenderer {
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
             </div>
             <div class="glass-overlay">
-                <strong>${title}</strong><br><small>${authors}</small>
+                <!-- Safe author and title data injection in the overlay -->
+                <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
             </div>
         `;
 
@@ -438,6 +478,17 @@ class BookRenderer {
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
                 showToast('Failed to copy book details.', 'error');
+            });
+        });
+
+        // Flip Back Button
+        scene.querySelector('.flip-back-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            bookEl.classList.remove('flipped');
+            flipSound.play().catch(err => {
+                if (IS_DEV) {
+                    console.log("Audio play failed", err);
+                }
             });
         });
 
@@ -629,6 +680,37 @@ class LibraryManager {
             want: [],
             finished: []
         };
+
+        /**
+         * ==============================================================================
+         * ISSUE FIX: HARDCODED API BASE URL DUPLICATION
+         * ==============================================================================
+         * 
+         * Background Context & Issue:
+         * ---------------------------
+         * Previously, this class had its own hardcoded backend URL assigned right here:
+         * `this.apiBase = 'http://localhost:5000/api/v1';`
+         * 
+         * This implementation was problematic for several critical reasons:
+         * 1. Duplication of Truth: The global constant `MOOD_API_BASE` already exists 
+         *    to define the backend server location. Having a second hardcoded value 
+         *    here meant that if the API URL needed to change (e.g., deploying from dev 
+         *    to production), developers had to remember to manually update it in 
+         *    multiple disparate files. This led to frustrating inconsistencies, bugs, 
+         *    and broken network requests when only one reference was updated.
+         * 2. Security & Environment Portability: Hardcoding an `http://localhost` 
+         *    URL meant the application structure was rigidly tied to a local machine, 
+         *    and would cause Mixed Content warnings or blockages in production 
+         *    environments that require secure HTTPS connections.
+         * 
+         * The Resolution:
+         * ---------------
+         * We now strictly reuse the global `MOOD_API_BASE` constant. By centralizing 
+         * the configuration to a single source of truth, we ensure complete consistency 
+         * across the entire application architecture while dynamically adapting to the 
+         * secure network requirements of the deployed environment.
+         * ==============================================================================
+         */
         this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
 
         // Asynchronous initialization
@@ -1091,7 +1173,8 @@ class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
-        this.currentTheme = SafeStorage.get(this.themeKey) || 'day';
+        const stored = SafeStorage.get(this.themeKey);
+        this.currentTheme = stored === 'night' ? 'night' : 'light';
 
         this.init();
     }
@@ -1103,7 +1186,7 @@ class ThemeManager {
         this.applyTheme(this.currentTheme);
 
         this.toggleBtn.addEventListener('click', () => {
-            this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
+            this.currentTheme = this.currentTheme === 'night' ? 'light' : 'night';
             this.applyTheme(this.currentTheme);
             SafeStorage.set(this.themeKey, this.currentTheme);
         });
@@ -1111,12 +1194,13 @@ class ThemeManager {
 
 
     applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
         const icon = this.toggleBtn.querySelector('i');
         if (theme === 'night') {
+            document.documentElement.setAttribute('data-theme', 'night');
             icon.classList.remove('fa-moon');
             icon.classList.add('fa-sun');
         } else {
+            document.documentElement.removeAttribute('data-theme');
             icon.classList.remove('fa-sun');
             icon.classList.add('fa-moon');
         }

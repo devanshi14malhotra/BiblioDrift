@@ -289,6 +289,12 @@ def handle_analyze_mood():
 @rate_limit('mood_tags')
 def handle_mood_tags():
     """Get mood tags for a book."""
+    from exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException, 
+        ValidationException, InvalidInputError
+    )
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         
@@ -300,15 +306,30 @@ def handle_mood_tags():
         author = validated_data.author
         
         mood_tags = get_book_mood_tags_safe(title, author)
-        return success_response(data={"mood_tags": mood_tags})
+        return success_response(
+            data={"mood_tags": mood_tags}
+        )
         
+    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
+        logger.error(f"AI service error in handle_mood_tags: {e}", exc_info=True)
+        return handle_exception(e, "handle_mood_tags")
+    except (ValidationException, InvalidInputError) as e:
+        logger.warning(f"Validation error in handle_mood_tags: {e}")
+        return handle_exception(e, "handle_mood_tags")
     except Exception as e:
-        return internal_error(str(e))
+        logger.error(f"Unexpected error in handle_mood_tags: {type(e).__name__}: {e}", exc_info=True)
+        return handle_exception(e, "handle_mood_tags")
 
 @app.route('/api/v1/mood-search', methods=['POST'])
 @rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe."""
+    from exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException,
+        ValidationException, InvalidInputError
+    )
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         
@@ -404,6 +425,13 @@ def handle_category_books():
 @rate_limit('generate_note')
 def handle_generate_note():
     """Generate AI-powered book recommendation with vibe support."""
+    from exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException,
+        DatabaseQueryError, DatabaseIntegrityError,
+        ValidationException, InvalidInputError
+    )
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         
@@ -416,11 +444,13 @@ def handle_generate_note():
         author = validated_data.author
         vibe = getattr(validated_data, 'vibe', 'cozy discovery')
         
+        # Check cache
         cached_note = BookNote.query.filter_by(book_title=title, book_author=author).first()
         if cached_note:
             logger.debug(f"Cache hit for {title} by {author}")
             return success_response(data={"vibe": cached_note.content})
         
+        # Generate AI recommendation with vibe context
         recommendation = generate_book_note(description, title, author, vibe)
         
         try:
@@ -439,16 +469,30 @@ def handle_generate_note():
         except Exception as e:
             logger.error(f"Unexpected error caching note: {e}")
             db.session.rollback()
+            # Don't fail the request if caching fails - still return the recommendation
 
         return success_response(data=recommendation)
         
+    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
+        logger.error(f"AI service error in handle_generate_note: {e}", exc_info=True)
+        return handle_exception(e, "handle_generate_note")
+    except (ValidationException, InvalidInputError) as e:
+        logger.warning(f"Validation error in handle_generate_note: {e}")
+        return handle_exception(e, "handle_generate_note")
     except Exception as e:
-        return internal_error(str(e))
+        logger.error(f"Unexpected error in handle_generate_note: {type(e).__name__}: {e}", exc_info=True)
+        return handle_exception(e, "handle_generate_note")
 
 @app.route('/api/v1/chat', methods=['POST'])
 @rate_limit('chat')
 def handle_chat():
     """Handle chat messages and generate bookseller responses."""
+    from exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException,
+        ValidationException, InvalidInputError
+    )
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         
@@ -466,7 +510,10 @@ def handle_chat():
             else:
                 validated_history.append(msg)
         
+        # Generate contextual response based on conversation history
         response = generate_chat_response(user_message, validated_history)
+        
+        # Try to get book recommendations based on the message
         recommendations = get_ai_recommendations(user_message)
         
         return success_response(
@@ -477,8 +524,15 @@ def handle_chat():
             }
         )
         
+    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
+        logger.error(f"AI service error in handle_chat: {e}", exc_info=True)
+        return handle_exception(e, "handle_chat")
+    except (ValidationException, InvalidInputError) as e:
+        logger.warning(f"Validation error in handle_chat: {e}")
+        return handle_exception(e, "handle_chat")
     except Exception as e:
-        return internal_error(str(e))
+        logger.error(f"Unexpected error in handle_chat: {type(e).__name__}: {e}", exc_info=True)
+        return handle_exception(e, "handle_chat")
 
 @app.route('/api/v1/health', methods=['GET'])
 def health_check():
@@ -506,6 +560,10 @@ def health_check():
 @jwt_required()
 def add_to_library():
     """Add a book to the user's shelf."""
+    from sqlalchemy.exc import IntegrityError
+    from exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         current_user_id = get_jwt_identity()
@@ -815,6 +873,10 @@ def sync_library():
 @rate_limit('auth')
 def register():
     """Register a new user and return JWT token."""
+    from sqlalchemy.exc import IntegrityError
+    from exceptions import DatabaseIntegrityError, DatabaseQueryError, ValidationException
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         
@@ -826,6 +888,7 @@ def register():
         email = validated_data.email
         password = validated_data.password
 
+        # check if user exists
         if User.query.filter((User.username==username) | (User.email==email)).first():
             return resource_exists_error("User")
 
@@ -856,6 +919,9 @@ def register():
 @rate_limit('auth')
 def login():
     """Authenticate user and return JWT token."""
+    from exceptions import DatabaseQueryError, ValidationException
+    from error_responses import handle_exception
+    
     try:
         data = request.get_json()
         
@@ -866,9 +932,11 @@ def login():
         username_or_email = validated_data.username
         password = validated_data.password
 
+        # Try to find user by username or email
         user = User.query.filter((User.username==username_or_email) | (User.email==username_or_email)).first()
         
         if user and user.check_password(password):
+            # Create JWT token
             access_token = create_access_token(identity=str(user.id))
             
             resp, status = success_response(
@@ -882,7 +950,8 @@ def login():
             
         return auth_error("Invalid username or password")
     except Exception as e:
-        return internal_error(str(e))
+        logger.error(f"Unexpected error in login: {type(e).__name__}: {e}", exc_info=True)
+        return handle_exception(e, "login")
 
 
 @app.route('/api/v1/logout', methods=['POST'])

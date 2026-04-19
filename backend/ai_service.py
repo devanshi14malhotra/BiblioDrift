@@ -257,6 +257,7 @@ class LLMService:
     def generate_text(self, prompt: str, max_tokens: Optional[int] = None, retry_count: int = 0) -> Optional[str]:
         """Generate text using available LLM service with retry logic."""
         if not self.is_available():
+            logger.warning("No LLM service available")
             return None
             
         if max_tokens is None:
@@ -552,12 +553,17 @@ def get_book_mood_tags_safe(title: str, author: str = "") -> list:
 def generate_chat_response(user_message, conversation_history=[]):
     """Generate AI-driven chat responses for the bookseller interface."""
     if llm_service.is_available():
-        try:
-            prompt = f"You are a knowledgeable, friendly bookseller. A customer says: '{user_message}'. Respond warmly and helpfully in under 50 words."
-            llm_response = llm_service.generate_text(prompt, 100)
-            if llm_response:
-                return llm_response
-        except Exception as e:
-            logger.error(f"LLM chat response failed: {e}")
-    
-    return "I'd be happy to help you find the perfect book! Let me search for some great recommendations based on what you're looking for."
+        reply = llm_service.generate_chat(
+            system_prompt=system_prompt,
+            messages=messages,
+            max_tokens=llm_service.config["chat_max_tokens"],
+        )
+        if reply:
+            return reply
+        logger.error("Multi-turn chat returned None for message: %s", user_message[:60])
+
+    # Honest fallback — does not pretend to be AI output
+    return (
+        "I'm having a bit of trouble connecting right now. "
+        "Try me again in a moment — I'd love to help you find something wonderful to read."
+    )
