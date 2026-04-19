@@ -1117,48 +1117,49 @@ def get_reading_stats():
 @jwt_required()
 def get_leaderboard():
     """Get community reading leaderboard."""
-    # Safely get and validate integer parameters with bounds
     success, year, error = get_request_arg_safe('year', int, default=datetime.now().year)
     if not success and error:
         return validation_error(error)
-    
+
     success, limit, error = get_request_arg_safe(
         'limit', int, default=10, allowed_values=list(range(1, 101))
     )
     if not success and error:
         return validation_error(error)
-    
+
     try:
-        # Get all goals for the year
-        goals = ReadingGoal.query.filter_by(year=year).all()
-        
+        # ✅ Single joined query instead of N+1
+        leaderboard_data = (
+            db.session.query(ReadingGoal, User)
+            .join(User, ReadingGoal.user_id == User.id)
+            .filter(ReadingGoal.year == year)
+            .all()
+        )
+
         leaderboard = []
-        for goal in goals:
-            user = User.query.get(goal.user_id)
-            yearly_stats = _get_yearly_stats(goal.user_id, year)
-            
+        for goal, user in leaderboard_data:
+            yearly_stats = _get_yearly_stats(goal.user_id, year)  # still another query per user
             leaderboard.append({
                 "user_id": goal.user_id,
-                "username": user.username if user else "Unknown",
+                "username": user.username,
                 "target_books": goal.target_books,
                 "books_completed": yearly_stats["total_books"],
                 "pages_read": yearly_stats["total_pages"],
-                "progress_percentage": round((yearly_stats["total_books"] / goal.target_books * 100), 1) if goal.target_books > 0 else 0
+                "progress_percentage": round(
+                    (yearly_stats["total_books"] / goal.target_books * 100), 1
+                ) if goal.target_books > 0 else 0
             })
-        
-        # Sort by books completed descending
+
+        # Sort and limit
         leaderboard.sort(key=lambda x: x["books_completed"], reverse=True)
-        
-        # Limit results
         leaderboard = leaderboard[:limit]
-        
+
         return jsonify({
             "year": year,
             "leaderboard": leaderboard
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # ==================== COLLECTIONS ENDPOINTS ====================
 @app.route('/api/v1/collections', methods=['POST'])
