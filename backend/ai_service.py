@@ -283,6 +283,7 @@ class LLMService:
         retry_count: int = 0,
     ) -> Optional[str]:
         if not self.is_available():
+            logger.warning("No LLM service available")
             return None
         if max_tokens is None:
             max_tokens = self.config["default_max_tokens"]
