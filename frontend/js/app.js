@@ -1,6 +1,80 @@
 /**
- * BiblioDrift Core Logic
- * Handles 3D rendering, API fetching, Persistent Auth, and Genre Browsing.
+ * ==============================================================================
+ * BiblioDrift Core Logic - Main Application Entry Point
+ * ==============================================================================
+ * 
+ * Overview:
+ * ---------
+ * This file serves as the primary orchestrator for the BiblioDrift application.
+ * It ties together the DOM manipulation, state management, 3D rendering interactions,
+ * and API communications (both Google Books API and our custom Python backend).
+ * 
+ * Key Components:
+ * ---------------
+ * 1. SafeStorage: 
+ *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism. 
+ *    This component is critical for offline-first capabilities and prevents the 
+ *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent 
+ *    standard `localStorage` operations.
+ *    - Automatically handles QuotaExceeded exceptions.
+ *    - Provides asynchronous data restoration algorithms.
+ *    - Integrates closely with the LibraryManager to store thousands of books safely.
+ * 
+ * 2. LibraryManager: 
+ *    The central state machine over the user's book collection.
+ *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
+ *    - Concurrency Control: Handles race conditions when syncing local states with 
+ *      the backend utilizing optimistic locking techniques.
+ *    - Merging Strategy: In the event of a conflict between the client data and 
+ *      server data, it attempts a non-destructive merge, retaining the state with 
+ *      the highest integer version map.
+ * 
+ * 3. BookRenderer: 
+ *    An interface bridge to the DOM. Handles instantiation of HTML templates for 
+ *    individual 3D book instances, binding their unique event listeners, and 
+ *    applying their generated CSS styles and thematic properties.
+ *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
+ * 
+ * 4. ThemeManager: 
+ *    Observes User Preferences and seamlessly toggles the UI's color palette between 
+ *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
+ *    these preferences to SafeStorage for a seamless experience across reloads.
+ * 
+ * API Architecture Details:
+ * -------------------------
+ * - Google Books API: Facilitates the search and retrieval of rich book metadata
+ *   including volume summaries, author info, and high-quality thumbnail images.
+ * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
+ *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
+ *   client-side compute limitations and securely handle secret API keys.
+ * 
+ * Security & Data Integrity Considerations:
+ * -----------------------------------------
+ * - Data Sanitization: All text rendered from external APIs is strictly passed 
+ *   through the `escapeHTML` utility safely converting brackets to entities to 
+ *   prevent XSS (Cross-Site Scripting) vectors.
+ * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
+ *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing 
+ *   Cross Site Request Forgery attacks against logged-in users.
+ * 
+ * Coding Standards and Development Guidelines:
+ * --------------------------------------------
+ * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are 
+ *    optimistically applied to local state before waiting for server resolution.
+ * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native 
+ *    `localStorage.setItem()`.
+ * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in 
+ *    `index.css` rather than directly overriding inline styles to maintain a 
+ *    dynamic and cohesive theme strategy.
+ * 
+ * File Structure:
+ * ---------------
+ * - [000-100]: Initialization and Utility Wrappers
+ * - [100-300]: SafeStorage Implementation
+ * - [300-800]: BookRenderer Class and 3D interactions
+ * - [800-1300]: LibraryManager state machine and synchronization
+ * - [1300+]: UI Controllers, Events, and Application Bootstrap
+ * ==============================================================================
  */
 
 const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE) ? CONFIG.API_BASE : 'https://www.googleapis.com/books/v1/volumes';
@@ -1158,13 +1232,15 @@ class LibraryManager {
         // Clear container for re-rendering (essential for sorting)
         container.innerHTML = '';
 
-        (async () => {
+        try {
             for (const book of books) {
                 const renderer = new BookRenderer(this);
                 const el = await renderer.createBookElement(book, shelfName);
                 container.appendChild(el);
             }
-        })();
+        } catch (error) {
+            console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
+        }
     }
 }
 
