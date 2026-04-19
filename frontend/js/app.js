@@ -680,6 +680,37 @@ class LibraryManager {
             want: [],
             finished: []
         };
+
+        /**
+         * ==============================================================================
+         * ISSUE FIX: HARDCODED API BASE URL DUPLICATION
+         * ==============================================================================
+         * 
+         * Background Context & Issue:
+         * ---------------------------
+         * Previously, this class had its own hardcoded backend URL assigned right here:
+         * `this.apiBase = 'http://localhost:5000/api/v1';`
+         * 
+         * This implementation was problematic for several critical reasons:
+         * 1. Duplication of Truth: The global constant `MOOD_API_BASE` already exists 
+         *    to define the backend server location. Having a second hardcoded value 
+         *    here meant that if the API URL needed to change (e.g., deploying from dev 
+         *    to production), developers had to remember to manually update it in 
+         *    multiple disparate files. This led to frustrating inconsistencies, bugs, 
+         *    and broken network requests when only one reference was updated.
+         * 2. Security & Environment Portability: Hardcoding an `http://localhost` 
+         *    URL meant the application structure was rigidly tied to a local machine, 
+         *    and would cause Mixed Content warnings or blockages in production 
+         *    environments that require secure HTTPS connections.
+         * 
+         * The Resolution:
+         * ---------------
+         * We now strictly reuse the global `MOOD_API_BASE` constant. By centralizing 
+         * the configuration to a single source of truth, we ensure complete consistency 
+         * across the entire application architecture while dynamically adapting to the 
+         * secure network requirements of the deployed environment.
+         * ==============================================================================
+         */
         this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
 
         // Asynchronous initialization
