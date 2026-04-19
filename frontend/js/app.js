@@ -408,7 +408,7 @@ class BookRenderer {
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
             </div>
@@ -478,6 +478,17 @@ class BookRenderer {
             }).catch(err => {
                 console.error('Failed to copy text: ', err);
                 showToast('Failed to copy book details.', 'error');
+            });
+        });
+
+        // Flip Back Button
+        scene.querySelector('.flip-back-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            bookEl.classList.remove('flipped');
+            flipSound.play().catch(err => {
+                if (IS_DEV) {
+                    console.log("Audio play failed", err);
+                }
             });
         });
 
