@@ -3,6 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
@@ -11,6 +19,7 @@
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
