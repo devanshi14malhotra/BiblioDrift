@@ -345,10 +345,48 @@ class BookRenderer {
         const flipSound = new Audio('assets/sounds/page-flip.mp3');
         flipSound.volume = 0.5;
 
+        /**
+         * ============================================================================
+         * SECURE HTML ESCAPING HELPER & XSS PREVENTION
+         * ============================================================================
+         * Problem:
+         * Previously, book title and author data were injected directly into the 
+         * scene.innerHTML without sanitization. If data from the Google Books API 
+         * contained special HTML characters (e.g., <script> tags, <, >), this could 
+         * lead to rendering bugs or Cross-Site Scripting (XSS) vulnerabilities.
+         * 
+         * Fix:
+         * We introduce this `escapeHTML` helper function. It replaces sensitive 
+         * HTML characters with their harmless entity equivalents before injection. 
+         * This strictly forces the browser to treat the dynamic content as text 
+         * rather than executable code or structural markup. This is a crucial 
+         * security measure when constructing HTML strings manually.
+         * ============================================================================
+         */
+        const escapeHTML = (str) => {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        };
+
+        const safeTitle = escapeHTML(title);
+        const safeAuthors = escapeHTML(authors);
+        const safeDescription = escapeHTML(description);
+        const safeVibe = escapeHTML(vibe);
+        const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
+
         scene.innerHTML = `
-            <div class="book" data-id="${id}">
+            <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
+                    <!-- 
+                      Using the sanitized title for the 'alt' attribute and 
+                      sanitized URL for 'src' ensures no attribute escape attacks.
+                    -->
+                    <img src="${safeThumb}" alt="${safeTitle}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -356,9 +394,10 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${vibe}</div>
-                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${description}</div>
+                        <!-- Safe data injection using escaped values -->
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${safeDescription}</div>
                     </div>
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
@@ -374,7 +413,8 @@ class BookRenderer {
                 </div>
             </div>
             <div class="glass-overlay">
-                <strong>${title}</strong><br><small>${authors}</small>
+                <!-- Safe author and title data injection in the overlay -->
+                <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
             </div>
         `;
 
