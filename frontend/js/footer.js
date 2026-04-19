@@ -22,6 +22,14 @@ const createFooter = () => {
           </ul>
         </div>
 
+        <div class="footer-legal">
+          <h3>Legal</h3>
+          <ul>
+            <li><a href="privacy-policy.html">Privacy Policy</a></li>
+            <li><a href="terms-and-conditions.html">Terms & Conditions</a></li>
+          </ul>
+        </div>
+
         <!-- Social Media -->
         <div class="footer-social">
           <h3>Connect</h3>
