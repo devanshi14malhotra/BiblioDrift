@@ -84,13 +84,33 @@ except ImportError:
     MOOD_ANALYSIS_AVAILABLE = False
     logger.warning("Mood analysis package not available - some endpoints will be disabled")
 
+# =====================================================================
+# FLASK APPLICATION INSTANTIATION
+# We initialize the Flask application instance here.
+# Note that the static folder is configured to serve local files.
+# Additional security measures, including updated strict CORS policies,
+# and enhanced token security are applied later in this file 
+# to ensure API integrity across all origins.
+# =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
 
+# Initialize JWT Manager
 jwt = JWTManager(app)
-CORS(app, supports_credentials=True)
+
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: CORS CONFIGURATION
+# The previous CORS(app) was overly permissive and allowed all origins.
+# An open CORS policy (equivalent to Access-Control-Allow-Origin: *)
+# exposes all API endpoints to cross-origin requests from any domain, 
+# which can enable CSRF-type attacks.
+# The fix below restricts CORS to specific trusted origins. We can 
+# optionally load allowed origins from environment variables.
+# =====================================================================
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "https://bibliodrift.com").split(",")
+CORS(app, supports_credentials=True, origins=allowed_origins)
 
 # Initialize cache service
 cache_service.init_app(app)
