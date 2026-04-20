@@ -576,6 +576,18 @@ def health_check():
     })
 
 
+
+# =========================================================================
+# ENDPOINT: Add Book to Library
+# This endpoint allows authenticated users to add a new book to their
+# personal library shelf. It handles a complex multi-step process:
+# 1. JWT verification prevents unauthorized access.
+# 2. Pydantic is used to enforce strict schema validation on incoming JSON.
+# 3. We maintain a centralized Book table to avoid duplicating book metadata
+#    (e.g., title, authors, cover) across multiple user libraries.
+# 4. A ShelfItem connects the user to the Book and tracks user-specific
+#    attributes like shelf type and read progress.
+# =========================================================================
 @app.route('/api/v1/library', methods=['POST'])
 @jwt_required()
 def add_to_library():
@@ -633,6 +645,17 @@ def add_to_library():
         db.session.rollback()
         return internal_error(str(e))
 
+# =========================================================================
+# ENDPOINT: Get User Library
+# Retrieves the full inventory of a user's library in a single request.
+# 
+# Performance Optimization:
+# - Uses SQLAlchemy's `joinedload` to eagerly fetch the associated Book 
+#   for each ShelfItem. Without this, accessing `item.book` in the JSON
+#   serialization phase would trigger an N+1 query storm.
+# - Validates JWT identity against the requested user_id to prevent users
+#   from casually scraping other accounts' libraries.
+# =========================================================================
 @app.route('/api/v1/library/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_library(user_id):
@@ -649,6 +672,17 @@ def get_library(user_id):
 
 
 # ==================== READING STATS HELPER FUNCTIONS ====================
+# =========================================================================
+# HELPER: Update Reading Statistics
+# Helper function invoked primarily when a user marks a book as "finished".
+# 
+# How it works:
+# - ReadingStats are bucketed by (user_id, year, month) records.
+# - It first checks for an existing record for the current month.
+# - If missing, it seeds a new record starting at 0 for bounds checking.
+# - It aggressively increments books_completed and adds page counts if the
+#   underlying Google Books API returned valid page_count metadata.
+# =========================================================================
 def _update_reading_stats(user_id, book):
     """Update reading stats when a book is finished."""
     now = datetime.now(timezone.utc)
@@ -795,6 +829,17 @@ db.init_app(app)
 price_tracker = get_price_tracker(db)
 
 
+# =========================================================================
+# ENDPOINT: Bulk Library Sync
+# Enables syncing a whole batch of books from local storage/mobile to the
+# authoritative cloud backend. Contains critical safeguards:
+# 1. Payload validation protects against memory bloat.
+# 2. Iterate array using nested transactions `db.session.begin_nested()`.
+#    This ensures failing to parse a single damaged book doesn't abort
+#    the whole sync run.
+# 3. Optimistic locking helps gracefully bypass older item updates from
+#    the client when the server's record is strictly newer.
+# =========================================================================
 @app.route('/api/v1/library/sync', methods=['POST'])
 @jwt_required()
 def sync_library():
@@ -889,6 +934,16 @@ def sync_library():
         db.session.rollback()
         return internal_error(str(e))
 
+# =========================================================================
+# ENDPOINT: User Registration
+# Core signup flow. Validates credentials, creates a User entity, and
+# immediately responds with an active session ready to go.
+# 
+# Security checks run here include rate limiting to prevent spam and
+# Pydantic enforcing minimum password complexities / valid email formats.
+# The user record is hashed internally inside the `register_user` util.
+# Finally, JWT access cookies are locked and loaded on the response object.
+# =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
 @rate_limit('auth')
 def register():
@@ -1073,6 +1128,7 @@ def get_leaderboard():
         return validation_error(error)
 
     try:
+ my-branch-name
         # ✅ Single joined query instead of N+1
         leaderboard_data = (
             db.session.query(ReadingGoal, User)
@@ -1083,28 +1139,17 @@ def get_leaderboard():
 
         leaderboard = []
         for goal, user in leaderboard_data:
-            yearly_stats = _get_yearly_stats(goal.user_id, year)  # still another query per user
-            leaderboard.append({
-                "user_id": goal.user_id,
-                "username": user.username,
-                "target_books": goal.target_books,
-                "books_completed": yearly_stats["total_books"],
-                "pages_read": yearly_stats["total_pages"],
-                "progress_percentage": round(
-                    (yearly_stats["total_books"] / goal.target_books * 100), 1
-                ) if goal.target_books > 0 else 0
-            })
+            yearly_stats = _get_yearly_stats(goal.user_id, year)  # still another query per us
+        # Get all goals for the year and join with User to prevent N+1 queries.
+        # This executes a single SQL query matching both ReadingGoal and User 
+        # instead of making a separate query for each user in the loop.
+        goals_with_users = db.session.query(ReadingGoal, User).join(User).filter(ReadingGoal.year == year).all()
+        
+        leaderboard = []
+        for goal, user in goals_with_users:
+            yearly_stats = _get_yearly_stats(goal.user_id, year)
+            
 
-        # Sort and limit
-        leaderboard.sort(key=lambda x: x["books_completed"], reverse=True)
-        leaderboard = leaderboard[:limit]
-
-        return jsonify({
-            "year": year,
-            "leaderboard": leaderboard
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 # ==================== COLLECTIONS ENDPOINTS ====================

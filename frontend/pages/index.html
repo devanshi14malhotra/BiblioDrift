@@ -5,10 +5,10 @@
   <meta charset="UTF-8" />
   <script>
     (function () {
-        const theme = localStorage.getItem('bibliodrift_theme');
-        if (theme === 'night') {
-            document.documentElement.setAttribute('data-theme', 'night');
-        }
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,7 +22,7 @@
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  
+
   <!-- Security: DOMPurify for XSS prevention -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
@@ -32,7 +32,6 @@
   <header>
     <a href="index.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-      <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
       <div class="search-bar">
@@ -156,7 +155,8 @@
             </div>
             <div class="modal-actions">
               <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
-              <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+              <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i>
+                Share</button>
             </div>
           </div>
         </div>
@@ -175,7 +175,6 @@
       <div class="footer-brand">
         <a href="index.html" class="logo">
           <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
         <p class="footer-subtext">&mdash; Emily Dickinson</p>
@@ -200,8 +199,8 @@
         <div class="social-icons">
           <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
           <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" rel="noopener noreferrer" title="GitHub"><i
-              class="fa-brands fa-github"></i></a>
+          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" rel="noopener noreferrer"
+            title="GitHub"><i class="fa-brands fa-github"></i></a>
         </div>
       </div>
     </div>
