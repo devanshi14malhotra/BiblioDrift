@@ -5,3 +5,18 @@ functions = "netlify/functions"
 
 [build.environment]
 PYTHON_VERSION = "3.10"
+
+# 🔹 Add header rules below
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "max-age=3600"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+
