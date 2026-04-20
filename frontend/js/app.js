@@ -1,6 +1,80 @@
 /**
- * BiblioDrift Core Logic
- * Handles 3D rendering, API fetching, Persistent Auth, and Genre Browsing.
+ * ==============================================================================
+ * BiblioDrift Core Logic - Main Application Entry Point
+ * ==============================================================================
+ * 
+ * Overview:
+ * ---------
+ * This file serves as the primary orchestrator for the BiblioDrift application.
+ * It ties together the DOM manipulation, state management, 3D rendering interactions,
+ * and API communications (both Google Books API and our custom Python backend).
+ * 
+ * Key Components:
+ * ---------------
+ * 1. SafeStorage: 
+ *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism. 
+ *    This component is critical for offline-first capabilities and prevents the 
+ *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent 
+ *    standard `localStorage` operations.
+ *    - Automatically handles QuotaExceeded exceptions.
+ *    - Provides asynchronous data restoration algorithms.
+ *    - Integrates closely with the LibraryManager to store thousands of books safely.
+ * 
+ * 2. LibraryManager: 
+ *    The central state machine over the user's book collection.
+ *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
+ *    - Concurrency Control: Handles race conditions when syncing local states with 
+ *      the backend utilizing optimistic locking techniques.
+ *    - Merging Strategy: In the event of a conflict between the client data and 
+ *      server data, it attempts a non-destructive merge, retaining the state with 
+ *      the highest integer version map.
+ * 
+ * 3. BookRenderer: 
+ *    An interface bridge to the DOM. Handles instantiation of HTML templates for 
+ *    individual 3D book instances, binding their unique event listeners, and 
+ *    applying their generated CSS styles and thematic properties.
+ *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
+ * 
+ * 4. ThemeManager: 
+ *    Observes User Preferences and seamlessly toggles the UI's color palette between 
+ *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
+ *    these preferences to SafeStorage for a seamless experience across reloads.
+ * 
+ * API Architecture Details:
+ * -------------------------
+ * - Google Books API: Facilitates the search and retrieval of rich book metadata
+ *   including volume summaries, author info, and high-quality thumbnail images.
+ * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
+ *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
+ *   client-side compute limitations and securely handle secret API keys.
+ * 
+ * Security & Data Integrity Considerations:
+ * -----------------------------------------
+ * - Data Sanitization: All text rendered from external APIs is strictly passed 
+ *   through the `escapeHTML` utility safely converting brackets to entities to 
+ *   prevent XSS (Cross-Site Scripting) vectors.
+ * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
+ *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing 
+ *   Cross Site Request Forgery attacks against logged-in users.
+ * 
+ * Coding Standards and Development Guidelines:
+ * --------------------------------------------
+ * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are 
+ *    optimistically applied to local state before waiting for server resolution.
+ * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native 
+ *    `localStorage.setItem()`.
+ * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in 
+ *    `index.css` rather than directly overriding inline styles to maintain a 
+ *    dynamic and cohesive theme strategy.
+ * 
+ * File Structure:
+ * ---------------
+ * - [000-100]: Initialization and Utility Wrappers
+ * - [100-300]: SafeStorage Implementation
+ * - [300-800]: BookRenderer Class and 3D interactions
+ * - [800-1300]: LibraryManager state machine and synchronization
+ * - [1300+]: UI Controllers, Events, and Application Bootstrap
+ * ==============================================================================
  */
 
 const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE) ? CONFIG.API_BASE : 'https://www.googleapis.com/books/v1/volumes';
@@ -228,7 +302,7 @@ const MOCK_BOOKS = [
             title: "Dune",
             authors: ["Frank Herbert"],
             description: "A sweeping science fiction epic set on the desert planet Arrakis. Dune explores complex themes of politics, religion, and man's relationship with nature. Paul Atreides must navigate a treacherous path to becoming the mysterious Muad'Dib.",
-            imageLinks: { thumbnail: "assets/images/dune.jpg" }
+            imageLinks: { thumbnail: "../assets/images/dune.jpg" }
         }
     },
     {
@@ -237,7 +311,7 @@ const MOCK_BOOKS = [
             title: "1984",
             authors: ["George Orwell"],
             description: "Orwell's chilling prophecy of a totalitarian future where Big Brother is always watching. A profound exploration of surveillance, truth, and the resilience of the human spirit.",
-            imageLinks: { thumbnail: "assets/images/1984.jpg" }
+            imageLinks: { thumbnail: "../assets/images/1984.jpg" }
         }
     },
     {
@@ -246,7 +320,7 @@ const MOCK_BOOKS = [
             title: "The Hobbit",
             authors: ["J.R.R. Tolkien"],
             description: "In a hole in the ground there lived a hobbit. Join Bilbo Baggins on an unexpected journey across Middle-earth, encountering dragons, dwarves, and a rigorous test of courage.",
-            imageLinks: { thumbnail: "assets/images/hobbit.jpg" }
+            imageLinks: { thumbnail: "../assets/images/hobbit.jpg" }
         }
     },
     {
@@ -255,7 +329,7 @@ const MOCK_BOOKS = [
             title: "Pride and Prejudice",
             authors: ["Jane Austen"],
             description: "A timeless romance of manners and misunderstanding. Elizabeth Bennet's wit matches Mr. Darcy's pride in this sharp social commentary that remains one of the most loved novels in English literature.",
-            imageLinks: { thumbnail: "assets/images/pride.jpg" }
+            imageLinks: { thumbnail: "../assets/images/pride.jpg" }
         }
     },
     {
@@ -264,7 +338,7 @@ const MOCK_BOOKS = [
             title: "The Great Gatsby",
             authors: ["F. Scott Fitzgerald"],
             description: "The quintessential novel of the Jazz Age. Jay Gatsby's obsessive love for Daisy Buchanan drives a tragic tale of wealth, illusion, and the American Dream.",
-            imageLinks: { thumbnail: "assets/images/gatsby.jpg" }
+            imageLinks: { thumbnail: "../assets/images/gatsby.jpg" }
         }
     },
     {
@@ -273,7 +347,7 @@ const MOCK_BOOKS = [
             title: "Sapiens",
             authors: ["Yuval Noah Harari"],
             description: "A groundbreaking narrative of humanity's creation and evolution. Harari explores the ways in which biology and history have defined us and enhanced our understanding of what it means to be 'human'.",
-            imageLinks: { thumbnail: "assets/images/sapiens.jpg" }
+            imageLinks: { thumbnail: "../assets/images/sapiens.jpg" }
         }
     },
     {
@@ -282,7 +356,7 @@ const MOCK_BOOKS = [
             title: "Project Hail Mary",
             authors: ["Andy Weir"],
             description: "A lone astronaut must save the earth from disaster in this gripping tale of survival and scientific discovery. Full of humor and hard science, it is a celebration of human ingenuity.",
-            imageLinks: { thumbnail: "assets/images/hail_mary.jpg" }
+            imageLinks: { thumbnail: "../assets/images/hail_mary.jpg" }
         }
     }
 ];
@@ -342,7 +416,7 @@ class BookRenderer {
         scene.className = 'book-scene';
 
         // Load flip sound
-        const flipSound = new Audio('assets/sounds/page-flip.mp3');
+        const flipSound = new Audio('../assets/sounds/page-flip.mp3');
         flipSound.volume = 0.5;
 
         /**
@@ -408,6 +482,7 @@ class BookRenderer {
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('../assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
                         <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -1158,13 +1233,15 @@ class LibraryManager {
         // Clear container for re-rendering (essential for sorting)
         container.innerHTML = '';
 
-        (async () => {
+        try {
             for (const book of books) {
                 const renderer = new BookRenderer(this);
                 const el = await renderer.createBookElement(book, shelfName);
                 container.appendChild(el);
             }
-        })();
+        } catch (error) {
+            console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
+        }
     }
 }
 
@@ -1298,6 +1375,28 @@ class GenreManager {
 
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
+
+        /**
+         * ==============================================================================
+         * ISSUE FIX: REDUNDANT LIBRARYMANAGER INSTANTIATION
+         * ==============================================================================
+         * 
+         * Background Context & Issue:
+         * ---------------------------
+         * Previously, a new `LibraryManager` was instantiated every time `renderBooks` 
+         * was called inside `GenreManager`. 
+         * 
+         * The problem was that creating a new `LibraryManager` triggers a fresh 
+         * `syncWithBackend()` network call upon initialization. Calling this repeatedly 
+         * every time the genre modal books are rendered wastes bandwidth and can 
+         * potentially overwrite or corrupt an in-progress synchronization state.
+         * 
+         * The Resolution:
+         * ---------------
+         * We now pass the existing globally shared `libManager` instance into 
+         * `GenreManager` at construction time and reuse it here via `this.libraryManager`.
+         * ==============================================================================
+         */
         const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
@@ -1679,7 +1778,7 @@ function enableTapEffects() {
 enableTapEffects();
 
 // --- creak and page flip effects ---
-const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
+const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
 pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
 

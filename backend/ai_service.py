@@ -1,29 +1,28 @@
-# ai_service.py — fixed
-# Changes from original:
-#   1. PromptTemplates: chain-of-thought prompts, higher token budgets
-#   2. _extract_json(): strips markdown fences before JSON.loads()
-#   3. generate_book_note(): uses corrected token budget, cleaner fallback
-#   4. get_ai_recommendations(): no hardcoded mood dict — returns service error on LLM failure
-#   5. generate_chat_response(): injects conversation_history as proper multi-turn messages
+# AI service logic with LLM integration (OpenAI/Gemini)
+# Implements 'generate_book_note' and 'get_ai_recommendations'. All recommendations MUST be AI-based.
+# Enhanced with comprehensive caching for expensive operations
 
 import os
-import json
 import logging
+import json
 import re
 from typing import Optional
 
+# Import caching decorators
 from cache_service import (
-    cache_recommendations,
-    cache_mood_tags,
+    cache_recommendations, 
+    cache_mood_tags, 
     cache_chat_response,
-    cache_mood_analysis,
+    cache_mood_analysis
 )
 
+# Setup logging from environment
 logging.basicConfig(
-    level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper()),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=getattr(logging, os.getenv('LOG_LEVEL', 'INFO').upper()),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+# Try to import LLM clients
 try:
     import openai
     OPENAI_AVAILABLE = True
@@ -43,609 +42,516 @@ try:
 except ImportError:
     GEMINI_AVAILABLE = False
 
+# Try to import mood analysis
 try:
     from mood_analysis.ai_service_enhanced import get_book_mood_tags, generate_enhanced_book_note
     MOOD_ANALYSIS_AVAILABLE = True
 except ImportError:
     MOOD_ANALYSIS_AVAILABLE = False
 
+# Setup logger
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# JSON extraction helper
-# ---------------------------------------------------------------------------
-
-def _extract_json(text: str) -> Optional[dict]:
+def _extract_json(text: str) -> Optional[dict | list]:
     """
-    Parse a JSON object from LLM output that may be wrapped in markdown fences.
-
-    Handles all of these real-world LLM output patterns:
-        ```json { ... } ```
-        ```{ ... }```
-        { ... }         (bare JSON)
-        some prose\n{ ... }\nmore prose
-    Returns a dict on success, None on failure.
+    Parse JSON from LLM output that may be wrapped in markdown fences.
+    Returns a dict or list on success, None on failure.
     """
     if not text:
         return None
 
-    # Strip markdown code fences (```json ... ``` or ``` ... ```)
     cleaned = re.sub(r"```(?:json)?\s*", "", text).replace("```", "").strip()
 
-    # Attempt 1: the whole cleaned string is valid JSON
     try:
         parsed = json.loads(cleaned)
-        if isinstance(parsed, dict):
+        if isinstance(parsed, (dict, list)):
             return parsed
     except json.JSONDecodeError:
         pass
 
-    # Attempt 2: find the first { ... } block in the string
-    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-    if match:
-        try:
-            parsed = json.loads(match.group())
-            if isinstance(parsed, dict):
-                return parsed
-        except json.JSONDecodeError:
-            pass
+    # Try extracting first [...] or {...} block
+    for pattern in (r"\[.*\]", r"\{.*\}"):
+        match = re.search(pattern, cleaned, re.DOTALL)
+        if match:
+            try:
+                parsed = json.loads(match.group())
+                if isinstance(parsed, (dict, list)):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
 
     return None
 
 
-# ---------------------------------------------------------------------------
-# Prompt templates
-# ---------------------------------------------------------------------------
-
 class PromptTemplates:
-    """
-    Prompt templates for every AI call in BiblioDrift.
-
-    Design principles:
-    - Chain-of-thought: ask the model to reason first, then output.
-    - Constrained output: explicit JSON schema with field-level instructions.
-    - Vibe-first: emotional/atmospheric language precedes factual details.
-    - Token-aware: each template is calibrated to its token budget.
-    """
-
+    """Configurable prompt templates for different use cases."""
+    
     @staticmethod
-    def get_book_note_prompt(
-        title: str,
-        author: str,
-        description: str,
-        mood_context: str = "",
-        vibe: str = "cozy discovery",
-    ) -> str:
-        """
-        Build a book-note prompt.
+    def get_book_note_prompt(title: str, author: str, description: str, mood_context: str = "", vibe: str = "") -> str:
+        """Generate book note prompt template with vibe support."""
+        template = os.getenv('BOOK_NOTE_PROMPT_TEMPLATE', 
+            """You are a cozy, knowledgeable bookseller in a quiet shop. A customer is looking for a book recommendation based on their current vibe: "{vibe}".
 
-        Token budget: 350–400 tokens output (set BOOK_NOTE_MAX_TOKENS=400).
-        Chain-of-thought step keeps the model grounded before it writes JSON.
-        """
-        mood_line = f"\nReader sentiment context: {mood_context}" if mood_context else ""
+Book: "{title}" by {author}
+Description: {description}
+{mood_context}
 
-        return f"""You are a knowledgeable bookseller in a quiet, warm shop.
-A customer describes their current mood as: "{vibe}"
+IMPORTANT: Do NOT use hardcoded lists. Generate a recommendation dynamically based purely on the provided vibe: "{vibe}".
 
-Book details:
-  Title: {title}
-  Author: {author}
-  Description: {description}{mood_line}
-
-Step 1 — Reasoning (internal, do not output):
-Identify the emotional core of "{vibe}". What feeling is the reader seeking?
-Does this book deliver that feeling? Why or why not?
-
-Step 2 — Output only valid JSON, no markdown fences, matching this schema exactly:
+Output a JSON object with the following structure:
 {{
-  "title": "{title}",
-  "author": "{author}",
-  "vibe_match": "one sentence — does this book match the reader's vibe and why",
-  "bookseller_note": "2–3 warm sentences describing the reading experience for someone in a '{vibe}' mood. Atmospheric, personal, under 60 words.",
-  "mood_tags": ["tag1", "tag2", "tag3"]
+  "title": "A compelling book title that matches the vibe",
+  "author": "Author name that fits the recommendation", 
+  "cover_url": "URL or placeholder for book cover image",
+  "bookseller_note": "A warm, 3-4 sentence paragraph describing the reading experience for this specific vibe"
 }}
 
-Rules:
-- bookseller_note must be original prose, not a synopsis.
-- mood_tags should be lowercase single-word descriptors (e.g. "melancholy", "hopeful").
-- Output only the JSON object. No preamble, no explanation after.
-"""
-
+Constraint: Keep the bookseller_note under 50 words and make it feel personal and atmospheric.
+Style: Warm, insightful, like a trusted bookseller sharing a hidden gem.""")
+        
+        max_words = os.getenv('BOOK_NOTE_MAX_WORDS', '30')
+        
+        return template.format(
+            title=title,
+            author=author, 
+            description=description,
+            mood_context=mood_context,
+            vibe=vibe,
+            max_words=max_words
+        )
+    
     @staticmethod
     def get_recommendation_prompt(query: str) -> str:
-        """
-        Build a vibe-based recommendation prompt.
+        """Generate recommendation prompt template."""
+        template = os.getenv('RECOMMENDATION_PROMPT_TEMPLATE',
+            """You are a knowledgeable librarian helping someone find books.
+            
+User is looking for: "{query}"
 
-        Token budget: 200 tokens output (set RECOMMENDATION_MAX_TOKENS=200).
-        Returns plain text, not JSON — used directly as a chat-style response.
-        """
-        return f"""You are a thoughtful librarian helping someone find their next book.
-
-The reader is looking for: "{query}"
-
-Respond in 2–3 sentences. Focus on the emotional experience and atmosphere
-they are seeking — not on a specific title. Be warm and specific about the
-kind of story, pacing, and mood that would satisfy this request.
-Do not use bullet points. Do not list book titles. Write as if speaking directly to the reader.
-"""
+Provide book recommendation guidance that captures the mood and feeling they're seeking.
+Focus on the emotional experience and atmosphere rather than specific titles.
+Keep response under {max_words} words and make it warm and helpful.
+Style: Personal, insightful, like talking to a trusted book friend.""")
+        
+        max_words = os.getenv('RECOMMENDATION_MAX_WORDS', '100')
+        
+        return template.format(query=query, max_words=max_words)
 
     @staticmethod
-    def get_chat_system_prompt() -> str:
-        """System prompt for the bookseller chat interface."""
-        return (
-            "You are a warm, knowledgeable bookseller named Wren working in a cozy independent bookshop. "
-            "You speak in a calm, personal tone — never salesy. "
-            "You ask one clarifying question at most per reply. "
-            "Keep replies under 80 words unless the customer asks for detail. "
-            "You never list more than 3 book suggestions at once. "
-            "If you do not know a book, say so honestly."
-        )
+    def get_category_books_prompt(category: str, vibe_description: str, count: int = 5) -> str:
+        """
+        Prompt for generating category-specific book recommendations.
 
+        Returns a JSON array of books relevant to the category and vibe.
+        Each book has title + author so the frontend can query Google Books API
+        for real cover images and metadata.
 
-# ---------------------------------------------------------------------------
-# LLM service
-# ---------------------------------------------------------------------------
+        Args:
+            category: Display name of the shelf category e.g. "Rainy Evening Reads"
+            vibe_description: Short description of what this category means emotionally
+            count: Number of books to return (default 5)
+        """
+        return f"""You are a knowledgeable bookseller curating a themed shelf called "{category}".
+
+The mood and vibe of this shelf: {vibe_description}
+
+Return exactly {count} real, published books that genuinely fit this shelf's mood.
+Books must be DIFFERENT for each shelf — do not repeat popular defaults like Dune, 1984, or The Great Gatsby unless they truly match the vibe.
+
+Output only a JSON array. No markdown fences. No text before or after.
+Schema:
+[
+  {{
+    "title": "Exact book title",
+    "author": "Author full name",
+    "reason": "One sentence — why this book fits '{category}'"
+  }}
+]
+
+Rules:
+- All {count} books must be real, verifiable titles with correct authors.
+- Books must be genuinely relevant to the category vibe, not generic bestsellers.
+- Vary genres, time periods, and regions where the vibe allows it.
+- Output the JSON array only.
+"""
+
 
 class LLMService:
     """
-    Multi-provider LLM service: OpenAI, Groq, Gemini.
-    All config via environment variables.
-
-    Token budget env vars (with corrected defaults):
-        BOOK_NOTE_MAX_TOKENS       = 400   (was 100 — too small for JSON output)
-        RECOMMENDATION_MAX_TOKENS  = 200   (was 150 — fine, kept)
-        CHAT_MAX_TOKENS            = 150   (unchanged)
-        DEFAULT_MAX_TOKENS         = 200
+    Production-grade LLM service supporting OpenAI, Groq, and Google Gemini.
+    All configuration via environment variables.
     """
-
+    
     def __init__(self):
         self.openai_client = None
         self.groq_client = None
         self.gemini_client = None
-        self.gemini_api_keys = []
-        self.preferred_llm = os.getenv("PREFERRED_LLM", "groq").lower()
-
+        self.preferred_llm = os.getenv('PREFERRED_LLM', 'groq').lower()
+        
         self.config = {
-            "openai_model":     os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
-            "openai_temperature":  float(os.getenv("OPENAI_TEMPERATURE", "0.7")),
-            "openai_max_tokens":   int(os.getenv("OPENAI_MAX_TOKENS", "500")),
-
-            "groq_model": os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
-            "groq_temperature":    float(os.getenv("GROQ_TEMPERATURE", "0.7")),
-            "groq_max_tokens":     int(os.getenv("GROQ_MAX_TOKENS", "500")),
-
-            "gemini_model":     os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
-            "gemini_temperature":  float(os.getenv("GEMINI_TEMPERATURE", "0.7")),
-            "gemini_max_tokens":   int(os.getenv("GEMINI_MAX_TOKENS", "500")),
-
-            # Per-function token budgets (corrected)
-            "book_note_max_tokens":     int(os.getenv("BOOK_NOTE_MAX_TOKENS", "400")),
-            "recommendation_max_tokens": int(os.getenv("RECOMMENDATION_MAX_TOKENS", "200")),
-            "chat_max_tokens":          int(os.getenv("CHAT_MAX_TOKENS", "150")),
-            "default_max_tokens":       int(os.getenv("DEFAULT_MAX_TOKENS", "200")),
+            'openai_model': os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo'),
+            'openai_temperature': float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
+            'openai_max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '500')),
+            'groq_model': os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant'),
+            'groq_temperature': float(os.getenv('GROQ_TEMPERATURE', '0.7')),
+            'groq_max_tokens': int(os.getenv('GROQ_MAX_TOKENS', '500')),
+            'gemini_model': os.getenv('GEMINI_MODEL', 'gemini-2.0-flash'),
+            'gemini_temperature': float(os.getenv('GEMINI_TEMPERATURE', '0.7')),
+            'gemini_max_tokens': int(os.getenv('GEMINI_MAX_TOKENS', '500')),
+            'default_max_tokens': int(os.getenv('DEFAULT_MAX_TOKENS', '150')),
+            'book_note_max_tokens': int(os.getenv('BOOK_NOTE_MAX_TOKENS', '400')),
+            'recommendation_max_tokens': int(os.getenv('RECOMMENDATION_MAX_TOKENS', '150')),
+            'category_books_max_tokens': int(os.getenv('CATEGORY_BOOKS_MAX_TOKENS', '600')),
+            'test_max_tokens': int(os.getenv('TEST_MAX_TOKENS', '10'))
         }
-
+        
         self._setup_openai()
         self._setup_groq()
         self._setup_gemini()
-
-    # -- setup --
-
+        
     def _setup_openai(self):
-        api_key = os.getenv("OPENAI_API_KEY")
+        """Setup OpenAI client if API key available."""
+        api_key = os.getenv('OPENAI_API_KEY')
         if api_key and OPENAI_AVAILABLE:
             try:
                 from openai import OpenAI
                 OpenAI(api_key=api_key)
                 self.openai_client = True
-                logger.info("OpenAI ready: %s", self.config["openai_model"])
+                logger.info(f"OpenAI client initialized with model: {self.config['openai_model']}")
             except Exception as e:
-                logger.error("OpenAI setup failed: %s", e)
+                logger.error(f"Failed to setup OpenAI: {e}")
 
     def _setup_groq(self):
-        api_key = os.getenv("GROQ_API_KEY")
+        """Setup Groq client if API key available."""
+        api_key = os.getenv('GROQ_API_KEY')
         if api_key and GROQ_AVAILABLE:
             try:
                 self.groq_client = Groq(api_key=api_key)
-                logger.info("Groq ready: %s", self.config["groq_model"])
+                logger.info(f"Groq client initialized with model: {self.config['groq_model']}")
             except Exception as e:
-                logger.error("Groq setup failed: %s", e)
-
+                logger.error(f"Failed to setup Groq: {e}")
+                self.groq_client = None
+                
     def _setup_gemini(self):
-        self.gemini_api_keys = [
-            key.strip()
-            for key in [os.getenv("GEMINI_API_KEY"), os.getenv("GEMINI_API_KEY_SECONDARY")]
-            if key and key.strip()
-        ]
-        if self.gemini_api_keys and GEMINI_AVAILABLE:
-            for index, api_key in enumerate(self.gemini_api_keys, start=1):
-                try:
-                    self.gemini_client = genai.Client(api_key=api_key)
-                    logger.info("Gemini ready using key %d: %s", index, self.config["gemini_model"])
-                    return
-                except Exception as e:
-                    logger.warning("Gemini setup failed for key %d: %s", index, e)
-            self.gemini_client = None
-
-    def _gemini_candidates(self):
-        return self.gemini_api_keys or [os.getenv("GEMINI_API_KEY")]
-
+        """Setup Gemini client if API key available."""
+        api_key = os.getenv('GEMINI_API_KEY')
+        if api_key and GEMINI_AVAILABLE:
+            try:
+                self.gemini_client = genai.Client(api_key=api_key)
+                logger.info(f"Gemini client initialized. configured model: {self.config['gemini_model']}")
+            except ImportError as e:
+                logger.warning(f"Google GenAI library not installed: {e}. Install with: pip install google-genai")
+                self.gemini_client = None
+            except ValueError as e:
+                logger.error(f"Invalid Gemini API key configuration: {e}")
+                self.gemini_client = None
+            except Exception as e:
+                logger.error(f"Failed to setup Gemini: {e}", exc_info=True)
+                self.gemini_client = None
+    
     def is_available(self) -> bool:
-        return any([self.openai_client, self.groq_client, self.gemini_client])
-
-    # -- single-turn text generation --
-
-    def generate_text(
-        self,
-        prompt: str,
-        max_tokens: Optional[int] = None,
-        retry_count: int = 0,
-    ) -> Optional[str]:
+        """Check if any LLM service is available."""
+        return (self.openai_client is not None) or (self.groq_client is not None) or (self.gemini_client is not None)
+    
+    def generate_text(self, prompt: str, max_tokens: Optional[int] = None, retry_count: int = 0) -> Optional[str]:
+        """Generate text using available LLM service with retry logic."""
         if not self.is_available():
             logger.warning("No LLM service available")
             return None
+            
         if max_tokens is None:
-            max_tokens = self.config["default_max_tokens"]
-
-        max_retries = int(os.getenv("LLM_MAX_RETRIES", "3"))
-
+            max_tokens = self.config['default_max_tokens']
+            
+        max_retries = int(os.getenv('LLM_MAX_RETRIES', '3'))
+        
         try:
-            if self.preferred_llm == "openai" and self.openai_client:
+            if self.preferred_llm == 'openai' and self.openai_client:
                 return self._generate_with_openai(prompt, max_tokens)
-            if self.preferred_llm == "groq" and self.groq_client:
+            elif self.preferred_llm == 'groq' and self.groq_client:
                 return self._generate_with_groq(prompt, max_tokens)
-            if self.preferred_llm == "gemini" and self.gemini_client:
+            elif self.preferred_llm == 'gemini' and self.gemini_client:
                 return self._generate_with_gemini(prompt, max_tokens)
-            # Fallback priority: Groq → OpenAI → Gemini
+            
             if self.groq_client:
                 return self._generate_with_groq(prompt, max_tokens)
-            if self.openai_client:
+            elif self.openai_client:
                 return self._generate_with_openai(prompt, max_tokens)
-            if self.gemini_client:
+            elif self.gemini_client:
                 return self._generate_with_gemini(prompt, max_tokens)
+                
         except Exception as e:
-            logger.error("LLM attempt %d failed: %s: %s", retry_count + 1, type(e).__name__, e)
-            if retry_count < max_retries and self._is_retryable(e):
+            logger.error(f"LLM generation failed (attempt {retry_count + 1}): {type(e).__name__}: {e}", exc_info=True)
+            
+            if retry_count < max_retries and self._is_retryable_error(e):
                 import time
-                time.sleep(float(os.getenv("LLM_RETRY_DELAY", "1.0")) * (retry_count + 1))
+                retry_delay = float(os.getenv('LLM_RETRY_DELAY', '1.0'))
+                time.sleep(retry_delay * (retry_count + 1))
                 return self.generate_text(prompt, max_tokens, retry_count + 1)
-        return None
-
-    # -- multi-turn chat (NEW) --
-
-    def generate_chat(
-        self,
-        system_prompt: str,
-        messages: list[dict],
-        max_tokens: Optional[int] = None,
-    ) -> Optional[str]:
-        """
-        Generate a response in a multi-turn conversation.
-
-        Args:
-            system_prompt: The bookseller persona / instructions.
-            messages: List of {"role": "user"|"assistant", "content": str} dicts,
-                      ordered oldest-first. The last message is the user's current turn.
-            max_tokens: Token budget for the response.
-
-        Returns:
-            Assistant reply string, or None on failure.
-        """
-        if not self.is_available():
+            
             return None
-        if max_tokens is None:
-            max_tokens = self.config["chat_max_tokens"]
-
-        try:
-            if self.preferred_llm == "groq" and self.groq_client:
-                return self._chat_with_groq(system_prompt, messages, max_tokens)
-            if self.preferred_llm == "openai" and self.openai_client:
-                return self._chat_with_openai(system_prompt, messages, max_tokens)
-            if self.preferred_llm == "gemini" and self.gemini_client:
-                return self._chat_with_gemini(system_prompt, messages, max_tokens)
-            if self.groq_client:
-                return self._chat_with_groq(system_prompt, messages, max_tokens)
-            if self.openai_client:
-                return self._chat_with_openai(system_prompt, messages, max_tokens)
-            if self.gemini_client:
-                return self._chat_with_gemini(system_prompt, messages, max_tokens)
-        except Exception as e:
-            logger.error("Multi-turn chat failed: %s: %s", type(e).__name__, e)
-        return None
-
-    # -- provider implementations (single-turn) --
-
+    
+    def _is_retryable_error(self, error: Exception) -> bool:
+        """Check if error is retryable."""
+        error_str = str(error).lower()
+        retryable_errors = ['rate limit', 'timeout', 'connection', 'network', 'service unavailable', 'internal server error']
+        return any(err in error_str for err in retryable_errors)
+    
     def _generate_with_openai(self, prompt: str, max_tokens: int) -> Optional[str]:
+        """Generate text using OpenAI."""
         try:
             from openai import OpenAI
-            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            resp = client.chat.completions.create(
-                model=self.config["openai_model"],
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+            response = client.chat.completions.create(
+                model=self.config['openai_model'],
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=min(max_tokens, self.config["openai_max_tokens"]),
-                temperature=self.config["openai_temperature"],
+                max_tokens=min(max_tokens, self.config['openai_max_tokens']),
+                temperature=self.config['openai_temperature']
             )
-            return resp.choices[0].message.content.strip()
-        except Exception as e:
-            logger.error("OpenAI single-turn failed: %s", e)
-            if self._is_retryable(e):
-                raise
+            return response.choices[0].message.content.strip()
+        except ImportError as e:
+            logger.error(f"OpenAI library not installed: {e}")
             return None
-
+        except ValueError as e:
+            logger.error(f"Invalid OpenAI API key or configuration: {e}")
+            return None
+        except openai.RateLimitError as e:
+            logger.warning(f"OpenAI rate limit exceeded: {e}")
+            raise
+        except openai.APITimeoutError as e:
+            logger.warning(f"OpenAI request timed out: {e}")
+            raise
+        except openai.APIConnectionError as e:
+            logger.warning(f"OpenAI connection error: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"OpenAI generation failed: {type(e).__name__}: {e}", exc_info=True)
+            return None
+    
     def _generate_with_groq(self, prompt: str, max_tokens: int) -> Optional[str]:
+        """Generate text using Groq."""
         try:
-            resp = self.groq_client.chat.completions.create(
-                model=self.config["groq_model"],
+            response = self.groq_client.chat.completions.create(
+                model=self.config['groq_model'],
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=min(max_tokens, self.config["groq_max_tokens"]),
-                temperature=self.config["groq_temperature"],
+                max_tokens=min(max_tokens, self.config['groq_max_tokens']),
+                temperature=self.config['groq_temperature']
             )
-            return resp.choices[0].message.content.strip()
-        except Exception as e:
-            logger.error("Groq single-turn failed: %s", e)
-            if self._is_retryable(e):
-                raise
+            return response.choices[0].message.content.strip()
+        except ImportError as e:
+            logger.error(f"Groq library not installed: {e}")
             return None
-
+        except ValueError as e:
+            logger.error(f"Invalid Groq API key or configuration: {e}")
+            return None
+        except Exception as e:
+            error_type = type(e).__name__
+            if 'RateLimit' in error_type or 'rate limit' in str(e).lower():
+                logger.warning(f"Groq rate limit exceeded: {e}")
+                raise
+            elif 'Timeout' in error_type or 'timeout' in str(e).lower():
+                logger.warning(f"Groq request timed out: {e}")
+                raise
+            elif 'Connection' in error_type or 'connection' in str(e).lower():
+                logger.warning(f"Groq connection error: {e}")
+                raise
+            else:
+                logger.error(f"Groq generation failed: {error_type}: {e}", exc_info=True)
+                return None
+    
     def _generate_with_gemini(self, prompt: str, max_tokens: int) -> Optional[str]:
-        last_error = None
-        for index, api_key in enumerate(self._gemini_candidates(), start=1):
-            if not api_key:
-                continue
-            try:
-                client = genai.Client(api_key=api_key)
-                resp = client.models.generate_content(
-                    model=self.config["gemini_model"],
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        max_output_tokens=min(max_tokens, self.config["gemini_max_tokens"]),
-                        temperature=self.config["gemini_temperature"],
-                    ),
+        """Generate text using Gemini."""
+        try:
+            from google.genai import types
+            response = self.gemini_client.models.generate_content(
+                model=self.config['gemini_model'],
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=min(max_tokens, self.config['gemini_max_tokens']),
+                    temperature=self.config['gemini_temperature']
                 )
-                self.gemini_client = client
-                logger.info("Gemini single-turn succeeded with key %d", index)
-                return resp.text.strip()
-            except Exception as e:
-                last_error = e
-                logger.warning("Gemini single-turn failed with key %d: %s", index, e)
-                if not self._is_retryable(e):
-                    continue
-        if last_error and self._is_retryable(last_error):
-            raise last_error
-        return None
-
-    # -- provider implementations (multi-turn) --
-
-    def _chat_with_openai(
-        self, system_prompt: str, messages: list[dict], max_tokens: int
-    ) -> Optional[str]:
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        payload = [{"role": "system", "content": system_prompt}] + messages
-        resp = client.chat.completions.create(
-            model=self.config["openai_model"],
-            messages=payload,
-            max_tokens=min(max_tokens, self.config["openai_max_tokens"]),
-            temperature=self.config["openai_temperature"],
-        )
-        return resp.choices[0].message.content.strip()
-
-    def _chat_with_groq(
-        self, system_prompt: str, messages: list[dict], max_tokens: int
-    ) -> Optional[str]:
-        payload = [{"role": "system", "content": system_prompt}] + messages
-        resp = self.groq_client.chat.completions.create(
-            model=self.config["groq_model"],
-            messages=payload,
-            max_tokens=min(max_tokens, self.config["groq_max_tokens"]),
-            temperature=self.config["groq_temperature"],
-        )
-        return resp.choices[0].message.content.strip()
-
-    def _chat_with_gemini(
-        self, system_prompt: str, messages: list[dict], max_tokens: int
-    ) -> Optional[str]:
-        # Gemini doesn't have a native system role in all versions —
-        # prepend it as the first user turn with a clear separator.
-        gemini_messages = [
-            {"role": "user", "parts": [{"text": f"[System instructions]\n{system_prompt}\n[End instructions]"}]},
-            {"role": "model", "parts": [{"text": "Understood. I am Wren, your bookseller."}]},
-        ]
-        for msg in messages:
-            role = "user" if msg["role"] == "user" else "model"
-            gemini_messages.append({"role": role, "parts": [{"text": msg["content"]}]})
-        last_error = None
-        for index, api_key in enumerate(self._gemini_candidates(), start=1):
-            if not api_key:
-                continue
-            try:
-                client = genai.Client(api_key=api_key)
-                resp = client.models.generate_content(
-                    model=self.config["gemini_model"],
-                    contents=gemini_messages,
-                    config=types.GenerateContentConfig(
-                        max_output_tokens=min(max_tokens, self.config["gemini_max_tokens"]),
-                        temperature=self.config["gemini_temperature"],
-                    ),
-                )
-                self.gemini_client = client
-                logger.info("Gemini chat succeeded with key %d", index)
-                return resp.text.strip()
-            except Exception as e:
-                last_error = e
-                logger.warning("Gemini chat failed with key %d: %s", index, e)
-                if self._is_retryable(e):
-                    continue
-        if last_error and self._is_retryable(last_error):
-            raise last_error
-        return None
-
-    # -- helpers --
-
-    def _is_retryable(self, error: Exception) -> bool:
-        keywords = ["rate limit", "timeout", "connection", "network", "service unavailable"]
-        return any(k in str(error).lower() for k in keywords)
+            )
+            return response.text.strip()
+        except ImportError as e:
+            logger.error(f"Google GenAI library not installed: {e}")
+            return None
+        except ValueError as e:
+            logger.error(f"Invalid Gemini API key or configuration: {e}")
+            return None
+        except Exception as e:
+            error_str = str(e).lower()
+            if 'rate limit' in error_str or 'quota' in error_str:
+                logger.warning(f"Gemini rate limit exceeded: {e}")
+                raise
+            elif 'timeout' in error_str:
+                logger.warning(f"Gemini request timed out: {e}")
+                raise
+            elif 'connection' in error_str or 'network' in error_str:
+                logger.warning(f"Gemini connection error: {e}")
+                raise
+            else:
+                logger.error(f"Gemini generation failed: {type(e).__name__}: {e}", exc_info=True)
+                return None
 
 
-# Singleton
+# Initialize LLM service
 llm_service = LLMService()
 
-__all__ = [
-    "generate_book_note",
-    "get_ai_recommendations",
-    "get_book_mood_tags_safe",
-    "generate_chat_response",
-    "llm_service",
-    "LLMService",
-    "PromptTemplates",
-]
+__all__ = ['generate_book_note', 'get_ai_recommendations', 'get_category_books',
+           'get_book_mood_tags_safe', 'generate_chat_response', 'llm_service', 
+           'LLMService', 'PromptTemplates']
 
 
-# ---------------------------------------------------------------------------
-# Public API functions
-# ---------------------------------------------------------------------------
-
-@cache_recommendations
 def generate_book_note(description, title="", author="", vibe=""):
-    """
-    Generate an AI-powered bookseller note for a book.
-
-    Returns a dict with keys: title, author, vibe_match, bookseller_note, mood_tags.
-    Falls back to a minimal dict if LLM is unavailable — never returns hardcoded text.
-
-    Fix summary:
-    - Token budget raised to BOOK_NOTE_MAX_TOKENS (default 400) so JSON is never truncated.
-    - _extract_json() handles markdown fences before JSON.loads().
-    - Chain-of-thought prompt improves vibe alignment.
-    """
+    """Generate book note using LLM with vibe-based recommendations."""
     mood_context = ""
     if MOOD_ANALYSIS_AVAILABLE and title and author:
         try:
-            enhanced = generate_enhanced_book_note(description, title, author)
-            mood_context = str(enhanced)
+            enhanced_note = generate_enhanced_book_note(description, title, author)
+            mood_context = f"Based on reader sentiment analysis: {enhanced_note}"
         except Exception as e:
-            logger.debug("Mood analysis context failed: %s", e)
-
+            logger.debug(f"Mood analysis failed: {e}")
+    
     if llm_service.is_available():
-        prompt = PromptTemplates.get_book_note_prompt(
-            title, author, description, mood_context, vibe
-        )
-        raw = llm_service.generate_text(
-            prompt,
-            max_tokens=llm_service.config["book_note_max_tokens"],
-        )
-        if raw:
-            parsed = _extract_json(raw)
-            if parsed and "bookseller_note" in parsed:
-                logger.info("Structured bookseller note generated for: %s", title)
-                return parsed
-            # LLM responded but not valid JSON — wrap as plain vibe note
-            logger.warning("LLM response was not valid JSON; wrapping as vibe note")
-            return {
-                "title": title,
-                "author": author,
-                "bookseller_note": raw,
-                "mood_tags": [],
-                "vibe_match": "",
-            }
-
-    # Mood-analysis fallback (no LLM)
+        try:
+            prompt = PromptTemplates.get_book_note_prompt(title, author, description, mood_context, vibe)
+            llm_response = llm_service.generate_text(prompt, llm_service.config['book_note_max_tokens'])
+            
+            if llm_response:
+                try:
+                    import json
+                    parsed_response = json.loads(llm_response)
+                    if isinstance(parsed_response, dict) and all(key in parsed_response for key in ['title', 'author', 'bookseller_note']):
+                        logger.info(f"Successfully generated structured recommendation for vibe: {vibe}")
+                        return parsed_response
+                except (json.JSONDecodeError, TypeError):
+                    logger.warning("LLM response was not valid JSON, using as plain text")
+                    return {
+                        "vibe": llm_response,
+                        "title": title or "A Perfect Match",
+                        "author": author or "Recommended Author"
+                    }
+                
+        except Exception as e:
+            logger.error(f"LLM book note generation failed: {e}")
+    
     if MOOD_ANALYSIS_AVAILABLE and title and author:
         try:
             return generate_enhanced_book_note(description, title, author)
         except Exception as e:
-            logger.debug("Mood analysis fallback failed: %s", e)
-
-    # Minimal honest fallback — not fake AI text
-    return {
-        "title": title,
-        "author": author,
-        "bookseller_note": None,
-        "mood_tags": [],
-        "vibe_match": None,
-        "error": "AI service unavailable",
-    }
+            logger.debug(f"Mood analysis fallback failed: {e}")
+    
+    if len(description) > 200:
+        return {"vibe": "A deep, complex narrative that readers find emotionally resonant."}
+    elif len(description) > 100:
+        return {"vibe": "A compelling story with layers waiting to be discovered."}
+    elif "mystery" in description.lower():
+        return {"vibe": "A mysterious tale that will keep you guessing."}
+    elif "romance" in description.lower():
+        return {"vibe": "A heartwarming story perfect for cozy reading."}
+    else:
+        return {"vibe": "A delightful read for any quiet moment."}
 
 
 @cache_recommendations
-def get_ai_recommendations(query: str) -> Optional[str]:
-    """
-    Generate vibe-based book recommendation guidance via LLM.
-
-    Fix summary:
-    - Removed hardcoded mood keyword dict — it violated the AI-only policy.
-    - On LLM failure, returns None (caller handles the error response).
-    - Prompt restructured to produce atmospheric guidance, not a list of titles.
-    """
+def get_ai_recommendations(query):
+    """Generate AI-powered book recommendations based on query."""
     if llm_service.is_available():
-        prompt = PromptTemplates.get_recommendation_prompt(query)
-        result = llm_service.generate_text(
-            prompt,
-            max_tokens=llm_service.config["recommendation_max_tokens"],
-        )
-        if result:
-            return result
-        logger.error("LLM recommendation call returned None for query: %s", query)
-    else:
-        logger.warning("get_ai_recommendations called but no LLM is configured")
+        try:
+            prompt = PromptTemplates.get_recommendation_prompt(query)
+            llm_response = llm_service.generate_text(prompt, llm_service.config['recommendation_max_tokens'])
+            if llm_response:
+                return llm_response
+                
+        except Exception as e:
+            logger.error(f"LLM recommendation generation failed: {e}")
+    
+    mood_queries = {
+        'cozy': 'comfort reads with warm atmosphere and gentle pacing',
+        'dark': 'psychological thrillers with mysterious undertones',
+        'romantic': 'love stories with emotional depth and chemistry',
+        'mysterious': 'suspenseful tales with intriguing puzzles',
+        'uplifting': 'inspiring stories that restore faith in humanity',
+        'melancholy': 'literary fiction exploring complex emotions',
+        'adventurous': 'epic journeys and thrilling escapades'
+    }
+    
+    query_lower = query.lower()
+    for mood, description in mood_queries.items():
+        if mood in query_lower:
+            return f"For {mood} reads, I'd suggest exploring {description}. These books tend to resonate with readers seeking that particular emotional experience."
+    
+    return f"Based on your interest in '{query}', I'd recommend exploring books that capture similar themes and emotional resonance."
 
-    # Return None — app.py will surface a 503 via service_unavailable_error()
-    # Never return hardcoded static strings here (violates AI-only policy).
-    return None
+
+def get_category_books(category: str, vibe_description: str, count: int = 5) -> list:
+    """
+    Generate a list of real, relevant books for a specific shelf category.
+
+    This is the core fix for the issue where all categories showed the same
+    books. Each category now gets its own AI-generated book list based on
+    its name and vibe description. The returned titles and authors are passed
+    to the Google Books API by the frontend to fetch real covers and metadata.
+
+    Args:
+        category: Display name shown on the shelf e.g. "Rainy Evening Reads"
+        vibe_description: Short description of what this category means emotionally
+        count: Number of books to return
+
+    Returns:
+        List of dicts: [{"title": ..., "author": ..., "reason": ...}, ...]
+        Empty list if LLM is unavailable or returns invalid data.
+    """
+    if not llm_service.is_available():
+        logger.warning("get_category_books: no LLM configured")
+        return []
+
+    prompt = PromptTemplates.get_category_books_prompt(category, vibe_description, count)
+    raw = llm_service.generate_text(
+        prompt,
+        max_tokens=llm_service.config['category_books_max_tokens'],
+    )
+
+    if not raw:
+        logger.error("get_category_books: LLM returned None for category: %s", category)
+        return []
+
+    parsed = _extract_json(raw)
+
+    if not isinstance(parsed, list):
+        logger.error("get_category_books: expected JSON array, got %s for category: %s", type(parsed), category)
+        return []
+
+    # Validate each entry has required fields
+    valid_books = []
+    for item in parsed:
+        if isinstance(item, dict) and "title" in item and "author" in item:
+            valid_books.append({
+                "title": item["title"],
+                "author": item["author"],
+                "reason": item.get("reason", ""),
+            })
+        else:
+            logger.warning("get_category_books: skipping malformed entry: %s", item)
+
+    logger.info("get_category_books: %d books returned for '%s'", len(valid_books), category)
+    return valid_books
 
 
 @cache_mood_tags
 def get_book_mood_tags_safe(title: str, author: str = "") -> list:
-    """Safe wrapper for mood tag extraction."""
+    """Safe wrapper for getting book mood tags."""
     if MOOD_ANALYSIS_AVAILABLE:
         try:
             return get_book_mood_tags(title, author)
         except Exception as e:
-            logger.error("Mood tag extraction failed: %s", e)
+            logger.error(f"Error getting mood tags: {e}")
     return []
 
 
 @cache_chat_response
-def generate_chat_response(
-    user_message: str,
-    conversation_history: list = None,
-) -> str:
-    """
-    Generate a bookseller chat reply using a proper multi-turn conversation.
-
-    Fix summary:
-    - conversation_history is now passed as structured messages to the LLM,
-      not flattened into a single-turn prompt string.
-    - Uses llm_service.generate_chat() which sends the full history array.
-    - Graceful fallback message is returned when LLM is unavailable.
-
-    Args:
-        user_message: The user's latest message.
-        conversation_history: List of {"role": ..., "content": ...} dicts,
-                              oldest-first, NOT including the current user_message.
-
-    Returns:
-        Bookseller reply string.
-    """
-    if conversation_history is None:
-        conversation_history = []
-
-    # Normalise history — accept both Pydantic models and plain dicts
-    normalised_history = []
-    for msg in conversation_history:
-        if hasattr(msg, "dict"):
-            msg = msg.dict()
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        if role in ("user", "assistant") and content:
-            normalised_history.append({"role": role, "content": content})
-
-    # Append the current user turn
-    messages = normalised_history + [{"role": "user", "content": user_message}]
-
-    system_prompt = PromptTemplates.get_chat_system_prompt()
-
+def generate_chat_response(user_message, conversation_history=[]):
+    """Generate AI-driven chat responses for the bookseller interface."""
     if llm_service.is_available():
         reply = llm_service.generate_chat(
             system_prompt=system_prompt,
