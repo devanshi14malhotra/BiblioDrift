@@ -110,6 +110,80 @@ def page_not_found(e: Exception):
     # Serve custom HTML for browser requests
     return app.send_static_file('404.html'), 404
 
+
+@app.after_request
+def add_security_headers(response):
+    """
+    Add security headers to all responses for defense-in-depth XSS prevention.
+    
+    Headers Added:
+    - Content-Security-Policy: Restricts resource loading and inline scripts
+    - X-Content-Type-Options: Prevents MIME type sniffing
+    - X-Frame-Options: Prevents clickjacking by disallowing framing
+    - X-XSS-Protection: Legacy XSS protection (browser-level)
+    - Strict-Transport-Security: Forces HTTPS for next 1 year
+    - Referrer-Policy: Controls referrer information sharing
+    
+    Args:
+        response: Flask response object
+        
+    Returns:
+        response: Response with added security headers
+    """
+    # Content Security Policy: Restrict resource loading to prevent inline scripts/XSS
+    # - default-src 'self': Only allow resources from the same origin
+    # - script-src 'self' https://cdn.jsdelivr.net: Allow scripts from self and DOMPurify CDN
+    # - style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com: Allow styles from self and CDN
+    # - img-src 'self' data: https:: Allow images from self, data URLs, and HTTPS
+    # - font-src 'self' https://fonts.gstatic.com: Allow fonts from self and Google Fonts
+    # - connect-src 'self' ws: wss:: Allow connections to own origin and WebSocket
+    # - frame-ancestors 'none': Prevent framing/clickjacking
+    # - base-uri 'self': Restrict base tag to same origin
+    # - form-action 'self': Restrict form submissions to same origin
+    # - upgrade-insecure-requests: Upgrade HTTP to HTTPS
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: https: http:; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "connect-src 'self' ws: wss: http: https:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "upgrade-insecure-requests"
+    )
+    response.headers['Content-Security-Policy'] = csp_policy
+    
+    # Prevent MIME type sniffing (forces browser to respect Content-Type header)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    # Prevent clickjacking by disallowing the site to be framed
+    response.headers['X-Frame-Options'] = 'DENY'
+    
+    # Legacy XSS protection header (for older browsers)
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    # Force HTTPS for 1 year (including subdomains)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    
+    # Control referrer information to reduce information leakage
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # Restrict permissions and features the page can use
+    response.headers['Permissions-Policy'] = (
+        'geolocation=(), '
+        'microphone=(), '
+        'camera=(), '
+        'payment=(), '
+        'usb=(), '
+        'magnetometer=(), '
+        'gyroscope=(), '
+        'accelerometer=()'
+    )
+    
+    return response
+
 # Rate limiting configuration
 RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
 RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30'))

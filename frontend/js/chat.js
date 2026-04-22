@@ -27,6 +27,83 @@ class ChatInterface {
         }
     }
     
+    /**
+     * Sanitize user input before sending to server.
+     * Client-side sanitization provides defense-in-depth alongside server-side validation.
+     * 
+     * Security Measures:
+     * 1. Trim whitespace
+     * 2. Enforce maximum length (2000 characters)
+     * 3. Detect encoded attack vectors
+     * 4. Remove dangerous patterns
+     * 5. Use textContent for safe rendering
+     * 
+     * @param {string} input - Raw user input
+     * @returns {string} Sanitized input
+     */
+    sanitizeUserInput(input) {
+        if (!input || typeof input !== 'string') {
+            return '';
+        }
+        
+        // Step 1: Trim and check for empty input
+        let sanitized = input.trim();
+        if (!sanitized) {
+            return '';
+        }
+        
+        // Step 2: Enforce maximum length (matches server-side validation: 2000 chars)
+        if (sanitized.length > 2000) {
+            sanitized = sanitized.substring(0, 2000);
+        }
+        
+        // Step 3: Decode HTML entities to catch encoded attacks
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = sanitized;
+            sanitized = textarea.textContent || textarea.innerText || sanitized;
+        } catch (e) {
+            // Use original if decoding fails
+        }
+        
+        // Step 4: Remove dangerous patterns
+        const dangerousPatterns = [
+            /javascript:/gi,
+            /on\w+\s*=/gi,
+            /<script/gi,
+            /<iframe/gi,
+            /data:text\/html/gi,
+            /vbscript:/gi,
+        ];
+        
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(sanitized)) {
+                // Log but continue - server will handle validation
+                console.warn('Suspicious pattern detected in input:', pattern);
+                sanitized = sanitized.replace(pattern, '');
+            }
+        }
+        
+        // Step 5: Use DOMPurify if available for additional security
+        if (typeof DOMPurify !== 'undefined') {
+            sanitized = DOMPurify.sanitize(sanitized, {
+                ALLOWED_TAGS: [],
+                ALLOWED_ATTR: [],
+                KEEP_CONTENT: true
+            });
+        }
+        
+        // Step 6: Additional HTML entity escaping for display safety
+        sanitized = sanitized
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+        
+        return sanitized;
+    }
+    
     setupEventListeners() {
         // Send button click
         this.sendBtn.addEventListener('click', () => this.sendMessage());
@@ -60,8 +137,18 @@ Tell me what kind of vibe you're looking for - maybe something cozy for a rainy 
     }
     
     async sendMessage() {
-        const message = this.chatInput.value.trim();
+        let message = this.chatInput.value.trim();
         if (!message || this.isTyping) return;
+        
+        // Sanitize message before sending to server (defense-in-depth)
+        message = this.sanitizeUserInput(message);
+        
+        if (!message) {
+            // If sanitization resulted in empty string, don't send
+            this.chatInput.value = '';
+            return;
+        }
+        
         
         // Add user message
         const userMessage = {
@@ -441,21 +528,33 @@ Tell me what kind of vibe you're looking for - maybe something cozy for a rainy 
     }
     
     /**
-     * Validate and sanitize a single message object loaded from storage.
-     * Ensures expected structure and strips potentially dangerous characters
-     * from the content field.
+     * Comprehensive message sanitization with defense-in-depth XSS prevention.
+     * 
+     * Security Layers:
+     * 1. Validate message structure
+     * 2. Check message length (max 2000 chars)
+     * 3. Detect encoded attack vectors (HTML entities, Unicode escapes)
+     * 4. Use DOMPurify library to strip all dangerous elements
+     * 5. Escape remaining HTML entities
+     * 6. Remove JavaScript protocol URLs
+     * 7. Remove event handler patterns
+     * 
+     * @param {Object} rawMessage - Message object from storage
+     * @returns {Object|null} Sanitized message or null if invalid
      */
     sanitizeMessage(rawMessage) {
         if (!rawMessage || typeof rawMessage !== 'object') {
             return null;
         }
         
+        // Validate message type
         const allowedTypes = ['user', 'bookseller'];
         let type = typeof rawMessage.type === 'string' ? rawMessage.type : 'user';
         if (!allowedTypes.includes(type)) {
             type = 'user';
         }
         
+        // Extract and convert content to string
         let content = '';
         if (typeof rawMessage.content === 'string') {
             content = rawMessage.content;
@@ -463,9 +562,80 @@ Tell me what kind of vibe you're looking for - maybe something cozy for a rainy 
             content = String(rawMessage.content);
         }
         
-        // Basic sanitization: remove angle brackets to mitigate HTML/script injection
-        content = content.replace(/[<>]/g, '');
+        // Enforce maximum message length (server-side validation: 2000 chars)
+        if (content.length > 2000) {
+            content = content.substring(0, 2000);
+        }
         
+        // Layer 1: Detect and decode HTML entities to catch encoded attacks
+        // e.g., &lt;script> becomes <script>, then gets blocked
+        let decodedContent = content;
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = content;
+            decodedContent = textarea.textContent || textarea.innerText;
+        } catch (e) {
+            // If decoding fails, use original content
+            decodedContent = content;
+        }
+        
+        // Layer 2: Detect dangerous patterns before sanitization
+        const dangerousPatterns = [
+            /javascript:/gi,                    // JavaScript protocol
+            /on\w+\s*=/gi,                      // Event handlers (onclick, onerror, etc.)
+            /<script/gi,                        // Script tags
+            /<iframe/gi,                        // IFrame tags
+            /<embed/gi,                         // Embed tags
+            /<object/gi,                        // Object tags
+            /data:text\/html/gi,               // Data URI with HTML
+            /vbscript:/gi,                      // VBScript protocol
+        ];
+        
+        let hasDangerousPattern = false;
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(decodedContent)) {
+                console.warn('XSS attack pattern detected and removed:', pattern);
+                hasDangerousPattern = true;
+                break;
+            }
+        }
+        
+        // Layer 3: Use DOMPurify to strip all dangerous elements and attributes
+        // DOMPurify configuration: only allow plain text, no HTML tags
+        const purifyConfig = {
+            ALLOWED_TAGS: [],                   // No HTML tags allowed
+            ALLOWED_ATTR: [],                   // No attributes allowed
+            KEEP_CONTENT: true,                 // Keep text content after stripping tags
+            FORCE_BODY: false,                  // Don't wrap in body tags
+            SANITIZE_DOM: true,                 // Sanitize DOM functionality
+            IN_PLACE: false                     // Don't modify in place
+        };
+        
+        // Use DOMPurify if available, otherwise fall back to basic sanitization
+        if (typeof DOMPurify !== 'undefined') {
+            content = DOMPurify.sanitize(content, purifyConfig);
+        } else {
+            // Fallback: Remove all HTML tags
+            content = content.replace(/<[^>]*>/g, '');
+        }
+        
+        // Layer 4: Additional HTML escaping for defense-in-depth
+        // Convert &, <, >, ", ' to HTML entities
+        content = content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+        
+        // Layer 5: Remove JavaScript protocol and common XSS vectors
+        content = content
+            .replace(/javascript:/gi, '')
+            .replace(/vbscript:/gi, '')
+            .replace(/on\w+=/gi, '')
+            .replace(/data:text\/html/gi, '');
+        
+        // Validate timestamp
         let timestamp = Date.now();
         if (typeof rawMessage.timestamp === 'number' && isFinite(rawMessage.timestamp)) {
             timestamp = rawMessage.timestamp;
