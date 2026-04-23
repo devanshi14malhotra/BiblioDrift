@@ -3,22 +3,31 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Library | BiblioDrift</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style-responsive.css">
-    <link rel="stylesheet" href="../css/keyboard-shortcuts.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/style-responsive.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
 
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -51,18 +60,18 @@
     </header>
 
     <main>
-        <section class="hero" style="padding-bottom: 2rem; position: relative;">
+        <section class="hero library-hero">
             <h1>My Virtual Library</h1>
             <p>A quiet sanctuary for your stories.</p>
 
-            <button id="export-library" class="btn-icon" style="position: absolute; top: 45px; right: 0;"
+            <button id="export-library" class="btn-icon library-export-btn"
                 title="Export Library">
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
             <div class="sort-controls">
                 <div class="filter-group">
                     <i class="fa-solid fa-filter"></i>
-                    <select id="library-filter" class="sort-select">
+                        <select id="library-filter" class="sort-select" aria-label="Filter books by shelf" title="Filter books by shelf">
                         <option value="all">All Shelves</option>
                         <option value="current">Currently Immersed</option>
                         <option value="want">Anticipated Journeys</option>
@@ -71,7 +80,7 @@
                 </div>
                 <div class="filter-group">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
-                    <select id="library-sort" class="sort-select">
+                        <select id="library-sort" class="sort-select" aria-label="Sort books" title="Sort books">
                         <option value="title">Sort by Title</option>
                         <option value="author">Sort by Author</option>
                         <option value="rating">Sort by Rating</option>
@@ -86,20 +95,23 @@
         <div class="bookshelf-3d-container" id="library-shelves">
 
             <!-- Empty State Placeholder (Visible when filter returns no books) -->
-            <div id="library-empty-state" class="library-empty-state" style="display: none;">
+            <div id="library-empty-state" class="library-empty-state" hidden>
                 <div class="empty-state-icon">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
                 <h2>No books found here</h2>
                 <p>Your search for adventure continues... try a different shelf or explore new titles!</p>
-                <a href="index.html" class="btn-primary" style="margin-top: 1.5rem; text-decoration: none;">
+                <a href="index.html" class="btn-primary library-empty-link">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Explore Books
                 </a>
             </div>
 
             <!-- Currently Reading Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">ðŸ“– Currently Immersed</span>
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-icon lucide-book-open"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+                    Currently Immersed
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-current-3d">
                         <!-- Books will be injected via JS -->
@@ -109,7 +121,10 @@
 
             <!-- Want to Read Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">ðŸ“š Anticipated Journeys</span>
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked-icon lucide-book-marked"><path d="M10 2v8l3-3 3 3V2"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
+                    Anticipated Journeys
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-want-3d">
                         <!-- Books will be injected via JS -->
@@ -119,7 +134,10 @@
 
             <!-- Finished Reading Shelf -->
             <div class="shelf-section-3d">
-                <span class="shelf-label">âœ“ Lifetime Favorites</span>
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-check-icon lucide-book-check"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg>
+                    Lifetime Favorites
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-finished-3d">
                         <!-- Books will be injected via JS -->
@@ -137,7 +155,7 @@
                     <div class="tooltip-title" id="tooltip-title"></div>
                     <div class="tooltip-author" id="tooltip-author"></div>
                     <div class="tooltip-rating">
-                        <span class="tooltip-stars" id="tooltip-stars">â˜…â˜…â˜…â˜…â˜†</span>
+                        <span class="tooltip-stars" id="tooltip-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
                         <span class="tooltip-rating-text" id="tooltip-rating-text">4.2</span>
                     </div>
                 </div>
@@ -148,7 +166,7 @@
 
         <!-- Book Detail Modal -->
         <div class="book-detail-modal" id="book-detail-modal">
-            <button class="modal-close-btn" id="modal-close-btn">
+            <button class="modal-close-btn" id="modal-close-btn" title="Close details">
                 <i class="fa-solid fa-times"></i>
             </button>
             <div class="book-detail-content">
@@ -200,7 +218,7 @@
                         <div class="book-stats-row">
                             <div class="stat-item">
                                 <div class="book-rating-large">
-                                    <span class="rating-stars-large" id="modal-stars">â˜…â˜…â˜…â˜…â˜†</span>
+                                    <span class="rating-stars-large" id="modal-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
                                     <span class="rating-score" id="modal-rating-score">4.2</span>
                                 </div>
                                 <span class="stat-label" id="modal-rating-count">1,234 ratings</span>
@@ -209,29 +227,29 @@
                                 <div class="book-categories" id="modal-categories"></div>
                             </div>
                         </div>
+
+                        <div class="book-actions-section">
+                            <label for="modal-shelf-select" class="library-select-label">Move to Shelf:</label>
+                            <select id="modal-shelf-select" class="shelf-select library-shelf-select" aria-label="Move book to shelf" title="Move book to shelf">
+                                <option value="current">Currently Immersed</option>
+                                <option value="want">Anticipated Journeys</option>
+                                <option value="finished">Lifetime Favorites</option>
+                            </select>
+                            <!-- Issue #23: Remove from Library button UI -->
+                            <button class="action-btn-primary remove-from-library library-remove-btn" id="modal-remove-btn" title="Remove from library">
+                                <i class="fa-solid fa-trash"></i>
+                                Remove from Library
+                            </button>
+                            <button class="action-btn-secondary library-share-btn" id="modal-share-btn-lib" title="Share book">
+                                <i class="fa-solid fa-share-nodes"></i> Share
+                            </button>
+                        </div>
                         
                         <div class="book-reviews-section">
                             <h3>Reader Reviews</h3>
                             <div id="modal-reviews" class="reviews-scroll-container">
                                 <!-- Reviews injected via JS -->
                             </div>
-                        </div>
-
-                        <div class="book-actions-section">
-                            <label for="modal-shelf-select" style="margin-right: 10px; font-weight: bold;">Move to Shelf:</label>
-                            <select id="modal-shelf-select" class="shelf-select" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #ccc;">
-                                <option value="current">Currently Immersed</option>
-                                <option value="want">Anticipated Journeys</option>
-                                <option value="finished">Lifetime Favorites</option>
-                            </select>
-                            <!-- Issue #23: Remove from Library button UI -->
-                            <button class="action-btn-primary remove-from-library" id="modal-remove-btn" style="margin-left: 10px; background-color: #ff4d4d;">
-                                <i class="fa-solid fa-trash"></i>
-                                Remove
-                            </button>
-                            <button class="action-btn-secondary" id="modal-share-btn-lib" style="margin-left: 10px; border: 1px solid var(--glass-border); background-color: transparent; color: var(--text-main); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; transition: all 0.3s ease;">
-                                <i class="fa-solid fa-share-nodes"></i> Share
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -240,12 +258,12 @@
 
     </main>
 
-    <script src="config.js"></script>
-    <script src="library-3d.js"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-    <script src="footer.js"></script>
-    <script src="script/header-scroll.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/library-3d.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../script/header-scroll.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';

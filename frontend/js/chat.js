@@ -276,11 +276,15 @@ Tell me what kind of vibe you're looking for - maybe something cozy for a rainy 
         try {
             // Transform user query into book search terms
             const searchQuery = this.transformQueryForBooks(query);
-            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=6&printType=books&langRestrict=en`);
-            
-            if (!response.ok) throw new Error('Google Books API error');
-            
-            const data = await response.json();
+            const client = window.GoogleBooksClient;
+            const data = client
+                ? await client.fetchVolumes(searchQuery, { maxResults: 6, extraParams: '&printType=books&langRestrict=en' })
+                : await (async () => {
+                    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=6&printType=books&langRestrict=en`);
+                    if (!response.ok) throw new Error('Google Books API error');
+                    return await response.json();
+                })();
+
             return data.items || [];
         } catch (error) {
             return [];
