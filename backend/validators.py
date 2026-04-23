@@ -4,10 +4,21 @@ Provides input validation for all API endpoints.
 """
 import os
 import sys
+import re
 from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 from typing import Optional, List, Dict, Any, Literal
 from enum import Enum
 from sanitizer import sanitize_string, sanitize_for_ai
+
+
+GOOGLE_BOOKS_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{12,13}$')
+
+
+def validate_google_books_id(google_id: str) -> bool:
+    """Validate Google Books volume ID format (12-13 URL-safe characters)."""
+    if google_id is None:
+        return False
+    return bool(GOOGLE_BOOKS_ID_PATTERN.fullmatch(str(google_id).strip()))
 
 
 class ShelfType(str, Enum):
@@ -119,7 +130,16 @@ class AddToLibraryRequest(BaseModel):
     thumbnail: str = Field(default="", max_length=500, description="Book thumbnail URL")
     shelf_type: ShelfType = Field(..., description="Shelf type (want/current/finished)")
     
-    @field_validator('google_books_id', 'title', 'authors', 'thumbnail')
+    @field_validator('google_books_id')
+    @classmethod
+    def google_books_id_valid(cls, v: str) -> str:
+        """Validate Google Books ID using strict format rules."""
+        v = str(v).strip()
+        if not validate_google_books_id(v):
+            raise ValueError('Invalid Google Books ID format')
+        return v
+
+    @field_validator('title', 'authors', 'thumbnail')
     @classmethod
     def sanitize_fields(cls, v: str) -> str:
         """Sanitize strings for database storage."""
@@ -216,7 +236,16 @@ class AddToCollectionRequest(BaseModel):
     authors: str = Field(default="", max_length=500, description="Author names")
     thumbnail: str = Field(default="", max_length=500, description="Book thumbnail URL")
     
-    @field_validator('google_books_id', 'title', 'authors', 'thumbnail')
+    @field_validator('google_books_id')
+    @classmethod
+    def google_books_id_valid(cls, v: str) -> str:
+        """Validate Google Books ID using strict format rules."""
+        v = str(v).strip()
+        if not validate_google_books_id(v):
+            raise ValueError('Invalid Google Books ID format')
+        return v
+
+    @field_validator('title', 'authors', 'thumbnail')
     @classmethod
     def sanitize_fields(cls, v: str) -> str:
         """Sanitize book metadata for collections."""
@@ -388,7 +417,16 @@ class ReviewRequest(BaseModel):
     rating: int = Field(..., ge=1, le=5, description="Rating (1-5)")
     review_text: Optional[str] = Field(default="", max_length=2000, description="Review text (max 2000 chars)")
     
-    @field_validator('google_books_id', 'review_text')
+    @field_validator('google_books_id')
+    @classmethod
+    def google_books_id_valid(cls, v: str) -> str:
+        """Validate Google Books ID using strict format rules."""
+        v = str(v).strip()
+        if not validate_google_books_id(v):
+            raise ValueError('Invalid Google Books ID format')
+        return v
+
+    @field_validator('review_text')
     @classmethod
     def sanitize_fields(cls, v: str) -> str:
         """Sanitize review data."""

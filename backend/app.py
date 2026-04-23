@@ -25,6 +25,7 @@ from price_tracker import get_price_tracker
 from cache_service import cache_service
 from validators import (
     validate_request,
+    validate_google_books_id,
     AnalyzeMoodRequest,
     MoodTagsRequest,
     MoodSearchRequest,
@@ -876,11 +877,31 @@ def sync_library():
             return jsonify(validated_data), 400
         
         user_id = validated_data.user_id
-        # Sanitize the items list - recursively cleans all values
-        items = sanitize_payload(validated_data.items)
+        raw_items = validated_data.items
         
         if str(user_id) != str(current_user_id):
             return forbidden_error("Cannot sync to another user's library")
+
+        invalid_ids = []
+        for index, item_data in enumerate(raw_items):
+            if not isinstance(item_data, dict):
+                continue
+            raw_google_id = item_data.get('id')
+            if raw_google_id is None or not validate_google_books_id(str(raw_google_id).strip()):
+                invalid_ids.append((index, raw_google_id))
+
+        if invalid_ids:
+            for index, bad_value in invalid_ids:
+                logger.warning(
+                    "Rejected sync payload with invalid Google Books ID. user_id=%s item_index=%s id=%r",
+                    user_id,
+                    index,
+                    bad_value
+                )
+            return validation_error("Invalid Google Books ID format in sync payload")
+
+        # Sanitize the items list only after validating Google Books IDs.
+        items = sanitize_payload(raw_items)
         
         synced_count = 0
         errors = 0
@@ -896,9 +917,8 @@ def sync_library():
                 if not google_id:
                     errors += 1
                     continue
-                
-                # Sanitize google_id to prevent injection
-                google_id = sanitize_string(str(google_id), max_len=100)
+
+                google_id = str(google_id).strip()
                 
                 # 1. Ensure Book Exists
                 book = Book.query.filter_by(google_books_id=google_id).first()
@@ -1572,6 +1592,8 @@ def get_book_reviews(book_id):
         if book_id.isdigit():
             book = Book.query.get(int(book_id))
         else:
+            if not validate_google_books_id(book_id):
+                return validation_error("Invalid Google Books ID format")
             book = Book.query.filter_by(google_books_id=book_id).first()
         
         if not book:
@@ -1671,6 +1693,8 @@ def create_price_alert(book_id):
         if book_id.isdigit():
             book = Book.query.get(int(book_id))
         else:
+            if not validate_google_books_id(book_id):
+                return validation_error("Invalid Google Books ID format")
             book = Book.query.filter_by(google_books_id=book_id).first()
         
         if not book:
@@ -1726,8 +1750,8 @@ def get_price_history(book_id):
     if not success and error:
         return validation_error(error)
     
-    # Sanitize book_id input
-    book_id_clean = sanitize_string(str(book_id), max_len=100)
+    # Normalize and validate book_id input when it is a Google Books ID.
+    book_id_clean = str(book_id).strip()
     
     try:
         # Verify book exists
@@ -1735,6 +1759,8 @@ def get_price_history(book_id):
         if book_id_clean.isdigit():
             book = Book.query.get(int(book_id_clean))
         else:
+            if not validate_google_books_id(book_id_clean):
+                return validation_error("Invalid Google Books ID format")
             book = Book.query.filter_by(google_books_id=book_id_clean).first()
         
         if not book:

@@ -15,8 +15,9 @@ from backend.security_parsers import (
 )
 from backend.sanitizer import (
     sanitize_string, sanitize_payload, contains_malicious_patterns,
-    is_likely_html_attack, sanitize_for_ai, sanitize_for_display
+    is_likely_html_attack, sanitize_for_ai, sanitize_for_display, sanitize_for_storage
 )
+from backend.validators import validate_google_books_id, validate_request, AddToLibraryRequest
 
 
 class TestJSONParsing:
@@ -243,6 +244,47 @@ class TestPayloadSanitization:
         assert sanitized['active'] is True
         assert sanitized['data'] is None
         assert sanitized['price'] == 19.99
+
+
+class TestGoogleBooksIdValidation:
+    """Test strict Google Books ID validation and schema enforcement."""
+
+    @pytest.mark.parametrize("google_id", [
+        "zyTCAlFPjgYC",
+        "a1B2c3D4e5F6",
+        "a1B2c3D4e5F6_",
+        "a1B2c3D4e5F6-",
+    ])
+    def test_accepts_valid_google_books_ids(self, google_id):
+        """Valid 12-13 char URL-safe IDs should pass validation."""
+        assert validate_google_books_id(google_id)
+
+    @pytest.mark.parametrize("google_id", [
+        "",                      # empty
+        "abc",                   # too short
+        "a1B2c3D4e5F6XY",        # too long
+        "a1B2c3D4e5F$",          # invalid char
+        "a1B2c3D4e5F/",          # invalid char
+        "<script>alert(1)</script>",
+        "../../../etc/passwd",
+    ])
+    def test_rejects_invalid_google_books_ids(self, google_id):
+        """Malformed IDs should fail strict validation."""
+        assert not validate_google_books_id(google_id)
+
+    def test_add_to_library_schema_rejects_invalid_google_books_id(self):
+        """Add-to-library validation should fail fast on malformed IDs."""
+        is_valid, result = validate_request(AddToLibraryRequest, {
+            "user_id": 1,
+            "google_books_id": "../../bad-id",
+            "title": "Book",
+            "authors": "Author",
+            "thumbnail": "https://example.com/book.png",
+            "shelf_type": "want"
+        })
+
+        assert not is_valid
+        assert "validation_errors" in result
 
 
 class TestRequestArgumentValidation:

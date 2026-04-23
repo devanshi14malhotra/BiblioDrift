@@ -100,7 +100,7 @@ def main():
         "AddToLibraryRequest",
         {
             "user_id": 1,
-            "google_books_id": "abc123",
+            "google_books_id": "zyTCAlFPjgYC",
             "title": "Test Book",
             "authors": "Test Author",
             "shelf_type": "want"
@@ -125,7 +125,7 @@ def main():
     test_validator(
         SyncLibraryRequest,
         "SyncLibraryRequest",
-        {"user_id": 1, "items": [{"id": "abc123", "volumeInfo": {"title": "Test"}}]},
+        {"user_id": 1, "items": [{"id": "zyTCAlFPjgYC", "volumeInfo": {"title": "Test"}}]},
         {"user_id": "not_int", "items": "not_a_list"}
     )
     

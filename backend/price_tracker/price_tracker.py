@@ -10,6 +10,7 @@ import time
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from validators import validate_google_books_id
 
 # Load environment variables
 load_dotenv()
@@ -109,6 +110,11 @@ class PriceTracker:
         Returns:
             Dictionary with price information or None on failure
         """
+        google_books_id = str(google_books_id).strip()
+        if not validate_google_books_id(google_books_id):
+            logger.warning("Rejected invalid Google Books ID in get_book_price: %r", google_books_id)
+            return None
+
         url = f"{self.base_url}/{google_books_id}"
         params = {}
         if self.api_key:
