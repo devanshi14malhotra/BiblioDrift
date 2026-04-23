@@ -141,6 +141,11 @@ class Config:
             'JWT_SECRET_KEY': self.jwt.secret_key,
             'JWT_ACCESS_TOKEN_EXPIRES': self.jwt.access_token_expires,
             'JWT_ALGORITHM': self.jwt.algorithm,
+            'JWT_TOKEN_LOCATION': ['cookies'],
+            'JWT_COOKIE_CSRF_PROTECT': True,
+            'JWT_ACCESS_COOKIE_PATH': '/',
+            'JWT_COOKIE_HTTPONLY': True,
+            'JWT_COOKIE_SAMESITE': 'Lax',
             'SQLALCHEMY_DATABASE_URI': self.database.url,
             'SQLALCHEMY_TRACK_MODIFICATIONS': self.database.track_modifications,
         }

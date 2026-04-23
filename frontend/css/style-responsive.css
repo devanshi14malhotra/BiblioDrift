@@ -172,29 +172,8 @@
         transform: none !important; /* Just in case */
     }
 
-    /* Style the container for controls */
-    .sort-controls {
-        display: flex;
-        flex-direction: column;
-        gap: 0.8rem;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.5); /* Add background for better visibility */
-        padding: 1rem;
-        border-radius: 8px;
-    }
-
     #export-library {
         order: 2; /* Put export button below sort controls */
-    }
-
-    .sort-controls .filter-group {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .sort-controls select {
-        width: 100%;
-        padding: 0.5rem;
     }
 }
 
@@ -234,4 +213,33 @@
     .search-bar {
         margin-bottom: 0.5rem;
     }
+}
+
+/* Style the container for controls */
+.sort-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    background: transparent;
+}
+
+.filter-group {
+    justify-content: center;
+    display: flex;
+    flex-direction: row;
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.sort-controls select {
+    width: 100%;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    border-radius: 5px;
+    background: rgb(249,247,242); /* Add background for better visibility */
 }

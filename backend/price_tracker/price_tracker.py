@@ -8,7 +8,7 @@ import logging
 import requests
 import time
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -147,7 +147,7 @@ class PriceTracker:
             'currency': currency,
             'available': sale_info.get('saleability') == 'FOR_SALE',
             'buy_link': sale_info.get('buyLink'),
-            'checked_at': datetime.utcnow().isoformat()
+            'checked_at': datetime.now(timezone.utc).isoformat()
         }
     
     def get_prices_by_title_author(
@@ -214,7 +214,7 @@ class PriceTracker:
                 'available': sale_info.get('saleability') == 'FOR_SALE',
                 'buy_link': sale_info.get('buyLink'),
                 'thumbnail': volume_info.get('imageLinks', {}).get('thumbnail'),
-                'checked_at': datetime.utcnow().isoformat()
+                'checked_at': datetime.now(timezone.utc).isoformat()
             })
         
         return prices
@@ -250,7 +250,7 @@ class PriceTracker:
                 retailer=retailer,
                 price=price,
                 currency=currency,
-                checked_at=datetime.utcnow()
+                checked_at=datetime.now(timezone.utc)
             )
             
             self.db.session.add(price_history)

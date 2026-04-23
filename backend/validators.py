@@ -50,7 +50,6 @@ class AnalyzeMoodRequest(BaseModel):
         return sanitize_string(v, max_len=255)
 
 
-
 # ==================== MOOD TAGS ====================
 class MoodTagsRequest(BaseModel):
     """Request schema for /api/v1/mood-tags endpoint."""
@@ -109,6 +108,22 @@ class ChatRequest(BaseModel):
         return sanitize_for_ai(v)
 
 
+# ==================== CATEGORY BOOKS ====================
+class CategoryBooksRequest(BaseModel):
+    """Request schema for /api/v1/category-books endpoint."""
+    category: str = Field(..., min_length=1, max_length=100, description="Shelf category name e.g. 'Rainy Evening Reads'")
+    vibe_description: str = Field(..., min_length=1, max_length=500, description="Emotional description of the category vibe")
+    count: int = Field(default=5, ge=1, le=20, description="Number of books to return (1-20)")
+
+    @field_validator('category', 'vibe_description')
+    @classmethod
+    def must_not_be_empty(cls, v: str) -> str:
+        """Ensure fields are not blank and sanitize for AI."""
+        if not v or not v.strip():
+            raise ValueError('Field must not be empty or whitespace')
+        return sanitize_for_ai(v.strip())
+
+
 # ==================== LIBRARY ====================
 class AddToLibraryRequest(BaseModel):
     """Request schema for POST /api/v1/library endpoint."""
@@ -126,12 +141,12 @@ class AddToLibraryRequest(BaseModel):
         return sanitize_string(v)
 
 
-
 class UpdateLibraryItemRequest(BaseModel):
     """Request schema for PUT /api/v1/library/<item_id> endpoint."""
     shelf_type: Optional[ShelfType] = Field(default=None, description="Shelf type (want/current/finished)")
     progress: Optional[int] = Field(default=None, ge=0, le=100, description="Reading progress (0-100)")
     rating: Optional[int] = Field(default=None, ge=1, le=5, description="Book rating (1-5)")
+    version: Optional[int] = Field(default=None, description="Current version for optimistic locking")
 
 
 class SyncLibraryRequest(BaseModel):
@@ -150,10 +165,11 @@ class RegisterRequest(BaseModel):
     @field_validator('username')
     @classmethod
     def username_alphanumeric(cls, v: str) -> str:
-        """Ensure username is alphanumeric."""
+        """Ensure username contains only letters, numbers, and underscores."""
+        v = v.strip()
         if not v.replace('_', '').isalnum():
-            raise ValueError('Username must be alphanumeric (letters, numbers, underscores only)')
-        return v.strip()
+            raise ValueError('Username must contain only letters, numbers, and underscores.')
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -223,22 +239,13 @@ class AddToCollectionRequest(BaseModel):
         return sanitize_string(v)
 
 
-
 # ==================== VALIDATION ERROR HANDLER ====================
 def format_validation_errors(errors: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Format Pydantic validation errors into a structured response.
-    
-    Args:
-        errors: List of validation error dictionaries from Pydantic
-        
-    Returns:
-        Formatted error response with field-level details
-    """
+    """Format Pydantic validation errors into a structured response."""
     formatted_errors = []
     
     for error in errors:
-        field = error.get('loc', ['unknown'])[-1]  # Get the field name
+        field = error.get('loc', ['unknown'])[-1]
         message = error.get('msg', 'Invalid value')
         error_type = error.get('type', 'validation_error')
         
@@ -256,16 +263,7 @@ def format_validation_errors(errors: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def validate_request(schema_class, data: Optional[Dict[str, Any]]) -> tuple[bool, Any]:
-    """
-    Validate request data against a Pydantic schema.
-    
-    Args:
-        schema_class: Pydantic model class to validate against
-        data: Request data (JSON body)
-        
-    Returns:
-        Tuple of (is_valid, validated_data_or_error_response)
-    """
+    """Validate request data against a Pydantic schema."""
     if data is None:
         return False, {
             'success': False,
@@ -277,7 +275,6 @@ def validate_request(schema_class, data: Optional[Dict[str, Any]]) -> tuple[bool
         validated = schema_class(**data)
         return True, validated
     except Exception as e:
-        # Handle Pydantic validation errors
         if hasattr(e, 'errors'):
             return False, format_validation_errors(e.errors())
         else:
@@ -289,35 +286,20 @@ def validate_request(schema_class, data: Optional[Dict[str, Any]]) -> tuple[bool
 
 
 # ==================== JWT SECRET VALIDATION ====================
-# Default insecure key that should NEVER be used in production
 DEFAULT_INSECURE_KEY = 'default-dev-secret-key'
-# Minimum recommended secret key length (256 bits / 8 = 32 characters for HS256)
 MIN_SECRET_KEY_LENGTH = 32
 
 
 def validate_jwt_secret() -> tuple[bool, str]:
-    """
-    Validate JWT_SECRET_KEY environment variable at startup.
-    
-    Checks:
-    1. JWT_SECRET_KEY is set (not None/empty)
-    2. Not using the default insecure key
-    3. Meets minimum length requirement
-    
-    Returns:
-        Tuple of (is_valid, message)
-    """
+    """Validate JWT_SECRET_KEY environment variable at startup."""
     secret_key = os.getenv('JWT_SECRET_KEY')
     
-    # Check 1: Secret key must be set
     if not secret_key:
         return False, "JWT_SECRET_KEY environment variable is not set. Please set a secure secret key."
     
-    # Check 2: Must not be the default insecure key
     if secret_key == DEFAULT_INSECURE_KEY:
         return False, "FATAL: Using default insecure JWT secret key. This is a critical security vulnerability. Set JWT_SECRET_KEY to a secure value."
     
-    # Check 3: Minimum length validation
     if len(secret_key) < MIN_SECRET_KEY_LENGTH:
         return False, f"JWT_SECRET_KEY must be at least {MIN_SECRET_KEY_LENGTH} characters. Current length: {len(secret_key)}"
     
@@ -325,28 +307,16 @@ def validate_jwt_secret() -> tuple[bool, str]:
 
 
 def is_production_mode() -> bool:
-    """
-    Check if the application is running in production mode.
-    
-    Production is determined by:
-    - FLASK_DEBUG is set to 'false' or 'False' or '0'
-    - FLASK_ENV is set to 'production'
-    - APP_ENV is set to 'production'
-    
-    Returns:
-        True if running in production mode, False otherwise
-    """
+    """Check if the application is running in production mode."""
     flask_debug = os.getenv('FLASK_DEBUG', '').lower()
     flask_env = os.getenv('FLASK_ENV', '').lower()
     app_env = os.getenv('APP_ENV', '').lower()
     
-    # If any explicitly set to production, or debug is explicitly false
     if flask_env == 'production' or app_env == 'production':
         return True
     if flask_debug in ('false', '0', 'no'):
         return True
     
-    # Default to False (development mode)
     return False
 
 

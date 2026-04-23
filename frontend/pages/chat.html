@@ -3,9 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with Bookseller | BiblioDrift</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <!-- Unified Font Imports -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -171,12 +179,13 @@
             }
         }
     </style>
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -313,14 +322,11 @@
             }
         });
     </script>
-    <!-- DOMPurify library for robust XSS prevention -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
-    
-    <script src="config.js"></script>
-    <script src="chat.js"></script>
-    <script src="app.js"></script>
-    <script src="footer.js"></script>
-    <script src="script/header-scroll.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/chat.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../script/header-scroll.js"></script>
 </body>
 
 </html>

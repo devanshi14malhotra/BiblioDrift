@@ -327,7 +327,7 @@ class BookshelfRenderer3D {
         // Show/Hide Global Empty State
         const emptyState = document.getElementById('library-empty-state');
         if (emptyState) {
-            emptyState.style.display = isEmpty ? 'flex' : 'none';
+            emptyState.hidden = !isEmpty;
         }
     }
 
@@ -396,7 +396,7 @@ class BookshelfRenderer3D {
         });
 
         if (!books || books.length === 0) {
-            container.innerHTML = '<div class="empty-shelf-3d">No books yet... Start your collection!</div>';
+            container.innerHTML = '<div class="empty-shelf-3d" style="text-align: center; padding: 150px;">No books yet... Start your collection!</div>';
             return;
         }
 
@@ -581,6 +581,70 @@ class BookshelfRenderer3D {
         };
     }
 
+    /*
+     * ==============================================================================
+     * ISSUE 40: RESOLVING NULL RATINGS FROM LOCALSTORAGE MAPPING
+     * ==============================================================================
+     * 
+     * Background Context:
+     * -------------------
+     * The BiblioDrift application allows users to curate a personal 3D bookshelf.
+     * Library data (the user's collection of books) is persistently stored on the
+     * client-side using the browser's `localStorage` API under the key 
+     * 'bibliodrift_library'.
+     * 
+     * When external APIs (such as Google Books or OpenLibrary) are used to fetch
+     * book metadata, some properties might be incomplete, missing, or explicitly
+     * returned as `null`. This is especially true for the `rating` attribute.
+     * 
+     * The Bug (TypeError: Cannot read properties of undefined):
+     * ---------------------------------------------------------
+     * When displaying the tooltip or the detailed modal for a book, the application
+     * formats the numeral rating to one decimal place using JavaScript's built-in
+     * Number.prototype.toFixed(1) method.
+     * 
+     * For example:
+     *    const rating = 4;
+     *    console.log(rating.toFixed(1)); // Outputs: "4.0"
+     * 
+     * However, if the `rating` property was not adequately sanitized prior to being
+     * serialized into JSON and saved into `localStorage`, it retains its `null` or 
+     * `undefined` identity when deserialized. 
+     * 
+     *    const rating = null;
+     *    console.log(rating.toFixed(1)); // TypeError!
+     * 
+     * Because `null` is a primitive value and does not share the Number prototype,
+     * attempting to access `.toFixed` on it causes the JavaScript runtime to throw
+     * a fatal exception. This crash abruptly halts the execution context, meaning
+     * the rest of the UI logic fails to render. Tooltips break, modals don't open,
+     * and the UX degrades significantly.
+     * 
+     * The Solution (Safe Guarding / Ternary Check):
+     * ---------------------------------------------
+     * To robustly handle instances where `rating` is `null` or `undefined`, a safe 
+     * guard has been introduced wherever `.toFixed(1)` is called within this class.
+     * 
+     * We use a concise ternary operator check:
+     *    (book.rating != null ? book.rating.toFixed(1) : 'N/A')
+     * 
+     * Note the use of loose inequality (`!= null`). In JavaScript, `!= null` is a
+     * convenient shorthand that simultaneously checks for both `null` AND `undefined`.
+     * 
+     * If the rating exists and isn't nully, it formats the number as normal.
+     * If the rating is missing, we gracefully degrade the UI by displaying "N/A"
+     * (Not Available), ensuring the UI layout doesn't collapse and no exceptions
+     * are thrown into the console.
+     * 
+     * Technical Debt & Future Considerations:
+     * ---------------------------------------
+     * While this frontend patch prevents the crash, a more robust architectural 
+     * fix would be to implement a strict data validation / sanitization layer 
+     * right before writing to `localStorage` or immediately upon reading from it. 
+     * By ensuring a foundational data contract, we'd eliminate the need for defensive 
+     * rendering checks throughout the UI components.
+     * ==============================================================================
+     */
     showTooltip(e, book) {
         this.currentBook = book;
 
@@ -594,7 +658,7 @@ class BookshelfRenderer3D {
         document.getElementById('tooltip-title').textContent = book.title;
         document.getElementById('tooltip-author').textContent = `by ${book.author}`;
         document.getElementById('tooltip-stars').textContent = this.getStarRating(book.rating);
-        document.getElementById('tooltip-rating-text').textContent = book.rating.toFixed(1);
+        document.getElementById('tooltip-rating-text').textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         document.getElementById('tooltip-description').textContent = book.description.substring(0, 150) + '...';
 
         // Position tooltip
@@ -704,7 +768,7 @@ class BookshelfRenderer3D {
         if (titleEl) titleEl.textContent = book.title;
         if (authorEl) authorEl.textContent = book.author; // Removed "by" prefix to match design
         if (starsEl) starsEl.textContent = this.getStarRating(book.rating);
-        if (scoreEl) scoreEl.textContent = book.rating.toFixed(1);
+        if (scoreEl) scoreEl.textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         if (countEl) countEl.textContent = `(${book.ratingCount} ratings)`;
 
         // Categories
@@ -733,6 +797,20 @@ class BookshelfRenderer3D {
         const shelfSelect = document.getElementById('modal-shelf-select');
         // Issue #23: Element binding for the remove button
         const removeBtn = document.getElementById('modal-remove-btn');
+        const actionsSection = document.querySelector('.book-actions-section');
+        const reviewsSection = document.querySelector('.book-reviews-section');
+
+        // Ensure action controls are always visible in the modal.
+        if (actionsSection) {
+            actionsSection.style.display = 'flex';
+            actionsSection.style.visibility = 'visible';
+            actionsSection.style.opacity = '1';
+        }
+
+        // Keep actions above reviews so Remove is visible without scrolling.
+        if (actionsSection && reviewsSection && actionsSection.nextElementSibling !== reviewsSection) {
+            reviewsSection.parentNode.insertBefore(actionsSection, reviewsSection);
+        }
         
         if (shelfSelect) {
             // Find current shelf
@@ -751,9 +829,9 @@ class BookshelfRenderer3D {
             const newSelect = shelfSelect.cloneNode(true);
             shelfSelect.parentNode.replaceChild(newSelect, shelfSelect);
             
-            newSelect.addEventListener('change', (e) => {
+            newSelect.addEventListener('change', async (e) => {
                 const newShelf = e.target.value;
-                this.moveBook(book.id, currentShelf, newShelf);
+                await this.moveBook(book.id, currentShelf, newShelf);
                 currentShelf = newShelf; // Update local tracker
                 
                 // Close modal after move? Optional. Let's keep it open but maybe show feedback.
@@ -765,10 +843,11 @@ class BookshelfRenderer3D {
             // Remove old listeners
             const newRemoveBtn = removeBtn.cloneNode(true);
             removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
+            newRemoveBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Remove from Library';
 
-            newRemoveBtn.addEventListener('click', () => {
+            newRemoveBtn.addEventListener('click', async () => {
                 if(confirm('Are you sure you want to remove this book from your library?')) {
-                    this.removeBook(book.id);
+                    await this.removeBook(book.id);
                     this.closeModal();
                 }
             });
@@ -866,14 +945,14 @@ class BookshelfRenderer3D {
             const newAddBtn = addBtn.cloneNode(true);
             addBtn.parentNode.replaceChild(newAddBtn, addBtn);
 
-            newAddBtn.addEventListener('click', () => {
+            newAddBtn.addEventListener('click', async () => {
                 newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added!';
                 newAddBtn.style.background = '#4CAF50';
                 newAddBtn.style.color = '#fff';
 
                 // Store in localStorage (integrate with existing library system)
                 if (this.currentBook) {
-                    this.addToLibrary(this.currentBook);
+                    await this.addToLibrary(this.currentBook);
                 }
 
                 setTimeout(() => {
@@ -904,7 +983,24 @@ class BookshelfRenderer3D {
         }
     }
 
-    addToLibrary(book) {
+    async addToLibrary(book) {
+        if (window.libManager && typeof window.libManager.addBook === 'function') {
+            const normalizedBook = {
+                id: book.id,
+                volumeInfo: {
+                    title: book.title,
+                    authors: [book.author],
+                    imageLinks: { thumbnail: book.cover },
+                    description: book.description,
+                    categories: book.categories
+                }
+            };
+
+            await window.libManager.addBook(normalizedBook, 'want');
+            this.refreshShelves();
+            return;
+        }
+
         // Get existing library from localStorage
         const storageKey = 'bibliodrift_library';
         let library = JSON.parse(localStorage.getItem(storageKey)) || {
@@ -936,8 +1032,21 @@ class BookshelfRenderer3D {
         console.log(`Added ${book.title} to library`);
     }
 
-    moveBook(bookId, fromShelf, toShelf) {
+    async moveBook(bookId, fromShelf, toShelf) {
         if (fromShelf === toShelf) return;
+
+        if (window.libManager && typeof window.libManager.findBookInShelf === 'function') {
+            const found = window.libManager.findBookInShelf(bookId);
+            if (!found || !found.book) {
+                console.error("Book not found in source shelf");
+                return;
+            }
+
+            await window.libManager.removeBook(bookId);
+            await window.libManager.addBook(found.book, toShelf);
+            this.refreshShelves();
+            return;
+        }
 
         const storageKey = 'bibliodrift_library';
         const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
@@ -970,7 +1079,13 @@ class BookshelfRenderer3D {
         console.log(`Moved book ${bookId} from ${fromShelf} to ${toShelf}`);
     }
 
-    removeBook(bookId) {
+    async removeBook(bookId) {
+        if (window.libManager && typeof window.libManager.removeBook === 'function') {
+            await window.libManager.removeBook(bookId);
+            this.refreshShelves();
+            return;
+        }
+
         const storageKey = 'bibliodrift_library';
         const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
 

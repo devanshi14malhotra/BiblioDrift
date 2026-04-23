@@ -1,4 +1,6 @@
 [build]
+command = "python build_netlify.py"
+publish = "dist"
 functions = "netlify/functions"
 
 [build.environment]

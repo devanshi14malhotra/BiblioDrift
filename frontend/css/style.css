@@ -5927,7 +5927,7 @@ main {
     max-width: 1200px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: 3rem;
     padding-bottom: 2rem;
     border-bottom: 1px solid var(--glass-border);
@@ -5965,6 +5965,7 @@ main {
 }
 
 .footer-nav h3,
+.footer-legal h3,
 .footer-social h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.2rem;
@@ -5972,7 +5973,8 @@ main {
     color: var(--text-main);
 }
 
-.footer-nav ul {
+.footer-nav ul,
+.footer-legal ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -5981,7 +5983,8 @@ main {
     gap: 0.8rem;
 }
 
-.footer-nav li a {
+.footer-nav li a,
+.footer-legal li a {
     text-decoration: none;
     color: var(--text-muted);
     transition: all 0.3s ease;
@@ -5989,7 +5992,8 @@ main {
     display: inline-block;
 }
 
-.footer-nav li a:hover {
+.footer-nav li a:hover,
+.footer-legal li a:hover {
     color: var(--accent-gold);
     transform: translateX(5px);
 }
@@ -6745,4 +6749,172 @@ main {
 .book.flipped {
     transform: translateY(-20px) translateZ(100px) rotateY(180deg) scale(1.1) !important;
     z-index: 100 !important;
+}
+/* === HERO CONTROLS UPGRADE (MATCH YOUR THEME) === */
+
+.sort-controls {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+/* Glass dropdown cards */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+
+    padding: 10px 16px;
+
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+}
+
+/* Hover = premium lift */
+.filter-group:hover {
+    transform: translateY(-3px) scale(1.02);
+    border-color: var(--accent-gold);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+/* Icons glow */
+.filter-group i {
+    color: var(--accent-gold);
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.filter-group:hover i {
+    transform: scale(1.2);
+}
+
+/* Select styling */
+.sort-select {
+    background: transparent;
+    border: none;
+    outline: none;
+
+    font-family: "Georgia", serif;
+    font-size: 14px;
+    color: var(--text-main);
+
+    cursor: pointer;
+}
+
+/* Fancy focus */
+.sort-select:focus {
+    color: var(--accent-gold);
+}
+
+.logo img {
+    height: 40px;
+}
+
+.search-icon {
+    cursor: pointer;
+}
+
+.modal-share-btn {
+    margin-left: 10px;
+    padding: 0.8rem 1.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-main);
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.library-hero {
+    padding-bottom: 2rem;
+    position: relative;
+}
+
+.library-export-btn {
+    position: absolute;
+    top: 45px;
+    right: 0;
+}
+
+.library-empty-link {
+    margin-top: 1.5rem;
+    text-decoration: none;
+}
+
+.library-select-label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.library-shelf-select {
+    padding: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.library-remove-btn {
+    margin-left: 10px;
+    background-color: #ff4d4d;
+}
+
+.library-share-btn {
+    margin-left: 10px;
+    border: 1px solid var(--glass-border);
+    background-color: transparent;
+    color: var(--text-main);
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.library-empty-state[hidden],
+#search-results-section[hidden] {
+    display: none !important;
+}
+
+/* EXPORT BUTTON UPGRADE */
+#export-library {
+    position: absolute;
+    top: 30px;
+    right: 0;
+
+    background: linear-gradient(135deg, var(--wood-dark), var(--wood-light));
+    color: #fff;
+
+    border: none;
+    border-radius: 12px;
+
+    padding: 10px 16px;
+    font-family: "Georgia", serif;
+    font-size: 13px;
+
+    cursor: pointer;
+
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+}
+
+/* Hover = golden premium */
+#export-library:hover {
+    background: linear-gradient(135deg, var(--accent-gold), #c89b2f);
+    transform: translateY(-3px);
+    color: #2c2420;
+}
+
+/* Responsive fix */
+@media (max-width: 600px) {
+    #export-library {
+        position: static;
+        margin-bottom: 1rem;
+    }
 }

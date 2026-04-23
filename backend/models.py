@@ -1,7 +1,8 @@
 # Placeholder for database models.
 # Define SQLAlchemy models for 'User' and 'ShelfItem' here.
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 
@@ -14,7 +15,7 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -32,7 +33,7 @@ class Book(db.Model):
     categories = db.Column(db.String(255))
     average_rating = db.Column(db.Float)
     page_count = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {
@@ -48,14 +49,18 @@ class ShelfItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    shelf_type = db.Column(db.String(50), nullable=False)  # 'want', 'current', 'finished'
+    shelf_type = db.Column(db.Enum('want', 'current', 'finished', name='shelf_item_types'), nullable=False)
     progress = db.Column(db.Integer, default=0)
     rating = db.Column(db.Integer)
     finished_at = db.Column(db.DateTime, nullable=True)  # Timestamp when book was marked as finished
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     # Price tracking fields
     price_alert = db.Column(db.Boolean, default=False)  # Enable/disable price alerts
     target_price = db.Column(db.Float, nullable=True)  # User's target price for alerts
+
+    # Versioning for optimistic locking
+    version = db.Column(db.Integer, default=1, nullable=False)
 
     # Relationships
     user = db.relationship('User', backref=db.backref('shelf_items', lazy=True))
@@ -75,8 +80,10 @@ class ShelfItem(db.Model):
             "rating": self.rating,
             "finished_at": self.finished_at.isoformat() if self.finished_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "price_alert": self.price_alert,
-            "target_price": self.target_price
+            "target_price": self.target_price,
+            "version": self.version
         }
 
 class BookNote(db.Model):
@@ -84,7 +91,7 @@ class BookNote(db.Model):
     book_title = db.Column(db.String(255), nullable=False)
     book_author = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         db.Index('idx_book_note_title_author', 'book_title', 'book_author'),
@@ -97,8 +104,8 @@ class ReadingGoal(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     target_books = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship('User', backref=db.backref('reading_goals', lazy=True))
@@ -126,8 +133,8 @@ class ReadingStats(db.Model):
     month = db.Column(db.Integer, nullable=False)
     books_completed = db.Column(db.Integer, default=0)
     pages_read = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship('User', backref=db.backref('reading_stats', lazy=True))
@@ -156,8 +163,8 @@ class Collection(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500), nullable=True)
     is_public = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship('User', backref=db.backref('collections', lazy=True))
@@ -188,7 +195,7 @@ class CollectionItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     collection_id = db.Column(db.Integer, db.ForeignKey('collection.id'), nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     book = db.relationship('Book', backref=db.backref('collection_items', lazy=True))
@@ -211,15 +218,22 @@ class CollectionItem(db.Model):
 
 
 def register_user(username, email, password):
+    """Register a new user in the database."""
     user = User(username=username, email=email)
     user.set_password(password)
     db.session.add(user)
     try:
         db.session.commit()
-        logger.info("User registered successfully")
+        logger.info(f"User {username} registered successfully")
+        return user
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f"Database error registering user {username}: {e}")
+        raise
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error registering user: {e}")
+        logger.error(f"Unexpected error registering user {username}: {e}")
+        raise
 
 def login_user(identifier, password):
     # Try finding by username first
@@ -245,7 +259,7 @@ class PriceHistory(db.Model):
     retailer = db.Column(db.String(50), nullable=False)  # 'google_books', 'amazon', 'barnes_noble', etc.
     price = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(3), default='USD')  # ISO currency code
-    checked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    checked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationships
     book = db.relationship('Book', backref=db.backref('price_history', lazy=True))
@@ -276,8 +290,8 @@ class PriceAlert(db.Model):
     target_price = db.Column(db.Float, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     notified_at = db.Column(db.DateTime, nullable=True)  # Timestamp when user was notified
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
     user = db.relationship('User', backref=db.backref('price_alerts', lazy=True))
@@ -313,8 +327,8 @@ class Review(db.Model):
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)  # 1-5 star rating
     review_text = db.Column(db.Text, nullable=True)  # Optional detailed review
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
     user = db.relationship('User', backref=db.backref('reviews', lazy=True))
