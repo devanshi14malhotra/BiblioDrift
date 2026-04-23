@@ -1505,37 +1505,37 @@ const KeyboardShortcuts = {
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Navigating to next book...');
                 }
-                // TODO: Implement next book navigation
+                this.navigateToNextBook();
                 break;
             case 'navigatePrev':
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Navigating to previous book...');
                 }
-                // TODO: Implement previous book navigation
+                this.navigateToPreviousBook();
                 break;
             case 'selectBook':
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Selecting current book...');
                 }
-                // TODO: Implement book selection
+                this.selectCurrentBook();
                 break;
             case 'addToWantRead':
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Adding to Want to Read list...');
                 }
-                // TODO: Implement add to want read
+                this.moveCurrentBookToShelf('want');
                 break;
             case 'markCurrentlyReading':
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Marking as Currently Reading...');
                 }
-                // TODO: Implement mark as reading
+                this.moveCurrentBookToShelf('current');
                 break;
             case 'addToFavorites':
                 if (process.env.NODE_ENV === 'development') {
                     console.log('Adding to Favorites...');
                 }
-                // TODO: Implement add to favorites
+                this.moveCurrentBookToShelf('finished');
                 break;
             case 'closeModal':
                 if (process.env.NODE_ENV === 'development') {
@@ -1570,6 +1570,129 @@ const KeyboardShortcuts = {
             Object.entries(this.shortcuts)
                 .map(([key, data]) => `${key}: ${data.description}`)
                 .join('\n'));
+    },
+
+    // Helper: Get all visible book spine elements
+    getVisibleBooks() {
+        return Array.from(document.querySelectorAll('.book-spine-3d'));
+    },
+
+    // Helper: Get current focused book index
+    getFocusedBookIndex() {
+        const books = this.getVisibleBooks();
+        const focused = document.querySelector('.book-spine-3d.focused');
+        if (focused) {
+            return books.indexOf(focused);
+        }
+        return -1;
+    },
+
+    // Helper: Set focus on a book spine
+    setBookFocus(bookElement) {
+        // Remove previous focus
+        document.querySelectorAll('.book-spine-3d.focused').forEach(el => {
+            el.classList.remove('focused');
+        });
+        
+        if (bookElement) {
+            bookElement.classList.add('focused');
+            bookElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            
+            // Get the book data from the element
+            const bookId = bookElement.dataset.bookId;
+            if (window.bookshelfRenderer && bookId) {
+                // Find the book data by traversing the library
+                const storage = JSON.parse(localStorage.getItem('bibliodrift_library')) || { current: [], want: [], finished: [] };
+                for (const shelf of ['current', 'want', 'finished']) {
+                    const book = storage[shelf].find(b => b.id === bookId);
+                    if (book) {
+                        window.bookshelfRenderer.currentBook = book;
+                        break;
+                    }
+                }
+            }
+        }
+    },
+
+    // Navigate to next book
+    navigateToNextBook() {
+        const books = this.getVisibleBooks();
+        if (books.length === 0) {
+            showToast('No books to navigate', 'info');
+            return;
+        }
+
+        let currentIndex = this.getFocusedBookIndex();
+        let nextIndex = (currentIndex + 1) % books.length;
+        
+        this.setBookFocus(books[nextIndex]);
+    },
+
+    // Navigate to previous book
+    navigateToPreviousBook() {
+        const books = this.getVisibleBooks();
+        if (books.length === 0) {
+            showToast('No books to navigate', 'info');
+            return;
+        }
+
+        let currentIndex = this.getFocusedBookIndex();
+        let prevIndex = currentIndex <= 0 ? books.length - 1 : currentIndex - 1;
+        
+        this.setBookFocus(books[prevIndex]);
+    },
+
+    // Select/open the current book
+    selectCurrentBook() {
+        if (window.bookshelfRenderer && window.bookshelfRenderer.currentBook) {
+            window.bookshelfRenderer.openModal(window.bookshelfRenderer.currentBook);
+            showToast('Opening book details', 'info');
+        } else {
+            showToast('No book selected', 'info');
+        }
+    },
+
+    // Move current book to a specific shelf
+    moveCurrentBookToShelf(targetShelf) {
+        if (!window.bookshelfRenderer || !window.bookshelfRenderer.currentBook) {
+            showToast('No book selected', 'info');
+            return;
+        }
+
+        const currentBook = window.bookshelfRenderer.currentBook;
+        const storage = JSON.parse(localStorage.getItem('bibliodrift_library')) || { current: [], want: [], finished: [] };
+
+        // Find current shelf
+        let currentShelf = null;
+        for (const shelf of ['current', 'want', 'finished']) {
+            const found = storage[shelf].find(b => b.id === currentBook.id);
+            if (found) {
+                currentShelf = shelf;
+                break;
+            }
+        }
+
+        if (!currentShelf) {
+            showToast('Book not found in library', 'error');
+            return;
+        }
+
+        if (currentShelf === targetShelf) {
+            showToast('Book is already on that shelf', 'info');
+            return;
+        }
+
+        // Move the book
+        window.bookshelfRenderer.moveBook(currentBook.id, currentShelf, targetShelf);
+
+        // Show appropriate feedback
+        const shelfNames = {
+            'current': 'Currently Immersed',
+            'want': 'Anticipated Journeys',
+            'finished': 'Lifetime Favorites'
+        };
+        
+        showToast(`Moved to ${shelfNames[targetShelf]}`, 'success');
     }
 };
 
