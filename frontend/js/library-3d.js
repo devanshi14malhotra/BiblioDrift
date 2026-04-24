@@ -1118,6 +1118,6 @@ class BookshelfRenderer3D {
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize on library page
     if (document.getElementById('library-shelves')) {
-        new BookshelfRenderer3D();
+        window.bookshelfRenderer = new BookshelfRenderer3D();
     }
 });
