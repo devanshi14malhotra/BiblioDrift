@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import validates
 import logging
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,63 @@ class ShelfItem(db.Model):
 
     # Versioning for optimistic locking
     version = db.Column(db.Integer, default=1, nullable=False)
+
+    # =========================================================================
+    # INTENSIVE INPUT VALIDATION AND SANITIZATION
+    # =========================================================================
+    # Why?: Unvalidated input can lead to SQL injection, command injection, 
+    # or application crashes. By enforcing strict validation rules at the 
+    # database model level, we ensure that all incoming request parameters 
+    # are thoroughly validated and sanitized before they are processed or 
+    # persisted to the database. This acts as a robust defense mechanism.
+
+    @validates('progress')
+    def validate_progress(self, key, value):
+        """
+        Validate and sanitize the 'progress' parameter.
+        Ensures the progress is a valid non-negative integer.
+        """
+        if value is not None:
+            try:
+                val = int(value)
+                if val < 0:
+                    raise ValueError(f"Invalid progress value: {value}. Progress cannot be negative.")
+                return val
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid progress type: {value}. Must be an integer.")
+        return value
+
+    @validates('rating')
+    def validate_rating(self, key, value):
+        """
+        Validate and sanitize the 'rating' parameter.
+        Ensures the rating is an integer between 1 and 5.
+        """
+        if value is not None:
+            try:
+                val = int(value)
+                if val < 1 or val > 5:
+                    raise ValueError(f"Invalid rating value: {value}. Rating must be between 1 and 5.")
+                return val
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid rating type: {value}. Must be an integer.")
+        return value
+
+    @validates('target_price')
+    def validate_target_price(self, key, value):
+        """
+        Validate and sanitize the 'target_price' parameter.
+        Ensures the target price is a valid non-negative float.
+        """
+        if value is not None:
+            try:
+                val = float(value)
+                if val < 0:
+                    raise ValueError(f"Invalid target_price value: {value}. Price cannot be negative.")
+                return val
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid target_price type: {value}. Must be a float.")
+        return value
 
     # Relationships
     user = db.relationship('User', backref=db.backref('shelf_items', lazy=True))
