@@ -182,6 +182,11 @@ Your personal book sanctuary, organized like a real bookshelf.
 
 ## 🎨 User Interface Features
 
+### Ambient Sanctuary
+- **Location**: Leaf icon floating on the right side of the screen
+- **Function**: Toggle immersive background sounds (Rainy Evening or Cozy Fireplace)
+- **Features**: Independent volume control to perfect your reading atmosphere
+
 ### Theme Toggle
 - **Location**: Moon icon in the top-right corner
 - **Function**: Switch between light and dark themes

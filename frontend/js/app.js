@@ -1472,24 +1472,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-            if (isLogin) {
-                authTitle.textContent = 'Welcome Back';
-                authBtn.textContent = 'Sign In';
-                toggleLink.textContent = 'No account? Create one.';
-                usernameInput.style.display = 'none';
-                usernameInput.removeAttribute('required');
-            } else {
-                authTitle.textContent = 'Create Account';
-                authBtn.textContent = 'Sign Up';
-                toggleLink.textContent = 'Already have an account? Sign In.';
-                usernameInput.style.display = 'block';
-                usernameInput.setAttribute('required', 'true');
-            }
-        });
-    }
-
-    const renderer = new BookRenderer(libManager);
-    const themeManager = new ThemeManager();
     const genreManager = new GenreManager(libManager);
     genreManager.init();
     const exportBtn = document.getElementById("export-library");
