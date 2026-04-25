@@ -1,24 +1,56 @@
 /* Responsive Design Improvements for BiblioDrift */
 
+/* --- Tablet & Large Phone Breakpoint (max-width: 992px) --- */
+@media (max-width: 992px) {
+    header {
+        padding: 1.5rem 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .header-controls {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap; /* Allow controls to wrap */
+        gap: 1rem;
+    }
+
+    .search-bar {
+        flex-grow: 1; /* Allow search bar to take available space */
+    }
+
+    .nav-links {
+        order: 1; /* Move nav links to a new line */
+        width: 100%;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    main {
+        padding: 2rem;
+    }
+
+    .curated-row {
+        padding: 1.5rem 0.5rem;
+    }
+}
+
 /* --- Mobile Breakpoint (max-width: 768px) --- */
 @media (max-width: 768px) {
-    /* Adjust global variables for book sizes */
     :root {
         --book-width: 130px;
         --book-height: 200px;
     }
 
-    /* Header Stack Layout */
     header {
         flex-direction: column;
         padding: 1rem;
         gap: 1rem;
-        height: auto;
     }
 
     .header-controls {
         flex-direction: column;
-        width: 100%;
         gap: 1rem;
     }
 
@@ -35,11 +67,8 @@
     }
 
     .nav-links {
-        display: flex;
         flex-wrap: wrap;
-        justify-content: center;
         gap: 1rem;
-        width: 100%;
     }
 
     .nav-links a {
@@ -47,11 +76,6 @@
         font-size: 0.9rem;
     }
 
-    .tooltip {
-        display: inline-block;
-    }
-
-    /* Hero Section */
     .hero {
         padding: 4rem 1rem;
     }
@@ -64,7 +88,6 @@
         font-size: 1.1rem;
     }
 
-    /* Curated Sections */
     .section-header {
         flex-direction: column;
         align-items: flex-start;
@@ -72,52 +95,48 @@
     }
     
     .curated-row {
-        gap: 1rem;
+        gap: 1.5rem;
         padding-bottom: 1rem;
-        overflow-x: auto; /* Allow horizontal scrolling on tablet too */
+        overflow-x: auto;
         justify-content: flex-start;
     }
     
     .curated-row .book-scene {
-        flex-shrink: 0; /* Prevent books from squishing */
+        flex-shrink: 0;
     }
     
-    /* Genre Grid: 2 columns on tablet/large phone */
     .genre-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 1rem;
     }
     
-    /* Book Shelf (Library View) */
     .bookshelf-row,
     .books-row-3d {
-        justify-content: flex-start; /* Allow horizontal scrolling */
+        justify-content: flex-start;
     }
     
     .book-scene,
     .book-spine-3d {
         margin: 0.5rem;
-        transform: scale(0.9); /* Scale down books slightly */
-        flex-shrink: 0; /* IMPT: Prevent books from being squished */
+        transform: scale(0.9);
+        flex-shrink: 0;
     }
     
-    /* Specific tweak for spines in library to rotate slightly */
     .book-spine-3d {
          transform: rotateY(-5deg) scale(0.9);
     }
 
     .shelf-section-3d {
-        overflow-x: auto; /* Enable horizontal scroll */
+        overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 1rem;
     }
     
     .bookshelf-3d {
-        width: max-content; /* Allow content to dictate width for scrolling */
+        width: max-content;
         min-width: 100%;
     }
 
-    /* Modal Adjustments */
     .modal-content {
         width: 95%;
         margin: 5% auto;
@@ -125,65 +144,63 @@
         flex-direction: column;
     }
 
-    .modal-cover {
+    .modal-media {
         width: 120px;
         margin: 0 auto 1.5rem;
     }
 
-    .modal-details {
+    .modal-info {
         text-align: center;
     }
     
-    /* Auth Form - higher specificity to override internal styles */
     body .auth-container {
         margin: 4rem 1rem;
-        padding: 2rem 1rem;
+        padding: 2rem 1.5rem;
     }
     
-    /* Chat Interface - higher specificity */
     body .chat-container {
         width: 100%;
-        height: calc(100vh - 180px); /* Adjust for stacked header */
+        height: calc(100vh - 200px);
         margin: 1rem 0;
         border-radius: 0;
     }
 }
 
-
 /* --- Library Page Specific Adjustments --- */
 @media (max-width: 768px) {
-    /* Reset absolute positioning for controls in hero */
     .hero {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding-bottom: 2rem !important; /* Override inline padding if needed */
+        padding-bottom: 2rem !important;
         position: relative; 
     }
 
-    /* Target the specific elements using ID and class to override inline styles */
-    #export-library[style],
-    .sort-controls,
-    #export-library {
-        position: static !important; /* Force static positioning */
+    #export-library,
+    .sort-controls {
+        position: static !important;
         width: 100%;
         max-width: 300px;
         margin: 0.5rem 0 !important;
-        transform: none !important; /* Just in case */
+        transform: none !important;
     }
 
     #export-library {
-        order: 2; /* Put export button below sort controls */
+        order: 2;
     }
 }
 
+/* --- Small Mobile Breakpoint (max-width: 480px) --- */
 @media (max-width: 480px) {
     :root {
         --book-width: 110px;
         --book-height: 170px;
     }
 
-    /* Header Compact */
+    main {
+        padding: 1.5rem 1rem;
+    }
+
     .nav-links {
         gap: 0.8rem;
     }
@@ -192,30 +209,32 @@
         font-size: 0.85rem;
     }
 
-    /* Hero */
     .hero h1 {
-        font-size: 2rem;
+        font-size: 2.2rem;
     }
 
-    /* Genre Grid: 1 column on small screens */
     .genre-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    /* Books can stay in a flex row but might need scrolling or wrapping */
     .curated-row {
-        justify-content: flex-start; /* Ensure scroll works */
+        justify-content: flex-start;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
     
-    /* Hide some secondary UI if needed or stacks further */
-    .search-bar {
-        margin-bottom: 0.5rem;
+    .footer-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 2rem;
+    }
+
+    .footer-nav, .footer-legal, .footer-social {
+        width: 100%;
     }
 }
 
-/* Style the container for controls */
+/* --- Control Styles for Library Page --- */
 .sort-controls {
     display: flex;
     flex-direction: column;
@@ -227,8 +246,7 @@
 .filter-group {
     justify-content: center;
     display: flex;
-    flex-direction: row;
-    display: flex;
+    flex-wrap: wrap;
     gap: 0.8rem;
     align-items: center;
     padding: 1rem;
@@ -237,9 +255,10 @@
 
 .sort-controls select {
     width: 100%;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: row;
-    border-radius: 5px;
-    background: rgb(249,247,242); /* Add background for better visibility */
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-family: var(--font-sans);
 }
