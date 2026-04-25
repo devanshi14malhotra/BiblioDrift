@@ -1,60 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <script>
+        // Apply theme before page load to prevent flash
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
-            if (theme === 'night') {
-                document.documentElement.setAttribute('data-theme', 'night');
-            }
+            const theme = localStorage.getItem('bibliodrift_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auth | BiblioDrift</title>
+    <title>Authentication | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Georgia&display=swap"
-        rel="stylesheet">
+    <!-- Fonts: Lora (serif) and Source Sans Pro (sans-serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .auth-container {
-            max-width: 400px;
+            max-width: 420px;
             margin: 8rem auto;
             background: var(--book-bg, #fff);
             padding: 3rem;
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             text-align: center;
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
 
         .auth-input {
             width: 100%;
             padding: 1rem;
-            margin-bottom: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-family: 'Georgia', serif;
+            margin-bottom: 1.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Source Sans Pro', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
         }
 
         .auth-btn {
             width: 100%;
             padding: 1rem;
-            background: #2c2c2c;
+            background: var(--accent-color);
             color: #fff;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-family: 'Playfair Display', serif;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-weight: 600;
             font-size: 1.1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .auth-btn:hover {
+            background: var(--accent-hover);
         }
 
         .toggle-link {
             display: block;
             margin-top: 1.5rem;
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.9rem;
             cursor: pointer;
             text-decoration: underline;
@@ -70,29 +80,30 @@
 <body>
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo">
+            <span>BiblioDrift</span>
         </a>
         <div class="header-controls">
             <div class="search-bar">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search by mood or feeling...">
                 <i class="fa-solid fa-search search-icon"></i>
             </div>
             <nav class="nav-links">
                 <div class="tooltip">
-                    <a href="index.html">Discovery</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                    <a href="index.html">Explore</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Discover new books</span>
                 </div>
                 <div class="tooltip">
-                    <a href="library.html">My Library</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                    <a href="library.html">Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> Your personal collection</span>
                 </div>
                 <div class="tooltip">
                     <a href="chat.html">Chat</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Talk with our AI</span>
                 </div>
                 <div class="tooltip">
                     <a href="auth.html" class="active">Sign In</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
+                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access your account</span>
                 </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
@@ -104,32 +115,23 @@
     <main>
         <!-- 
             =============================================================
-            Authentication Container Area
+            Authentication Container
             =============================================================
-            This container encapsulates the core authentication workflow 
-            for the application. 
-            
-            By default, it renders the 'Sign In' view, but dynamically 
-            toggles to 'Registration' mode based on user interaction with 
-            the 'toggleText' link below.
-
-            Features:
-            - Fully responsive design via 'auth-container' class.
-            - JavaScript intercepts submission via 'handleAuth(event)'.
-            - Name field is hidden by default and only shown during sign up.
+            This container handles both sign-in and registration.
+            It dynamically switches between modes based on user interaction.
             =============================================================
         -->
         <div class="auth-container">
             
             <!-- Dynamic Form Header -->
-            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">
+            <h2 id="authTitle" style="font-family: 'Lora', serif; margin-bottom: 2rem;">
                 Welcome Back
             </h2>
             
-            <!-- Authentication Form: Handles both Sign In and Registration dynamically -->
+            <!-- Authentication Form -->
             <form id="authForm" onsubmit="handleAuth(event)">
                 
-                <!-- Registration Specific Field (Hidden during Sign In) -->
+                <!-- Registration-Specific Field (Hidden by default) -->
                 <div id="nameField">
                     <input type="text" id="userName" class="auth-input" placeholder="Full Name">
                 </div>
@@ -140,7 +142,7 @@
                 </div>
                 
                 <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="password" class="auth-input" placeholder="Password" required>
+                    <input type="password" id="password" class="auth-input" placeholder="Password" required>
                 </div>
                 
                 <!-- Primary Action Button -->
