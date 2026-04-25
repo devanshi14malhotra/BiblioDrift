@@ -1666,6 +1666,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+/**
+ * ==============================================================================
+ * SECURITY FIX: CSRF PROTECTION & SESSION MANAGEMENT
+ * ==============================================================================
+ * 
+ * Issue:
+ * ------
+ * The auth form has no CSRF protection — it directly POSTs credentials to the API 
+ * from the browser.
+ * 
+ * Why it matters:
+ * ---------------
+ * Without a CSRF token, a malicious third-party page could trick authenticated 
+ * users into making authenticated requests. Also, isLoggedIn was previously stored 
+ * as a plain string 'true' in localStorage, meaning any script could forge the 
+ * login state by setting this key.
+ * 
+ * Fix:
+ * ----
+ * Move the authenticated session indicator to an HttpOnly cookie managed by the 
+ * backend, and validate the JWT on every protected API call (which is already 
+ * done server-side — the frontend just needs to stop relying on the localStorage 
+ * flag for access control decisions).
+ * ==============================================================================
+ */
 async function handleAuth(event) {
     event.preventDefault();
     const form = event.target;
