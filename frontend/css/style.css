@@ -52,7 +52,7 @@
 
 html {
     scroll-behavior: smooth;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 body {
@@ -62,7 +62,7 @@ body {
     /* Classic serif for books */
     overflow-x: hidden;
     min-height: 100vh;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 /* Explicit night-mode overrides — bulletproof fallback */
@@ -123,7 +123,7 @@ header {
     z-index: 100;
     background: var(--header-bg);
     backdrop-filter: blur(10px);
-    transition: background 0.5s ease;
+    transition: background-color 0.4s ease, color 0.4s ease, backdrop-filter 0.4s ease;
 }
 
 .header-controls {
@@ -145,7 +145,7 @@ header {
     border-radius: 20px;
     font-family: "Georgia", serif;
     width: 200px;
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
     outline: none;
     color: var(--text-main);
 }
