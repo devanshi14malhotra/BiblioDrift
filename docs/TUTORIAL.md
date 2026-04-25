@@ -98,6 +98,10 @@ Each book in BiblioDrift is a 3D interactive element:
 - **Action**: Click on any book
 - **Effect**: Book flips open to reveal detailed information
 - **What you'll see**:
+    - **Smooth Shimmer Loading**: You'll see modern skeleton loaders while the AI fetches specialized book insights.
+    - **AI-Generated Blurbs**: Personalized summaries generated specifically for your mood.
+    - **Interactive Back Cover**: Click the "Flip" instruction to see the physical back of the book with its synopsis.
+    - **Library Management**: Use the compact action buttons to move books between shelves or share them with friends.
   - Full synopsis and AI-generated vibe notes
   - User reviews and ratings
   - **Emotion Tagging**: A new section where you can mark how a book makes you feel (e.g., *Cozy*, *Tense*, *Whimsical*).
