@@ -132,10 +132,6 @@ function showToast(message, type = 'info') {
 }
 
 /**
- * Robust Wrapper for LocalStorage
- * Prevents application crashes when the 5MB quota is exceeded.
- */
-/**
  * Robust Wrapper for Storage (LocalStorage + IndexedDB Fallback)
  * Prevents application data loss and handles browser storage wipes/quotas.
  */
@@ -499,7 +495,6 @@ class BookRenderer {
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('../assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
                         <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -878,36 +873,7 @@ class LibraryManager {
             finished: []
         };
 
-        /**
-         * ==============================================================================
-         * ISSUE FIX: HARDCODED API BASE URL DUPLICATION
-         * ==============================================================================
-         * 
-         * Background Context & Issue:
-         * ---------------------------
-         * Previously, this class had its own hardcoded backend URL assigned right here:
-         * `this.apiBase = 'http://localhost:5000/api/v1';`
-         * 
-         * This implementation was problematic for several critical reasons:
-         * 1. Duplication of Truth: The global constant `MOOD_API_BASE` already exists 
-         *    to define the backend server location. Having a second hardcoded value 
-         *    here meant that if the API URL needed to change (e.g., deploying from dev 
-         *    to production), developers had to remember to manually update it in 
-         *    multiple disparate files. This led to frustrating inconsistencies, bugs, 
-         *    and broken network requests when only one reference was updated.
-         * 2. Security & Environment Portability: Hardcoding an `http://localhost` 
-         *    URL meant the application structure was rigidly tied to a local machine, 
-         *    and would cause Mixed Content warnings or blockages in production 
-         *    environments that require secure HTTPS connections.
-         * 
-         * The Resolution:
-         * ---------------
-         * We now strictly reuse the global `MOOD_API_BASE` constant. By centralizing 
-         * the configuration to a single source of truth, we ensure complete consistency 
-         * across the entire application architecture while dynamically adapting to the 
-         * secure network requirements of the deployed environment.
-         * ==============================================================================
-         */
+
         this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
 
         // Asynchronous initialization
@@ -1569,27 +1535,7 @@ class GenreManager {
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
 
-        /**
-         * ==============================================================================
-         * ISSUE FIX: REDUNDANT LIBRARYMANAGER INSTANTIATION
-         * ==============================================================================
-         * 
-         * Background Context & Issue:
-         * ---------------------------
-         * Previously, a new `LibraryManager` was instantiated every time `renderBooks` 
-         * was called inside `GenreManager`. 
-         * 
-         * The problem was that creating a new `LibraryManager` triggers a fresh 
-         * `syncWithBackend()` network call upon initialization. Calling this repeatedly 
-         * every time the genre modal books are rendered wastes bandwidth and can 
-         * potentially overwrite or corrupt an in-progress synchronization state.
-         * 
-         * The Resolution:
-         * ---------------
-         * We now pass the existing globally shared `libManager` instance into 
-         * `GenreManager` at construction time and reuse it here via `this.libraryManager`.
-         * ==============================================================================
-         */
+
         const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
@@ -1817,29 +1763,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 behavior: 'smooth'
             });
         });
+    }
 
-        const exportBtn = document.getElementById("export-library");
-        if (exportBtn) {
-            exportBtn.addEventListener("click", () => {
-                const library = SafeStorage.get("bibliodrift_library");
-                if (!library) {
-                    showToast("Library is empty!", "info");
-                    return;
-                }
-                const blob = new Blob([library], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
+    const exportBtnInstance = document.getElementById("export-library");
+    if (exportBtnInstance) {
+        exportBtnInstance.addEventListener("click", () => {
+            const library = SafeStorage.get("bibliodrift_library");
+            if (!library) {
+                showToast("Library is empty!", "info");
+                return;
+            }
+            const blob = new Blob([library], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
 
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
 
-                URL.revokeObjectURL(url);
-                showToast("Library exported successfully!", "success");
-            });
-        }
+            URL.revokeObjectURL(url);
+            showToast("Library exported successfully!", "success");
+        });
     }
 });
 
@@ -1927,15 +1873,6 @@ async function handleAuth(event) {
 
 function enableTapEffects() {
     if (!('ontouchstart' in window)) return;
-
-    document.querySelectorAll('.book-scene').forEach(scene => {
-        const book = scene.querySelector('.book');
-        const overlay = scene.querySelector('.glass-overlay');
-        scene.addEventListener('click', () => {
-            book.classList.toggle('tap-effect');
-            if (overlay) overlay.classList.toggle('tap-overlay');
-        });
-    });
 
     document.querySelectorAll('.btn-icon').forEach(btn => {
         btn.addEventListener('click', () => {

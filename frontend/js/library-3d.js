@@ -514,17 +514,48 @@ class BookshelfRenderer3D {
         spine.classList.add(traits.fontClass);
         if (traits.titleModifier) spine.classList.add(traits.titleModifier);
 
-        spine.innerHTML = `
-            <div class="spine-face" style="background-color: ${traits.spineColor}; color: ${traits.textColor};">
-                <span class="spine-title">${book.title}</span>
-                <span class="spine-author">${book.author ? book.author.split(' ').pop() : ''}</span>
-                ${traits.pattern.includes('ornament') ? '<div class="spine-pattern-ornament"></div>' : ''}
-                ${traits.pattern.includes('bands') ? '<div class="spine-pattern-bands"></div>' : ''}
-                ${traits.pattern.includes('frame') ? '<div class="spine-pattern-frame"></div>' : ''}
-            </div>
-            <div class="book-edge"></div>
-            <div class="book-top" style="--spine-color: ${traits.spineColor};"></div>
-        `;
+        const face = document.createElement('div');
+        face.className = 'spine-face';
+        face.style.backgroundColor = traits.spineColor;
+        face.style.color = traits.textColor;
+
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'spine-title';
+        titleSpan.textContent = book.title;
+        face.appendChild(titleSpan);
+
+        const authorSpan = document.createElement('span');
+        authorSpan.className = 'spine-author';
+        authorSpan.textContent = book.author ? book.author.split(' ').pop() : '';
+        face.appendChild(authorSpan);
+
+        if (traits.pattern.includes('ornament')) {
+            const ornament = document.createElement('div');
+            ornament.className = 'spine-pattern-ornament';
+            face.appendChild(ornament);
+        }
+        if (traits.pattern.includes('bands')) {
+            const bands = document.createElement('div');
+            bands.className = 'spine-pattern-bands';
+            face.appendChild(bands);
+        }
+        if (traits.pattern.includes('frame')) {
+            const frame = document.createElement('div');
+            frame.className = 'spine-pattern-frame';
+            face.appendChild(frame);
+        }
+
+        const edge = document.createElement('div');
+        edge.className = 'book-edge';
+
+        const top = document.createElement('div');
+        top.className = 'book-top';
+        top.style.setProperty('--spine-color', traits.spineColor);
+
+        spine.innerHTML = '';
+        spine.appendChild(face);
+        spine.appendChild(edge);
+        spine.appendChild(top);
 
         // Event listeners
         spine.addEventListener('mouseenter', (e) => this.showTooltip(e, book));
@@ -627,70 +658,7 @@ class BookshelfRenderer3D {
         };
     }
 
-    /*
-     * ==============================================================================
-     * ISSUE 40: RESOLVING NULL RATINGS FROM LOCALSTORAGE MAPPING
-     * ==============================================================================
-     * 
-     * Background Context:
-     * -------------------
-     * The BiblioDrift application allows users to curate a personal 3D bookshelf.
-     * Library data (the user's collection of books) is persistently stored on the
-     * client-side using the browser's `localStorage` API under the key 
-     * 'bibliodrift_library'.
-     * 
-     * When external APIs (such as Google Books or OpenLibrary) are used to fetch
-     * book metadata, some properties might be incomplete, missing, or explicitly
-     * returned as `null`. This is especially true for the `rating` attribute.
-     * 
-     * The Bug (TypeError: Cannot read properties of undefined):
-     * ---------------------------------------------------------
-     * When displaying the tooltip or the detailed modal for a book, the application
-     * formats the numeral rating to one decimal place using JavaScript's built-in
-     * Number.prototype.toFixed(1) method.
-     * 
-     * For example:
-     *    const rating = 4;
-     *    console.log(rating.toFixed(1)); // Outputs: "4.0"
-     * 
-     * However, if the `rating` property was not adequately sanitized prior to being
-     * serialized into JSON and saved into `localStorage`, it retains its `null` or 
-     * `undefined` identity when deserialized. 
-     * 
-     *    const rating = null;
-     *    console.log(rating.toFixed(1)); // TypeError!
-     * 
-     * Because `null` is a primitive value and does not share the Number prototype,
-     * attempting to access `.toFixed` on it causes the JavaScript runtime to throw
-     * a fatal exception. This crash abruptly halts the execution context, meaning
-     * the rest of the UI logic fails to render. Tooltips break, modals don't open,
-     * and the UX degrades significantly.
-     * 
-     * The Solution (Safe Guarding / Ternary Check):
-     * ---------------------------------------------
-     * To robustly handle instances where `rating` is `null` or `undefined`, a safe 
-     * guard has been introduced wherever `.toFixed(1)` is called within this class.
-     * 
-     * We use a concise ternary operator check:
-     *    (book.rating != null ? book.rating.toFixed(1) : 'N/A')
-     * 
-     * Note the use of loose inequality (`!= null`). In JavaScript, `!= null` is a
-     * convenient shorthand that simultaneously checks for both `null` AND `undefined`.
-     * 
-     * If the rating exists and isn't nully, it formats the number as normal.
-     * If the rating is missing, we gracefully degrade the UI by displaying "N/A"
-     * (Not Available), ensuring the UI layout doesn't collapse and no exceptions
-     * are thrown into the console.
-     * 
-     * Technical Debt & Future Considerations:
-     * ---------------------------------------
-     * While this frontend patch prevents the crash, a more robust architectural 
-     * fix would be to implement a strict data validation / sanitization layer 
-     * right before writing to `localStorage` or immediately upon reading from it. 
-     * By ensuring a foundational data contract, we'd eliminate the need for defensive 
-     * rendering checks throughout the UI components.
-     * ==============================================================================
-     */
+
     showTooltip(e, book) {
         this.currentBook = book;
 
@@ -842,6 +810,49 @@ class BookshelfRenderer3D {
                 }).join('')}
             </div>
         `;
+        // Categories
+        const categoriesContainer = document.getElementById('modal-categories');
+        if (categoriesContainer && book.categories) {
+            categoriesContainer.innerHTML = '';
+            book.categories.forEach(cat => {
+                const span = document.createElement('span');
+                span.className = 'category-tag';
+                span.textContent = cat;
+                categoriesContainer.appendChild(span);
+            });
+        }
+
+        // Reviews
+        const reviewsContainer = document.getElementById('modal-reviews');
+        if (reviewsContainer && book.reviews) {
+            reviewsContainer.innerHTML = '';
+            book.reviews.forEach(review => {
+                const item = document.createElement('div');
+                item.className = 'review-item';
+                
+                const header = document.createElement('div');
+                header.className = 'review-header';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'reviewer-name';
+                nameSpan.textContent = review.name;
+                header.appendChild(nameSpan);
+                
+                const ratingSpan = document.createElement('span');
+                ratingSpan.className = 'review-rating';
+                ratingSpan.textContent = this.getStarRating(review.rating);
+                header.appendChild(ratingSpan);
+                
+                item.appendChild(header);
+                
+                const textP = document.createElement('p');
+                textP.className = 'review-text';
+                textP.textContent = `"${review.text}"`;
+                item.appendChild(textP);
+                
+                reviewsContainer.appendChild(item);
+            });
+        }
 
         taggingSection.querySelectorAll('.emotion-tag').forEach(tag => {
             tag.onclick = async () => {

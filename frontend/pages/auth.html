@@ -102,15 +102,60 @@
     </header>
 
     <main>
+        <!-- 
+            =============================================================
+            Authentication Container Area
+            =============================================================
+            This container encapsulates the core authentication workflow 
+            for the application. 
+            
+            By default, it renders the 'Sign In' view, but dynamically 
+            toggles to 'Registration' mode based on user interaction with 
+            the 'toggleText' link below.
+
+            Features:
+            - Fully responsive design via 'auth-container' class.
+            - JavaScript intercepts submission via 'handleAuth(event)'.
+            - Name field is hidden by default and only shown during sign up.
+            =============================================================
+        -->
         <div class="auth-container">
-            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">Welcome Back</h2>
+            
+            <!-- Dynamic Form Header -->
+            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">
+                Welcome Back
+            </h2>
+            
+            <!-- Authentication Form: Handles both Sign In and Registration dynamically -->
             <form id="authForm" onsubmit="handleAuth(event)">
-                <div id="nameField"><input type="text" id="userName" class="auth-input" placeholder="Full Name"></div>
-                <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
-                <input type="password" class="auth-input" placeholder="Password" required>
-                <button type="submit" id="submitBtn" class="auth-btn">Sign In</button>
+                
+                <!-- Registration Specific Field (Hidden during Sign In) -->
+                <div id="nameField">
+                    <input type="text" id="userName" class="auth-input" placeholder="Full Name">
+                </div>
+                
+                <!-- Standard Credentials -->
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
+                </div>
+                
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <input type="password" class="auth-input" placeholder="Password" required>
+                </div>
+                
+                <!-- Primary Action Button -->
+                <button type="submit" id="submitBtn" class="auth-btn">
+                    Sign In
+                </button>
             </form>
-            <span id="toggleText" class="toggle-link">No account? Create one.</span>
+            
+            <!-- Mode Toggle Link -->
+            <div class="auth-footer" style="margin-top: 1.5rem;">
+                <span id="toggleText" class="toggle-link">
+                    No account? Create one.
+                </span>
+            </div>
+            
         </div>
     </main>
 
