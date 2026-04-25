@@ -1149,7 +1149,7 @@ def set_reading_goal():
         return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized"}), 403
+        return forbidden_error("Unauthorized")
     
     try:
         existing_goal = ReadingGoal.query.filter_by(
@@ -1186,7 +1186,7 @@ def get_reading_stats():
     
     current_user_id = get_jwt_identity()
     if str(user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized"}), 403
+        return forbidden_error("Unauthorized")
     
     try:
         yearly_stats = _get_yearly_stats(user_id, year)
@@ -1284,7 +1284,7 @@ def create_collection():
         return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized"}), 403
+        return forbidden_error("Unauthorized")
     
     try:
         existing = Collection.query.filter_by(user_id=validated_data.user_id, name=validated_data.name).first()
@@ -1318,7 +1318,7 @@ def get_collections():
     
     current_user_id = get_jwt_identity()
     if str(user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized"}), 403
+        return forbidden_error("Unauthorized")
     
     try:
         collections = Collection.query.filter_by(user_id=user_id).order_by(Collection.created_at.desc()).all()
@@ -1339,7 +1339,7 @@ def get_collection(collection_id):
             return jsonify({"error": "Collection not found"}), 404
         
         if not collection.is_public and str(collection.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized"}), 403
+            return forbidden_error("Unauthorized")
         
         return jsonify({"collection": collection.to_dict(include_items=True)}), 200
     except Exception as e:
@@ -1366,7 +1366,7 @@ def update_collection(collection_id):
             return jsonify({"error": "Collection not found"}), 404
         
         if str(collection.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized"}), 403
+            return forbidden_error("Unauthorized")
         
         if validated_data.name:
             existing = Collection.query.filter(
@@ -1403,7 +1403,7 @@ def delete_collection(collection_id):
             return jsonify({"error": "Collection not found"}), 404
         
         if str(collection.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized"}), 403
+            return forbidden_error("Unauthorized")
         
         db.session.delete(collection)
         db.session.commit()
@@ -1433,7 +1433,7 @@ def add_book_to_collection(collection_id):
             return jsonify({"error": "Collection not found"}), 404
         
         if str(collection.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized"}), 403
+            return forbidden_error("Unauthorized")
         
         book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
         if not book:
@@ -1473,7 +1473,7 @@ def get_collection_books(collection_id):
             return jsonify({"error": "Collection not found"}), 404
         
         if not collection.is_public and str(collection.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized"}), 403
+            return forbidden_error("Unauthorized")
         
         items = CollectionItem.query.filter_by(collection_id=collection_id).order_by(CollectionItem.added_at.desc()).all()
         
@@ -1494,7 +1494,7 @@ def remove_book_from_collection(collection_id, book_id):
             return jsonify({"error": "Collection not found"}), 404
         
         if str(collection.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized"}), 403
+            return forbidden_error("Unauthorized")
         
         item = CollectionItem.query.filter_by(collection_id=collection_id, book_id=book_id).first()
         if not item:
@@ -1547,7 +1547,7 @@ def create_or_update_review():
         return jsonify(validated_data), 400
     
     if str(data['user_id']) != str(current_user_id):
-        return jsonify({"error": "Unauthorized access to another user's reviews"}), 403
+        return forbidden_error("Unauthorized access to another user's reviews")
     
     try:
         book = Book.query.filter_by(google_books_id=validated_data.google_books_id).first()
@@ -1626,7 +1626,7 @@ def get_user_reviews(user_id):
     current_user_id = get_jwt_identity()
     
     if str(user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized - you can only view your own reviews"}), 403
+        return forbidden_error("Unauthorized - you can only view your own reviews")
     
     try:
         reviews = Review.query.filter_by(user_id=user_id).order_by(Review.created_at.desc()).all()
@@ -1647,7 +1647,7 @@ def delete_review(review_id):
             return jsonify({"error": "Review not found"}), 404
         
         if str(review.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized - you can only delete your own reviews"}), 403
+            return forbidden_error("Unauthorized - you can only delete your own reviews")
         
         db.session.delete(review)
         db.session.commit()
@@ -1671,7 +1671,7 @@ def create_price_alert(book_id):
         return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized access to another user's alerts"}), 403
+        return forbidden_error("Unauthorized access to another user's alerts")
     
     try:
         book = None
@@ -1690,7 +1690,7 @@ def create_price_alert(book_id):
             return jsonify({"error": "Shelf item not found"}), 404
         
         if str(shelf_item.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized - shelf item belongs to another user"}), 403
+            return forbidden_error("Unauthorized - shelf item belongs to another user")
         
         if shelf_item.book_id != book.id:
             return jsonify({"error": "Shelf item does not match the specified book"}), 400
@@ -1758,7 +1758,7 @@ def get_user_alerts():
         return jsonify({"error": "user_id is required"}), 400
     
     if str(user_id) != str(current_user_id):
-        return jsonify({"error": "Unauthorized - you can only view your own alerts"}), 403
+        return forbidden_error("Unauthorized - you can only view your own alerts")
     
     try:
         alerts = price_tracker.get_user_alerts(user_id=user_id, active_only=active_only)
@@ -1780,7 +1780,7 @@ def delete_price_alert(alert_id):
             return jsonify({"error": "Alert not found"}), 404
         
         if str(alert.user_id) != str(current_user_id):
-            return jsonify({"error": "Unauthorized - you can only delete your own alerts"}), 403
+            return forbidden_error("Unauthorized - you can only delete your own alerts")
         
         result = price_tracker.delete_price_alert(alert_id=alert_id, user_id=current_user_id)
         
