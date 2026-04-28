@@ -718,15 +718,36 @@ def add_to_library():
 @app.route('/api/v1/library/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_library(user_id):
-    """Get all books in a user's library."""
+    """Get paginated books in a user's library."""
     current_user_id = get_jwt_identity()
     if str(user_id) != str(current_user_id):
         return forbidden_error("Cannot access another user's library")
         
     try:
-        items = ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id).all()
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+
+        limit = max(1, min(limit if limit is not None else 50, 100))
+        offset = max(0, offset if offset is not None else 0)
+
+        query = ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id)
+        total = query.count()
+        items = query.order_by(ShelfItem.created_at.desc(), ShelfItem.id.desc()).offset(offset).limit(limit).all()
+
+        has_more = offset + len(items) < total
+
         # Ensure join loads correctly or use manual load if lazy loading fails
-        return success_response(data={"library": [item.to_dict() for item in items]})
+        return success_response(data={
+            "library": [item.to_dict() for item in items],
+            "pagination": {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "count": len(items),
+                "has_more": has_more,
+                "next_offset": offset + len(items) if has_more else None
+            }
+        })
     except Exception as e:
         return internal_error(str(e))
 
