@@ -1,8 +1,16 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8" />
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BiblioDrift | Find yourself in the pages</title>
   <link rel="stylesheet" href="../css/style.css" />
@@ -15,20 +23,21 @@
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  
+
   <!-- Security: DOMPurify for XSS prevention -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
   <header>
     <a href="index.html" class="logo">
-      <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
       <div class="search-bar">
         <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-        <i class="fa-solid fa-search search-icon" id="searchIcon" style="cursor: pointer;"></i>
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
       </div>
       <nav class="nav-links">
         <div class="tooltip">
@@ -52,9 +61,6 @@
       <button id="themeToggle" class="btn-icon" title="Toggle Theme">
         <i class="fa-solid fa-moon"></i>
       </button>
-      <button id="export-library" class="btn-icon" title="Export Library">
-        <i class="fa-solid fa-download"></i>
-      </button>
     </div>
   </header>
 
@@ -65,7 +71,7 @@
     </section>
 
     <!-- SEARCH RESULTS SECTION (Initially Hidden) -->
-    <section id="search-results-section" class="curated-section" style="display: none;">
+    <section id="search-results-section" class="curated-section" hidden>
       <div class="section-header">
         <h2 id="search-query-display">Search Results</h2>
         <span><i class="fa-solid fa-magnifying-glass"></i> Exploring your query</span>
@@ -98,6 +104,14 @@
         <span><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span>
       </div>
       <div class="curated-row" id="row-classics"></div>
+    </section>
+
+    <section class="curated-section">
+      <div class="section-header">
+        <h2>General Fiction</h2>
+        <span><i class="fa-solid fa-book-open"></i> Stories for everyone</span>
+      </div>
+      <div class="curated-row" id="row-fiction"></div>
     </section>
 
     <!-- Genre Grid Section -->
@@ -150,7 +164,8 @@
             </div>
             <div class="modal-actions">
               <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
-              <button id="modal-share-btn" class="btn-secondary" style="margin-left: 10px; padding: 0.8rem 1.5rem; border: 1px solid var(--glass-border); border-radius: 8px; background: transparent; cursor: pointer; color: var(--text-main); font-family: inherit; transition: all 0.3s ease;"><i class="fa-solid fa-share-nodes"></i> Share</button>
+              <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i>
+                Share</button>
             </div>
           </div>
         </div>
@@ -158,9 +173,7 @@
     </dialog>
   </main>
 
-  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top">
-    <i class="fa-solid fa-arrow-up"></i>
-  </button>
+
 
 
   <!-- Enhanced Footer -->
@@ -168,10 +181,10 @@
     <div class="footer-container">
       <div class="footer-brand">
         <a href="index.html" class="logo">
-          <img style="height: 40px" src="../assets/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+          <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
-        <p class="footer-subtext">â€” Emily Dickinson</p>
+        <p class="footer-subtext">&mdash; Emily Dickinson</p>
       </div>
       <div class="footer-nav">
         <h3>Explore</h3>
@@ -181,13 +194,20 @@
           <li><a href="chat.html">Literary Chat</a></li>
         </ul>
       </div>
+      <div class="footer-legal">
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="privacy-policy.html">Privacy Policy</a></li>
+          <li><a href="terms-and-conditions.html">Terms & Conditions</a></li>
+        </ul>
+      </div>
       <div class="footer-social">
         <h3>Connect</h3>
         <div class="social-icons">
-          <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="https://www.linkedin.com/in/devanshi5malhotra/" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
           <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" title="GitHub"><i
-              class="fa-brands fa-github"></i></a>
+          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" rel="noopener noreferrer"
+            title="GitHub"><i class="fa-brands fa-github"></i></a>
         </div>
       </div>
     </div>
@@ -216,7 +236,40 @@
     });
   </script>
 
-  <!-- Security: Frontend security utilities -->
+  <!-- Back to Top Button -->
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- Ambient Sanctuary UI -->
+  <div class="ambient-sanctuary">
+    <button id="ambientToggle" title="Ambient Sanctuary">
+      <i class="fa-solid fa-leaf"></i>
+    </button>
+    <div id="ambientPanel" class="ambient-panel">
+      <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
+        <label class="switch">
+          <input type="checkbox" id="rainToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
+        <label class="switch">
+          <input type="checkbox" id="fireToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="volume-control">
+        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
+        <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/ambient.js"></script>
   <script src="../js/security.js"></script>
 </body>
 

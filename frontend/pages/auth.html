@@ -3,10 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth | BiblioDrift</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style-responsive.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/style-responsive.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Georgia&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -56,12 +64,13 @@
             display: none;
         }
     </style>
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -93,22 +102,67 @@
     </header>
 
     <main>
+        <!-- 
+            =============================================================
+            Authentication Container Area
+            =============================================================
+            This container encapsulates the core authentication workflow 
+            for the application. 
+            
+            By default, it renders the 'Sign In' view, but dynamically 
+            toggles to 'Registration' mode based on user interaction with 
+            the 'toggleText' link below.
+
+            Features:
+            - Fully responsive design via 'auth-container' class.
+            - JavaScript intercepts submission via 'handleAuth(event)'.
+            - Name field is hidden by default and only shown during sign up.
+            =============================================================
+        -->
         <div class="auth-container">
-            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">Welcome Back</h2>
+            
+            <!-- Dynamic Form Header -->
+            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">
+                Welcome Back
+            </h2>
+            
+            <!-- Authentication Form: Handles both Sign In and Registration dynamically -->
             <form id="authForm" onsubmit="handleAuth(event)">
-                <div id="nameField"><input type="text" id="userName" class="auth-input" placeholder="Full Name"></div>
-                <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
-                <input type="password" class="auth-input" placeholder="Password" required>
-                <button type="submit" id="submitBtn" class="auth-btn">Sign In</button>
+                
+                <!-- Registration Specific Field (Hidden during Sign In) -->
+                <div id="nameField">
+                    <input type="text" id="userName" class="auth-input" placeholder="Full Name">
+                </div>
+                
+                <!-- Standard Credentials -->
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
+                </div>
+                
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <input type="password" class="auth-input" placeholder="Password" required>
+                </div>
+                
+                <!-- Primary Action Button -->
+                <button type="submit" id="submitBtn" class="auth-btn">
+                    Sign In
+                </button>
             </form>
-            <span id="toggleText" class="toggle-link">No account? Create one.</span>
+            
+            <!-- Mode Toggle Link -->
+            <div class="auth-footer" style="margin-top: 1.5rem;">
+                <span id="toggleText" class="toggle-link">
+                    No account? Create one.
+                </span>
+            </div>
+            
         </div>
     </main>
 
-    <script src="config.js"></script>
-    <script src="footer.js"></script>
-    <script src="app.js"></script>
-    <script src="script/header-scroll.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../script/header-scroll.js"></script>
 </body>
 
 </html>

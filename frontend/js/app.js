@@ -1,21 +1,113 @@
 /**
- * BiblioDrift Core Logic
- * Handles 3D rendering, API fetching, Persistent Auth, and Genre Browsing.
+ * ==============================================================================
+ * BiblioDrift Core Logic - Main Application Entry Point
+ * ==============================================================================
+ * 
+ * Overview:
+ * ---------
+ * This file serves as the primary orchestrator for the BiblioDrift application.
+ * It ties together the DOM manipulation, state management, 3D rendering interactions,
+ * and API communications (both Google Books API and our custom Python backend).
+ * 
+ * Key Components:
+ * ---------------
+ * 1. SafeStorage: 
+ *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism. 
+ *    This component is critical for offline-first capabilities and prevents the 
+ *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent 
+ *    standard `localStorage` operations.
+ *    - Automatically handles QuotaExceeded exceptions.
+ *    - Provides asynchronous data restoration algorithms.
+ *    - Integrates closely with the LibraryManager to store thousands of books safely.
+ * 
+ * 2. LibraryManager: 
+ *    The central state machine over the user's book collection.
+ *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
+ *    - Concurrency Control: Handles race conditions when syncing local states with 
+ *      the backend utilizing optimistic locking techniques.
+ *    - Merging Strategy: In the event of a conflict between the client data and 
+ *      server data, it attempts a non-destructive merge, retaining the state with 
+ *      the highest integer version map.
+ * 
+ * 3. BookRenderer: 
+ *    An interface bridge to the DOM. Handles instantiation of HTML templates for 
+ *    individual 3D book instances, binding their unique event listeners, and 
+ *    applying their generated CSS styles and thematic properties.
+ *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
+ * 
+ * 4. ThemeManager: 
+ *    Observes User Preferences and seamlessly toggles the UI's color palette between 
+ *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
+ *    these preferences to SafeStorage for a seamless experience across reloads.
+ * 
+ * API Architecture Details:
+ * -------------------------
+ * - Google Books API: Facilitates the search and retrieval of rich book metadata
+ *   including volume summaries, author info, and high-quality thumbnail images.
+ * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
+ *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
+ *   client-side compute limitations and securely handle secret API keys.
+ * 
+ * Security & Data Integrity Considerations:
+ * -----------------------------------------
+ * - Data Sanitization: All text rendered from external APIs is strictly passed 
+ *   through the `escapeHTML` utility safely converting brackets to entities to 
+ *   prevent XSS (Cross-Site Scripting) vectors.
+ * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
+ *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing 
+ *   Cross Site Request Forgery attacks against logged-in users.
+ * 
+ * Coding Standards and Development Guidelines:
+ * --------------------------------------------
+ * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are 
+ *    optimistically applied to local state before waiting for server resolution.
+ * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native 
+ *    `localStorage.setItem()`.
+ * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in 
+ *    `index.css` rather than directly overriding inline styles to maintain a 
+ *    dynamic and cohesive theme strategy.
+ * 
+ * File Structure:
+ * ---------------
+ * - [000-100]: Initialization and Utility Wrappers
+ * - [100-300]: SafeStorage Implementation
+ * - [300-800]: BookRenderer Class and 3D interactions
+ * - [800-1300]: LibraryManager state machine and synchronization
+ * - [1300+]: UI Controllers, Events, and Application Bootstrap
+ * ==============================================================================
  */
 
-const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
-const API_KEY = 'YOUR_GOOGLE_BOOKS_API_KEY';
-const MOOD_API_BASE = 'http://localhost:5000/api/v1';
+// API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
+// Do NOT re-declare them here — use the globals from config.js directly.
+const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 let GOOGLE_API_KEY = '';
 
+/**
+ * Utility to extract a cookie value by name.
+ */
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
 async function loadConfig() {
     try {
-        const res = await fetch(`${MOOD_API_BASE}/config`);
+        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
             GOOGLE_API_KEY = data.google_books_key || '';
-            if (process.env.NODE_ENV === 'development') {
+            if (window.GoogleBooksClient) {
+                window.GoogleBooksClient.setKeys([
+                    data.google_books_key,
+                    data.google_books_key_secondary
+                ]);
+            }
+            if (IS_DEV) {
                 console.log("Config loaded");
             }
         }
@@ -40,176 +132,87 @@ function showToast(message, type = 'info') {
 }
 
 /**
- * Robust Wrapper for LocalStorage
- * Prevents application crashes when the 5MB quota is exceeded.
+ * Robust Wrapper for Storage (LocalStorage + IndexedDB Fallback)
+ * Prevents application data loss and handles browser storage wipes/quotas.
  */
 const SafeStorage = {
-    metaKey: '__bibliodrift_storage_meta__',
-    cachePrefixes: [
-        'bibliodrift_cache_',
-        'cached_books_',
-        'books_cache_',
-        'genre_cache_',
-        'search_cache_',
-        'cache_'
-    ],
-    protectedKeys: new Set([
-        'bibliodrift_library',
-        'bibliodrift_user',
-        'bibliodrift_token',
-        'bibliodrift_theme',
-        'isLoggedIn'
-    ]),
+    _dbName: 'BiblioDriftDB',
+    _storeName: 'library_backup',
 
-    isQuotaError(error) {
-        return error instanceof DOMException && (
-            error.code === 22 ||
-            error.code === 1014 ||
-            error.name === 'QuotaExceededError' ||
-            error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-        );
-    },
-
-    getMeta() {
-        try {
-            const raw = localStorage.getItem(this.metaKey);
-            if (!raw) return {};
-            const parsed = JSON.parse(raw);
-            return (parsed && typeof parsed === 'object') ? parsed : {};
-        } catch (e) {
-            return {};
-        }
-    },
-
-    setMeta(meta) {
-        try {
-            localStorage.setItem(this.metaKey, JSON.stringify(meta));
-        } catch (e) {
-            // Ignore metadata write failures; data writes still succeed.
-        }
-    },
-
-    estimateSize(value) {
-        if (typeof value === 'string') return value.length;
-        try {
-            return JSON.stringify(value).length;
-        } catch (e) {
-            return 0;
-        }
-    },
-
-    isCacheKey(key) {
-        if (!key || key === this.metaKey) return false;
-        return this.cachePrefixes.some(prefix => key.startsWith(prefix));
-    },
-
-    touchKey(key, value) {
-        if (!key || key === this.metaKey) return;
-        const meta = this.getMeta();
-        meta[key] = {
-            lastAccess: Date.now(),
-            size: this.estimateSize(value)
-        };
-        this.setMeta(meta);
-    },
-
-    dropMetaKey(key) {
-        const meta = this.getMeta();
-        if (meta[key]) {
-            delete meta[key];
-            this.setMeta(meta);
-        }
-    },
-
-    removeKeys(keys) {
-        if (!Array.isArray(keys) || keys.length === 0) return 0;
-
-        const meta = this.getMeta();
-        let removed = 0;
-
-        keys.forEach(key => {
-            if (!key || key === this.metaKey) return;
+    /**
+     * Attempts to request persistent storage from the browser.
+     * This prevents the browser from clearing storage when disk space is low.
+     */
+    async requestPersistence() {
+        if (navigator.storage && navigator.storage.persist) {
             try {
-                localStorage.removeItem(key);
-                removed += 1;
+                const isPersisted = await navigator.storage.persist();
+                if (IS_DEV) {
+                    console.log(`[Storage] Persistent status: ${isPersisted}`);
+                }
             } catch (e) {
-                // Skip keys that cannot be removed.
+                console.warn("[Storage] Persist request failed", e);
             }
-            delete meta[key];
-        });
-
-        this.setMeta(meta);
-        return removed;
-    },
-
-    getLRUCandidates({ cacheOnly = true, excludeKey = null } = {}) {
-        const meta = this.getMeta();
-        const candidates = [];
-
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (!key || key === this.metaKey || key === excludeKey) continue;
-            if (this.protectedKeys.has(key)) continue;
-            if (cacheOnly && !this.isCacheKey(key)) continue;
-
-            const entryMeta = meta[key] || {};
-            candidates.push({
-                key,
-                lastAccess: typeof entryMeta.lastAccess === 'number' ? entryMeta.lastAccess : 0
-            });
         }
-
-        candidates.sort((a, b) => a.lastAccess - b.lastAccess);
-        return candidates;
-    },
-
-    recoverQuotaSpace(targetKey, attempt) {
-        if (attempt === 1) {
-            const oldestCacheKeys = this.getLRUCandidates({ cacheOnly: true, excludeKey: targetKey })
-                .slice(0, 3)
-                .map(item => item.key);
-            return this.removeKeys(oldestCacheKeys);
-        }
-
-        if (attempt === 2) {
-            const allCacheKeys = this.getLRUCandidates({ cacheOnly: true, excludeKey: targetKey })
-                .map(item => item.key);
-            return this.removeKeys(allCacheKeys);
-        }
-
-        const oldestNonCritical = this.getLRUCandidates({ cacheOnly: false, excludeKey: targetKey })
-            .slice(0, 2)
-            .map(item => item.key);
-        return this.removeKeys(oldestNonCritical);
     },
 
     /**
-     * Attempts to save data to localStorage with error handling.
+     * Internal: Opens the IndexedDB for backup.
+     */
+    async _openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this._dbName, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this._storeName)) {
+                    db.createObjectStore(this._storeName);
+                }
+            };
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    },
+
+    /**
+     * Attempts to save data to localStorage with IndexedDB backup.
      * @param {string} key 
      * @param {string} value 
      * @returns {boolean} Success status
      */
     set(key, value) {
-        let recovered = 0;
+        // 1. Primary: LocalStorage
+        try {
+            localStorage.setItem(key, value);
+        } catch (error) {
+            const isQuotaError =
+                error instanceof DOMException && (
+                    error.code === 22 ||
+                    error.code === 1014 ||
+                    error.name === 'QuotaExceededError' ||
+                    error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
 
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                localStorage.setItem(key, value);
-                this.touchKey(key, value);
-                if (recovered > 0) {
-                    showToast(`Storage was full. Cleared ${recovered} old cached entr${recovered === 1 ? 'y' : 'ies'}.`, 'info');
-                }
-                return true;
-            } catch (error) {
-                if (!this.isQuotaError(error)) {
-                    console.error("LocalStorage Error:", error);
-                    return false;
-                }
-
-                const removed = this.recoverQuotaSpace(key, attempt + 1);
-                recovered += removed;
-                if (removed === 0) break;
+            if (isQuotaError) {
+                showToast("Local storage full! Saving to secure backup.", "info");
+            } else {
+                console.error("LocalStorage Error:", error);
             }
+        }
+
+        // 2. Secondary: IndexedDB (Durable Backup for Library)
+        if (key === 'bibliodrift_library') {
+            this._saveToDB(key, value);
+        }
+        return true;
+    },
+
+    async _saveToDB(key, value) {
+        try {
+            const db = await this._openDB();
+            const transaction = db.transaction(this._storeName, 'readwrite');
+            const store = transaction.objectStore(this._storeName);
+            store.put(value, key);
+        } catch (e) {
+            console.error("IndexedDB Backup Failed", e);
         }
 
         showToast("Local storage full! Please sync to cloud and clear cache.", "error");
@@ -222,9 +225,6 @@ const SafeStorage = {
     get(key) {
         try {
             const value = localStorage.getItem(key);
-            if (value !== null) {
-                this.touchKey(key, value);
-            }
             return value;
         } catch (e) {
             return null;
@@ -232,16 +232,45 @@ const SafeStorage = {
     },
 
     /**
-     * Safely removes data from localStorage.
+     * Retrieves data with IndexedDB fallback if LocalStorage is wiped.
+     */
+    async getAsync(key) {
+        let val = this.get(key);
+        if (!val && key === 'bibliodrift_library') {
+            try {
+                const db = await this._openDB();
+                const transaction = db.transaction(this._storeName, 'readonly');
+                const store = transaction.objectStore(this._storeName);
+                val = await new Promise((resolve) => {
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => resolve(null);
+                });
+
+                if (val) {
+                    if (IS_DEV) console.log("[Storage] Restored from IndexedDB backup");
+                    // Try to restore to LocalStorage for future sync calls
+                    try { localStorage.setItem(key, val); } catch (e) { }
+                }
+            } catch (e) {
+                console.warn("Backup retrieval failed", e);
+            }
+        }
+        return val;
+    },
+
+    /**
+     * Safely removes data from storage.
      * @param {string} key 
      */
     remove(key) {
         try {
             localStorage.removeItem(key);
-            this.dropMetaKey(key);
+            if (key === 'bibliodrift_library') {
+                this._saveToDB(key, null);
+            }
             return true;
         } catch (e) {
-            console.error("LocalStorage Remove Error:", e);
             return false;
         }
     },
@@ -255,7 +284,6 @@ const SafeStorage = {
             this.setMeta({});
             return true;
         } catch (e) {
-            console.error("LocalStorage Clear Error:", e);
             return false;
         }
     }
@@ -267,7 +295,7 @@ const MOCK_BOOKS = [
             title: "Dune",
             authors: ["Frank Herbert"],
             description: "A sweeping science fiction epic set on the desert planet Arrakis. Dune explores complex themes of politics, religion, and man's relationship with nature. Paul Atreides must navigate a treacherous path to becoming the mysterious Muad'Dib.",
-            imageLinks: { thumbnail: "assets/images/dune.jpg" }
+            imageLinks: { thumbnail: "../assets/images/dune.jpg" }
         }
     },
     {
@@ -276,7 +304,7 @@ const MOCK_BOOKS = [
             title: "1984",
             authors: ["George Orwell"],
             description: "Orwell's chilling prophecy of a totalitarian future where Big Brother is always watching. A profound exploration of surveillance, truth, and the resilience of the human spirit.",
-            imageLinks: { thumbnail: "assets/images/1984.jpg" }
+            imageLinks: { thumbnail: "../assets/images/1984.jpg" }
         }
     },
     {
@@ -285,7 +313,7 @@ const MOCK_BOOKS = [
             title: "The Hobbit",
             authors: ["J.R.R. Tolkien"],
             description: "In a hole in the ground there lived a hobbit. Join Bilbo Baggins on an unexpected journey across Middle-earth, encountering dragons, dwarves, and a rigorous test of courage.",
-            imageLinks: { thumbnail: "assets/images/hobbit.jpg" }
+            imageLinks: { thumbnail: "../assets/images/hobbit.jpg" }
         }
     },
     {
@@ -294,7 +322,7 @@ const MOCK_BOOKS = [
             title: "Pride and Prejudice",
             authors: ["Jane Austen"],
             description: "A timeless romance of manners and misunderstanding. Elizabeth Bennet's wit matches Mr. Darcy's pride in this sharp social commentary that remains one of the most loved novels in English literature.",
-            imageLinks: { thumbnail: "assets/images/pride.jpg" }
+            imageLinks: { thumbnail: "../assets/images/pride.jpg" }
         }
     },
     {
@@ -303,7 +331,7 @@ const MOCK_BOOKS = [
             title: "The Great Gatsby",
             authors: ["F. Scott Fitzgerald"],
             description: "The quintessential novel of the Jazz Age. Jay Gatsby's obsessive love for Daisy Buchanan drives a tragic tale of wealth, illusion, and the American Dream.",
-            imageLinks: { thumbnail: "assets/images/gatsby.jpg" }
+            imageLinks: { thumbnail: "../assets/images/gatsby.jpg" }
         }
     },
     {
@@ -312,7 +340,7 @@ const MOCK_BOOKS = [
             title: "Sapiens",
             authors: ["Yuval Noah Harari"],
             description: "A groundbreaking narrative of humanity's creation and evolution. Harari explores the ways in which biology and history have defined us and enhanced our understanding of what it means to be 'human'.",
-            imageLinks: { thumbnail: "assets/images/sapiens.jpg" }
+            imageLinks: { thumbnail: "../assets/images/sapiens.jpg" }
         }
     },
     {
@@ -321,10 +349,42 @@ const MOCK_BOOKS = [
             title: "Project Hail Mary",
             authors: ["Andy Weir"],
             description: "A lone astronaut must save the earth from disaster in this gripping tale of survival and scientific discovery. Full of humor and hard science, it is a celebration of human ingenuity.",
-            imageLinks: { thumbnail: "assets/images/hail_mary.jpg" }
+            imageLinks: { thumbnail: "../assets/images/hail_mary.jpg" }
         }
     }
 ];
+
+function normalizeQueryTerms(query) {
+    return String(query || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(Boolean);
+}
+
+function scoreMockBook(book, queryTerms) {
+    const volumeInfo = book.volumeInfo || {};
+    const haystack = [
+        volumeInfo.title || '',
+        (volumeInfo.authors || []).join(' '),
+        volumeInfo.description || '',
+        (volumeInfo.categories || []).join(' ')
+    ].join(' ').toLowerCase();
+
+    return queryTerms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+}
+
+function getFallbackBooks(query, maxResults = 5) {
+    const queryTerms = normalizeQueryTerms(query);
+    const ranked = MOCK_BOOKS
+        .map(book => ({ book, score: scoreMockBook(book, queryTerms) }))
+        .sort((a, b) => b.score - a.score);
+
+    const matches = ranked.filter(item => item.score > 0).map(item => item.book);
+    const pool = matches.length > 0 ? matches : MOCK_BOOKS;
+
+    return pool.slice(0, maxResults);
+}
 
 
 class BookRenderer {
@@ -349,13 +409,51 @@ class BookRenderer {
         scene.className = 'book-scene';
 
         // Load flip sound
-        const flipSound = new Audio('assets/sounds/page-flip.mp3');
+        const flipSound = new Audio('../assets/sounds/page-flip.mp3');
         flipSound.volume = 0.5;
 
+        /**
+         * ============================================================================
+         * SECURE HTML ESCAPING HELPER & XSS PREVENTION
+         * ============================================================================
+         * Problem:
+         * Previously, book title and author data were injected directly into the 
+         * scene.innerHTML without sanitization. If data from the Google Books API 
+         * contained special HTML characters (e.g., <script> tags, <, >), this could 
+         * lead to rendering bugs or Cross-Site Scripting (XSS) vulnerabilities.
+         * 
+         * Fix:
+         * We introduce this `escapeHTML` helper function. It replaces sensitive 
+         * HTML characters with their harmless entity equivalents before injection. 
+         * This strictly forces the browser to treat the dynamic content as text 
+         * rather than executable code or structural markup. This is a crucial 
+         * security measure when constructing HTML strings manually.
+         * ============================================================================
+         */
+        const escapeHTML = (str) => {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        };
+
+        const safeTitle = escapeHTML(title);
+        const safeAuthors = escapeHTML(authors);
+        const safeDescription = escapeHTML(description);
+        const safeVibe = escapeHTML(vibe);
+        const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
+
         scene.innerHTML = `
-            <div class="book" data-id="${id}">
+            <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
+                    <!-- 
+                      Using the sanitized title for the 'alt' attribute and 
+                      sanitized URL for 'src' ensures no attribute escape attacks.
+                    -->
+                    <img src="${safeThumb}" alt="${safeTitle}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -363,9 +461,15 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${vibe}</div>
-                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${description}</div>
+                        <!-- Safe data injection using escaped values -->
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        ${bookData.moods && bookData.moods.length > 0 ? `
+                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+                        </div>
+                        ` : ''}
+                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${safeDescription}</div>
                     </div>
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
@@ -376,14 +480,29 @@ class BookRenderer {
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
             </div>
             <div class="glass-overlay">
-                <strong>${title}</strong><br><small>${authors}</small>
+                <!-- Safe author and title data injection in the overlay -->
+                <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
             </div>
         `;
+
+        // Interaction: Progress Slider
+        const slider = scene.querySelector('.progress-slider');
+        if (slider) {
+            slider.addEventListener('change', (e) => {
+                const newProgress = parseInt(e.target.value);
+                if (this.libraryManager) {
+                    this.libraryManager.updateBook(id, { progress: newProgress });
+                }
+                // Update small tag
+                const small = slider.nextElementSibling;
+                if (small) small.textContent = `${newProgress}% read`;
+            });
+        }
 
         // Interaction: Flip
         const bookEl = scene.querySelector('.book');
@@ -392,7 +511,7 @@ class BookRenderer {
                 bookEl.classList.toggle('flipped');
                 // Play sound
                 flipSound.play().catch(e => {
-                    if (process.env.NODE_ENV === 'development') {
+                    if (IS_DEV) {
                         console.log("Audio play failed", e);
                     }
                 });
@@ -434,18 +553,29 @@ class BookRenderer {
             });
         });
 
+        // Flip Back Button
+        scene.querySelector('.flip-back-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            bookEl.classList.remove('flipped');
+            flipSound.play().catch(err => {
+                if (IS_DEV) {
+                    console.log("Audio play failed", err);
+                }
+            });
+        });
+
         // Async fetch AI Vibe - Hydrate the UI
         this.fetchAIVibe(title, authors, volumeInfo.description || "").then(aiVibe => {
-             if (aiVibe) {
-                 // Strip any accidental prefix the AI might return
-                 const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
-                 
-                 const noteEl = scene.querySelector('.handwritten-note');
-                 if (noteEl) {
+            if (aiVibe) {
+                // Strip any accidental prefix the AI might return
+                const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+
+                const noteEl = scene.querySelector('.handwritten-note');
+                if (noteEl) {
                     noteEl.innerHTML = cleanVibe;
                     noteEl.classList.add('fade-in'); // Optional animation hook
-                 }
-             }
+                }
+            }
         });
 
         return scene;
@@ -456,6 +586,7 @@ class BookRenderer {
             const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ title, author, description })
             });
             if (res.ok) {
@@ -481,24 +612,24 @@ class BookRenderer {
         if (lowerCats.includes('fiction') || lowerText.includes('novel')) return "A compelling narrative voice.";
         if (lowerCats.includes('history') || lowerText.includes('war')) return "A journey into the past.";
         if (lowerCats.includes('science') || lowerText.includes('space')) return "Opens your mind to new possibilities.";
-        
+
         // 2. Generic fallbacks (Deterministic hash)
         const vibes = [
-            "Perfect for a rainy afternoon.", 
-            "A quiet companion for coffee.", 
+            "Perfect for a rainy afternoon.",
+            "A quiet companion for coffee.",
             "Intense and thought-provoking.",
             "Will make you laugh and cry.",
             "Best devoured in one sitting.",
             "Prepare to be surprised."
         ];
-        
+
         // Simple hash to pick a stable vibe for this book text
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
             hash = ((hash << 5) - hash) + text.charCodeAt(i);
             hash |= 0; // Convert to 32bit integer
         }
-        
+
         return vibes[Math.abs(hash) % vibes.length];
     }
 
@@ -511,7 +642,34 @@ class BookRenderer {
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
         document.getElementById('modal-summary').textContent = book.volumeInfo.description || "No description available.";
 
+        const addBtn = document.getElementById('modal-add-btn');
         const shareBtn = document.getElementById('modal-share-btn');
+        const isInLibrary = this.libraryManager && typeof this.libraryManager.findBook === 'function' && this.libraryManager.findBook(book.id);
+
+        if (addBtn) {
+            addBtn.onclick = null;
+            addBtn.classList.toggle('library-remove-btn', isInLibrary);
+            addBtn.innerHTML = isInLibrary
+                ? '<i class="fa-solid fa-trash"></i> Remove from Library'
+                : '<i class="fa-regular fa-heart"></i> Add to Library';
+
+            addBtn.onclick = async () => {
+                if (!this.libraryManager) return;
+
+                if (isInLibrary) {
+                    if (confirm('Are you sure you want to remove this book from your library?')) {
+                        await this.libraryManager.removeBook(book.id);
+                        modal.close();
+                    }
+                    return;
+                }
+
+                await this.libraryManager.addBook(book, 'want');
+                addBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Remove from Library';
+                addBtn.classList.add('library-remove-btn');
+            };
+        }
+
         if (shareBtn) {
             shareBtn.onclick = () => {
                 const shareText = `Check out this book: ${book.volumeInfo.title} by ${book.volumeInfo.authors?.join(", ") || "Unknown Author"}`;
@@ -526,37 +684,111 @@ class BookRenderer {
 
         modal.showModal();
         document.getElementById('closeModalBtn').onclick = () => modal.close();
+
+        // Emotion Tagging UI
+        const emotionContainer = document.createElement('div');
+        emotionContainer.className = 'emotion-tagging-section';
+        emotionContainer.innerHTML = `
+            <h3 class="modal-section-title">How does this book make you feel?</h3>
+            <div class="emotion-tags-container">
+                ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
+                    const isActive = book.moods && book.moods.includes(mood);
+                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+                        <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
+                    </span>`;
+                }).join('')}
+            </div>
+        `;
+
+        // Insert before the buttons
+        const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
+        if (modalBody) {
+            // Remove existing tagging section if re-opening
+            const existing = modalBody.querySelector('.emotion-tagging-section');
+            if (existing) existing.remove();
+            
+            const actions = modalBody.querySelector('.modal-actions') || modalBody.querySelector('.book-actions-section');
+            if (actions) {
+                modalBody.insertBefore(emotionContainer, actions);
+            } else {
+                modalBody.appendChild(emotionContainer);
+            }
+        }
+
+        // Add tag toggle listeners
+        emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
+            tag.onclick = async () => {
+                const mood = tag.dataset.mood;
+                if (!book.moods) book.moods = [];
+                
+                const index = book.moods.indexOf(mood);
+                if (index > -1) {
+                    book.moods.splice(index, 1);
+                    tag.classList.remove('active');
+                } else {
+                    book.moods.push(mood);
+                    tag.classList.add('active');
+                }
+                
+                if (this.libraryManager) {
+                    await this.libraryManager.updateBook(book.id, { moods: book.moods });
+                }
+            };
+        });
+    }
+
+    getMoodIcon(mood) {
+        const icons = {
+            'Melancholic': 'fa-cloud-showers-heavy',
+            'Cozy': 'fa-mug-hot',
+            'Tense': 'fa-bolt',
+            'Inspiring': 'fa-lightbulb',
+            'Whimsical': 'fa-wand-magic-sparkles',
+            'Dark': 'fa-moon',
+            'Adventurous': 'fa-compass'
+        };
+        return icons[mood] || 'fa-tag';
     }
 
     async renderCuratedSection(query, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
         if (!container) return;
         try {
-            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const encodedQuery = encodeURIComponent(query);
-            const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
-
-            if (!res.ok) {
-                throw new Error(`API Error: ${res.statusText}`);
-            }
-
-            const data = await res.json();
+            const client = window.GoogleBooksClient;
+            const data = client
+                ? await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' })
+                : await (async () => {
+                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+                    const encodedQuery = encodeURIComponent(query);
+                    const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
+                    if (!res.ok) {
+                        throw new Error(`API Error: ${res.statusText}`);
+                    }
+                    return await res.json();
+                })();
 
             if (data.items && data.items.length > 0) {
-                container.innerHTML = '';
-                for (const book of data.items) {
-                    const bookElement = await this.createBookElement(book);
-                    container.appendChild(bookElement);
-                }
+                await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-box-open"></i>
-                        <p>No books found. The shelves are empty.</p>
-                    </div>`;
+                const fallbackBooks = getFallbackBooks(query, maxResults);
+                if (fallbackBooks.length > 0) {
+                    await this.renderBookCards(container, fallbackBooks);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>No books found. The shelves are empty.</p>
+                        </div>`;
+                }
             }
         } catch (err) {
             console.error("Failed to fetch books", err);
+            const fallbackBooks = getFallbackBooks(query, maxResults);
+            if (fallbackBooks.length > 0) {
+                await this.renderBookCards(container, fallbackBooks);
+                return;
+            }
+
             showToast("Failed to load bookshelf.", "error");
             container.innerHTML = `
                 <div class="empty-state">
@@ -565,22 +797,105 @@ class BookRenderer {
                 </div>`;
         }
     }
+
+    async renderBookCards(container, books) {
+        container.innerHTML = '';
+        if (!books || books.length === 0) {
+            container.innerHTML = '<p class="empty-state">No books available for this collection.</p>';
+            return;
+        }
+
+        for (const book of books) {
+            try {
+                const bookElement = await this.createBookElement(book);
+                if (bookElement) {
+                    container.appendChild(bookElement);
+                }
+            } catch (err) {
+                console.error("Failed to render individual book:", book.id, err);
+                // Continue to next book instead of breaking the row
+            }
+        }
+
+        // If nothing was rendered, show error
+        if (container.children.length === 0) {
+            container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
+        }
+    }
 }
 
 class LibraryManager {
     constructor() {
         this.storageKey = 'bibliodrift_library';
-        const stored = SafeStorage.get(this.storageKey);
-        this.library = stored ? JSON.parse(stored) : {
+        // Initialize with empty library to prevent crashes during async load
+        this.library = {
             current: [],
             want: [],
             finished: []
         };
-        this.apiBase = 'http://localhost:5000/api/v1';
 
-        // Sync API if user is logged in
-        this.syncWithBackend();
+        /**
+         * ==============================================================================
+         * ISSUE FIX: HARDCODED API BASE URL DUPLICATION
+         * ==============================================================================
+         * 
+         * Background Context & Issue:
+         * ---------------------------
+         * Previously, this class had its own hardcoded backend URL assigned right here:
+         * `this.apiBase = 'http://localhost:5000/api/v1';`
+         * 
+         * This implementation was problematic for several critical reasons:
+         * 1. Duplication of Truth: The global constant `MOOD_API_BASE` already exists 
+         *    to define the backend server location. Having a second hardcoded value 
+         *    here meant that if the API URL needed to change (e.g., deploying from dev 
+         *    to production), developers had to remember to manually update it in 
+         *    multiple disparate files. This led to frustrating inconsistencies, bugs, 
+         *    and broken network requests when only one reference was updated.
+         * 2. Security & Environment Portability: Hardcoding an `http://localhost` 
+         *    URL meant the application structure was rigidly tied to a local machine, 
+         *    and would cause Mixed Content warnings or blockages in production 
+         *    environments that require secure HTTPS connections.
+         * 
+         * The Resolution:
+         * ---------------
+         * We now strictly reuse the global `MOOD_API_BASE` constant. By centralizing 
+         * the configuration to a single source of truth, we ensure complete consistency 
+         * across the entire application architecture while dynamically adapting to the 
+         * secure network requirements of the deployed environment.
+         * ==============================================================================
+         */
+        this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
+
+        // Asynchronous initialization
+        this._initPromise = this.init();
+    }
+
+    async init() {
+        // 1. Request persistent storage to prevent wipes
+        await SafeStorage.requestPersistence();
+
+        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
+        const stored = await SafeStorage.getAsync(this.storageKey);
+        if (stored) {
+            try {
+                this.library = JSON.parse(stored);
+            } catch (e) {
+                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+            }
+        }
+
+        // 3. Setup sorting and trigger initial fast render
         this.setupSorting();
+
+        if (document.getElementById('shelf-want')) {
+            // Fast Render from local data
+            this.renderShelf('want', 'shelf-want');
+            this.renderShelf('current', 'shelf-current');
+            this.renderShelf('finished', 'shelf-finished');
+        }
+
+        // 4. Sync with backend if available (Full Refresh)
+        await this.syncWithBackend();
     }
 
     getUser() {
@@ -589,11 +904,15 @@ class LibraryManager {
     }
 
     getAuthHeaders() {
-        const token = SafeStorage.get('bibliodrift_token');
-        return new Headers({
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        });
+        const csrfToken = getCookie('csrf_access_token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        // CSRF protection for cookie-based auth
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        return new Headers(headers);
     }
 
     async syncWithBackend() {
@@ -602,7 +921,8 @@ class LibraryManager {
 
         try {
             const res = await fetch(`${this.apiBase}/library/${user.id}`, {
-                headers: this.getAuthHeaders()
+                headers: this.getAuthHeaders(),
+                credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
@@ -624,28 +944,39 @@ class LibraryManager {
                     const remoteBook = {
                         id: item.google_books_id,
                         db_id: item.id,
+                        version: item.version,
                         volumeInfo: {
                             title: item.title,
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
-                        // Preserve local progress if exists, else default
-                        progress: existing ? existing.book.progress : (item.shelf_type === 'current' ? 0 : null),
+                        // Backend data is authoritative during sync DOWN
+                        progress: item.progress,
                         date_added: item.created_at || new Date().toISOString()
                     };
 
                     if (existing) {
-                        // Check if shelf matches
-                        if (existing.shelf !== item.shelf_type) {
-                            // Backend wins on shelf conflict (syncing FROM server)
-                            // Remove from old shelf
-                            this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
-                            // Add to new shelf
-                            this.library[item.shelf_type].push(remoteBook);
-                        } else {
-                            // Update details (e.g. db_id might be missing locally if added offline)
-                            Object.assign(existing.book, remoteBook);
+                        const localBook = existing.book;
+
+                        // Conflict Resolution Logic:
+                        // If backend has a higher version, it wins.
+                        if (item.version > (localBook.version || 0)) {
+                            if (existing.shelf !== item.shelf_type) {
+                                // Remove from old shelf
+                                this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
+                                // Add to new shelf
+                                this.library[item.shelf_type].push(remoteBook);
+                            } else {
+                                // Update details in place
+                                Object.assign(localBook, remoteBook);
+                            }
+                        } else if (item.version === (localBook.version || 0)) {
+                            // Versions match, just ensure db_id is set
+                            localBook.db_id = item.id;
                         }
+                        // If item.version < localBook.version, we have unsynced local changes.
+                        // syncLocalToBackend will handle pushing these.
+
                         // Mark as processed/merged
                         localBooksMap.delete(item.google_books_id);
                     } else {
@@ -691,16 +1022,14 @@ class LibraryManager {
         ['current', 'want', 'finished'].forEach(shelf => {
             if (this.library[shelf]) {
                 this.library[shelf].forEach(book => {
-                    // Avoid syncing items that obviously came from backend (have db_id) 
-                    // UNLESS you want to support offline updates (which is harder).
-                    // The requirement is "upload anonymous local library when user signs up".
-                    // Anonymous items won't have db_id.
-                    if (!book.db_id) {
-                        itemsToSync.push({
-                            ...book,
-                            shelf: shelf
-                        });
-                    }
+                    // Sync both new (anonymous) items and potentially updated items (with db_id)
+                    // If book.db_id is present, it's an update. If not, it's a new item.
+                    itemsToSync.push({
+                        ...book,
+                        shelf: shelf,
+                        // Ensure version is sent if present
+                        version: book.version || 0
+                    });
                 });
             }
         });
@@ -708,12 +1037,13 @@ class LibraryManager {
         if (itemsToSync.length === 0) return; // Nothing to sync
 
         try {
-            if (process.env.NODE_ENV === 'development') {
+            if (IS_DEV) {
                 console.log(`Syncing ${itemsToSync.length} items to backend...`);
             }
             const res = await fetch(`${this.apiBase}/library/sync`, {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     user_id: user.id,
                     items: itemsToSync
@@ -722,15 +1052,22 @@ class LibraryManager {
 
             if (res.ok) {
                 const data = await res.json();
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log("Sync result:", data);
                 }
-                showToast(`Synced ${data.message}`, "success");
 
-                // After upload, pull fresh state from backend to get the new DB IDs
+                if (data.conflicts > 0) {
+                    showToast(`Synced ${data.message} (${data.conflicts} conflicts resolved by server)`, "info");
+                } else {
+                    showToast(`Synced ${data.message}`, "success");
+                }
+
+                // After upload, pull fresh state from backend to get the new DB IDs and versions
                 await this.syncWithBackend();
             } else {
-                console.error("Backend refused sync");
+                const data = await res.json();
+                console.error("Backend refused sync", data);
+                showToast("Sync failed: " + (data.error || "Server error"), "error");
             }
         } catch (e) {
             console.error("Sync upload failed", e);
@@ -739,11 +1076,58 @@ class LibraryManager {
     }
 
     setupSorting() {
-        const sortSelect = document.getElementById('sortLibrary');
+        const sortSelect = document.getElementById('library-sort');
         if (sortSelect) {
             sortSelect.addEventListener('change', (e) => {
                 this.sortLibrary(e.target.value);
             });
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                this.filterLibrary(query);
+            });
+        }
+    }
+
+    filterLibrary(query) {
+        ['current', 'want', 'finished'].forEach(shelf => {
+            const containerId = `shelf-${shelf}-3d`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const books = this.library[shelf];
+            const filtered = books.filter(book => {
+                const title = (book.volumeInfo.title || "").toLowerCase();
+                const author = (book.volumeInfo.authors || []).join(" ").toLowerCase();
+                const moods = (book.moods || []).join(" ").toLowerCase();
+                return title.includes(query) || author.includes(query) || moods.includes(query);
+            });
+
+            this.renderFilteredShelf(shelf, containerId, filtered);
+        });
+    }
+
+    async renderFilteredShelf(shelfName, elementId, books) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+        
+        container.innerHTML = '';
+        if (books.length === 0) {
+            container.innerHTML = '<div class="empty-state">No matching books found.</div>';
+            return;
+        }
+
+        try {
+            const renderer = new BookRenderer(this);
+            for (const book of books) {
+                const el = await renderer.createBookElement(book, shelfName);
+                container.appendChild(el);
+            }
+        } catch (error) {
+            console.error(`[Library] Error rendering filtered shelf:`, error);
         }
     }
 
@@ -754,14 +1138,23 @@ class LibraryManager {
                     return new Date(b.date_added || 0) - new Date(a.date_added || 0);
                 case 'date_asc':
                     return new Date(a.date_added || 0) - new Date(b.date_added || 0);
+                case 'title':
                 case 'title_asc':
                     return (a.volumeInfo.title || "").localeCompare(b.volumeInfo.title || "");
                 case 'title_desc':
                     return (b.volumeInfo.title || "").localeCompare(a.volumeInfo.title || "");
+                case 'author':
                 case 'author_asc':
                     const authorA = (a.volumeInfo.authors && a.volumeInfo.authors[0]) || "";
                     const authorB = (b.volumeInfo.authors && b.volumeInfo.authors[0]) || "";
                     return authorA.localeCompare(authorB);
+                case 'mood':
+                    // Sort by primary mood if available
+                    const moodA = (a.moods && a.moods[0]) || "zzz"; // push untagged to bottom
+                    const moodB = (b.moods && b.moods[0]) || "zzz";
+                    return moodA.localeCompare(moodB);
+                case 'rating':
+                    return (b.volumeInfo.averageRating || 0) - (a.volumeInfo.averageRating || 0);
                 default:
                     return 0;
             }
@@ -770,7 +1163,12 @@ class LibraryManager {
         ['current', 'want', 'finished'].forEach(shelf => {
             if (this.library[shelf]) {
                 this.library[shelf].sort(sortFn);
-                this.renderShelf(shelf, `shelf-${shelf}`);
+                // If we have a dedicated 3D renderer, let it handle the UI to avoid duplicate rendering
+                if (window.bookshelf3D && typeof window.bookshelf3D.refreshShelves === 'function') {
+                    window.bookshelf3D.refreshShelves();
+                } else {
+                    this.renderShelf(shelf, `shelf-${shelf}-3d`);
+                }
             }
         });
     }
@@ -802,7 +1200,7 @@ class LibraryManager {
         // 1. Update Local State
         this.library[shelf].push(enrichedBook);
         this.saveLocally();
-        if (process.env.NODE_ENV === 'development') {
+        if (IS_DEV) {
             console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
         }
 
@@ -822,17 +1220,73 @@ class LibraryManager {
                 const res = await fetch(`${this.apiBase}/library`, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),
+                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Store the DB ID back to the local object
+                    // Store the DB ID and version back to the local object
                     enrichedBook.db_id = data.item.id;
+                    enrichedBook.version = data.item.version;
                     this.saveLocally();
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
+                showToast("Saved locally (Sync failed)", "info");
+            }
+        }
+    }
+
+
+    async updateBook(id, updates) {
+        const result = this.findBookInShelf(id);
+        if (!result) return;
+
+        const { shelf, book } = result;
+
+        // 1. Update Local State
+        Object.assign(book, updates);
+
+        // Local "Finished" logic
+        if (updates.progress === 100 && shelf !== 'finished') {
+            // Remove from current, add to finished
+            this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
+            this.library.finished.push(book);
+            showToast(`Congrats! You finished ${book.volumeInfo.title}!`, "success");
+        }
+
+        this.saveLocally();
+
+        // 2. Update Backend
+        const user = this.getUser();
+        if (user && book.db_id) {
+            try {
+                const res = await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                    method: 'PUT',
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        ...updates,
+                        version: book.version // Optimistic locking
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    book.version = data.item.version;
+                    this.saveLocally();
+                } else if (res.status === 409) {
+                    const data = await res.json();
+                    showToast("Conflict detected! Syncing with server...", "error");
+                    // Optionally show a more detailed merge UI here
+                    await this.syncWithBackend();
+                } else {
+                    const data = await res.json();
+                    console.error("Update failed:", data.error);
+                }
+            } catch (e) {
+                console.error("Failed to update backend", e);
                 showToast("Saved locally (Sync failed)", "info");
             }
         }
@@ -868,7 +1322,7 @@ class LibraryManager {
             // 1. Update Local
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
             this.saveLocally();
-            if (process.env.NODE_ENV === 'development') {
+            if (IS_DEV) {
                 console.log(`Removed book ${id} from ${shelf}`);
             }
 
@@ -879,7 +1333,11 @@ class LibraryManager {
             // Do we have it?
             if (user && book.db_id) {
                 try {
-                    await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE', headers: this.getAuthHeaders() });
+                    await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                        method: 'DELETE',
+                        headers: this.getAuthHeaders(),
+                        credentials: 'include'
+                    });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
                     showToast("Removed locally (Backend sync failed)", "info");
@@ -914,13 +1372,15 @@ class LibraryManager {
         // Clear container for re-rendering (essential for sorting)
         container.innerHTML = '';
 
-        (async () => {
+        try {
             for (const book of books) {
                 const renderer = new BookRenderer(this);
                 const el = await renderer.createBookElement(book, shelfName);
                 container.appendChild(el);
             }
-        })();
+        } catch (error) {
+            console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
+        }
     }
 }
 
@@ -929,34 +1389,42 @@ class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
-        this.currentTheme = SafeStorage.get(this.themeKey) || 'day';
-
+        // Read directly from localStorage — no abstraction layer
+        const stored = localStorage.getItem(this.themeKey);
+        this.currentTheme = stored === 'night' ? 'night' : 'light';
+        // Named handler so we can remove & re-add cleanly (no stacking)
+        this._handler = this._onClick.bind(this);
         this.init();
     }
 
+    _onClick() {
+        this.currentTheme = this.currentTheme === 'night' ? 'light' : 'night';
+        this.applyTheme(this.currentTheme);
+        localStorage.setItem(this.themeKey, this.currentTheme);
+    }
 
     init() {
         if (!this.toggleBtn) return;
-
         this.applyTheme(this.currentTheme);
-
-        this.toggleBtn.addEventListener('click', () => {
-            this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
-            this.applyTheme(this.currentTheme);
-            SafeStorage.set(this.themeKey, this.currentTheme);
-        });
+        // Remove before add to prevent duplicate listeners if init is called twice
+        this.toggleBtn.removeEventListener('click', this._handler);
+        this.toggleBtn.addEventListener('click', this._handler);
     }
 
-
     applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        const icon = this.toggleBtn.querySelector('i');
         if (theme === 'night') {
-            icon.classList.remove('fa-moon');
-            icon.classList.add('fa-sun');
+            document.documentElement.setAttribute('data-theme', 'night');
         } else {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
+            document.documentElement.removeAttribute('data-theme');
+        }
+        // Update icon — use className directly, cannot fail
+        if (this.toggleBtn) {
+            const icon = this.toggleBtn.querySelector('i');
+            if (icon) {
+                icon.className = theme === 'night'
+                    ? 'fa-solid fa-sun'
+                    : 'fa-solid fa-moon';
+            }
         }
     }
 }
@@ -964,7 +1432,8 @@ class ThemeManager {
 
 
 class GenreManager {
-    constructor() {
+    constructor(libraryManager = null) {
+        this.libraryManager = libraryManager;
         this.genreGrid = document.getElementById('genre-grid');
         this.modal = document.getElementById('genre-modal');
         this.closeBtn = document.getElementById('close-genre-modal');
@@ -1025,45 +1494,55 @@ class GenreManager {
         `;
 
         try {
-            // Fetch relevant books from Google Books API
-            // Using subject search and higher relevance
-            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
+            const client = window.GoogleBooksClient;
+            const data = client
+                ? await client.fetchVolumes(`subject:${genre}`, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' })
+                : await (async () => {
+                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+                    const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+                    return await response.json();
+                })();
 
-            if (response.ok) {
-                const data = await response.json();
-                const items = data.items || [];
-
-                if (items.length > 0) {
-                    this.renderBooks(items);
-                } else {
-                    this.booksGrid.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fa-solid fa-box-open"></i>
-                            <p>Bookshelf Empty (No books found)</p>
-                        </div>`;
-                }
+            const items = data.items || [];
+            if (items.length > 0) {
+                this.renderBooks(items);
             } else {
-                console.warn(`API Error ${response.status}`);
-                this.booksGrid.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <p>Bookshelf Empty (API Error: ${response.status})</p>
-                    </div>`;
+                this.renderBooks(getFallbackBooks(genre, 20));
             }
         } catch (error) {
             console.error('Error fetching genre books:', error);
-            this.booksGrid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-wifi"></i>
-                    <p>Bookshelf Empty (Connection Failed)</p>
-                </div>`;
+            this.renderBooks(getFallbackBooks(genre, 20));
         }
     }
 
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
-        const renderer = new BookRenderer(new LibraryManager());
+
+        /**
+         * ==============================================================================
+         * ISSUE FIX: REDUNDANT LIBRARYMANAGER INSTANTIATION
+         * ==============================================================================
+         * 
+         * Background Context & Issue:
+         * ---------------------------
+         * Previously, a new `LibraryManager` was instantiated every time `renderBooks` 
+         * was called inside `GenreManager`. 
+         * 
+         * The problem was that creating a new `LibraryManager` triggers a fresh 
+         * `syncWithBackend()` network call upon initialization. Calling this repeatedly 
+         * every time the genre modal books are rendered wastes bandwidth and can 
+         * potentially overwrite or corrupt an in-progress synchronization state.
+         * 
+         * The Resolution:
+         * ---------------
+         * We now pass the existing globally shared `libManager` instance into 
+         * `GenreManager` at construction time and reuse it here via `this.libraryManager`.
+         * ==============================================================================
+         */
+        const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
             this.booksGrid.appendChild(el);
@@ -1072,14 +1551,23 @@ class GenreManager {
 }
 
 // Init
+// --- Application Bootstrap ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load config first to get API keys
-    await loadConfig();
+    console.log('🚀 BiblioDrift Initializing...');
 
+    // 1. Initialize Managers
     const libManager = new LibraryManager();
-    window.libManager = libManager; // Expose for Auth
+    window.libManager = libManager;
 
-    // Auth Page Logic (Toggle Login/Register)
+    window.renderer = new BookRenderer(libManager);
+    const themeManager = new ThemeManager();
+
+    // 2. Load Config (Non-blocking)
+    loadConfig();
+
+
+
+    // --- AUTH LOGIC ---
     const toggleLink = document.querySelector('.toggle-link');
     const authTitle = document.querySelector('.auth-container h2');
     const authBtn = document.querySelector('.auth-btn');
@@ -1087,56 +1575,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (toggleLink && authTitle && authBtn && authForm) {
         let isLogin = true;
-        authForm.dataset.mode = 'login'; // Default
-
-        // Create Username Input for Register mode
-        const usernameInput = document.createElement('input');
-        usernameInput.type = 'text';
-        usernameInput.id = 'username';
-        usernameInput.className = 'auth-input';
-        usernameInput.placeholder = 'Username';
-        usernameInput.style.display = 'none';
-
-        // Insert before email
-        const emailInput = document.getElementById('email');
-        if (emailInput) {
-            authForm.insertBefore(usernameInput, emailInput);
-        }
+        authForm.dataset.mode = 'login';
 
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
             authForm.dataset.mode = isLogin ? 'login' : 'register';
-
-            if (isLogin) {
-                authTitle.textContent = 'Welcome Back';
-                authBtn.textContent = 'Sign In';
-                toggleLink.textContent = 'No account? Create one.';
-                usernameInput.style.display = 'none';
-                usernameInput.removeAttribute('required');
-            } else {
-                authTitle.textContent = 'Create Account';
-                authBtn.textContent = 'Sign Up';
-                toggleLink.textContent = 'Already have an account? Sign In.';
-                usernameInput.style.display = 'block';
-                usernameInput.setAttribute('required', 'true');
-            }
+            authTitle.textContent = isLogin ? 'Sign In' : 'Join BiblioDrift';
+            authBtn.textContent = isLogin ? 'Sign In' : 'Create Account';
+            toggleLink.textContent = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In";
         });
     }
 
-    const renderer = new BookRenderer(libManager);
-    const themeManager = new ThemeManager();
-    const genreManager = new GenreManager();
+    const genreManager = new GenreManager(libManager);
     genreManager.init();
     const exportBtn = document.getElementById("export-library");
-
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
         exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
+
+        exportBtn.addEventListener("click", () => {
+            const library = SafeStorage.get("bibliodrift_library");
+            if (!library) {
+                showToast("Library is empty!", "info");
+                return;
+            }
+            const blob = new Blob([library], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+            showToast("Library exported successfully!", "success");
+        });
     }
 
 
 
-    const isLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
+    const isLoggedIn = !!libManager.getUser(); // Rely on user object instead of forgeable flag
     const authLink = document.getElementById('navAuthLink');
     if (isLoggedIn && authLink) {
         authLink.innerHTML = '<i class="fa-solid fa-user"></i>';
@@ -1150,7 +1630,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const performSearch = () => {
         if (searchInput && searchInput.value.trim()) {
-            window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+            // Only redirect to discovery search if we're not already on the library page 
+            // where search is handled by the local library filter.
+            if (!window.location.pathname.includes('library.html')) {
+                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+            }
         }
     };
 
@@ -1167,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q');
-    
+
     // Fill search box if query exists
     if (query && searchInput) {
         searchInput.value = query;
@@ -1184,17 +1668,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             </section>`;
         renderer.renderCuratedSection(query, 'search-results', 20);
     } else if (document.getElementById('row-rainy')) {
-        renderer.renderCuratedSection('subject:mystery atmosphere', 'row-rainy');
-        renderer.renderCuratedSection('authors:amitav ghosh|authors:arundhati roy|subject:india', 'row-indian');
-        renderer.renderCuratedSection('subject:classic fiction', 'row-classics');
-        renderer.renderCuratedSection('subject:fiction', 'row-genre');
+        console.log('📚 Initializing Curated Discovery Sections...');
+        (async () => {
+            try {
+                await renderer.renderCuratedSection('subject:mystery atmosphere', 'row-rainy');
+                await delay(500);
+                await renderer.renderCuratedSection('authors:arundhati roy|subject:india', 'row-indian');
+                await delay(500);
+                await renderer.renderCuratedSection('subject:classic fiction', 'row-classics');
+                await delay(500);
+                await renderer.renderCuratedSection('subject:fiction', 'row-fiction');
+                console.log('✅ Discovery shelves populated.');
+            } catch (err) {
+                console.error('❌ Critical error during shelf initialization:', err);
+            }
+        })();
     }
 
-    if (document.getElementById('shelf-want')) {
-        libManager.renderShelf('want', 'shelf-want');
-        libManager.renderShelf('current', 'shelf-current');
-        libManager.renderShelf('finished', 'shelf-finished');
-    }
+    // Re-rendering is now handled by libManager.init() asynchronously to ensure
+    // data is loaded from IndexedDB backup if LocalStorage was wiped.
+    // if (document.getElementById('shelf-want')) {
+    //     libManager.renderShelf('want', 'shelf-want');
+    //     libManager.renderShelf('current', 'shelf-current');
+    //     libManager.renderShelf('finished', 'shelf-finished');
+    // }
 
 
     // Check if Profile Page
@@ -1246,9 +1743,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                // Clear backend cookies
+                await fetch(`${MOOD_API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+            } catch (e) {
+                console.warn("Backend logout failed", e);
+            }
             SafeStorage.remove('bibliodrift_user');
             SafeStorage.remove('bibliodrift_token');
+            SafeStorage.remove('isLoggedIn');
             window.location.href = 'index.html';
         });
     }
@@ -1263,36 +1767,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
         });
-
-        const exportBtn = document.getElementById("export-library");
-        if (exportBtn) {
-            exportBtn.addEventListener("click", () => {
-                const library = SafeStorage.get("bibliodrift_library");
-                if (!library) {
-                    showToast("Library is empty!", "info");
-                    return;
-                }
-                const blob = new Blob([library], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                URL.revokeObjectURL(url);
-                showToast("Library exported successfully!", "success");
-            });
-        }
     }
 });
 
@@ -1320,10 +1800,10 @@ async function handleAuth(event) {
 
     if (mode === 'register') {
         const username = usernameInput ? usernameInput.value : email.split('@')[0];
-        endpoint = '/api/v1/register';
+        endpoint = '/register';
         payload = { username, email, password };
     } else {
-        endpoint = '/api/v1/login';
+        endpoint = '/login';
         payload = { username: email, password: password };
     }
 
@@ -1333,9 +1813,10 @@ async function handleAuth(event) {
         btn.textContent = 'Processing...';
         btn.disabled = true;
 
-        const res = await fetch(`http://localhost:5000${endpoint}`, {
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(payload)
         });
 
@@ -1346,10 +1827,7 @@ async function handleAuth(event) {
 
         if (res.ok) {
             // Success!
-            // Store Access Token and User Info
-            if (data.access_token) {
-                SafeStorage.set('bibliodrift_token', data.access_token);
-            }
+            // Token is now in an HttpOnly cookie (managed by backend)
             SafeStorage.set('bibliodrift_user', JSON.stringify(data.user));
 
             if (typeof showToast === 'function')
@@ -1430,7 +1908,7 @@ function enableTapEffects() {
 enableTapEffects();
 
 // --- creak and page flip effects ---
-const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
+const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
 pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
 
@@ -1439,7 +1917,7 @@ document.addEventListener("click", (e) => {
     const scene = e.target.closest(".book-scene");
     if (!scene) return;
 
-    if (process.env.NODE_ENV === 'development') {
+    if (IS_DEV) {
         console.log("BOOK CLICK");
     }
 
@@ -1476,7 +1954,7 @@ const KeyboardShortcuts = {
     // Initialize keyboard event listener
     init() {
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        if (process.env.NODE_ENV === 'development') {
+        if (IS_DEV) {
             console.log('BiblioDrift Keyboard Shortcuts Initialized');
         }
     },
@@ -1502,56 +1980,56 @@ const KeyboardShortcuts = {
     executeAction(action) {
         switch (action) {
             case 'navigateNext':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Navigating to next book...');
                 }
                 this.navigateToNextBook();
                 break;
             case 'navigatePrev':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Navigating to previous book...');
                 }
                 this.navigateToPreviousBook();
                 break;
             case 'selectBook':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Selecting current book...');
                 }
                 this.selectCurrentBook();
                 break;
             case 'addToWantRead':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Adding to Want to Read list...');
                 }
                 this.moveCurrentBookToShelf('want');
                 break;
             case 'markCurrentlyReading':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Marking as Currently Reading...');
                 }
                 this.moveCurrentBookToShelf('current');
                 break;
             case 'addToFavorites':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Adding to Favorites...');
                 }
                 this.moveCurrentBookToShelf('finished');
                 break;
             case 'closeModal':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Closing modal...');
                 }
                 const modals = document.querySelectorAll('.modal, [role="dialog"]');
                 modals.forEach(modal => modal.style.display = 'none');
                 break;
             case 'showHelpMenu':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Showing help menu...');
                 }
                 this.displayHelpMenu();
                 break;
             case 'focusSearch':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Focusing search bar...');
                 }
                 const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');

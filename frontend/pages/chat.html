@@ -3,9 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat with Bookseller | BiblioDrift</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Chat with Elara | BiblioDrift</title>
+    <link rel="stylesheet" href="../css/style.css">
     <!-- Unified Font Imports -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -170,13 +178,39 @@
                 justify-content: center;
             }
         }
+        /* Typing indicator label */
+        .typing-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            font-style: italic;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Elara’s avatar gets a warm amber tint vs the default */
+        .bookseller-message .message-avatar,
+        .typing-indicator .message-avatar {
+            background: linear-gradient(135deg, #b8860b, #8b4513);
+        }
+        /* Override global ambient panel position for chat header */
+        .chat-actions .ambient-panel {
+            top: 100%;
+            bottom: auto;
+            margin-top: 10px;
+        }
     </style>
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -214,17 +248,43 @@
             <div class="chat-header">
                 <div class="bookseller-info">
                     <div class="bookseller-avatar">
-                        <i class="fa-solid fa-user-tie"></i>
+                        <i class="fa-solid fa-book-open"></i>
                     </div>
                     <div class="bookseller-details">
-                        <h2 style="font-family: 'Playfair Display', serif;">Your Personal Bookseller</h2>
+                        <h2 style="font-family: 'Playfair Display', serif;">Elara, the Wise Bookseller</h2>
                         <p class="status">
                             <span class="status-dot"></span>
-                            Ready to help you find your next great read
+                            Reading the room &amp; finding your next great story
                         </p>
                     </div>
                 </div>
                 <div class="chat-actions">
+                    <div class="ambient-controls" id="ambientControls">
+                        <button class="action-btn" id="ambientToggle" title="Atmosphere (Rain/Fire)">
+                            <i class="fa-solid fa-cloud-showers-heavy"></i>
+                        </button>
+                        <div class="ambient-panel" id="ambientPanel">
+                            <h3>Ambient Sanctuary</h3>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-cloud-rain"></i> Rain</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="rainToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-fire"></i> Fireplace</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="fireToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="volume-control">
+                                <label for="ambientVolume"><i class="fa-solid fa-volume-high"></i> Volume</label>
+                                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+                            </div>
+                        </div>
+                    </div>
                     <button class="action-btn" onclick="clearChat()" title="Clear conversation">
                         <i class="fa-solid fa-trash"></i>
                     </button>
@@ -238,14 +298,13 @@
             <div class="chat-messages" id="chatMessages">
                 <div class="message bookseller-message">
                     <div class="message-avatar">
-                        <i class="fa-solid fa-user-tie"></i>
+                        <i class="fa-solid fa-book-open"></i>
                     </div>
                     <div class="message-content">
                         <div class="message-bubble">
-                            <p>Hello! I'm your personal bookseller. I'm here to help you discover your next favorite
-                                book based on your mood, preferences, and what you're feeling like reading.</p>
-                            <p>Tell me what kind of vibe you're looking for - maybe something cozy for a rainy evening,
-                                or an adventurous tale to spark your imagination?</p>
+                            <p>Ah, a wandering soul has found their way through the door&hellip; Welcome.</p>
+                            <p>I am Elara &mdash; keeper of stories, reader of moods, and devoted guide to the worlds that live between pages. Whether your heart is heavy with rain or light as a summer afternoon, I will find you the perfect book.</p>
+                            <p>Tell me: what is stirring in you today?</p>
                         </div>
                         <div class="message-time">Just now</div>
                     </div>
@@ -255,24 +314,32 @@
             <!-- Quick Suggestions -->
             <div class="quick-suggestions" id="quickSuggestions">
                 <div class="suggestions-header">
-                    <span>Quick suggestions:</span>
+                    <span>What mood are you in?</span>
                 </div>
                 <div class="suggestions-list">
-                    <button class="suggestion-btn" onclick="sendQuickMessage('I want something cozy and comforting')">
-                        <i class="fa-solid fa-mug-hot"></i>
-                        Cozy & Comforting
+                    <button class="suggestion-btn" onclick="sendQuickMessage('It\'s raining outside and I want something melancholy and beautiful')">
+                        <i class="fa-solid fa-cloud-rain"></i>
+                        Rainy &amp; Melancholy
                     </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('Looking for a thrilling mystery')">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        Thrilling Mystery
-                    </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('Something romantic and heartwarming')">
-                        <i class="fa-solid fa-heart"></i>
-                        Romantic & Heartwarming
-                    </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('I need an escape to another world')">
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I need to escape reality completely — take me to another world')">
                         <i class="fa-solid fa-wand-sparkles"></i>
-                        Fantasy Escape
+                        Escape Reality
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('My heart is a little heavy today, I need something that understands grief')">
+                        <i class="fa-solid fa-heart"></i>
+                        Something Healing
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a thriller that keeps me up at night, unable to put it down')">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Can’t-Put-Down Thriller
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want something cozy, like tea and blankets on a Sunday morning')">
+                        <i class="fa-solid fa-mug-hot"></i>
+                        Cozy &amp; Comforting
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a book that completely changed how someone sees the world')">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        Mind-Expanding
                     </button>
                 </div>
             </div>
@@ -287,8 +354,8 @@
                     </button>
                 </div>
                 <div class="input-hint">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    Try: "I want something like Harry Potter but darker"
+                    <i class="fa-solid fa-feather"></i>
+                    Try: "I want something that feels like a letter from a friend"
                 </div>
             </div>
         </div>
@@ -313,14 +380,12 @@
             }
         });
     </script>
-    <!-- DOMPurify library for robust XSS prevention -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
-    
-    <script src="config.js"></script>
-    <script src="chat.js"></script>
-    <script src="app.js"></script>
-    <script src="footer.js"></script>
-    <script src="script/header-scroll.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/ambient.js"></script>
+    <script src="../js/chat.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../script/header-scroll.js"></script>
 </body>
 
 </html>

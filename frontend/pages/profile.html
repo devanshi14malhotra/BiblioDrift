@@ -3,21 +3,30 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile | BiblioDrift</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style-responsive.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/style-responsive.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
 
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -107,9 +116,40 @@
         </section>
     </main>
 
-    <script src="config.js"></script>
-    <script src="js/header-scroll.js"></script>
-    <script src="app.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../script/header-scroll.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/footer.js"></script>
+
+    <!-- Ambient Sanctuary UI -->
+    <div class="ambient-sanctuary">
+        <button id="ambientToggle" title="Ambient Sanctuary">
+            <i class="fa-solid fa-leaf"></i>
+        </button>
+        <div id="ambientPanel" class="ambient-panel">
+            <h3>Ambient Sanctuary</h3>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
+                <label class="switch">
+                    <input type="checkbox" id="rainToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
+                <label class="switch">
+                    <input type="checkbox" id="fireToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="volume-control">
+                <label for="ambientVolume"><i class="fa-solid fa-volume-high"></i> Volume</label>
+                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/ambient.js"></script>
 </body>
 
 </html>

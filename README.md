@@ -22,13 +22,47 @@ BiblioDrift is a cozy, visual-first book discovery platform designed to make fin
      No manual curation, static lists, or hardcoded recommendations are permitted.
 - **Dynamic Popups**: Click a book to see an expanded view with AI-generated blurbs.
 - **Curated Tables**: Horizontal scrolling lists based on moods like "Monsoon Reads".
+- **Elara, the Wise Bookseller**: An interactive AI persona who chats with you, remembers your mood, and hand-picks books like a real librarian.
+- **Ambient Sanctuary**: Immersive background sounds (e.g., Rainy Evening, Cozy Fireplace) with volume control to enhance your reading atmosphere.
+- **Emotion-Based Tagging**: Personalize your library by tagging books with feelings like *Cozy*, *Melancholic*, or *Adventurous*.
+- **Mood Discovery**: Sort and filter your entire collection by emotional resonance and vibes.
 
 ## 🛠️ Tech Stack
-- **Frontend**: Vanilla JavaScript, CSS3 (3D Transforms), HTML5
-- **API**: Google Books API (Real-time data)
-- **Storage**: LocalStorage (MVP), PostgreSQL (Planned)
-- **Backend (Planned)**: Python Flask
-- **AI (Planned)**: LLM integration for "Bookseller Notes"
+
+<div align="center">
+<table style="border: none; border-collapse: collapse;">
+<tr>
+<td align="center"><b>Frontend</b>
+
+
+<code>Vanilla JS</code> • <code>CSS3 3D</code> • <code>HTML5</code></td>
+<td align="center"><b>API & Data</b>
+
+
+<code>Google Books API</code> • <code>LocalStorage</code></td>
+<td align="center"><b>Backend & AI</b>
+
+
+<code>Python Flask</code> • <code>FAISS / LLM</code></td>
+</tr>
+</table>
+</div>
+
+## System Architecture
+To maintain our strict AI-driven model, BiblioDrift utilizes a decoupled flow where the backend acts as the "Curator" and the frontend acts as the "Librarian."
+```mermaid
+graph TD
+    A[Vanilla JS Frontend] -->|Vibe Query| B[Flask Backend]
+    B -->|Prompt Engineering| C[AI Service / LLM]
+    C -->|Generated Blurb| B
+    B -->|JSON Response| A
+    A -->|Book Details| D[Google Books API]
+    A -->|Persistence| E[LocalStorage]
+    A -->|Emotion Tags| E
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+```
 
 ## 🤖 Project Structure 
 ```
@@ -129,17 +163,22 @@ This ensures discovery stays organic, scalable, and aligned with BiblioDrift’s
 ### Backend (Future)
 Planned implementation using Python Flask.
 
+## 🚢 Deployment Notes
+
+- Netlify should serve the static frontend from the generated `dist/` bundle.
+- The Flask backend, database, Redis, and AI services are not hosted by Netlify.
+- To make the API work in production, deploy the backend separately and point the frontend `MOOD_API_BASE` to that host.
+
 ##  Screenshots
 
-### Home Page
-<img width="1912" height="921" alt="Screenshot 2026-02-09 212125" src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" />
-
-### Virtual Library
-<img width="1912" height="922" alt="Screenshot 2026-02-09 212207" src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" />
-
-### Sign In Page
-<img width="1917" height="916" alt="Screenshot 2026-02-09 212225" src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" />
-
+<div align="center">
+  <h3>Discovery & Virtual Library</h3>
+  <img src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" width="85%" alt="Home Page" />
+  <br><br>
+  <img src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" width="47%" alt="Virtual Library" />
+  <img src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" width="47%" alt="Sign In Page" />
+  <p><i>Capturing the tactile, vibe-first essence of BiblioDrift.</i></p>
+</div>
 
 ## 🧠 AI Service Integration
 To keep the frontend and backend synced, use the following mapping:
@@ -151,6 +190,71 @@ To keep the frontend and backend synced, use the following mapping:
 ### API Integration
 - **Endpoint**: `POST /api/v1/generate-note`
 - **Logic**: Processed by `ai_service.py`
+
+## 📡 API Request & Response Examples
+
+### Endpoint: Generate Book Note
+
+**Method:** POST
+**URL:** `/api/v1/generate-note`
+**Description:** Generates an AI-powered "bookseller note" based on the book's vibe, mood, and metadata.
+
+---
+
+### Request
+
+**Headers**
+
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Body**
+
+```json
+{
+  "title": "The Night Circus",
+  "author": "Erin Morgenstern",
+  "mood": "mysterious, magical, slow-burn romance"
+}
+```
+
+---
+
+### Response
+
+**Success (200 OK)**
+
+```json
+{
+  "status": "success",
+  "note": "A dreamlike duel unfolds in a wandering circus of shadows and light. Perfect for readers who crave atmospheric magic and quiet intensity."
+}
+```
+
+**Error (400 Bad Request)**
+
+```json
+{
+  "status": "error",
+  "message": "Missing required fields: title or mood"
+}
+```
+
+---
+
+### API Flow Explanation
+
+1. Frontend sends a POST request from `app.js` to `/api/v1/generate-note`.
+2. The Flask backend (`app.py`) receives the request via `handle_generate_note()`.
+3. Input data (title, author, mood) is validated.
+4. The request is passed to `generate_book_note()` in `ai_service.py`.
+5. The AI model generates a contextual "bookseller note".
+6. The backend returns the generated note as a JSON response.
+7. Frontend displays the note in the book popup UI.
+
 
 ## 🤝 Contributing
 We welcome contributions to make BiblioDrift cozier!

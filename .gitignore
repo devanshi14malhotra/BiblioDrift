@@ -9,6 +9,7 @@ mood_analysis/mood_cache.json
 .env
 .env.local
 .env.production
+.env.development
 
 # Bruno API Collection - Sensitive files
 bruno/environments/local.bru
@@ -22,6 +23,12 @@ secrets/
 __pycache__/
 *.pyc
 
+# Netlify build output
+dist/
+
 # Database files
 instance/
 *.db
+# Virtual Environment
+venv/
+.env
