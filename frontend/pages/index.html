@@ -162,7 +162,11 @@
             <p id="modal-author" class="modal-subtitle">Author Name</p>
             <div class="ai-insight-box">
               <div class="ai-header"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI Insight</span></div>
-              <p id="modal-summary">Loading thoughts...</p>
+              <div id="modal-summary">
+                <div class="text-skeleton skeleton"></div>
+                <div class="text-skeleton skeleton" style="width: 90%"></div>
+                <div class="text-skeleton skeleton" style="width: 70%"></div>
+              </div>
             </div>
             <div class="modal-actions">
               <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
@@ -221,22 +225,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/app.js"></script>
   <script src="../script/header-scroll.js"></script>
-  <script>
-    // Persistent Login Status Check
-    document.addEventListener('DOMContentLoaded', () => {
-      if (localStorage.getItem('isLoggedIn') === 'true') {
-        const link = document.getElementById('navAuthLink');
-        const tooltip = document.getElementById('navAuthTooltip');
-        if (link) {
-          link.innerHTML = '<i class="fa-solid fa-user"></i>';
-          link.href = 'profile.html';
-        }
-        if (tooltip) {
-          tooltip.innerHTML = '<i class="fa-solid fa-id-card"></i> View Profile';
-        }
-      }
-    });
-  </script>
+
 
   <!-- Back to Top Button -->
   <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">

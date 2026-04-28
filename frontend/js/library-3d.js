@@ -187,69 +187,69 @@ const SAMPLE_BOOKS = {
             ]
         },
         {
-    id: 'sample-12',
-    title: 'The Alchemist',
-    author: 'Paulo Coelho',
-    cover: 'https://covers.openlibrary.org/b/id/8225261-M.jpg',
-    rating: 4.3,
-    ratingCount: 5124,
-    description: 'Santiago, a young Andalusian shepherd, dreams of discovering a worldly treasure. His journey takes him across the deserts of Egypt, teaching him about destiny, love, and listening to his heart.',
-    categories: ['Fiction', 'Adventure', 'Inspirational'],
-    spineColor: '#DAA520',
-    textColor: '#1C1C1C',
-    reviews: [
-        { name: 'DreamChaser', rating: 5, text: 'A beautiful and inspiring tale about following your dreams.' },
-        { name: 'BookWorm99', rating: 4, text: 'Simple yet powerful storytelling with deep meaning.' }
-    ]
-},
-{
-    id: 'sample-13',
-    title: 'Atomic Habits',
-    author: 'James Clear',
-    cover: 'https://covers.openlibrary.org/b/id/9251996-M.jpg',
-    rating: 4.6,
-    ratingCount: 8432,
-    description: 'A practical guide to building good habits and breaking bad ones. James Clear explains how small daily improvements compound into remarkable long-term results.',
-    categories: ['Self-Help', 'Productivity', 'Personal Development'],
-    spineColor: '#2E8B57',
-    textColor: '#FFFFFF',
-    reviews: [
-        { name: 'GrowthMindset', rating: 5, text: 'Life-changing insights on building sustainable habits.' },
-        { name: 'FocusBuilder', rating: 4, text: 'Actionable advice backed by science and real examples.' }
-    ]
-},
-{
-    id: 'sample-14',
-    title: 'Deep Work',
-    author: 'Cal Newport',
-    cover: 'https://covers.openlibrary.org/b/id/8370226-M.jpg',
-    rating: 4.5,
-    ratingCount: 6921,
-    description: 'A powerful guide to mastering focused success in a distracted world. Cal Newport explains how cultivating deep, concentrated work can dramatically improve productivity and create meaningful results in professional and personal life.',
-    categories: ['Productivity', 'Self-Improvement', 'Career Development'],
-    spineColor: '#1E3A8A',
-    textColor: '#FFFFFF',
-    reviews: [
-        { name: 'CodeMaster', rating: 5, text: 'A must-read for anyone serious about improving focus and output.' },
-        { name: 'SilentAchiever', rating: 4, text: 'Great framework for eliminating distractions and building deep concentration.' }
-    ]
-},
-{
-    id: 'sample-15',
-    title: 'The Psychology of Money',
-    author: 'Morgan Housel',
-    cover: 'https://covers.openlibrary.org/b/id/10521270-M.jpg',
-    rating: 4.7,
-    ratingCount: 11234,
-    description: 'An insightful exploration of how people think about money and the behaviors that influence financial decisions. Morgan Housel shares timeless lessons on wealth, greed, and happiness through engaging real-world stories.',
-    categories: ['Finance', 'Self-Development', 'Investing'],
-    spineColor: '#8B4513',
-    textColor: '#FFFFFF',
-    reviews: [
-        { name: 'SmartInvestor', rating: 5, text: 'A refreshing perspective on wealth and financial behavior.' },
-        { name: 'WealthBuilder', rating: 4, text: 'Simple yet powerful lessons that change how you view money.' }
-    ]
-}
+            id: 'sample-12',
+            title: 'The Alchemist',
+            author: 'Paulo Coelho',
+            cover: 'https://covers.openlibrary.org/b/id/8225261-M.jpg',
+            rating: 4.3,
+            ratingCount: 5124,
+            description: 'Santiago, a young Andalusian shepherd, dreams of discovering a worldly treasure. His journey takes him across the deserts of Egypt, teaching him about destiny, love, and listening to his heart.',
+            categories: ['Fiction', 'Adventure', 'Inspirational'],
+            spineColor: '#DAA520',
+            textColor: '#1C1C1C',
+            reviews: [
+                { name: 'DreamChaser', rating: 5, text: 'A beautiful and inspiring tale about following your dreams.' },
+                { name: 'BookWorm99', rating: 4, text: 'Simple yet powerful storytelling with deep meaning.' }
+            ]
+        },
+        {
+            id: 'sample-13',
+            title: 'Atomic Habits',
+            author: 'James Clear',
+            cover: 'https://covers.openlibrary.org/b/id/9251996-M.jpg',
+            rating: 4.6,
+            ratingCount: 8432,
+            description: 'A practical guide to building good habits and breaking bad ones. James Clear explains how small daily improvements compound into remarkable long-term results.',
+            categories: ['Self-Help', 'Productivity', 'Personal Development'],
+            spineColor: '#2E8B57',
+            textColor: '#FFFFFF',
+            reviews: [
+                { name: 'GrowthMindset', rating: 5, text: 'Life-changing insights on building sustainable habits.' },
+                { name: 'FocusBuilder', rating: 4, text: 'Actionable advice backed by science and real examples.' }
+            ]
+        },
+        {
+            id: 'sample-14',
+            title: 'Deep Work',
+            author: 'Cal Newport',
+            cover: 'https://covers.openlibrary.org/b/id/8370226-M.jpg',
+            rating: 4.5,
+            ratingCount: 6921,
+            description: 'A powerful guide to mastering focused success in a distracted world. Cal Newport explains how cultivating deep, concentrated work can dramatically improve productivity and create meaningful results in professional and personal life.',
+            categories: ['Productivity', 'Self-Improvement', 'Career Development'],
+            spineColor: '#1E3A8A',
+            textColor: '#FFFFFF',
+            reviews: [
+                { name: 'CodeMaster', rating: 5, text: 'A must-read for anyone serious about improving focus and output.' },
+                { name: 'SilentAchiever', rating: 4, text: 'Great framework for eliminating distractions and building deep concentration.' }
+            ]
+        },
+        {
+            id: 'sample-15',
+            title: 'The Psychology of Money',
+            author: 'Morgan Housel',
+            cover: 'https://covers.openlibrary.org/b/id/10521270-M.jpg',
+            rating: 4.7,
+            ratingCount: 11234,
+            description: 'An insightful exploration of how people think about money and the behaviors that influence financial decisions. Morgan Housel shares timeless lessons on wealth, greed, and happiness through engaging real-world stories.',
+            categories: ['Finance', 'Self-Development', 'Investing'],
+            spineColor: '#8B4513',
+            textColor: '#FFFFFF',
+            reviews: [
+                { name: 'SmartInvestor', rating: 5, text: 'A refreshing perspective on wealth and financial behavior.' },
+                { name: 'WealthBuilder', rating: 4, text: 'Simple yet powerful lessons that change how you view money.' }
+            ]
+        }
     ]
 };
 
@@ -321,7 +321,7 @@ class BookshelfRenderer3D {
         // Update shelf visibility: Show shelf only if filter includes it AND (it has books OR we are specifically searching THIS shelf)
         // Actually, if we are in 'all' view, only show shelves that have books. 
         // If we are in specific shelf view, show it even if empty (but global empty state will override if total is 0)
-        
+
         const forceShowSpecific = this.filterCriteria !== 'all';
 
         this.updateShelfVisibility('shelf-current-3d', !isEmpty && showCurrent && (currentCount > 0 || forceShowSpecific));
@@ -350,7 +350,7 @@ class BookshelfRenderer3D {
         };
         const books = localLibrary[shelfType] || [];
         if (!query) return books.length;
-        
+
         return books.filter(b => {
             const title = (b.title || b.volumeInfo?.title || "").toLowerCase();
             const author = (b.author || (b.volumeInfo?.authors && b.volumeInfo.authors[0]) || "").toLowerCase();
@@ -396,7 +396,7 @@ class BookshelfRenderer3D {
                     rating: b.volumeInfo.averageRating || 4.0,
                     ratingCount: b.volumeInfo.ratingsCount || 0,
                     categories: b.volumeInfo.categories || [],
-                    spineColor: b.spineColor, 
+                    spineColor: b.spineColor,
                     moods: b.moods || [],
                     reviews: []
                 };
@@ -443,11 +443,11 @@ class BookshelfRenderer3D {
         // Remove old listeners? It's hard without named functions. 
         // But since we clear innerHTML, we just re-attach to the container? No, container is persistent.
         // We should be careful about duplicate listeners on the container.
-        
+
         // A simple way to avoid duplicates is to set a custom property or remove and re-add.
         // Or better, just attach these once in init() if possible, but we need shelfType reference.
         // Since renderShelf is called multiple times, we should check if listeners are attached.
-        
+
         if (!container.dataset.dropListenersAttached) {
             container.addEventListener('dragover', (e) => {
                 e.preventDefault(); // Essential for drop
@@ -483,7 +483,7 @@ class BookshelfRenderer3D {
             e.dataTransfer.effectAllowed = 'move';
             spine.style.opacity = '0.5';
         });
-        
+
         spine.addEventListener('dragend', (e) => {
             spine.style.opacity = '1';
         });
@@ -658,70 +658,7 @@ class BookshelfRenderer3D {
         };
     }
 
-    /*
-     * ==============================================================================
-     * ISSUE 40: RESOLVING NULL RATINGS FROM LOCALSTORAGE MAPPING
-     * ==============================================================================
-     * 
-     * Background Context:
-     * -------------------
-     * The BiblioDrift application allows users to curate a personal 3D bookshelf.
-     * Library data (the user's collection of books) is persistently stored on the
-     * client-side using the browser's `localStorage` API under the key 
-     * 'bibliodrift_library'.
-     * 
-     * When external APIs (such as Google Books or OpenLibrary) are used to fetch
-     * book metadata, some properties might be incomplete, missing, or explicitly
-     * returned as `null`. This is especially true for the `rating` attribute.
-     * 
-     * The Bug (TypeError: Cannot read properties of undefined):
-     * ---------------------------------------------------------
-     * When displaying the tooltip or the detailed modal for a book, the application
-     * formats the numeral rating to one decimal place using JavaScript's built-in
-     * Number.prototype.toFixed(1) method.
-     * 
-     * For example:
-     *    const rating = 4;
-     *    console.log(rating.toFixed(1)); // Outputs: "4.0"
-     * 
-     * However, if the `rating` property was not adequately sanitized prior to being
-     * serialized into JSON and saved into `localStorage`, it retains its `null` or 
-     * `undefined` identity when deserialized. 
-     * 
-     *    const rating = null;
-     *    console.log(rating.toFixed(1)); // TypeError!
-     * 
-     * Because `null` is a primitive value and does not share the Number prototype,
-     * attempting to access `.toFixed` on it causes the JavaScript runtime to throw
-     * a fatal exception. This crash abruptly halts the execution context, meaning
-     * the rest of the UI logic fails to render. Tooltips break, modals don't open,
-     * and the UX degrades significantly.
-     * 
-     * The Solution (Safe Guarding / Ternary Check):
-     * ---------------------------------------------
-     * To robustly handle instances where `rating` is `null` or `undefined`, a safe 
-     * guard has been introduced wherever `.toFixed(1)` is called within this class.
-     * 
-     * We use a concise ternary operator check:
-     *    (book.rating != null ? book.rating.toFixed(1) : 'N/A')
-     * 
-     * Note the use of loose inequality (`!= null`). In JavaScript, `!= null` is a
-     * convenient shorthand that simultaneously checks for both `null` AND `undefined`.
-     * 
-     * If the rating exists and isn't nully, it formats the number as normal.
-     * If the rating is missing, we gracefully degrade the UI by displaying "N/A"
-     * (Not Available), ensuring the UI layout doesn't collapse and no exceptions
-     * are thrown into the console.
-     * 
-     * Technical Debt & Future Considerations:
-     * ---------------------------------------
-     * While this frontend patch prevents the crash, a more robust architectural 
-     * fix would be to implement a strict data validation / sanitization layer 
-     * right before writing to `localStorage` or immediately upon reading from it. 
-     * By ensuring a foundational data contract, we'd eliminate the need for defensive 
-     * rendering checks throughout the UI components.
-     * ==============================================================================
-     */
+
     showTooltip(e, book) {
         this.currentBook = book;
 
@@ -863,11 +800,11 @@ class BookshelfRenderer3D {
         }
 
         taggingSection.innerHTML = `
-            <h4 style="margin-top: 15px; margin-bottom: 10px; color: var(--accent-gold); font-family: 'Playfair Display', serif;">How does this book make you feel?</h4>
-            <div class="emotion-tags-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+            <h4 class="mood-tagging-title" style="margin-top: 10px; margin-bottom: 8px; color: var(--accent-gold); font-family: 'Playfair Display', serif;">How does this book make you feel?</h4>
+            <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
                     const isActive = book.moods && book.moods.includes(mood);
-                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="cursor: pointer; padding: 4px 12px; border-radius: 16px; border: 1px solid var(--glass-border); font-size: 0.75rem; background: ${isActive ? 'var(--accent-gold)' : 'var(--glass-bg)'}; color: ${isActive ? '#000' : 'inherit'};">
+                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
                 }).join('')}
@@ -921,7 +858,7 @@ class BookshelfRenderer3D {
             tag.onclick = async () => {
                 const mood = tag.dataset.mood;
                 if (!book.moods) book.moods = [];
-                
+
                 const index = book.moods.indexOf(mood);
                 if (index > -1) {
                     book.moods.splice(index, 1);
@@ -934,7 +871,7 @@ class BookshelfRenderer3D {
                     tag.style.color = '#000';
                     tag.classList.add('active');
                 }
-                
+
                 // Update in LocalStorage
                 await this.updateBookMoods(book.id, book.moods);
             };
@@ -947,6 +884,33 @@ class BookshelfRenderer3D {
         const actionsSection = document.querySelector('.book-actions-section');
         const reviewsSection = document.querySelector('.book-reviews-section');
 
+        // 6. AI Insight Section
+        const aiNoteEl = document.getElementById('modal-ai-note');
+        if (aiNoteEl) {
+            // Reset to skeleton while fetching
+            aiNoteEl.innerHTML = `
+                <div class="text-skeleton skeleton"></div>
+                <div class="text-skeleton skeleton" style="width: 90%"></div>
+            `;
+            
+            // Fetch vibe note using the shared renderer method
+            if (window.renderer && typeof window.renderer.fetchAIVibe === 'function') {
+                window.renderer.fetchAIVibe(book.title, book.author, book.description || "").then(vibe => {
+                    if (vibe) {
+                        const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+                        aiNoteEl.innerHTML = `<p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); font-style: italic;">"${cleanVibe}"</p>`;
+                    } else {
+                        aiNoteEl.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">AI is contemplating the deep themes of this journey...</p>`;
+                    }
+                });
+            } else {
+                // Mock vibe for offline/fallback
+                setTimeout(() => {
+                    aiNoteEl.innerHTML = `<p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); font-style: italic;">"A journey that resonates with the soul, perfect for quiet introspection."</p>`;
+                }, 800);
+            }
+        }
+
         // Ensure action controls are always visible in the modal.
         if (actionsSection) {
             actionsSection.style.display = 'flex';
@@ -958,34 +922,34 @@ class BookshelfRenderer3D {
         if (actionsSection && reviewsSection && actionsSection.nextElementSibling !== reviewsSection) {
             reviewsSection.parentNode.insertBefore(actionsSection, reviewsSection);
         }
-        
+
         if (shelfSelect) {
             // Find current shelf
             const storageKey = 'bibliodrift_library';
             const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
             let currentShelf = 'current'; // Default
-            
+
             ['current', 'want', 'finished'].forEach(shelf => {
                 const found = (localLibrary[shelf] || []).find(b => b.id === book.id || (b.volumeInfo && b.id === book.id));
                 if (found) currentShelf = shelf;
             });
-            
+
             shelfSelect.value = currentShelf;
-            
+
             // Remove old listeners to avoid duplicates by cloning
             const newSelect = shelfSelect.cloneNode(true);
             shelfSelect.parentNode.replaceChild(newSelect, shelfSelect);
-            
+
             newSelect.addEventListener('change', async (e) => {
                 const newShelf = e.target.value;
                 await this.moveBook(book.id, currentShelf, newShelf);
                 currentShelf = newShelf; // Update local tracker
-                
+
                 // Close modal after move? Optional. Let's keep it open but maybe show feedback.
                 // For now, shelf re-render happens in background.
             });
         }
-        
+
         if (removeBtn) {
             // Remove old listeners
             const newRemoveBtn = removeBtn.cloneNode(true);
@@ -993,7 +957,7 @@ class BookshelfRenderer3D {
             newRemoveBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Remove from Library';
 
             newRemoveBtn.addEventListener('click', async () => {
-                if(confirm('Are you sure you want to remove this book from your library?')) {
+                if (confirm('Are you sure you want to remove this book from your library?')) {
                     await this.removeBook(book.id);
                     this.closeModal();
                 }
@@ -1026,6 +990,14 @@ class BookshelfRenderer3D {
         if (this.modal) {
             this.modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            
+            // Hide fixed elements (ambient leaf, scroll-to-top) to avoid overlapping description
+            const fixedControls = document.querySelectorAll('.ambient-sanctuary, .back-to-top');
+            fixedControls.forEach(el => el.style.opacity = '0');
+            fixedControls.forEach(el => el.style.pointerEvents = 'none');
+
+            // Setup interactive handlers (flip, close) for the current book
+            this.setupModalHandlers();
         }
     }
 
@@ -1038,6 +1010,11 @@ class BookshelfRenderer3D {
             setTimeout(() => {
                 const bookObject = document.getElementById('book-3d-object');
                 if (bookObject) bookObject.classList.remove('flipped');
+                
+                // Restore fixed elements
+                const fixedControls = document.querySelectorAll('.ambient-sanctuary, .back-to-top');
+                fixedControls.forEach(el => el.style.opacity = '1');
+                fixedControls.forEach(el => el.style.pointerEvents = 'auto');
             }, 500);
         }
     }
@@ -1046,12 +1023,16 @@ class BookshelfRenderer3D {
         // Book flip interaction
         const bookObject = document.getElementById('book-3d-object');
         if (bookObject) {
-            bookObject.addEventListener('click', (e) => {
+            // Remove old listener to avoid multi-flips
+            const newBook = bookObject.cloneNode(true);
+            bookObject.parentNode.replaceChild(newBook, bookObject);
+            
+            newBook.addEventListener('click', (e) => {
                 // If user is selecting text (e.g. description), don't flip
                 if (window.getSelection().toString().length > 0) {
                     return;
                 }
-                bookObject.classList.toggle('flipped');
+                newBook.classList.toggle('flipped');
             });
         }
 
@@ -1197,31 +1178,31 @@ class BookshelfRenderer3D {
 
         const storageKey = 'bibliodrift_library';
         const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
-        
+
         // Find existing lists
         if (!localLibrary[fromShelf]) localLibrary[fromShelf] = [];
         if (!localLibrary[toShelf]) localLibrary[toShelf] = [];
 
         // Find the book index
         const bookIndex = localLibrary[fromShelf].findIndex(b => b.id === bookId || (b.volumeInfo && b.id === bookId));
-        
+
         if (bookIndex === -1) {
             console.error("Book not found in source shelf");
             return;
         }
 
         const book = localLibrary[fromShelf][bookIndex];
-        
+
         // Remove from old shelf
         localLibrary[fromShelf].splice(bookIndex, 1);
-        
+
         // Add to new shelf
         localLibrary[toShelf].push(book);
-        
+
         // Save and refresh
         localStorage.setItem(storageKey, JSON.stringify(localLibrary));
         this.refreshShelves();
-        
+
         // Visual Feedback (optional)
         console.log(`Moved book ${bookId} from ${fromShelf} to ${toShelf}`);
     }
@@ -1272,7 +1253,7 @@ class BookshelfRenderer3D {
             want: [],
             finished: []
         };
-        
+
         let found = false;
         ['current', 'want', 'finished'].forEach(shelf => {
             const book = localLibrary[shelf].find(b => b.id === bookId);
@@ -1281,7 +1262,7 @@ class BookshelfRenderer3D {
                 found = true;
             }
         });
-        
+
         if (found) {
             localStorage.setItem(storageKey, JSON.stringify(localLibrary));
             // Notify global libManager to sync with backend if available

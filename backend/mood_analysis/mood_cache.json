@@ -263,6 +263,17 @@
       }
     }
   },
+  "adventures with the connaught rangers, from 1809 to 1814|william grattan": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.9473,
+      "compound_median": 0.9473,
+      "compound_stdev": 0,
+      "positive_score": 0.144,
+      "negative_score": 0.077,
+      "textblob_polarity": 0.1983796296296296,
+      "average_confidence": 0.7542438888888889,
+      "sentiment_consistency": 1
   "the life and letters of mary wollstonecraft shelley, volume i (of 2)|florence a. thomas marshall": {
     "success": true,
     "overall_sentiment": {
@@ -311,6 +322,11 @@
     "primary_moods": [],
     "mood_description": "This book has a overwhelmingly positive reception.",
     "bibliodrift_vibe": "A guaranteed mood-lifter you'll want to share.",
+    "analysis_confidence": 0.397,
+    "total_reviews_analyzed": 1,
+    "review_statistics": {
+      "average_length": 1264,
+      "average_word_count": 205,
     "analysis_confidence": 0.501,
     "total_reviews_analyzed": 7,
     "review_statistics": {
@@ -322,6 +338,40 @@
     },
     "metadata": {
       "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T10:41:35.460621+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "the adventures of oliver twist|charles dickens": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.49285,
+      "compound_median": 0.5794,
+      "compound_stdev": 0.3645842335226982,
+      "positive_score": 0.08425,
+      "negative_score": 0.021,
+      "textblob_polarity": 0.19368055555555555,
+      "average_confidence": 0.6994091666666666,
+      "sentiment_consistency": 0.6354157664773018
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a generally positive reception.",
+    "bibliodrift_vibe": "Quietly brilliant and deeply satisfying.",
+    "analysis_confidence": 0.43,
+    "total_reviews_analyzed": 4,
+    "review_statistics": {
+      "average_length": 392,
+      "average_word_count": 68,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T10:41:50.773801+00:00Z",
       "analysis_timestamp": "2026-04-25T16:30:22.107121+00:00Z",
       "config_used": {
         "min_reviews": 3,
