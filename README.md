@@ -24,6 +24,8 @@ BiblioDrift is a cozy, visual-first book discovery platform designed to make fin
 - **Curated Tables**: Horizontal scrolling lists based on moods like "Monsoon Reads".
 - **Elara, the Wise Bookseller**: An interactive AI persona who chats with you, remembers your mood, and hand-picks books like a real librarian.
 - **Ambient Sanctuary**: Immersive background sounds (e.g., Rainy Evening, Cozy Fireplace) with volume control to enhance your reading atmosphere.
+- **Emotion-Based Tagging**: Personalize your library by tagging books with feelings like *Cozy*, *Melancholic*, or *Adventurous*.
+- **Mood Discovery**: Sort and filter your entire collection by emotional resonance and vibes.
 
 ## 🛠️ Tech Stack
 
@@ -56,6 +58,7 @@ graph TD
     B -->|JSON Response| A
     A -->|Book Details| D[Google Books API]
     A -->|Persistence| E[LocalStorage]
+    A -->|Emotion Tags| E
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style C fill:#000,stroke:#fff,stroke-width:2px,color:#fff

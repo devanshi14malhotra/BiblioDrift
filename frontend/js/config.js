@@ -25,6 +25,7 @@ const CONFIG = {
 if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
     window.MOOD_API_BASE = CONFIG.MOOD_API_BASE;
+    window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
         setKeys(keys) {
             CONFIG.GOOGLE_BOOKS_API_KEYS = Array.from(new Set((keys || []).map(key => String(key || '').trim()).filter(Boolean)));

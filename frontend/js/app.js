@@ -132,10 +132,6 @@ function showToast(message, type = 'info') {
 }
 
 /**
- * Robust Wrapper for LocalStorage
- * Prevents application crashes when the 5MB quota is exceeded.
- */
-/**
  * Robust Wrapper for Storage (LocalStorage + IndexedDB Fallback)
  * Prevents application data loss and handles browser storage wipes/quotas.
  */
@@ -468,6 +464,11 @@ class BookRenderer {
                         <!-- Safe data injection using escaped values -->
                         <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
                         <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        ${bookData.moods && bookData.moods.length > 0 ? `
+                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+                        </div>
+                        ` : ''}
                         <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${safeDescription}</div>
                     </div>
                     ${shelf === 'current' ? `
@@ -479,7 +480,6 @@ class BookRenderer {
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('../assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
                         <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -684,6 +684,70 @@ class BookRenderer {
 
         modal.showModal();
         document.getElementById('closeModalBtn').onclick = () => modal.close();
+
+        // Emotion Tagging UI
+        const emotionContainer = document.createElement('div');
+        emotionContainer.className = 'emotion-tagging-section';
+        emotionContainer.innerHTML = `
+            <h3 class="modal-section-title">How does this book make you feel?</h3>
+            <div class="emotion-tags-container">
+                ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
+                    const isActive = book.moods && book.moods.includes(mood);
+                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+                        <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
+                    </span>`;
+                }).join('')}
+            </div>
+        `;
+
+        // Insert before the buttons
+        const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
+        if (modalBody) {
+            // Remove existing tagging section if re-opening
+            const existing = modalBody.querySelector('.emotion-tagging-section');
+            if (existing) existing.remove();
+            
+            const actions = modalBody.querySelector('.modal-actions') || modalBody.querySelector('.book-actions-section');
+            if (actions) {
+                modalBody.insertBefore(emotionContainer, actions);
+            } else {
+                modalBody.appendChild(emotionContainer);
+            }
+        }
+
+        // Add tag toggle listeners
+        emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
+            tag.onclick = async () => {
+                const mood = tag.dataset.mood;
+                if (!book.moods) book.moods = [];
+                
+                const index = book.moods.indexOf(mood);
+                if (index > -1) {
+                    book.moods.splice(index, 1);
+                    tag.classList.remove('active');
+                } else {
+                    book.moods.push(mood);
+                    tag.classList.add('active');
+                }
+                
+                if (this.libraryManager) {
+                    await this.libraryManager.updateBook(book.id, { moods: book.moods });
+                }
+            };
+        });
+    }
+
+    getMoodIcon(mood) {
+        const icons = {
+            'Melancholic': 'fa-cloud-showers-heavy',
+            'Cozy': 'fa-mug-hot',
+            'Tense': 'fa-bolt',
+            'Inspiring': 'fa-lightbulb',
+            'Whimsical': 'fa-wand-magic-sparkles',
+            'Dark': 'fa-moon',
+            'Adventurous': 'fa-compass'
+        };
+        return icons[mood] || 'fa-tag';
     }
 
     async renderCuratedSection(query, elementId, maxResults = 5) {
@@ -1018,6 +1082,53 @@ class LibraryManager {
                 this.sortLibrary(e.target.value);
             });
         }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                this.filterLibrary(query);
+            });
+        }
+    }
+
+    filterLibrary(query) {
+        ['current', 'want', 'finished'].forEach(shelf => {
+            const containerId = `shelf-${shelf}-3d`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const books = this.library[shelf];
+            const filtered = books.filter(book => {
+                const title = (book.volumeInfo.title || "").toLowerCase();
+                const author = (book.volumeInfo.authors || []).join(" ").toLowerCase();
+                const moods = (book.moods || []).join(" ").toLowerCase();
+                return title.includes(query) || author.includes(query) || moods.includes(query);
+            });
+
+            this.renderFilteredShelf(shelf, containerId, filtered);
+        });
+    }
+
+    async renderFilteredShelf(shelfName, elementId, books) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+        
+        container.innerHTML = '';
+        if (books.length === 0) {
+            container.innerHTML = '<div class="empty-state">No matching books found.</div>';
+            return;
+        }
+
+        try {
+            const renderer = new BookRenderer(this);
+            for (const book of books) {
+                const el = await renderer.createBookElement(book, shelfName);
+                container.appendChild(el);
+            }
+        } catch (error) {
+            console.error(`[Library] Error rendering filtered shelf:`, error);
+        }
     }
 
     sortLibrary(criteria) {
@@ -1027,14 +1138,23 @@ class LibraryManager {
                     return new Date(b.date_added || 0) - new Date(a.date_added || 0);
                 case 'date_asc':
                     return new Date(a.date_added || 0) - new Date(b.date_added || 0);
+                case 'title':
                 case 'title_asc':
                     return (a.volumeInfo.title || "").localeCompare(b.volumeInfo.title || "");
                 case 'title_desc':
                     return (b.volumeInfo.title || "").localeCompare(a.volumeInfo.title || "");
+                case 'author':
                 case 'author_asc':
                     const authorA = (a.volumeInfo.authors && a.volumeInfo.authors[0]) || "";
                     const authorB = (b.volumeInfo.authors && b.volumeInfo.authors[0]) || "";
                     return authorA.localeCompare(authorB);
+                case 'mood':
+                    // Sort by primary mood if available
+                    const moodA = (a.moods && a.moods[0]) || "zzz"; // push untagged to bottom
+                    const moodB = (b.moods && b.moods[0]) || "zzz";
+                    return moodA.localeCompare(moodB);
+                case 'rating':
+                    return (b.volumeInfo.averageRating || 0) - (a.volumeInfo.averageRating || 0);
                 default:
                     return 0;
             }
@@ -1043,7 +1163,12 @@ class LibraryManager {
         ['current', 'want', 'finished'].forEach(shelf => {
             if (this.library[shelf]) {
                 this.library[shelf].sort(sortFn);
-                this.renderShelf(shelf, `shelf-${shelf}`);
+                // If we have a dedicated 3D renderer, let it handle the UI to avoid duplicate rendering
+                if (window.bookshelf3D && typeof window.bookshelf3D.refreshShelves === 'function') {
+                    window.bookshelf3D.refreshShelves();
+                } else {
+                    this.renderShelf(shelf, `shelf-${shelf}-3d`);
+                }
             }
         });
     }
@@ -1440,21 +1565,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Load Config (Non-blocking)
     loadConfig();
 
-    // 3. Render Curated Discovery Section
-    const rows = [
-        { id: 'row-rainy', query: 'subject:mystery atmosphere' },
-        { id: 'row-indian', query: 'authors:arundhati roy|subject:india' },
-        { id: 'row-classics', query: 'subject:classic fiction' },
-        { id: 'row-fiction', query: 'subject:fiction' }
-    ];
 
-    for (const row of rows) {
-        if (document.getElementById(row.id)) {
-            window.renderer.renderCuratedSection(row.query, row.id).catch(e => {
-                console.error(`Row ${row.id} failed:`, e);
-            });
-        }
-    }
 
     // --- AUTH LOGIC ---
     const toggleLink = document.querySelector('.toggle-link');
@@ -1478,10 +1589,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const genreManager = new GenreManager(libManager);
     genreManager.init();
     const exportBtn = document.getElementById("export-library");
-
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
         exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
+
+        exportBtn.addEventListener("click", () => {
+            const library = SafeStorage.get("bibliodrift_library");
+            if (!library) {
+                showToast("Library is empty!", "info");
+                return;
+            }
+            const blob = new Blob([library], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+            showToast("Library exported successfully!", "success");
+        });
     }
 
 
@@ -1500,7 +1630,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const performSearch = () => {
         if (searchInput && searchInput.value.trim()) {
-            window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+            // Only redirect to discovery search if we're not already on the library page 
+            // where search is handled by the local library filter.
+            if (!window.location.pathname.includes('library.html')) {
+                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+            }
         }
     };
 
@@ -1633,36 +1767,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
         });
-
-        const exportBtn = document.getElementById("export-library");
-        if (exportBtn) {
-            exportBtn.addEventListener("click", () => {
-                const library = SafeStorage.get("bibliodrift_library");
-                if (!library) {
-                    showToast("Library is empty!", "info");
-                    return;
-                }
-                const blob = new Blob([library], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                URL.revokeObjectURL(url);
-                showToast("Library exported successfully!", "success");
-            });
-        }
     }
 });
 

@@ -261,6 +261,7 @@ class BookshelfRenderer3D {
         this.tooltipTimeout = null;
         this.sortCriteria = 'title'; // Default sort
         this.filterCriteria = 'all'; // Default filter
+        this.searchQuery = ''; // Default search query
 
         this.init();
     }
@@ -284,6 +285,15 @@ class BookshelfRenderer3D {
             });
         }
 
+        // Search listener for "Search for a feeling..."
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.searchQuery = e.target.value.toLowerCase();
+                this.refreshShelves();
+            });
+        }
+
         // Render all shelves with sample books
         this.refreshShelves();
 
@@ -296,10 +306,10 @@ class BookshelfRenderer3D {
         const showWant = this.filterCriteria === 'all' || this.filterCriteria === 'want';
         const showFinished = this.filterCriteria === 'all' || this.filterCriteria === 'finished';
 
-        // Count books first
-        const currentCount = this.getShelfBookCount('current');
-        const wantCount = this.getShelfBookCount('want');
-        const finishedCount = this.getShelfBookCount('finished');
+        // Count books first with search filter applied
+        const currentCount = this.getShelfBookCount('current', this.searchQuery);
+        const wantCount = this.getShelfBookCount('want', this.searchQuery);
+        const finishedCount = this.getShelfBookCount('finished', this.searchQuery);
 
         let totalVisibleBooks = 0;
         if (showCurrent) totalVisibleBooks += currentCount;
@@ -331,14 +341,22 @@ class BookshelfRenderer3D {
         }
     }
 
-    getShelfBookCount(shelfType) {
+    getShelfBookCount(shelfType, query = "") {
         const storageKey = 'bibliodrift_library';
         const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
             current: [],
             want: [],
             finished: []
         };
-        return (localLibrary[shelfType] || []).length;
+        const books = localLibrary[shelfType] || [];
+        if (!query) return books.length;
+        
+        return books.filter(b => {
+            const title = (b.title || b.volumeInfo?.title || "").toLowerCase();
+            const author = (b.author || (b.volumeInfo?.authors && b.volumeInfo.authors[0]) || "").toLowerCase();
+            const moods = (b.moods || []).join(" ").toLowerCase();
+            return title.includes(query) || author.includes(query) || moods.includes(query);
+        }).length;
     }
 
     updateShelfVisibility(containerId, isVisible) {
@@ -375,23 +393,37 @@ class BookshelfRenderer3D {
                     author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
                     cover: b.volumeInfo.imageLinks?.thumbnail || '',
                     description: b.volumeInfo.description || '',
-                    rating: 4.0, // Default for now
-                    ratingCount: 0,
+                    rating: b.volumeInfo.averageRating || 4.0,
+                    ratingCount: b.volumeInfo.ratingsCount || 0,
                     categories: b.volumeInfo.categories || [],
-                    spineColor: b.spineColor, // Might be undefined, generator handles it
+                    spineColor: b.spineColor, 
+                    moods: b.moods || [],
                     reviews: []
                 };
             }
-            return b;
+            return { ...b, moods: b.moods || [] };
         });
+
+        // Apply Search Filter
+        if (this.searchQuery) {
+            books = books.filter(b => {
+                const title = b.title.toLowerCase();
+                const author = b.author.toLowerCase();
+                const moods = b.moods.join(" ").toLowerCase();
+                return title.includes(this.searchQuery) || author.includes(this.searchQuery) || moods.includes(this.searchQuery);
+            });
+        }
 
         // Sort books
         books.sort((a, b) => {
             if (this.sortCriteria === 'title') return a.title.localeCompare(b.title);
             if (this.sortCriteria === 'author') return a.author.localeCompare(b.author);
             if (this.sortCriteria === 'rating') return b.rating - a.rating;
-            // Sort by 'pages'. Since SAMPLE_BOOKS doesn't have page count, we'll strip 'pages' option or just map it to something else
-            // But let's assume title for now or mock it? 
+            if (this.sortCriteria === 'mood') {
+                const moodA = (a.moods && a.moods[0]) || "zzz";
+                const moodB = (b.moods && b.moods[0]) || "zzz";
+                return moodA.localeCompare(moodB);
+            }
             return a.title.localeCompare(b.title);
         });
 
@@ -530,6 +562,20 @@ class BookshelfRenderer3D {
         spine.addEventListener('mousemove', (e) => this.moveTooltip(e));
         spine.addEventListener('mouseleave', () => this.hideTooltip());
         spine.addEventListener('click', () => this.openModal(book));
+
+        // Add mood icon if primary mood exists
+        if (book.moods && book.moods.length > 0) {
+            const moodIcon = document.createElement('div');
+            moodIcon.className = 'spine-mood-icon';
+            moodIcon.style.position = 'absolute';
+            moodIcon.style.top = '10px';
+            moodIcon.style.width = '100%';
+            moodIcon.style.textAlign = 'center';
+            moodIcon.style.fontSize = '12px';
+            moodIcon.style.opacity = '0.7';
+            moodIcon.innerHTML = `<i class="fa-solid ${this.getMoodIcon(book.moods[0])}"></i>`;
+            spine.appendChild(moodIcon);
+        }
 
         return spine;
     }
@@ -802,6 +848,31 @@ class BookshelfRenderer3D {
         if (scoreEl) scoreEl.textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         if (countEl) countEl.textContent = `(${book.ratingCount} ratings)`;
 
+        // 5. Emotion Tagging Section
+        let taggingSection = document.getElementById('modal-mood-tagging');
+        if (!taggingSection) {
+            taggingSection = document.createElement('div');
+            taggingSection.id = 'modal-mood-tagging';
+            taggingSection.className = 'mood-tagging-section';
+            const infoPanel = document.querySelector('.book-info-panel');
+            if (infoPanel) {
+                // Insert before the action buttons
+                const actions = document.querySelector('.book-actions-section');
+                infoPanel.insertBefore(taggingSection, actions);
+            }
+        }
+
+        taggingSection.innerHTML = `
+            <h4 style="margin-top: 15px; margin-bottom: 10px; color: var(--accent-gold); font-family: 'Playfair Display', serif;">How does this book make you feel?</h4>
+            <div class="emotion-tags-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+                ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
+                    const isActive = book.moods && book.moods.includes(mood);
+                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="cursor: pointer; padding: 4px 12px; border-radius: 16px; border: 1px solid var(--glass-border); font-size: 0.75rem; background: ${isActive ? 'var(--accent-gold)' : 'var(--glass-bg)'}; color: ${isActive ? '#000' : 'inherit'};">
+                        <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
+                    </span>`;
+                }).join('')}
+            </div>
+        `;
         // Categories
         const categoriesContainer = document.getElementById('modal-categories');
         if (categoriesContainer && book.categories) {
@@ -846,7 +917,30 @@ class BookshelfRenderer3D {
             });
         }
 
-        // Handle Shelf Selection
+        taggingSection.querySelectorAll('.emotion-tag').forEach(tag => {
+            tag.onclick = async () => {
+                const mood = tag.dataset.mood;
+                if (!book.moods) book.moods = [];
+                
+                const index = book.moods.indexOf(mood);
+                if (index > -1) {
+                    book.moods.splice(index, 1);
+                    tag.style.background = 'var(--glass-bg)';
+                    tag.style.color = 'inherit';
+                    tag.classList.remove('active');
+                } else {
+                    book.moods.push(mood);
+                    tag.style.background = 'var(--accent-gold)';
+                    tag.style.color = '#000';
+                    tag.classList.add('active');
+                }
+                
+                // Update in LocalStorage
+                await this.updateBookMoods(book.id, book.moods);
+            };
+        });
+
+        // 6. Handle Shelf Selection
         const shelfSelect = document.getElementById('modal-shelf-select');
         // Issue #23: Element binding for the remove button
         const removeBtn = document.getElementById('modal-remove-btn');
@@ -1158,12 +1252,53 @@ class BookshelfRenderer3D {
         }
     }
 
+    getMoodIcon(mood) {
+        const icons = {
+            'Melancholic': 'fa-cloud-showers-heavy',
+            'Cozy': 'fa-mug-hot',
+            'Tense': 'fa-bolt',
+            'Inspiring': 'fa-lightbulb',
+            'Whimsical': 'fa-wand-magic-sparkles',
+            'Dark': 'fa-moon',
+            'Adventurous': 'fa-compass'
+        };
+        return icons[mood] || 'fa-tag';
+    }
+
+    async updateBookMoods(bookId, moods) {
+        const storageKey = 'bibliodrift_library';
+        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
+            current: [],
+            want: [],
+            finished: []
+        };
+        
+        let found = false;
+        ['current', 'want', 'finished'].forEach(shelf => {
+            const book = localLibrary[shelf].find(b => b.id === bookId);
+            if (book) {
+                book.moods = moods;
+                found = true;
+            }
+        });
+        
+        if (found) {
+            localStorage.setItem(storageKey, JSON.stringify(localLibrary));
+            // Notify global libManager to sync with backend if available
+            if (window.libManager && window.libManager.updateBook) {
+                await window.libManager.updateBook(bookId, { moods });
+            }
+            // Sort by current criteria after update
+            this.refreshShelves();
+        }
+    }
+
     getStarRating(rating) {
-        const fullStars = Math.floor(rating);
-        const hasHalf = rating % 1 >= 0.5;
+        const fullStars = Math.floor(rating || 0);
+        const hasHalf = (rating || 0) % 1 >= 0.5;
         const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
-        return '★'.repeat(fullStars) + (hasHalf ? '½' : '') + '☆'.repeat(emptyStars);
+        return '★'.repeat(Math.max(0, fullStars)) + (hasHalf ? '½' : '') + '☆'.repeat(Math.max(0, emptyStars));
     }
 }
 
@@ -1171,6 +1306,8 @@ class BookshelfRenderer3D {
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize on library page
     if (document.getElementById('library-shelves')) {
-        window.bookshelfRenderer = new BookshelfRenderer3D();
+        const renderer = new BookshelfRenderer3D();
+        window.bookshelf3D = renderer;
+        window.bookshelfRenderer = renderer;
     }
 });

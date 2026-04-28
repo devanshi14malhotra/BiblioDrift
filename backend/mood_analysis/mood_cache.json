@@ -130,5 +130,203 @@
         "confidence_threshold": 0.1
       }
     }
+  },
+  "fugitive pieces|anne michaels": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": -0.5719,
+      "compound_median": -0.5719,
+      "compound_stdev": 0,
+      "positive_score": 0.0,
+      "negative_score": 0.144,
+      "textblob_polarity": -0.0625,
+      "average_confidence": 0.67594,
+      "sentiment_consistency": 1
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a predominantly negative reception.",
+    "bibliodrift_vibe": "Prepare for a storm of feelings.",
+    "analysis_confidence": 0.358,
+    "total_reviews_analyzed": 1,
+    "review_statistics": {
+      "average_length": 172,
+      "average_word_count": 23,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T08:45:29.508613+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "the metamorphosis|franz kafka": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.2379,
+      "compound_median": 0.4005,
+      "compound_stdev": 0.6713916877154001,
+      "positive_score": 0.14453846153846153,
+      "negative_score": 0.07107692307692308,
+      "textblob_polarity": 0.18779848161098162,
+      "average_confidence": 0.6964421818459319,
+      "sentiment_consistency": 0.32860831228459986
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a generally positive reception.",
+    "bibliodrift_vibe": "The literary equivalent of a perfect cup of tea.",
+    "analysis_confidence": 0.548,
+    "total_reviews_analyzed": 13,
+    "review_statistics": {
+      "average_length": 317.61538461538464,
+      "average_word_count": 56.92307692307692,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T09:00:12.430694+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "the ambassador&#x27;s adventure|allen upward": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.9545,
+      "compound_median": 0.9545,
+      "compound_stdev": 0,
+      "positive_score": 0.202,
+      "negative_score": 0.033,
+      "textblob_polarity": 0.3119444444444444,
+      "average_confidence": 0.7890333333333334,
+      "sentiment_consistency": 1
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a overwhelmingly positive reception.",
+    "bibliodrift_vibe": "Pure sunshine in paperback form.",
+    "analysis_confidence": 0.415,
+    "total_reviews_analyzed": 1,
+    "review_statistics": {
+      "average_length": 612,
+      "average_word_count": 97,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T09:24:56.814493+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "alice&#x27;s adventures in wonderland|lewis carroll": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.2969181818181818,
+      "compound_median": 0.6261,
+      "compound_stdev": 0.7054048012569546,
+      "positive_score": 0.16063636363636363,
+      "negative_score": 0.10654545454545454,
+      "textblob_polarity": 0.1073446238086888,
+      "average_confidence": 0.6993014146033614,
+      "sentiment_consistency": 0.2945951987430454
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a generally positive reception.",
+    "bibliodrift_vibe": "The literary equivalent of a perfect cup of tea.",
+    "analysis_confidence": 0.55,
+    "total_reviews_analyzed": 11,
+    "review_statistics": {
+      "average_length": 487.8181818181818,
+      "average_word_count": 86.72727272727273,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T09:29:43.686525+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "the life and letters of mary wollstonecraft shelley, volume i (of 2)|florence a. thomas marshall": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.148275,
+      "compound_median": 0.2263,
+      "compound_stdev": 0.7572847829581683,
+      "positive_score": 0.08424999999999999,
+      "negative_score": 0.069,
+      "textblob_polarity": 0.2660774121711622,
+      "average_confidence": 0.6704334509240759,
+      "sentiment_consistency": 0.24271521704183174
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a generally positive reception.",
+    "bibliodrift_vibe": "A gentle companion perfect for Sunday mornings.",
+    "analysis_confidence": 0.415,
+    "total_reviews_analyzed": 4,
+    "review_statistics": {
+      "average_length": 777,
+      "average_word_count": 128,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T16:29:03.442452+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "the oxford companion to spirits and cocktails|david wondrich, noah rothbaum": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.6353,
+      "compound_median": 0.9392,
+      "compound_stdev": 0.44883320584228914,
+      "positive_score": 0.121,
+      "negative_score": 0.018,
+      "textblob_polarity": 0.1663531746031746,
+      "average_confidence": 0.7225645238095239,
+      "sentiment_consistency": 0.5511667941577109
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a overwhelmingly positive reception.",
+    "bibliodrift_vibe": "A guaranteed mood-lifter you'll want to share.",
+    "analysis_confidence": 0.501,
+    "total_reviews_analyzed": 7,
+    "review_statistics": {
+      "average_length": 558,
+      "average_word_count": 91.57142857142857,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T16:30:22.107121+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
   }
 }
