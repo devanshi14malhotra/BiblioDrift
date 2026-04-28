@@ -98,10 +98,31 @@ Each book in BiblioDrift is a 3D interactive element:
 - **Action**: Click on any book
 - **Effect**: Book flips open to reveal detailed information
 - **What you'll see**:
-  - Full book cover
-  - Title and author
-  - Bookseller's handwritten note (AI-generated vibe)
-  - Action buttons
+  - Full synopsis and AI-generated vibe notes
+  - User reviews and ratings
+  - **Emotion Tagging**: A new section where you can mark how a book makes you feel (e.g., *Cozy*, *Tense*, *Whimsical*).
+
+---
+
+## 🎨 Emotion-Based Discovery
+
+BiblioDrift’s standout feature is its ability to organize your library by feelings.
+
+### Tagging Your Books
+1. Open your **My Library** page.
+2. Click on any book to open its detail modal.
+3. Locate the **"How does this book make you feel?"** section.
+4. Toggle different emotions. These are saved instantly to your profile!
+
+### Filtering & Sorting by Mood
+Once you’ve tagged your collection, you can find the perfect book for your current mood:
+- **Search by Feeling**: Type a mood like "Cozy" into the search bar at the top of the library. Only books matching that vibe will remain on the shelves.
+- **Sort by Mood**: Select "Sort by Mood" from the sorting dropdown. Your library will reorganize itself, grouping similar emotional journeys together.
+- **Visual Cues**: Look at the spines of your 3D books! Small icons will appear on books you've tagged, giving you a quick visual guide to your library's emotional landscape.
+
+---
+
+## 🏘️ Managing Your Library
 
 #### Book Actions
 Once a book is flipped open, you'll see two action buttons:
