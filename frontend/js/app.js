@@ -929,7 +929,7 @@ class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
-        this.currentTheme = SafeStorage.get(this.themeKey) || 'day';
+        this.currentTheme = document.documentElement.getAttribute('data-theme') || SafeStorage.get(this.themeKey) || 'day';
 
         this.init();
     }
