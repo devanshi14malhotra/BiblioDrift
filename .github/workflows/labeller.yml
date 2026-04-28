@@ -17,8 +17,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const labelName = "NSOC'26";
-            const color = "FFA500";
+            const labelName = "NSoC'26";
+            const color = "af40e3";
 
             try {
               await github.rest.issues.getLabel({
@@ -40,7 +40,7 @@ jobs:
                 repo: context.repo.repo,
                 name: labelName,
                 color: color,
-                description: "NSOC 2026 Issues"
+                description: "For issues and PRs which are a part of the Nexus Spring of Code open source event"
               });
             }
 
@@ -51,14 +51,14 @@ jobs:
             const issue = context.payload.issue;
             const title = issue.title.toLowerCase();
 
-            const keywords = ["nsoc", "nsoc26", "nsoc'26", "nsoc 26", "nsoc-26"];
+            const keywords = ["nsoc", "nsoc26", "nsoc'26", "nsoc 26", "nsoc-26", "NSOC'26", "NSoC'26"];
             const isNSOC = keywords.some(k => title.includes(k));
 
-            if (isNSOC) {
+            if (isNSoC) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                labels: ["NSOC'26"]
+                labels: ["NSoC'26"]
               });
             }

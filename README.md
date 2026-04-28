@@ -69,7 +69,6 @@ graph TD
 ## 🤖 Project Structure 
 ```
 BIBLIODRIFT/
-BIBLIODRIFT/
 │
 ├── backend/                     #  Python backend logic
 │   ├── app.py

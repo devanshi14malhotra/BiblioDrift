@@ -303,23 +303,7 @@
     <script src="../js/app.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../script/header-scroll.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            if (isLoggedIn) {
-                const link = document.getElementById('navAuthLink');
-                const tooltip = document.getElementById('navAuthTooltip');
 
-                if (link) {
-                    link.innerHTML = '<i class="fa-solid fa-user"></i>';
-                    link.href = 'profile.html';
-                    link.classList.remove('active'); // library is active, not profile
-                }
-                if (tooltip) {
-                    tooltip.innerHTML = '<i class="fa-solid fa-address-card"></i> View Profile';
-                }
-            }     });
-    </script>
 
     <!-- Ambient Sanctuary UI -->
     <div class="ambient-sanctuary">

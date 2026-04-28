@@ -31,4 +31,3 @@ instance/
 *.db
 # Virtual Environment
 venv/
-.env

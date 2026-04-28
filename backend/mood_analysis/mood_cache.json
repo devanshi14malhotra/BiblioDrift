@@ -274,6 +274,50 @@
       "textblob_polarity": 0.1983796296296296,
       "average_confidence": 0.7542438888888889,
       "sentiment_consistency": 1
+  "the life and letters of mary wollstonecraft shelley, volume i (of 2)|florence a. thomas marshall": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.148275,
+      "compound_median": 0.2263,
+      "compound_stdev": 0.7572847829581683,
+      "positive_score": 0.08424999999999999,
+      "negative_score": 0.069,
+      "textblob_polarity": 0.2660774121711622,
+      "average_confidence": 0.6704334509240759,
+      "sentiment_consistency": 0.24271521704183174
+    },
+    "primary_moods": [],
+    "mood_description": "This book has a generally positive reception.",
+    "bibliodrift_vibe": "A gentle companion perfect for Sunday mornings.",
+    "analysis_confidence": 0.415,
+    "total_reviews_analyzed": 4,
+    "review_statistics": {
+      "average_length": 777,
+      "average_word_count": 128,
+      "average_rating": null,
+      "rating_distribution": {},
+      "total_helpful_votes": 0
+    },
+    "metadata": {
+      "analyzer_version": "2.0.0",
+      "analysis_timestamp": "2026-04-25T16:29:03.442452+00:00Z",
+      "config_used": {
+        "min_reviews": 3,
+        "confidence_threshold": 0.1
+      }
+    }
+  },
+  "the oxford companion to spirits and cocktails|david wondrich, noah rothbaum": {
+    "success": true,
+    "overall_sentiment": {
+      "compound_score": 0.6353,
+      "compound_median": 0.9392,
+      "compound_stdev": 0.44883320584228914,
+      "positive_score": 0.121,
+      "negative_score": 0.018,
+      "textblob_polarity": 0.1663531746031746,
+      "average_confidence": 0.7225645238095239,
+      "sentiment_consistency": 0.5511667941577109
     },
     "primary_moods": [],
     "mood_description": "This book has a overwhelmingly positive reception.",
@@ -283,6 +327,11 @@
     "review_statistics": {
       "average_length": 1264,
       "average_word_count": 205,
+    "analysis_confidence": 0.501,
+    "total_reviews_analyzed": 7,
+    "review_statistics": {
+      "average_length": 558,
+      "average_word_count": 91.57142857142857,
       "average_rating": null,
       "rating_distribution": {},
       "total_helpful_votes": 0
@@ -323,6 +372,7 @@
     "metadata": {
       "analyzer_version": "2.0.0",
       "analysis_timestamp": "2026-04-25T10:41:50.773801+00:00Z",
+      "analysis_timestamp": "2026-04-25T16:30:22.107121+00:00Z",
       "config_used": {
         "min_reviews": 3,
         "confidence_threshold": 0.1

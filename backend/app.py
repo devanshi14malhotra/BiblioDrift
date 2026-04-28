@@ -1802,21 +1802,6 @@ def delete_price_alert(alert_id):
 with app.app_context():
     db.create_all()
 
-@app.route('/api/books', methods=['GET'])
-def get_books():
-    query = request.args.get('q')
-    max_results = request.args.get('maxResults', 10)
-
-    API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
-    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}&key={API_KEY}"
-
-    try:
-        response = requests.get(url)
-        data = response.json()
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": "Failed to fetch books"}), 500
-
 if __name__ == '__main__':
     server_config = app_config.server
     
@@ -1835,7 +1820,4 @@ if __name__ == '__main__':
         logger.info("  POST /api/v1/chat - Chat with bookseller")
         logger.info("  GET  /api/v1/health - Health check")
 
-    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
-
-
-    
+    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
