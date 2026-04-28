@@ -166,6 +166,12 @@ class Config:
             elif len(self.jwt.secret_key) < 32:
                 errors.append("JWT_SECRET_KEY should be at least 32 characters long")
         
+        # Validate database configuration
+        # SQLite is not suitable for concurrent multi-user production workloads.
+        if self.is_production():
+            if self.database.url.startswith('sqlite://'):
+                errors.append("DATABASE_URL must be set to a PostgreSQL URI in production. SQLite is not suitable for concurrent multi-user production workloads.")
+        
         # Validate server configuration
         if self.server.port < 1 or self.server.port > 65535:
             errors.append(f"Invalid port number: {self.server.port}")
