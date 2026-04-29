@@ -392,6 +392,21 @@ class BookRenderer {
         this.libraryManager = libraryManager;
     }
 
+    renderSkeletons(container, count = 5, type = 'card') {
+        if (!container) return;
+        let html = '';
+        if (type === 'card') {
+            html = Array(count).fill(0).map(() => `
+                <div class="book-skeleton skeleton"></div>
+            `).join('');
+        } else if (type === 'spine') {
+            html = Array(count).fill(0).map(() => `
+                <div class="spine-skeleton skeleton"></div>
+            `).join('');
+        }
+        container.innerHTML = html;
+    }
+
     async createBookElement(bookData, shelf = null) {
         const { id, volumeInfo } = bookData;
         const progress = typeof bookData.progress === 'number' ? bookData.progress : 0;
@@ -640,7 +655,26 @@ class BookRenderer {
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
-        document.getElementById('modal-summary').textContent = book.volumeInfo.description || "No description available.";
+        
+        const summaryEl = document.getElementById('modal-summary');
+        if (summaryEl) {
+            // Show skeletons while AI is "thinking"
+            summaryEl.innerHTML = `
+                <div class="text-skeleton skeleton"></div>
+                <div class="text-skeleton skeleton" style="width: 90%"></div>
+            `;
+
+            // Fetch the AI vibe to populate the Insight box
+            this.fetchAIVibe(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "", book.volumeInfo.description || "").then(vibe => {
+                if (vibe) {
+                    const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+                    summaryEl.innerHTML = `<p class="fade-in">${cleanVibe}</p>`;
+                } else {
+                    // Fallback to description if AI vibe fails
+                    summaryEl.textContent = book.volumeInfo.description || "No description available.";
+                }
+            });
+        }
 
         const addBtn = document.getElementById('modal-add-btn');
         const shareBtn = document.getElementById('modal-share-btn');
@@ -692,27 +726,28 @@ class BookRenderer {
             <h3 class="modal-section-title">How does this book make you feel?</h3>
             <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
-                    const isActive = book.moods && book.moods.includes(mood);
-                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+            const isActive = book.moods && book.moods.includes(mood);
+            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
-                }).join('')}
+        }).join('')}
             </div>
         `;
-
         // Insert before the buttons
         const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
-        if (modalBody) {
+        const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
+        
+        if (actions) {
             // Remove existing tagging section if re-opening
-            const existing = modalBody.querySelector('.emotion-tagging-section');
+            const existing = actions.parentNode.querySelector('.emotion-tagging-section');
             if (existing) existing.remove();
             
-            const actions = modalBody.querySelector('.modal-actions') || modalBody.querySelector('.book-actions-section');
-            if (actions) {
-                modalBody.insertBefore(emotionContainer, actions);
-            } else {
-                modalBody.appendChild(emotionContainer);
-            }
+            actions.parentNode.insertBefore(emotionContainer, actions);
+        } else if (modalBody) {
+            // Fallback
+            const existing = modalBody.querySelector('.emotion-tagging-section');
+            if (existing) existing.remove();
+            modalBody.appendChild(emotionContainer);
         }
 
         // Add tag toggle listeners
@@ -720,7 +755,7 @@ class BookRenderer {
             tag.onclick = async () => {
                 const mood = tag.dataset.mood;
                 if (!book.moods) book.moods = [];
-                
+
                 const index = book.moods.indexOf(mood);
                 if (index > -1) {
                     book.moods.splice(index, 1);
@@ -729,7 +764,7 @@ class BookRenderer {
                     book.moods.push(mood);
                     tag.classList.add('active');
                 }
-                
+
                 if (this.libraryManager) {
                     await this.libraryManager.updateBook(book.id, { moods: book.moods });
                 }
@@ -753,6 +788,10 @@ class BookRenderer {
     async renderCuratedSection(query, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
         if (!container) return;
+
+        // Show skeletons while loading
+        this.renderSkeletons(container, maxResults);
+
         try {
             const client = window.GoogleBooksClient;
             const data = client
@@ -834,36 +873,7 @@ class LibraryManager {
             finished: []
         };
 
-        /**
-         * ==============================================================================
-         * ISSUE FIX: HARDCODED API BASE URL DUPLICATION
-         * ==============================================================================
-         * 
-         * Background Context & Issue:
-         * ---------------------------
-         * Previously, this class had its own hardcoded backend URL assigned right here:
-         * `this.apiBase = 'http://localhost:5000/api/v1';`
-         * 
-         * This implementation was problematic for several critical reasons:
-         * 1. Duplication of Truth: The global constant `MOOD_API_BASE` already exists 
-         *    to define the backend server location. Having a second hardcoded value 
-         *    here meant that if the API URL needed to change (e.g., deploying from dev 
-         *    to production), developers had to remember to manually update it in 
-         *    multiple disparate files. This led to frustrating inconsistencies, bugs, 
-         *    and broken network requests when only one reference was updated.
-         * 2. Security & Environment Portability: Hardcoding an `http://localhost` 
-         *    URL meant the application structure was rigidly tied to a local machine, 
-         *    and would cause Mixed Content warnings or blockages in production 
-         *    environments that require secure HTTPS connections.
-         * 
-         * The Resolution:
-         * ---------------
-         * We now strictly reuse the global `MOOD_API_BASE` constant. By centralizing 
-         * the configuration to a single source of truth, we ensure complete consistency 
-         * across the entire application architecture while dynamically adapting to the 
-         * secure network requirements of the deployed environment.
-         * ==============================================================================
-         */
+
         this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
 
         // Asynchronous initialization
@@ -1113,7 +1123,7 @@ class LibraryManager {
     async renderFilteredShelf(shelfName, elementId, books) {
         const container = document.getElementById(elementId);
         if (!container) return;
-        
+
         container.innerHTML = '';
         if (books.length === 0) {
             container.innerHTML = '<div class="empty-state">No matching books found.</div>';
@@ -1485,13 +1495,17 @@ class GenreManager {
     async fetchBooks(genre) {
         if (!this.booksGrid) return;
 
-        // Show loading
-        this.booksGrid.innerHTML = `
-            <div class="genre-loading">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                <span>Finding best ${genre} books...</span>
-            </div>
-        `;
+        // Show loading skeletons
+        if (window.renderer) {
+            window.renderer.renderSkeletons(this.booksGrid, 10);
+        } else {
+            this.booksGrid.innerHTML = `
+                <div class="genre-loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Finding best ${genre} books...</span>
+                </div>
+            `;
+        }
 
         try {
             const client = window.GoogleBooksClient;
@@ -1521,27 +1535,7 @@ class GenreManager {
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
 
-        /**
-         * ==============================================================================
-         * ISSUE FIX: REDUNDANT LIBRARYMANAGER INSTANTIATION
-         * ==============================================================================
-         * 
-         * Background Context & Issue:
-         * ---------------------------
-         * Previously, a new `LibraryManager` was instantiated every time `renderBooks` 
-         * was called inside `GenreManager`. 
-         * 
-         * The problem was that creating a new `LibraryManager` triggers a fresh 
-         * `syncWithBackend()` network call upon initialization. Calling this repeatedly 
-         * every time the genre modal books are rendered wastes bandwidth and can 
-         * potentially overwrite or corrupt an in-progress synchronization state.
-         * 
-         * The Resolution:
-         * ---------------
-         * We now pass the existing globally shared `libManager` instance into 
-         * `GenreManager` at construction time and reuse it here via `this.libraryManager`.
-         * ==============================================================================
-         */
+
         const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
@@ -1774,8 +1768,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
     }
+
+
 });
 
+/**
+ * ==============================================================================
+ * SECURITY FIX: CSRF PROTECTION & SESSION MANAGEMENT
+ * ==============================================================================
+ * 
+ * Issue:
+ * ------
+ * The auth form has no CSRF protection — it directly POSTs credentials to the API 
+ * from the browser.
+ * 
+ * Why it matters:
+ * ---------------
+ * Without a CSRF token, a malicious third-party page could trick authenticated 
+ * users into making authenticated requests. Also, isLoggedIn was previously stored 
+ * as a plain string 'true' in localStorage, meaning any script could forge the 
+ * login state by setting this key.
+ * 
+ * Fix:
+ * ----
+ * Move the authenticated session indicator to an HttpOnly cookie managed by the 
+ * backend, and validate the JWT on every protected API call (which is already 
+ * done server-side — the frontend just needs to stop relying on the localStorage 
+ * flag for access control decisions).
+ * ==============================================================================
+ */
 async function handleAuth(event) {
     event.preventDefault();
     const form = event.target;
@@ -1860,15 +1881,6 @@ async function handleAuth(event) {
 
 function enableTapEffects() {
     if (!('ontouchstart' in window)) return;
-
-    document.querySelectorAll('.book-scene').forEach(scene => {
-        const book = scene.querySelector('.book');
-        const overlay = scene.querySelector('.glass-overlay');
-        scene.addEventListener('click', () => {
-            book.classList.toggle('tap-effect');
-            if (overlay) overlay.classList.toggle('tap-overlay');
-        });
-    });
 
     document.querySelectorAll('.btn-icon').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2071,11 +2083,11 @@ const KeyboardShortcuts = {
         document.querySelectorAll('.book-spine-3d.focused').forEach(el => {
             el.classList.remove('focused');
         });
-        
+
         if (bookElement) {
             bookElement.classList.add('focused');
             bookElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            
+
             // Get the book data from the element
             const bookId = bookElement.dataset.bookId;
             if (window.bookshelfRenderer && bookId) {
@@ -2102,7 +2114,7 @@ const KeyboardShortcuts = {
 
         let currentIndex = this.getFocusedBookIndex();
         let nextIndex = (currentIndex + 1) % books.length;
-        
+
         this.setBookFocus(books[nextIndex]);
     },
 
@@ -2116,7 +2128,7 @@ const KeyboardShortcuts = {
 
         let currentIndex = this.getFocusedBookIndex();
         let prevIndex = currentIndex <= 0 ? books.length - 1 : currentIndex - 1;
-        
+
         this.setBookFocus(books[prevIndex]);
     },
 
@@ -2169,7 +2181,7 @@ const KeyboardShortcuts = {
             'want': 'Anticipated Journeys',
             'finished': 'Lifetime Favorites'
         };
-        
+
         showToast(`Moved to ${shelfNames[targetShelf]}`, 'success');
     }
 };

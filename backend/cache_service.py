@@ -50,6 +50,7 @@ class CacheService:
     def __init__(self, app=None):
         self.cache = None
         self.redis_client = None
+        self.is_initialized = False
         self.cache_stats = {
             'hits': 0,
             'misses': 0,
@@ -61,6 +62,7 @@ class CacheService:
     
     def init_app(self, app):
         """Initialize caching with Flask app."""
+        self.is_initialized = True
         try:
             # Configure Flask-Caching
             cache_config = {
@@ -202,6 +204,14 @@ def cached_function(prefix: str, ttl: int = None):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
+            # Guard against uninitialized cache:
+            # issue: cache_service is a module-level singleton initialized before the Flask app is fully configured.
+            # why?: Calling cache_service.init_app(app) on line 92 of app.py is correct, but if any decorated function
+            # (e.g., via @cache_recommendations) is called before init_app, the cache will be in an unconfigured state
+            # and may silently fail or use a null cache.
+            if not cache_service.is_initialized:
+                raise RuntimeError("cache_service.init_app() must be called before invoking any cached functions.")
+
             # Generate cache key
             cache_key = cache_service._generate_cache_key(prefix, *args, **kwargs)
             
