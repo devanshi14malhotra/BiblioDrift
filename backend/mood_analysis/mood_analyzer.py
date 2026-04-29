@@ -14,16 +14,20 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import string
+from difflib import SequenceMatcher
 
 @dataclass
 class AnalysisConfig:
     """Configuration for mood analysis"""
     min_reviews: int = int(os.getenv('MIN_REVIEWS_FOR_ANALYSIS', '3'))
-    confidence_threshold: float = float(os.getenv('CONFIDENCE_THRESHOLD', '0.1'))
-    min_word_frequency: int = int(os.getenv('MIN_WORD_FREQUENCY', '2'))
+    confidence_threshold: float = float(os.getenv('CONFIDENCE_THRESHOLD', '0.15'))
+    min_word_frequency: int = int(os.getenv('MIN_WORD_FREQUENCY', '1'))
     max_mood_categories: int = int(os.getenv('MAX_MOOD_CATEGORIES', '5'))
-    sentiment_weight: float = float(os.getenv('SENTIMENT_WEIGHT', '0.7'))
-    keyword_weight: float = float(os.getenv('KEYWORD_WEIGHT', '0.3'))
+    sentiment_weight: float = float(os.getenv('SENTIMENT_WEIGHT', '0.65'))
+    keyword_weight: float = float(os.getenv('KEYWORD_WEIGHT', '0.35'))
+    # New tuning parameters
+    intensity_boost: float = float(os.getenv('INTENSITY_BOOST', '0.3'))  # Boost for intense emotions
+    clustering_similarity_threshold: float = float(os.getenv('CLUSTERING_SIMILARITY_THRESHOLD', '0.65'))
 
 class BookMoodAnalyzer:
     """
@@ -74,24 +78,43 @@ class BookMoodAnalyzer:
         return {
             'positive_emotions': [
                 'joy', 'happiness', 'love', 'excitement', 'hope', 'satisfaction',
-                'delight', 'pleasure', 'contentment', 'bliss', 'euphoria'
+                'delight', 'pleasure', 'contentment', 'bliss', 'euphoria', 'inspiring',
+                'uplifting', 'heartwarming', 'charming', 'delightful', 'wonderful',
+                'beautiful', 'brilliant', 'excellent', 'remarkable', 'extraordinary',
+                'engaging', 'captivating', 'compelling', 'gripping', 'riveting',
+                'magical', 'enchanting', 'whimsical', 'cozy', 'warm', 'tender',
+                'touching', 'moving', 'profound', 'meaningful', 'authentic', 'genuine'
             ],
             'negative_emotions': [
                 'sadness', 'anger', 'fear', 'disgust', 'anxiety', 'depression',
-                'frustration', 'disappointment', 'grief', 'despair', 'rage'
+                'frustration', 'disappointment', 'grief', 'despair', 'rage',
+                'heartbreak', 'anguish', 'sorrow', 'melancholy', 'dread', 'terror',
+                'horror', 'haunting', 'disturbing', 'unsettling', 'troubling', 'tragic'
             ],
             'intensity_modifiers': [
                 'very', 'extremely', 'incredibly', 'absolutely', 'completely',
-                'totally', 'utterly', 'quite', 'rather', 'somewhat'
+                'totally', 'utterly', 'quite', 'rather', 'somewhat', 'deeply',
+                'profoundly', 'intensely', 'powerfully', 'overwhelmingly'
             ],
             'literary_qualities': [
                 'compelling', 'gripping', 'engaging', 'captivating', 'riveting',
-                'thought-provoking', 'profound', 'insightful', 'brilliant', 'masterful'
+                'thought-provoking', 'profound', 'insightful', 'brilliant', 'masterful',
+                'lyrical', 'eloquent', 'vivid', 'atmospheric', 'immersive', 'atmospheric',
+                'sophisticated', 'nuanced', 'intricate', 'layered', 'complex'
+            ],
+            'pacing_descriptors': [
+                'fast-paced', 'slow-burn', 'relentless', 'leisurely', 'frenetic',
+                'measured', 'breathless', 'meditative', 'building', 'accelerating'
+            ],
+            'atmosphere_descriptors': [
+                'dark', 'gloomy', 'mysterious', 'eerie', 'creepy', 'ominous',
+                'light', 'bright', 'cheerful', 'sunny', 'bleak', 'desolate',
+                'lush', 'vibrant', 'stark', 'cinematic', 'gothic', 'noir'
             ]
         }
     def analyze_sentiment(self, text: str) -> Dict:
         """
-        Comprehensive sentiment analysis with error handling.
+        Comprehensive sentiment analysis with error handling and enhanced weighting.
         
         Args:
             text: Review text to analyze
@@ -111,10 +134,18 @@ class BookMoodAnalyzer:
             textblob_polarity = blob.sentiment.polarity
             textblob_subjectivity = blob.sentiment.subjectivity
             
+            # Enhanced sentiment calculation with subjectivity weighting
+            # More subjective text (higher reviewer emotion) gets more weight
+            weighted_polarity = (vader_scores['compound'] * 0.6) + (textblob_polarity * 0.4)
+            weighted_polarity = weighted_polarity * (0.7 + textblob_subjectivity * 0.3)
+            
             # Calculate confidence based on agreement between methods
             confidence = self._calculate_sentiment_confidence(
-                vader_scores['compound'], textblob_polarity
+                vader_scores['compound'], textblob_polarity, textblob_subjectivity
             )
+            
+            # Detect intensity modifiers for emphasis
+            intensity_factor = self._detect_intensity_modifiers(text)
             
             return {
                 'vader_compound': vader_scores['compound'],
@@ -123,6 +154,8 @@ class BookMoodAnalyzer:
                 'vader_neutral': vader_scores['neu'],
                 'textblob_polarity': textblob_polarity,
                 'textblob_subjectivity': textblob_subjectivity,
+                'weighted_polarity': weighted_polarity,
+                'intensity_factor': intensity_factor,
                 'confidence': confidence,
                 'text_length': len(text),
                 'word_count': len(text.split())
@@ -131,6 +164,17 @@ class BookMoodAnalyzer:
         except Exception as e:
             self.logger.error(f"Error in sentiment analysis: {e}")
             return self._empty_sentiment_result()
+    
+    def _detect_intensity_modifiers(self, text: str) -> float:
+        """Detect intensity modifiers in text to boost extreme sentiments."""
+        text_lower = text.lower()
+        intensity_score = 1.0
+        
+        for modifier in self.emotion_patterns['intensity_modifiers']:
+            if modifier in text_lower:
+                intensity_score *= 1.15  # 15% boost per modifier
+        
+        return min(intensity_score, 2.0)  # Cap at 2x
     
     def _empty_sentiment_result(self) -> Dict:
         """Return empty sentiment result for error cases"""
@@ -141,18 +185,21 @@ class BookMoodAnalyzer:
             'vader_neutral': 1.0,
             'textblob_polarity': 0.0,
             'textblob_subjectivity': 0.0,
+            'weighted_polarity': 0.0,
+            'intensity_factor': 1.0,
             'confidence': 0.0,
             'text_length': 0,
             'word_count': 0
         }
     
-    def _calculate_sentiment_confidence(self, vader_score: float, textblob_score: float) -> float:
+    def _calculate_sentiment_confidence(self, vader_score: float, textblob_score: float, subjectivity: float) -> float:
         """
-        Calculate confidence based on agreement between sentiment methods.
+        Calculate confidence based on agreement between sentiment methods and subjectivity.
         
         Args:
             vader_score: VADER compound score (-1 to 1)
             textblob_score: TextBlob polarity score (-1 to 1)
+            subjectivity: TextBlob subjectivity score (0 to 1)
             
         Returns:
             Confidence score (0 to 1)
@@ -163,8 +210,11 @@ class BookMoodAnalyzer:
         # Extreme scores are more confident
         extremity = max(abs(vader_score), abs(textblob_score))
         
-        # Combine agreement and extremity
-        confidence = (agreement * 0.6) + (extremity * 0.4)
+        # Higher subjectivity indicates more emotional content (more reliable for mood)
+        subjectivity_weight = 0.7 + (subjectivity * 0.3)
+        
+        # Combine all factors
+        confidence = (agreement * 0.5) + (extremity * 0.3) + (subjectivity_weight * 0.2)
         return min(confidence, 1.0)
     def extract_dynamic_moods(self, reviews: List[Dict]) -> Dict[str, float]:
         """
@@ -220,7 +270,7 @@ class BookMoodAnalyzer:
     def _identify_emotional_words(self, words: List[str]) -> Dict[str, int]:
         """
         Identify words that carry emotional weight using pattern matching
-        and frequency analysis.
+        and frequency analysis. Enhanced with better detection.
         """
         emotional_words = Counter()
         
@@ -231,75 +281,149 @@ class BookMoodAnalyzer:
             r'.*ful$',  # -ful adjectives (beautiful, powerful)
             r'.*ous$',  # -ous adjectives (mysterious, gorgeous)
             r'.*ive$',  # -ive adjectives (captivating, positive)
+            r'.*able$', # -able adjectives (remarkable, incredible)
+            r'.*less$', # -less adjectives (hopeless, endless)
+            r'.*ly$',   # Adverbs (beautifully, tragically)
         ]
         
         for word in words:
             # Check against known emotion categories
             for category, emotion_list in self.emotion_patterns.items():
                 if word in emotion_list:
-                    emotional_words[word] += 2  # Higher weight for known emotions
+                    emotional_words[word] += 3  # Higher weight for known emotions
                     
             # Check patterns
             for pattern in emotion_patterns:
-                if re.match(pattern, word) and len(word) > 4:
+                if re.match(pattern, word) and len(word) > 3:
                     emotional_words[word] += 1
         
-        # Filter by minimum frequency
+        # Filter by minimum frequency and length
         return {word: count for word, count in emotional_words.items() 
-                if count >= self.config.min_word_frequency}
+                if count >= self.config.min_word_frequency and len(word) > 3}
     
     def _cluster_emotions(self, emotional_words: Dict[str, int]) -> Dict[str, List[str]]:
         """
-        Cluster emotional words into coherent mood categories.
-        This is a simplified clustering - could be enhanced with ML.
+        Cluster emotional words into coherent mood categories using semantic similarity.
+        Enhanced algorithm with better clustering logic.
         """
+        if not emotional_words:
+            return {}
+            
         clusters = defaultdict(list)
+        processed = set()
         
-        # Simple semantic clustering based on word patterns and known associations
+        # First pass: Assign words to explicit categories from patterns
         for word in emotional_words:
-            mood_category = self._categorize_emotion_word(word)
-            clusters[mood_category].append(word)
+            if word in processed:
+                continue
+                
+            primary_category = self._categorize_emotion_word(word)
+            clusters[primary_category].append(word)
+            processed.add(word)
         
-        # Filter out small clusters
-        return {mood: words for mood, words in clusters.items() 
-                if len(words) >= 2}  # At least 2 words per mood
+        # Merge similar clusters using semantic similarity
+        merged_clusters = self._merge_similar_clusters(clusters)
+        
+        # Filter out small clusters and reorder by frequency
+        final_clusters = {}
+        for mood, word_list in merged_clusters.items():
+            if len(word_list) >= 1:  # Allow single words
+                # Sort by word frequency
+                word_list.sort(key=lambda w: emotional_words.get(w, 0), reverse=True)
+                final_clusters[mood] = word_list
+        
+        return final_clusters
+    
+    def _merge_similar_clusters(self, clusters: Dict[str, List[str]]) -> Dict[str, List[str]]:
+        """Merge semantically similar mood clusters."""
+        merged = dict(clusters)
+        
+        # Define mood similarities for merging
+        mood_aliases = {
+            'positive': ['uplifting', 'heartwarming'],
+            'emotional': ['dark', 'melancholic'],
+            'intense': ['overwhelming', 'powerful'],
+        }
+        
+        for primary, aliases in mood_aliases.items():
+            for alias in aliases:
+                if alias in merged and primary in merged:
+                    # Merge alias into primary
+                    merged[primary].extend(merged[alias])
+                    del merged[alias]
+        
+        return merged
     
     def _categorize_emotion_word(self, word: str) -> str:
         """
         Categorize an emotional word into a mood category.
-        Uses semantic rules and patterns.
+        Uses semantic rules, patterns, and known associations.
+        Enhanced with more nuanced categorization.
         """
-        # Positive emotions
-        positive_indicators = ['love', 'joy', 'happy', 'wonderful', 'amazing', 'beautiful', 'perfect']
-        if any(indicator in word for indicator in positive_indicators):
+        # Normalize word
+        word_lower = word.lower()
+        
+        # Check against known positive emotions
+        if any(pos_word in word_lower for pos_word in ['love', 'joy', 'happy', 'wonderful', 'amazing', 
+                                                         'beautiful', 'perfect', 'excellent', 'brilliant',
+                                                         'delightful', 'inspiring', 'uplifting', 'heartwarming']):
             return 'uplifting'
         
-        # Dark/negative emotions  
-        dark_indicators = ['dark', 'scary', 'disturbing', 'twisted', 'grim', 'haunting']
-        if any(indicator in word for indicator in dark_indicators):
+        # Check against known dark/negative emotions
+        if any(dark_word in word_lower for dark_word in ['dark', 'scary', 'disturbing', 'twisted', 
+                                                          'grim', 'haunting', 'horrify', 'terror',
+                                                          'gloomy', 'bleak', 'tragic']):
             return 'dark'
         
-        # Mystery/suspense
-        mystery_indicators = ['mystery', 'suspense', 'intrigue', 'puzzle', 'secret']
-        if any(indicator in word for indicator in mystery_indicators):
+        # Check for mystery/suspense
+        if any(mystery_word in word_lower for mystery_word in ['mystery', 'suspense', 'intrigue', 
+                                                                'puzzle', 'secret', 'enigma', 'cryptic']):
             return 'mysterious'
         
-        # Romance
-        romance_indicators = ['love', 'romance', 'passion', 'heart', 'romantic']
-        if any(indicator in word for indicator in romance_indicators):
-            return 'romantic'
+        # Check for romance
+        if any(romance_word in word_lower for romance_word in ['love', 'romance', 'passion', 'heart', 
+                                                                'romantic', 'tender', 'affection']):
+            # Exclude if also a positive general word
+            if 'love' not in word_lower or 'romantic' in word_lower or 'passion' in word_lower:
+                return 'romantic'
         
-        # Intensity
-        intense_indicators = ['intense', 'powerful', 'overwhelming', 'gripping', 'dramatic']
-        if any(indicator in word for indicator in intense_indicators):
+        # Check for intensity
+        if any(intense_word in word_lower for intense_word in ['intense', 'powerful', 'overwhelming', 
+                                                                'gripping', 'dramatic', 'explosive',
+                                                                'compelling', 'riveting']):
             return 'intense'
         
-        # Default to general emotional category
-        if word in self.emotion_patterns['positive_emotions']:
-            return 'positive'
-        elif word in self.emotion_patterns['negative_emotions']:
+        # Check for melancholic/emotional
+        if any(melancholic_word in word_lower for melancholic_word in ['melancholic', 'melancholy',
+                                                                        'sorrowful', 'mournful', 'sad',
+                                                                        'wistful', 'nostalgic', 'bittersweet']):
+            return 'melancholic'
+        
+        # Check for whimsical/cozy
+        if any(cozy_word in word_lower for cozy_word in ['cozy', 'warm', 'whimsical', 'magical',
+                                                          'enchanting', 'charming', 'delightful', 'lighthearted']):
+            return 'whimsical'
+        
+        # Check for atmospheric/immersive
+        if any(atmos_word in word_lower for atmos_word in ['atmospheric', 'immersive', 'vivid', 'lyrical',
+                                                            'poetic', 'cinematic', 'gothic', 'noir', 'lush']):
+            return 'atmospheric'
+        
+        # Check for thought-provoking
+        if any(thoughtful_word in word_lower for thoughtful_word in ['thought-provoking', 'profound',
+                                                                      'insightful', 'philosophical',
+                                                                      'intellectual', 'complex', 'nuanced']):
+            return 'thoughtful'
+        
+        # Fallback categorization based on position in patterns
+        if word in self.emotion_patterns.get('positive_emotions', []):
+            return 'uplifting'
+        elif word in self.emotion_patterns.get('negative_emotions', []):
             return 'emotional'
+        elif word in self.emotion_patterns.get('literary_qualities', []):
+            return 'thoughtful'
         else:
+            # Default based on sentiment characteristics
             return 'atmospheric'
     def determine_primary_mood(self, reviews: List[Dict]) -> Dict:
         """
@@ -550,6 +674,105 @@ class BookMoodAnalyzer:
         # Return a random vibe
         import random
         return random.choice(vibes)
+    
+    def calculate_mood_query_match(self, book_moods: Dict[str, float], user_query_moods: List[str]) -> Dict:
+        """
+        Calculate how well a book's moods match a user's query moods.
+        
+        Args:
+            book_moods: Dictionary of {mood: confidence} from book analysis
+            user_query_moods: List of moods from parsed user query
+            
+        Returns:
+            Dictionary with match_score (0-1) and match details
+        """
+        if not user_query_moods or not book_moods:
+            return {
+                'match_score': 0.5,  # Neutral score if data missing
+                'matched_moods': [],
+                'missing_moods': user_query_moods or [],
+                'explanation': 'Insufficient data for mood matching'
+            }
+        
+        matched_moods = []
+        match_scores = []
+        missing_moods = []
+        
+        # Calculate match for each query mood
+        for query_mood in user_query_moods:
+            if query_mood in book_moods:
+                # Direct match
+                matched_moods.append(query_mood)
+                match_scores.append(book_moods[query_mood])
+            else:
+                # Check for partial/semantic matches
+                best_match = self._find_semantic_mood_match(query_mood, book_moods)
+                if best_match and best_match[1] > 0.3:  # Threshold for semantic match
+                    matched_moods.append(f"{query_mood}→{best_match[0]}")
+                    match_scores.append(best_match[1] * 0.8)  # Slightly lower score for semantic match
+                else:
+                    missing_moods.append(query_mood)
+        
+        # Calculate overall match score
+        if match_scores:
+            match_score = statistics.mean(match_scores)
+        elif missing_moods:
+            match_score = 0.2  # Low score if no matches
+        else:
+            match_score = 0.5
+        
+        # Boost score if book has other strong moods
+        if book_moods and not missing_moods:
+            # All query moods found - boost by number of additional moods in book
+            additional_moods = len(book_moods) - len(matched_moods)
+            match_score = min(match_score * (1 + additional_moods * 0.1), 1.0)
+        
+        return {
+            'match_score': match_score,
+            'matched_moods': matched_moods,
+            'missing_moods': missing_moods,
+            'book_moods': list(book_moods.keys()),
+            'explanation': self._generate_match_explanation(matched_moods, missing_moods, match_score)
+        }
+    
+    def _find_semantic_mood_match(self, query_mood: str, available_moods: Dict[str, float]) -> Optional[Tuple[str, float]]:
+        """Find a semantically similar mood in available moods."""
+        mood_similarities = {
+            'cozy': ['whimsical', 'atmospheric'],
+            'mysterious': ['dark', 'intense'],
+            'dark': ['mysterious', 'intense'],
+            'romantic': ['whimsical', 'uplifting'],
+            'uplifting': ['romantic', 'whimsical'],
+            'intense': ['dark', 'mysterious'],
+            'atmospheric': ['cozy', 'dark'],
+            'thoughtful': ['atmospheric', 'melancholic'],
+            'whimsical': ['cozy', 'romantic', 'uplifting'],
+            'melancholic': ['thoughtful', 'dark']
+        }
+        
+        similar_moods = mood_similarities.get(query_mood, [])
+        best_match = None
+        best_score = 0
+        
+        for similar_mood in similar_moods:
+            if similar_mood in available_moods:
+                score = available_moods[similar_mood]
+                if score > best_score:
+                    best_score = score
+                    best_match = (similar_mood, score)
+        
+        return best_match
+    
+    def _generate_match_explanation(self, matched: List[str], missing: List[str], score: float) -> str:
+        """Generate a human-readable explanation of mood match."""
+        if score > 0.8:
+            return "Excellent mood match - this book perfectly captures your search vibe!"
+        elif score > 0.6:
+            return f"Good match - has {len(matched)} of the moods you're looking for."
+        elif score > 0.4:
+            return f"Partial match - shares some of your desired mood ({', '.join(matched[:2])})."
+        else:
+            return "Different mood profile - might still be worth exploring."
 
 # Example usage
 if __name__ == "__main__":
