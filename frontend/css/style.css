@@ -56,7 +56,13 @@ html {
 }
 
 body {
-    background-color: var(--bg-color);
+    background: linear-gradient(
+    to bottom right,
+    #f5e6cc,
+    #e8d2b0,
+    #d9b08c
+);
+  
     color: var(--text-main);
     font-family: "Georgia", serif;
     /* Classic serif for books */
@@ -69,12 +75,12 @@ body {
 [data-theme="night"] body,
 html[data-theme="night"],
 html[data-theme="night"] body {
-    background-color: #1e1a18 !important;
-    color: #e0d5cb !important;
+    background-color: #181e1a !important;
+    color: #e0cccb !important;
 }
 
 [data-theme="night"] header {
-    background: rgba(30, 26, 24, 0.85) !important;
+    background: rgba(27, 24, 30, 0.85) !important;
 }
 
 [data-theme="night"] .search-input,
@@ -90,7 +96,7 @@ html[data-theme="night"] body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-color);
+    background: var(--vibe-romance);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -2304,9 +2310,12 @@ main {
 .book-spine-3d:hover {
     transform: rotateZ(0deg) rotateY(0deg) translateZ(20px) translateY(-10px);
     z-index: 100;
+     transition: transform 0.4s ease,
+                box-shadow 0.4s ease;
 }
 
 .book-spine-3d:hover .spine-face {
+    
     box-shadow:
         inset 0 0 20px rgba(0, 0, 0, 0.2),
         5px 10px 30px rgba(0, 0, 0, 0.4),
@@ -2330,7 +2339,7 @@ main {
     z-index: 10000;
     pointer-events: none;
     opacity: 0;
-    transform: translateY(10px) scale(0.95);
+   
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
