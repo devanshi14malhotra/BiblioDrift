@@ -127,42 +127,46 @@
             =============================================================
         -->
         <div class="auth-container">
-            
+
             <!-- Dynamic Form Header -->
             <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">
                 Welcome Back
             </h2>
-            
+
             <!-- Authentication Form: Handles both Sign In and Registration dynamically -->
             <form id="authForm" onsubmit="handleAuth(event)">
-                
+
                 <!-- Registration Specific Field (Hidden during Sign In) -->
                 <div id="nameField">
                     <input type="text" id="username" class="auth-input" placeholder="Full Name">
                 </div>
-                
+
                 <!-- Standard Credentials -->
                 <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required>
+                    <input type="email" id="email" class="auth-input" placeholder="Email Address"
+                        value="demo@bibliodrift.com" required>
                 </div>
-                
+
                 <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="password" class="auth-input" placeholder="Password" value="demo123" required>
+                    <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123"
+                        required>
+
+                    <small id="passwordStrength" style="display:block; margin-top:5px; text-align:left;"></small>
                 </div>
-                
+
                 <!-- Primary Action Button -->
                 <button type="submit" id="submitBtn" class="auth-btn">
                     Sign In
                 </button>
             </form>
-            
+
             <!-- Mode Toggle Link -->
             <div class="auth-footer" style="margin-top: 1.5rem;">
                 <span id="toggleText" class="toggle-link">
                     No account? Create one.
                 </span>
             </div>
-            
+
         </div>
     </main>
 
@@ -176,6 +180,35 @@
         const authTitle = document.getElementById('authTitle');
         const nameField = document.getElementById('nameField');
         const submitBtn = document.getElementById('submitBtn');
+        const passwordInput = document.getElementById('password');
+        const passwordStrength = document.getElementById('passwordStrength');
+
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+
+            let strength = 'Weak';
+            let color = 'red';
+
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSpecial = /[!@#$%^&*]/.test(password);
+
+            if (
+                password.length >= 8 &&
+                hasUppercase &&
+                hasNumber &&
+                hasSpecial
+            ) {
+                strength = 'Strong';
+                color = 'green';
+            } else if (password.length >= 6) {
+                strength = 'Medium';
+                color = 'orange';
+            }
+
+            passwordStrength.textContent = `Password Strength: ${strength}`;
+            passwordStrength.style.color = color;
+        });
 
         if (toggleText) {
             toggleText.addEventListener('click', () => {
