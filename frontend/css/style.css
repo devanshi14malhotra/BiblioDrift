@@ -472,7 +472,8 @@ main {
 
 .book-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
+    margin-top: 0.6rem;
 }
 
 .btn-icon {
