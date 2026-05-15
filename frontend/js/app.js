@@ -1896,6 +1896,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const searchInput = document.getElementById('searchInput');
     const searchIcon = document.querySelector('.search-bar .search-icon');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const siteHeader = document.querySelector('header');
 
     const performSearch = () => {
         if (searchInput && searchInput.value.trim()) {
@@ -1916,6 +1918,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (searchIcon) {
         searchIcon.style.cursor = 'pointer';
         searchIcon.addEventListener('click', performSearch);
+    }
+
+    if (mobileMenuToggle && siteHeader) {
+        const closeMobileMenu = () => {
+            siteHeader.classList.remove('menu-open');
+            mobileMenuToggle.setAttribute('aria-expanded', 'false');
+        };
+
+        mobileMenuToggle.addEventListener('click', () => {
+            const isOpen = siteHeader.classList.toggle('menu-open');
+            mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        document.addEventListener('click', (event) => {
+            if (window.innerWidth <= 768 && siteHeader.classList.contains('menu-open') && !siteHeader.contains(event.target)) {
+                closeMobileMenu();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMobileMenu();
+            }
+        });
+
+        siteHeader.querySelectorAll('.nav-links a, .nav-links button').forEach((item) => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    closeMobileMenu();
+                }
+            });
+        });
     }
 
     const urlParams = new URLSearchParams(window.location.search);
