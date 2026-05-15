@@ -2164,6 +2164,8 @@ main {
 
 /* Front lip of shelf */
 .bookshelf-3d::after {
+    width: 100%;
+    overflow-x: auto;
     content: '';
     position: absolute;
     bottom: 0;
