@@ -2030,6 +2030,8 @@ main {
 
 /* Main bookshelf container with perspective */
 .bookshelf-3d-container {
+    width: 100%;
+    overflow-x: auto;
     perspective: 1200px;
     perspective-origin: center 40%;
     padding: 2rem 0;
@@ -2108,6 +2110,8 @@ main {
 
 /* 3D Wooden Bookshelf */
 .bookshelf-3d {
+    width: 100%;
+    overflow-x: auto;
     position: relative;
     transform-style: preserve-3d;
     transform: rotateX(2deg);
