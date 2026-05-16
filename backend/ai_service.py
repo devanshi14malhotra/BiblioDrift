@@ -16,6 +16,26 @@ import json
 import re
 from typing import Optional
 
+#to generate book spine images dynamically based on title and author
+
+from backend.spine_generator import create_spine
+
+def process_new_book(book_data):
+    # 1. Save book to your database first
+    title = book_data.get("title")
+    author = book_data.get("author")
+    
+    # Create a safe, clean file ID (e.g., "The God of Small Things" -> "the_god_of_small_things")
+    clean_id = "".join([c if c.isalnum() else "_" for c in title.lower().strip()])
+    
+    # 2. Trigger the script to dynamically output the image asset
+    create_spine(title, author, clean_id)
+    
+    # 3. Save the image file pathway string into your database entry
+    spine_image_url = f"/assets/images/{clean_id}_spine.jpg"
+    return spine_image_url
+
+
 # Import caching decorators
 from cache_service import (
     cache_recommendations, 

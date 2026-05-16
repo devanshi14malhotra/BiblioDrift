@@ -2,44 +2,44 @@
  * ==============================================================================
  * BiblioDrift Core Logic - Main Application Entry Point
  * ==============================================================================
- * 
+ *
  * Overview:
  * ---------
  * This file serves as the primary orchestrator for the BiblioDrift application.
  * It ties together the DOM manipulation, state management, 3D rendering interactions,
  * and API communications (both Google Books API and our custom Python backend).
- * 
+ *
  * Key Components:
  * ---------------
- * 1. SafeStorage: 
- *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism. 
- *    This component is critical for offline-first capabilities and prevents the 
- *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent 
+ * 1. SafeStorage:
+ *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism.
+ *    This component is critical for offline-first capabilities and prevents the
+ *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent
  *    standard `localStorage` operations.
  *    - Automatically handles QuotaExceeded exceptions.
  *    - Provides asynchronous data restoration algorithms.
  *    - Integrates closely with the LibraryManager to store thousands of books safely.
- * 
- * 2. LibraryManager: 
+ *
+ * 2. LibraryManager:
  *    The central state machine over the user's book collection.
  *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
- *    - Concurrency Control: Handles race conditions when syncing local states with 
+ *    - Concurrency Control: Handles race conditions when syncing local states with
  *      the backend utilizing optimistic locking techniques.
- *    - Merging Strategy: In the event of a conflict between the client data and 
- *      server data, it attempts a non-destructive merge, retaining the state with 
+ *    - Merging Strategy: In the event of a conflict between the client data and
+ *      server data, it attempts a non-destructive merge, retaining the state with
  *      the highest integer version map.
- * 
- * 3. BookRenderer: 
- *    An interface bridge to the DOM. Handles instantiation of HTML templates for 
- *    individual 3D book instances, binding their unique event listeners, and 
+ *
+ * 3. BookRenderer:
+ *    An interface bridge to the DOM. Handles instantiation of HTML templates for
+ *    individual 3D book instances, binding their unique event listeners, and
  *    applying their generated CSS styles and thematic properties.
  *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
- * 
- * 4. ThemeManager: 
- *    Observes User Preferences and seamlessly toggles the UI's color palette between 
+ *
+ * 4. ThemeManager:
+ *    Observes User Preferences and seamlessly toggles the UI's color palette between
  *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
  *    these preferences to SafeStorage for a seamless experience across reloads.
- * 
+ *
  * API Architecture Details:
  * -------------------------
  * - Google Books API: Facilitates the search and retrieval of rich book metadata
@@ -47,26 +47,26 @@
  * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
  *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
  *   client-side compute limitations and securely handle secret API keys.
- * 
+ *
  * Security & Data Integrity Considerations:
  * -----------------------------------------
- * - Data Sanitization: All text rendered from external APIs is strictly passed 
- *   through the `escapeHTML` utility safely converting brackets to entities to 
+ * - Data Sanitization: All text rendered from external APIs is strictly passed
+ *   through the `escapeHTML` utility safely converting brackets to entities to
  *   prevent XSS (Cross-Site Scripting) vectors.
  * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
- *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing 
+ *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing
  *   Cross Site Request Forgery attacks against logged-in users.
- * 
+ *
  * Coding Standards and Development Guidelines:
  * --------------------------------------------
- * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are 
+ * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are
  *    optimistically applied to local state before waiting for server resolution.
- * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native 
+ * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native
  *    `localStorage.setItem()`.
- * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in 
- *    `index.css` rather than directly overriding inline styles to maintain a 
+ * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in
+ *    `index.css` rather than directly overriding inline styles to maintain a
  *    dynamic and cohesive theme strategy.
- * 
+ *
  * File Structure:
  * ---------------
  * - [000-100]: Initialization and Utility Wrappers
@@ -81,7 +81,7 @@
 // Do NOT re-declare them here — use the globals from config.js directly.
 const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 let GOOGLE_API_KEY = '';
 
@@ -104,15 +104,15 @@ async function loadConfig() {
             if (window.GoogleBooksClient) {
                 window.GoogleBooksClient.setKeys([
                     data.google_books_key,
-                    data.google_books_key_secondary
+                    data.google_books_key_secondary,
                 ]);
             }
             if (IS_DEV) {
-                console.log("Config loaded");
+                console.log('Config loaded');
             }
         }
     } catch (e) {
-        console.warn("Failed to load backend config", e);
+        console.warn('Failed to load backend config', e);
     }
 }
 
@@ -189,8 +189,8 @@ async function verifyStoredAuthSession() {
         try {
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    Authorization: `Bearer ${token}`,
+                },
             });
 
             if (!response.ok) {
@@ -241,7 +241,7 @@ const SafeStorage = {
                     console.log(`[Storage] Persistent status: ${isPersisted}`);
                 }
             } catch (e) {
-                console.warn("[Storage] Persist request failed", e);
+                console.warn('[Storage] Persist request failed', e);
             }
         }
     },
@@ -265,8 +265,8 @@ const SafeStorage = {
 
     /**
      * Attempts to save data to localStorage with IndexedDB backup.
-     * @param {string} key 
-     * @param {string} value 
+     * @param {string} key
+     * @param {string} value
      * @returns {boolean} Success status
      */
     set(key, value) {
@@ -275,16 +275,16 @@ const SafeStorage = {
             localStorage.setItem(key, value);
         } catch (error) {
             const isQuotaError =
-                error instanceof DOMException && (
-                    error.code === 22 ||
+                error instanceof DOMException &&
+                (error.code === 22 ||
                     error.code === 1014 ||
                     error.name === 'QuotaExceededError' ||
                     error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
 
             if (isQuotaError) {
-                showToast("Local storage full! Saving to secure backup.", "info");
+                showToast('Local storage full! Saving to secure backup.', 'info');
             } else {
-                console.error("LocalStorage Error:", error);
+                console.error('LocalStorage Error:', error);
             }
         }
 
@@ -302,10 +302,10 @@ const SafeStorage = {
             const store = transaction.objectStore(this._storeName);
             store.put(value, key);
         } catch (e) {
-            console.error("IndexedDB Backup Failed", e);
+            console.error('IndexedDB Backup Failed', e);
         }
 
-        showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+        showToast('Local storage full! Please sync to cloud and clear cache.', 'error');
         return false;
     },
 
@@ -338,12 +338,14 @@ const SafeStorage = {
                 });
 
                 if (val) {
-                    if (IS_DEV) console.log("[Storage] Restored from IndexedDB backup");
+                    if (IS_DEV) console.log('[Storage] Restored from IndexedDB backup');
                     // Try to restore to LocalStorage for future sync calls
-                    try { localStorage.setItem(key, val); } catch (e) { }
+                    try {
+                        localStorage.setItem(key, val);
+                    } catch (e) {}
                 }
             } catch (e) {
-                console.warn("Backup retrieval failed", e);
+                console.warn('Backup retrieval failed', e);
             }
         }
         return val;
@@ -351,7 +353,7 @@ const SafeStorage = {
 
     /**
      * Safely removes data from storage.
-     * @param {string} key 
+     * @param {string} key
      */
     remove(key) {
         try {
@@ -376,7 +378,7 @@ const SafeStorage = {
         } catch (e) {
             return false;
         }
-    }
+    },
 };
 const MOCK_BOOKS = [
     {
@@ -509,6 +511,8 @@ class BookRenderer {
         const vibe = this.generateVibe(originalDescription, categories);
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
+        const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+        const spineImagePath = `assets/images/${cleanId}_spine.jpg`;
 
         const scene = document.createElement('div');
         scene.className = 'book-scene';
@@ -534,43 +538,41 @@ class BookRenderer {
         const safeVibe = escapeHTML(vibe);
         const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
 
-        scene.innerHTML = `
-            <div class="book" data-id="${escapeHTML(id)}">
-                <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+scene.innerHTML = `
+    <div class="book-container-3d" data-id="${escapeHTML(id)}">
+        <div class="book-spine-3d" style="background-image: url('${spineImagePath}'); background-size: cover; background-position: center;"></div>
+        
+        <div class="book-cover-3d" style="background-image: url('${safeThumb}'); background-size: cover; background-position: center;"></div>
+        
+        <div class="book-back-3d">
+            <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
+                <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                ${bookData.moods && bookData.moods.length > 0 ? `
+                <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                    ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
                 </div>
-                <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
-                <div class="book__face book__face--right"></div>
-                <div class="book__face book__face--top"></div>
-                <div class="book__face book__face--bottom"></div>
-                <div class="book__face book__face--back">
-                    <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
-                        ${bookData.moods && bookData.moods.length > 0 ? `
-                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
-                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
-                        </div>
-                        ` : ''}
-                        <div class="book-blurb" data-book-id="${escapeHTML(id)}" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify; min-height: 60px;">${safeOriginalDescription}</div>
-                    </div>
-                    ${shelf === 'current' ? `
-                    <div class="reading-progress">
-                        <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
-                        <small>${progress}% read</small>
-                    </div>` : ''}
-                    <div class="book-actions">
-                        <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                        <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
-                        <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
-                    </div>
-                </div>
+                ` : ''}
+                <div class="book-blurb" data-book-id="${escapeHTML(id)}" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify; min-height: 60px;">${safeOriginalDescription}</div>
             </div>
-            <div class="glass-overlay">
-                <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
+            ${shelf === 'current' ? `
+            <div class="reading-progress">
+                <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
+                <small>${progress}% read</small>
+            </div>` : ''}
+            <div class="book-actions">
+                <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
+                <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
+                <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
             </div>
-        `;
+        </div>
+        
+        <div class="book-pages-3d"></div>
+    </div>
+    <div class="glass-overlay">
+        <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
+    </div>
+`;
 
         // Fetch AI-generated blurb asynchronously
         const blurbElement = scene.querySelector('.book-blurb');
@@ -601,7 +603,7 @@ class BookRenderer {
         }
 
         // Interaction: Flip
-        const bookEl = scene.querySelector('.book');
+        const bookEl = scene.querySelector('.book-container-3d');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
                 bookEl.classList.toggle('flipped');
