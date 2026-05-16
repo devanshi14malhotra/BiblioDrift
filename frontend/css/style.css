@@ -310,6 +310,7 @@ main {
     align-items: baseline;
     flex-wrap: wrap;
     gap: 1rem;
+    
 }
 
 .curated-row {
@@ -329,7 +330,7 @@ main {
 .book-scene {
     width: var(--book-width);
     height: var(--book-height);
-    perspective: 1000px;
+    perspective: 999px;
     cursor: pointer;
     flex-shrink: 0;
     min-width: var(--book-width);
