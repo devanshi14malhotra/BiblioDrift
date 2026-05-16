@@ -11,9 +11,11 @@ class ChatInterface {
         this.conversationHistory = [];
         this.isProcessing = false;
 
-        // Ensure backend connection is initialized
-        if (typeof window !== 'undefined' && !window.MOOD_API_BASE) {
-            window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+        // Ensure backend connection is initialized with proper fallback
+        if (typeof window !== 'undefined') {
+            if (!window.MOOD_API_BASE || window.MOOD_API_BASE.includes(':5001')) {
+                window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+            }
         }
 
         this.init();
@@ -424,11 +426,18 @@ Tell me: what is stirring in you today?`,
             if (!paragraph.trim()) return;
             const p = document.createElement('p');
             if (isAI) {
-                // Render **bold** and *italic* safely — no raw HTML from user
-                p.innerHTML = paragraph.trim()
+                // Apply markdown replacements then sanitize with DOMPurify
+                let content = paragraph.trim()
                     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                     .replace(/\*(.+?)\*/g, '<em>$1</em>')
                     .replace(/\n/g, '<br>');
+                
+                // Sanitize HTML to prevent XSS attacks
+                p.innerHTML = DOMPurify.sanitize(content, {
+                    ALLOWED_TAGS: ['strong', 'em', 'br', 'b', 'i', 'u'],
+                    ALLOWED_ATTR: [],
+                    KEEP_CONTENT: true
+                });
             } else {
                 p.textContent = paragraph.trim();
             }

@@ -22,6 +22,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sanitizer import sanitize_payload
+from reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -100,6 +101,7 @@ except ImportError:
 # to ensure API integrity across all origins.
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
+app.register_blueprint(reader_identity_bp)
 
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
@@ -343,7 +345,8 @@ def index():
             "POST /api/v1/generate-note": "Generate AI book notes",
             "POST /api/v1/chat": "Chat with bookseller",
             "POST /api/v1/mood-search": "Search books by mood/vibe",
-            "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category"
+            "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category",
+            "POST /api/v1/reader-archetype":"Generate AI reader archetype",
         },
         "note": "All endpoints except / and /api/v1/health require POST requests with JSON body",
         "example_usage": {

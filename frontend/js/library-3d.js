@@ -268,6 +268,7 @@ class BookshelfRenderer3D {
         this.isDestroyed = false;
         this._modalBackdropHandler = null;
         this._escHandler = null;
+        this._escListenerAttached = false;
 
         // Create live region for screen reader announcements
         this.liveRegion = document.createElement('div');
@@ -681,6 +682,27 @@ class BookshelfRenderer3D {
         spine.addEventListener('mousemove', (e) => this.moveTooltip(e));
         spine.addEventListener('mouseleave', () => this.hideTooltip());
         spine.addEventListener('click', () => this.openModal(book));
+       
+        // Keyboard Accessibility (Issue #534)
+spine.setAttribute('tabindex', '0');
+spine.setAttribute('role', 'button');
+spine.setAttribute('aria-label', `${book.title} by ${book.author}. Rating: ${book.rating}. Press Enter or Space to view details.`);
+
+spine.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.openModal(book);
+    }
+});
+
+spine.addEventListener('focus', () => {
+    const rect = spine.getBoundingClientRect();
+    this.showTooltip(
+        { clientX: rect.right, clientY: rect.top + rect.height / 2 },
+        book
+    );
+});
+spine.addEventListener('blur', () => this.hideTooltip());
 
         // Add mood icon if primary mood exists
         if (book.moods && book.moods.length > 0) {
@@ -1379,6 +1401,7 @@ class BookshelfRenderer3D {
         if (this.modal) {
             this.modal.classList.remove('active');
             document.body.style.overflow = '';
+            this.removeEscListener();
 
             // Reset flip after transition
             setTimeout(() => {
@@ -1390,6 +1413,14 @@ class BookshelfRenderer3D {
                 fixedControls.forEach(el => el.style.opacity = '1');
                 fixedControls.forEach(el => el.style.pointerEvents = 'auto');
             }, 500);
+        }
+    }
+
+    removeEscListener() {
+        if (this._escHandler && this._escListenerAttached) {
+            document.removeEventListener('keydown', this._escHandler);
+            this._escListenerAttached = false;
+            this._escHandler = null;
         }
     }
 
@@ -1443,14 +1474,15 @@ class BookshelfRenderer3D {
             this.addManagedListener(this.modal, 'click', this._modalBackdropHandler);
         }
 
-        // ESC key to close (bind once to avoid listener leaks).
-        if (!this._escHandler) {
+        // ESC key to close - attach only once, remove on close
+        if (!this._escListenerAttached) {
             this._escHandler = (e) => {
                 if (e.key === 'Escape' && this.modal && this.modal.classList.contains('active')) {
                     this.closeModal();
                 }
             };
-            this.addManagedListener(document, 'keydown', this._escHandler);
+            document.addEventListener('keydown', this._escHandler);
+            this._escListenerAttached = true;
         }
 
         // Add to library button logic

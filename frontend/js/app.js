@@ -515,6 +515,7 @@ class BookRenderer {
 
         // Load flip sound
         const flipSound = new Audio('../assets/sounds/page-flip.mp3');
+        flipSound.preload = 'auto';
         flipSound.volume = 0.5;
 
         const escapeHTML = (str) => {
@@ -1659,8 +1660,8 @@ class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
-        // Read directly from localStorage — no abstraction layer
-        const stored = localStorage.getItem(this.themeKey);
+        // Use SafeStorage for consistency with app's storage strategy
+        const stored = SafeStorage.get(this.themeKey);
         this.currentTheme = stored === 'night' ? 'night' : 'light';
         // Named handler so we can remove & re-add cleanly (no stacking)
         this._handler = this._onClick.bind(this);
@@ -1670,7 +1671,7 @@ class ThemeManager {
     _onClick() {
         this.currentTheme = this.currentTheme === 'night' ? 'light' : 'night';
         this.applyTheme(this.currentTheme);
-        localStorage.setItem(this.themeKey, this.currentTheme);
+        SafeStorage.set(this.themeKey, this.currentTheme);
     }
 
     init() {
@@ -2402,8 +2403,13 @@ enableTapEffects();
 
 // --- creak and page flip effects ---
 const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
+pageFlipSound.preload = 'auto';
 pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
+
+document.addEventListener('click', () => {
+    pageFlipSound.play().catch(() => {});
+}, { once: true });
 
 
 document.addEventListener("click", (e) => {

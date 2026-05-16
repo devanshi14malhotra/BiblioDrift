@@ -2,6 +2,14 @@
 # Implements 'generate_book_note' and 'get_ai_recommendations'. All recommendations MUST be AI-based.
 # Enhanced with comprehensive caching for expensive operations
 
+
+"""
+Enhanced recommendation system:
+- Improved mood detection
+- Better conversational responses
+- Reduced generic outputs
+"""
+
 import os
 import logging
 import json
@@ -90,20 +98,35 @@ class PromptTemplates:
     @staticmethod
     def get_book_note_prompt(title: str, author: str, description: str, mood_context: str = "", vibe: str = "") -> str:
         """Generate engaging mini-blurb for a book."""
-        template = os.getenv('BOOK_NOTE_PROMPT_TEMPLATE', 
-            """You are a passionate bookseller writing engaging book descriptions.
+        template = os.getenv(
+    'RECOMMENDATION_PROMPT_TEMPLATE',
+    """You are Elara, an emotionally intelligent bookstore guide inside BiblioDrift.
 
-Book: "{title}" by {author}
-Description: {description}
-{mood_context}
+A user describes their emotional mood, reading vibe, or atmosphere preference.
 
-Write a rich, engaging mini-blurb (80-120 words) that:
-- Captures what makes this book unique and special
-- Highlights emotional appeal or key themes
-- Avoids generic phrases
-- Makes readers want to pick it up
+User input:
+"{query}"
 
-Output ONLY the mini-blurb text, no JSON or formatting.""")
+Your task:
+- Understand the emotional tone behind the request
+- Identify the atmosphere, pacing, and emotional energy the reader wants
+- Recommend immersive and emotionally relevant books
+- Avoid repetitive or overly generic recommendations
+- Prefer diverse and meaningful suggestions over famous defaults
+- Make the response feel personal, cozy, and conversational
+
+Guidelines:
+- Interpret mixed moods intelligently (example: "sad but hopeful")
+- Understand abstract vibes (example: "rainy day mystery", "dark academia fantasy")
+- Focus on emotional resonance, not just genre labels
+- Explain briefly WHY the recommendations fit the vibe
+
+Style:
+Warm, thoughtful, immersive, like a trusted indie bookstore bookseller.
+
+Keep response under {max_words} words.
+Output only the recommendation response."""
+)
         
         max_words = os.getenv('BOOK_NOTE_MAX_WORDS', '30')
         return template.format(
@@ -116,22 +139,27 @@ Output ONLY the mini-blurb text, no JSON or formatting.""")
         )
     
     @staticmethod
-    def get_recommendation_prompt(query: str) -> str:
+    def get_recommendation_recommend(query: str) -> str:
         """Generate recommendation prompt template."""
-        template = os.getenv('RECOMMENDATION_PROMPT_TEMPLATE',
-            """You are a knowledgeable librarian helping someone find books.
-            
-User is looking for: "{query}"
 
-Provide book recommendation guidance that captures the mood and feeling they're seeking.
-Focus on the emotional experience and atmosphere rather than specific titles.
-Keep response under {max_words} words and make it warm and helpful.
-Style: Personal, insightful, like talking to a trusted book friend.""")
-        
+        template = os.getenv(
+            'RECOMMENDATION_PROMPT_TEMPLATE',
+            """You are Elara, an emotionally intelligent bookstore guide inside BiblioDrift.
+
+    User input:
+    "{query}"
+
+    Your task:
+    - Understand emotional tone...
+    - Recommend immersive books...
+
+    Keep response under {max_words} words.
+    Output only the recommendation response."""
+        )
+
         max_words = os.getenv('RECOMMENDATION_MAX_WORDS', '100')
-        
-        return template.format(query=query, max_words=max_words)
 
+        return template.format(query=query, max_words=max_words)
     @staticmethod
     def get_category_books_prompt(category: str, vibe_description: str, count: int = 5) -> str:
         """
@@ -651,7 +679,7 @@ def get_ai_recommendations(query):
     """Generate AI-powered book recommendations based on query."""
     if llm_service.is_available():
         try:
-            prompt = PromptTemplates.get_recommendation_prompt(query)
+            prompt = PromptTemplates.get_recommendation_recommend(query)
             llm_response = llm_service.generate_text(prompt, llm_service.config['recommendation_max_tokens'])
             if llm_response:
                 return llm_response
