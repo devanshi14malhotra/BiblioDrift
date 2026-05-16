@@ -304,14 +304,12 @@ main {
 }
 
 .section-header {
-    margin-: 0 1rem 0.5rem 1rem;
+    margin: 0 1rem 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1rem
-    justify-content: space-between;
-    align-items: baseline;
+    gap: 1rem;
 }
 
 .curated-row {
@@ -1779,13 +1777,12 @@ main {
 /* ===== GENRE SECTION STYLES ===== */
 .genre-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    padding: 2rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1.25rem;
+    padding: 1.75rem 1rem 1rem;
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-}
 }
 
 /* Genre Card - Vintage Book Spine Look */
@@ -1796,7 +1793,10 @@ main {
     /* Horizontal layout */
     align-items: center;
     justify-content: flex-start;
-    padding: 1.25rem 1.75rem;
+    padding: 1.15rem 1.5rem;
+    min-height: 92px;
+    width: 100%;
+    box-sizing: border-box;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 
@@ -1804,11 +1804,10 @@ main {
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 
-    height: 100px;
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    gap: 1.5rem;
+    gap: 1.1rem;
 }
 
 /* Remove gold lines for cleaner small look */
@@ -1818,7 +1817,7 @@ main {
 }
 
 .genre-card i {
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     margin-bottom: 0;
     margin-right: 0;
     color: rgba(255, 255, 255, 0.95);
@@ -1826,11 +1825,13 @@ main {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     transition: transform 0.3s ease;
     flex-shrink: 0;
+    width: 1.5em;
+    text-align: center;
 }
 
 .genre-card span {
     font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
+    font-size: 1.08rem;
     font-weight: 600;
     color: #f5f5f5;
     text-transform: capitalize;
@@ -1841,10 +1842,11 @@ main {
     writing-mode: horizontal-tb;
     /* Horizontal Text */
     transform: none;
+    line-height: 1.2;
 }
 
 .genre-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     z-index: 10;
 }
