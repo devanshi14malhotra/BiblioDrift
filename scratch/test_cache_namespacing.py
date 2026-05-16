@@ -6,7 +6,7 @@ import hashlib
 # Add backend to path
 sys.path.append(os.path.join(os.getcwd(), 'backend'))
 
-from cache_service import CacheConfig, CacheNamespace, CacheKey, cache_service
+from cache_service import CacheConfig, CacheNamespace, CacheKey, cache_service, cached_result
 
 def test_cache_key_generation():
     print("Testing Cache Key Generation...")

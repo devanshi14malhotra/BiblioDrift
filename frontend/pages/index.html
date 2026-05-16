@@ -11,13 +11,20 @@
       }
     })();
   </script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+  <script src="../js/db.js"></script>
+
+  <script src="../js/app.js"></script>
+  <script src="../js/library-3d.js"></script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
   <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations." />
   <title>BiblioDrift | Find yourself in the pages</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
-
+  <link rel="manifest" href="/manifest.json">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -30,7 +37,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
   <!-- PWA -->
-  <link rel="manifest" href="../manifest.json">
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2c2420">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -270,6 +277,20 @@
           <span class="slider"></span>
         </label>
       </div>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
+        <label class="switch">
+          <input type="checkbox" id="oceanToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+        <label class="switch">
+          <input type="checkbox" id="stormToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
       <div class="volume-control">
         <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
         <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
@@ -280,6 +301,7 @@
   <script src="../js/ambient.js"></script>
   <script src="../js/security.js"></script>
   <script src="../js/pwa.js"></script>
+
 </body>
 
 </html>

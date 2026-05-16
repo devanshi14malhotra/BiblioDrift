@@ -5,7 +5,13 @@ Includes Content-Type validation, request size limits, and header validation.
 import logging
 from functools import wraps
 from flask import request, jsonify
-from .error_responses import invalid_json_error
+
+try:
+    from .error_responses import invalid_json_error
+    from .security_parsers import validate_content_type as _validate_content_type_header
+except ImportError:
+    from error_responses import invalid_json_error
+    from security_parsers import validate_content_type as _validate_content_type_header
 
 logger = logging.getLogger(__name__)
 
@@ -30,26 +36,14 @@ def validate_content_type_middleware(f):
         # Skip for requests without body
         if request.content_length is None or request.content_length == 0:
             return f(*args, **kwargs)
-        
-        # Validate Content-Type header
-        content_type = request.content_type
-        
-        if not content_type:
-            logger.warning(f"Request to {request.path} missing Content-Type header")
-            return invalid_json_error("Missing Content-Type header")
-        
-        # Check for JSON content type
-        base_type = content_type.split(';')[0].strip().lower()
-        
-        if base_type not in ['application/json', 'application/x-www-form-urlencoded']:
+
+        is_valid, error_message = _validate_content_type_header()
+        if not is_valid:
             logger.warning(
-                f"Invalid Content-Type '{content_type}' for {request.method} "
+                f"Invalid Content-Type '{request.content_type}' for {request.method} "
                 f"{request.path} from {request.remote_addr}"
             )
-            return invalid_json_error(
-                f"Invalid Content-Type: {content_type}. "
-                "Expected: application/json"
-            )
+            return invalid_json_error(error_message)
         
         return f(*args, **kwargs)
     
@@ -144,14 +138,14 @@ def safe_request_handler(
         def decorated_function(*args, **kwargs):
             # Content-Type validation
             if validate_content_type and request.method not in ['GET', 'HEAD']:
-                ct = request.content_type
                 allowed = ['application/json'] if require_json else [
                     'application/json',
                     'application/x-www-form-urlencoded'
                 ]
-                if not ct or ct.split(';')[0].strip() not in allowed:
+                is_valid, error_message = _validate_content_type_header(allowed)
+                if not is_valid:
                     logger.warning(f"Content-Type validation failed for {request.path}")
-                    return invalid_json_error("Invalid or missing Content-Type header")
+                    return invalid_json_error(error_message)
             
             # Size validation
             if max_size_bytes and request.content_length is not None:

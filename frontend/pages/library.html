@@ -11,6 +11,13 @@
             }
         })();
     </script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+<script src="../js/db.js"></script>
+
+<script src="../js/app.js"></script>
+<script src="../js/library-3d.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
     <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
@@ -23,7 +30,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
-    <link rel="manifest" href="../manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2c2420">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -413,6 +420,20 @@
                 <span><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
                 <label class="switch">
                     <input type="checkbox" id="fireToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
+                <label class="switch">
+                    <input type="checkbox" id="oceanToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+                <label class="switch">
+                    <input type="checkbox" id="stormToggle">
                     <span class="slider"></span>
                 </label>
             </div>

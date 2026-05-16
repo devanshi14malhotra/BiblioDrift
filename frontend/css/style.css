@@ -1,4 +1,13 @@
 :root {
+    /* Fix: WCAG AA Contrast Floor - Issue #534 */
+.glass-panel,
+.book-tooltip,
+.book-detail-modal,
+[class*="glass"] {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
     /* Day Theme (Default) */
     --bg-color: #f9f7f2;
     --header-bg: rgba(249, 247, 242, 0.8);
@@ -77,7 +86,7 @@ body {
 html[data-theme="night"],
 html[data-theme="night"] body {
     background-color: #1e1a18 !important;
-    color: #e0d5cb !important;
+    color: #fff5f5 !important;
 }
 
 [data-theme="night"] header {
@@ -90,6 +99,7 @@ html[data-theme="night"] body {
     color: #e0d5cb !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
 }
+
 
 /* Global Wooden Scrollbar Styling */
 ::-webkit-scrollbar {
@@ -252,6 +262,8 @@ main {
     padding: 2rem 4rem;
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 /* --- Hero --- */
@@ -273,6 +285,7 @@ main {
     }
 }
 
+
 .hero h1 {
     font-size: clamp(2.5rem, 8vw, 4.5rem);
     margin-bottom: 1.5rem;
@@ -293,13 +306,17 @@ main {
 /* --- Curated Tables (Horizontal Scroll) --- */
 .curated-section {
     margin-bottom: 6rem;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 .section-header {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding-bottom: 0.5rem;
+    margin-: 0 1rem 0.5rem 1rem;
     display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 1rem
     justify-content: space-between;
     align-items: baseline;
 }
@@ -308,9 +325,13 @@ main {
     display: flex;
     gap: 3rem;
     padding: 2rem 1rem;
-    overflow-x: visible;
-    /* Allow 3D overflow */
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Allow horizontal scrolling on mobile */
     perspective: 1000px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    flex-wrap: nowrap;
 }
 
 /* --- 3D Book Component --- */
@@ -319,7 +340,8 @@ main {
     height: var(--book-height);
     perspective: 1000px;
     cursor: pointer;
-    /* Random slight rotation for organic feel - handled in JS usually, but default here */
+    flex-shrink: 0;
+    min-width: var(--book-width);
 }
 
 .book {
@@ -498,6 +520,8 @@ main {
 
 /* --- Virtual Shelves --- */
 .shelves-container {
+    width: 100%;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 4rem;
@@ -526,6 +550,9 @@ main {
     gap: 1.5rem;
     /* More spacing for expanded books */
     min-height: 280px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .shelf-row::after {
@@ -679,6 +706,8 @@ main {
     overflow-y: auto;
     box-shadow: var(--shadow-soft);
     border: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
 }
 
 .mood-modal-header {
@@ -910,6 +939,7 @@ main {
     border: none;
     padding: 0;
     overflow: visible;
+    max-height: 95vh;
 }
 
 .glass-modal::backdrop {
@@ -927,7 +957,9 @@ main {
     padding: 2.5rem;
     position: relative;
     overflow: hidden;
+    overflow-y: auto;
     animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-height: 90vh;
 }
 
 [data-theme="night"] .modal-content {
@@ -1116,6 +1148,29 @@ main {
 
     .modal-content {
         padding: 1.5rem;
+    }
+
+    .modal-info h2 {
+        font-size: 1.8rem;
+    }
+
+    .ai-insight-box {
+        padding: 1rem 1.2rem;
+    }
+
+    #modal-ai-note {
+        font-size: 0.95rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-preview {
+        width: 100%;
     }
 }
 
@@ -1483,6 +1538,7 @@ main {
     justify-content: center;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
 }
 
 .book-rec-cover img {
@@ -1503,6 +1559,7 @@ main {
     line-height: 1.2;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1512,6 +1569,7 @@ main {
     color: var(--text-muted);
     display: -webkit-box;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1726,13 +1784,15 @@ main {
 }
 
 /* ===== GENRE SECTION STYLES ===== */
-
-/* Genre Grid Layout */
 .genre-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-    padding: 1rem 0;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    padding: 2rem 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
 }
 
 /* Genre Card - Vintage Book Spine Look */
@@ -1743,7 +1803,7 @@ main {
     /* Horizontal layout */
     align-items: center;
     justify-content: flex-start;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.75rem;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 
@@ -1751,12 +1811,11 @@ main {
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 
-    height: 80px;
-    /* Much smaller height */
+    height: 100px;
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 /* Remove gold lines for cleaner small look */
@@ -1930,12 +1989,14 @@ main {
 
 /* Genre Books Grid */
 .genre-books-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1.5rem;
     padding: 2rem;
     perspective: 1000px;
+    justify-items: center;
+    width: 100%;
+    max-width: 100%;
 }
 
 .genre-book-card {
@@ -1970,6 +2031,7 @@ main {
     margin: 0 0 0.25rem 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -2341,6 +2403,14 @@ main {
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* Fix: Ensure light text in day theme for contrast with dark background override */
+.book-tooltip .tooltip-title,
+.book-tooltip .tooltip-author,
+.book-tooltip .tooltip-rating-text,
+.book-tooltip .tooltip-description {
+    color: #f5f5f5 !important;
+}
+
 [data-theme="night"] .book-tooltip {
     background: rgba(44, 36, 32, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2409,6 +2479,7 @@ main {
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -4562,291 +4633,69 @@ input:checked+.slider {
 input:checked+.slider:before {
     transform: translateX(14px);
 }
-
-
-/* ============================================================ */
-/* READING PROGRESS TRACKING SYSTEM                            */
-/* ============================================================ */
-
-/* --- Spine progress indicator (library.html 3D view) --- */
-.spine-progress-indicator {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: hidden;
-    border-radius: 2px 4px 4px 2px;
-    z-index: 2;
+html[data-theme="night"] .glass-overlay,
+body.night-mode .glass-overlay,
+[data-theme="night"] .glass-overlay {
+    background-color: #1e140c !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-.spine-progress-fill {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: rgba(212, 175, 55, 0.45);
-    transition: height 0.4s ease;
-    border-radius: 0 0 2px 2px;
+html[data-theme="night"] .tooltip-title,
+body.night-mode .tooltip-title {
+    color: #ffffff !important;
 }
 
-/* Finished badge on spine */
-.spine-finished-badge {
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #4caf50;
-    font-size: 0.75rem;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-    z-index: 3;
+html[data-theme="night"] .tooltip-author,
+body.night-mode .tooltip-author {
+    color: #cccccc !important;
 }
 
-/* --- Tooltip progress bar --- */
-.tooltip-progress {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+.footer-logo {
+  height: 40px;
+  width: auto;
 }
 
-[data-theme="night"] .tooltip-progress {
-    border-top-color: rgba(255, 255, 255, 0.08);
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.3rem;
+  font-weight: bold;
 }
 
-.tooltip-progress-bar-track {
-    width: 100%;
-    height: 6px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 4px;
+.main-footer {
+ 
+  padding: 4rem 2rem 1rem;
 }
 
-[data-theme="night"] .tooltip-progress-bar-track {
-    background: rgba(255, 255, 255, 0.1);
+.footer-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
 }
 
-.tooltip-progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-gold), #e6c44a);
-    border-radius: 3px;
-    transition: width 0.3s ease;
+.footer-container a {
+ 
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
-.tooltip-progress-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
+
+
+.social-icons {
+  display: flex;
+  gap: 1rem;
 }
 
-/* --- Modal progress tracker --- */
-.reading-progress-tracker {
-    background: #fdfaf5;
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    border-radius: 12px;
-    padding: 1.2rem 1.4rem;
-    margin-top: 0.75rem;
-    width: 100%;
+.footer-bottom {
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid #374151;
 }
 
-[data-theme="night"] .reading-progress-tracker {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(212, 175, 55, 0.2);
-}
 
-.progress-tracker-header {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.9rem;
-    color: var(--wood-dark);
-}
-
-[data-theme="night"] .progress-tracker-header {
-    color: var(--accent-gold);
-}
-
-.progress-tracker-header i {
-    color: var(--accent-gold);
-    font-size: 1rem;
-}
-
-.progress-tracker-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
-    font-weight: 600;
-    flex: 1;
-}
-
-.progress-percent-badge {
-    background: var(--accent-gold);
-    color: #2c2420;
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 2px 10px;
-    border-radius: 20px;
-    min-width: 44px;
-    text-align: center;
-}
-
-/* Mode toggle buttons */
-.progress-mode-toggle {
-    display: flex;
-    gap: 0.4rem;
-    margin-bottom: 0.9rem;
-}
-
-.progress-mode-btn {
-    flex: 1;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-muted);
-    font-family: 'Georgia', serif;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.progress-mode-btn.active {
-    background: var(--accent-gold);
-    color: #2c2420;
-    border-color: var(--accent-gold);
-    font-weight: 600;
-}
-
-.progress-mode-btn:hover:not(.active) {
-    border-color: var(--accent-gold);
-    color: var(--text-main);
-}
-
-/* Percentage slider group */
-.progress-input-group {
-    margin-bottom: 0.75rem;
-}
-
-.progress-range-slider {
-    width: 100%;
-    accent-color: var(--accent-gold);
-    cursor: pointer;
-    margin-bottom: 0.4rem;
-    height: 4px;
-}
-
-.progress-bar-track {
-    width: 100%;
-    height: 8px;
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 0.3rem;
-}
-
-[data-theme="night"] .progress-bar-track {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-gold), #e6c44a);
-    border-radius: 4px;
-    transition: width 0.25s ease;
-}
-
-.progress-range-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-}
-
-/* Pages input group */
-.pages-input-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.6rem;
-}
-
-.pages-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex: 1;
-}
-
-.pages-field label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.pages-number-input {
-    width: 100%;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    background: var(--input-bg);
-    color: var(--text-main);
-    font-family: 'Georgia', serif;
-    font-size: 0.9rem;
-    text-align: center;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.pages-number-input:focus {
-    border-color: var(--accent-gold);
-}
-
-.pages-divider {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    padding-bottom: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* Save button */
-.progress-save-btn {
-    width: 100%;
-    padding: 0.6rem 1rem;
-    background: var(--wood-dark);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-family: 'Georgia', serif;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.25s ease;
-    margin-top: 0.25rem;
-}
-
-.progress-save-btn:hover:not(:disabled) {
-    background: var(--accent-gold);
-    color: #2c2420;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-}
-
-.progress-save-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* --- Profile page: reading progress overview --- */
-.reading-progress-overview {
-    background: var(--book-bg);
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--glass-border);
-}
 
 .reading-progress-overview h2 {
     font-family: 'Playfair Display', serif;

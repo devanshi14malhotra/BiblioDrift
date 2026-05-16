@@ -24,8 +24,59 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Georgia:wght@400;700&display=swap"
         rel="stylesheet">
+    <!-- Security: DOMPurify for XSS prevention -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
     <style>
+        .chat-messages {
+    background: rgba(255, 248, 235, 0.45);
+    border: 1px solid rgba(139, 69, 19, 0.12);
+    border-radius: 22px;
+    padding: 1.25rem;
+    margin: 0.75rem 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.message-bubble {
+    line-height: 1.7;
+}
+
+.chat-input-wrapper {
+    background: rgba(255, 248, 235, 0.8);
+    border: 1px solid rgba(139, 69, 19, 0.18);
+    border-radius: 18px;
+    padding: 0.4rem;
+}
+
+.send-btn {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+@media (max-width: 768px) {
+    .chat-header {
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .bookseller-info {
+        align-items: flex-start;
+    }
+
+    .chat-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .suggestions-list {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-messages {
+        padding: 1rem;
+        border-radius: 18px;
+    }
+}
         /* Full height layout - No double scroll */
         * {
             margin: 0;
@@ -286,6 +337,20 @@
                                     <span class="slider"></span>
                                 </label>
                             </div>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-water"></i> Ocean Waves</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="oceanToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="stormToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                             <div class="volume-control">
                                 <label for="ambientVolume"><i class="fa-solid fa-volume-high"></i> Volume</label>
                                 <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
@@ -369,8 +434,6 @@
     </main>
 
     <script>
-        window.MOOD_API_BASE = 'http://localhost:5001/api/v1';
-
         document.addEventListener('DOMContentLoaded', () => {
             const link = document.getElementById('navAuthLink');
             const tooltip = document.getElementById('navAuthTooltip');

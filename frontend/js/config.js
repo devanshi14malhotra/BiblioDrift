@@ -24,7 +24,7 @@ const CONFIG = {
 
 if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
-    window.MOOD_API_BASE = CONFIG.MOOD_API_BASE;
+    window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
     window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
         setKeys(keys) {
