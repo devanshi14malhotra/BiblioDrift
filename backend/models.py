@@ -617,3 +617,35 @@ class Review(db.Model, SoftDeleteMixin):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "is_deleted": self.is_deleted
         }
+#-----------------------class for bookmark---------------------#
+class Bookmark(db.Model, SoftDeleteMixin):
+    query_class = SoftDeleteQuery
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False, index=True)
+    page_number = db.Column(db.Integer, nullable=True)  # Optional: page where bookmarked
+    notes = db.Column(db.Text, nullable=True)  # Optional: user notes
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('bookmarks', lazy=True))
+    book = db.relationship('Book', backref=db.backref('bookmarks', lazy=True))
+    
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'book_id', name='unique_user_book_bookmark'),
+        db.CheckConstraint('page_number IS NULL OR page_number > 0', name='check_page_number_positive'),
+    )
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "book_id": self.book_id,
+            "book": self.book.to_dict() if self.book else None,
+            "page_number": self.page_number,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

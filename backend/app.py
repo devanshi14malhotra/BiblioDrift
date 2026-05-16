@@ -3678,3 +3678,206 @@ if __name__ == '__main__':
         logger.info("  GET  /api/v1/health - Health check")
 
     app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+# Add Bookmark import at the top
+from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, Bookmark, register_user, login_user
+
+# Add validator imports
+from validators import BookmarkRequest, UpdateBookmarkRequest
+
+# ==================== BOOKMARK ENDPOINTS ====================
+
+@app.route('/api/bookmarks', methods=['POST'])
+@jwt_required()
+@limiter.limit("20 per minute")
+def create_bookmark():
+    """Create a new bookmark for a book."""
+    try:
+        user_id = get_jwt_identity()
+        payload = request.get_json()
+        
+        # Validate request
+        req = BookmarkRequest(**payload)
+        
+        # Check if book exists
+        book = Book.query.filter_by(id=req.book_id, is_deleted=False).first()
+        if not book:
+            return not_found_error("Book not found")
+        
+        # Check if bookmark already exists
+        existing = Bookmark.query.filter_by(
+            user_id=user_id,
+            book_id=req.book_id,
+            is_deleted=False
+        ).first()
+        
+        if existing:
+            return resource_exists_error("Bookmark already exists for this book")
+        
+        # Create bookmark
+        bookmark = Bookmark(
+            user_id=user_id,
+            book_id=req.book_id,
+            page_number=req.page_number,
+            notes=req.notes
+        )
+        
+        db.session.add(bookmark)
+        db.session.commit()
+        
+        logger.info(f"User {user_id} bookmarked book {req.book_id}")
+        return success_response({"bookmark": bookmark.to_dict()}, "Bookmark created", 201)
+        
+    except ValueError as e:
+        return validation_error(str(e))
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f"Database error creating bookmark: {e}")
+        return internal_error("Failed to create bookmark")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Unexpected error creating bookmark: {e}")
+        return internal_error()
+
+
+@app.route('/api/bookmarks/<int:bookmark_id>', methods=['GET'])
+@jwt_required()
+def get_bookmark(bookmark_id):
+    """Get a specific bookmark."""
+    try:
+        user_id = get_jwt_identity()
+        
+        bookmark = Bookmark.query.filter_by(
+            id=bookmark_id,
+            user_id=user_id,
+            is_deleted=False
+        ).first()
+        
+        if not bookmark:
+            return not_found_error("Bookmark not found")
+        
+        return success_response({"bookmark": bookmark.to_dict()})
+        
+    except Exception as e:
+        logger.error(f"Error fetching bookmark: {e}")
+        return internal_error()
+
+
+@app.route('/api/bookmarks', methods=['GET'])
+@jwt_required()
+def list_bookmarks():
+    """List all bookmarks for the current user."""
+    try:
+        user_id = get_jwt_identity()
+        
+        bookmarks = Bookmark.query.filter_by(
+            user_id=user_id,
+            is_deleted=False
+        ).order_by(Bookmark.created_at.desc()).all()
+        
+        return success_response({
+            "bookmarks": [b.to_dict() for b in bookmarks],
+            "count": len(bookmarks)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error listing bookmarks: {e}")
+        return internal_error()
+
+
+@app.route('/api/bookmarks/<int:bookmark_id>', methods=['PUT'])
+@jwt_required()
+@limiter.limit("20 per minute")
+def update_bookmark(bookmark_id):
+    """Update a bookmark."""
+    try:
+        user_id = get_jwt_identity()
+        payload = request.get_json()
+        
+        # Validate request
+        req = UpdateBookmarkRequest(**payload)
+        
+        bookmark = Bookmark.query.filter_by(
+            id=bookmark_id,
+            user_id=user_id,
+            is_deleted=False
+        ).first()
+        
+        if not bookmark:
+            return not_found_error("Bookmark not found")
+        
+        # Update fields if provided
+        if req.page_number is not None:
+            bookmark.page_number = req.page_number
+        if req.notes is not None:
+            bookmark.notes = req.notes
+        
+        bookmark.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        
+        logger.info(f"User {user_id} updated bookmark {bookmark_id}")
+        return success_response({"bookmark": bookmark.to_dict()})
+        
+    except ValueError as e:
+        return validation_error(str(e))
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f"Database error updating bookmark: {e}")
+        return internal_error("Failed to update bookmark")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Unexpected error updating bookmark: {e}")
+        return internal_error()
+
+
+@app.route('/api/bookmarks/<int:bookmark_id>', methods=['DELETE'])
+@jwt_required()
+@limiter.limit("20 per minute")
+def delete_bookmark(bookmark_id):
+    """Delete a bookmark (soft delete)."""
+    try:
+        user_id = get_jwt_identity()
+        
+        bookmark = Bookmark.query.filter_by(
+            id=bookmark_id,
+            user_id=user_id,
+            is_deleted=False
+        ).first()
+        
+        if not bookmark:
+            return not_found_error("Bookmark not found")
+        
+        bookmark.soft_delete()
+        
+        logger.info(f"User {user_id} deleted bookmark {bookmark_id}")
+        return success_response(None, "Bookmark deleted")
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error(f"Database error deleting bookmark: {e}")
+        return internal_error("Failed to delete bookmark")
+    except Exception as e:
+        logger.error(f"Unexpected error deleting bookmark: {e}")
+        return internal_error()
+
+
+@app.route('/api/books/<int:book_id>/bookmarked', methods=['GET'])
+@jwt_required()
+def check_bookmark(book_id):
+    """Check if user has bookmarked a specific book."""
+    try:
+        user_id = get_jwt_identity()
+        
+        bookmark = Bookmark.query.filter_by(
+            user_id=user_id,
+            book_id=book_id,
+            is_deleted=False
+        ).first()
+        
+        return success_response({
+            "bookmarked": bookmark is not None,
+            "bookmark": bookmark.to_dict() if bookmark else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking bookmark: {e}")
+        return internal_error()
