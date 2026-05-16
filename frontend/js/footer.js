@@ -7,7 +7,7 @@ const createFooter = () => {
         <!-- Brand Section -->
         <div class="footer-brand">
           <a href="/index.html" class="logo" aria-label="BiblioDrift Home">
-            <img class="footer-logo" src="/assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img class="footer-logo" src="../assets/images/logo.png" alt="BiblioDrift Logo">
           </a>
           <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
           <p class="footer-subtext">&mdash; Emily Dickinson</p>

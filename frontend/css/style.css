@@ -4227,10 +4227,10 @@ main {
     align-items: center;
     gap: 0.6rem;
 
-    background: var(--glass-bg);
+    background: #1a1a28;
     backdrop-filter: blur(12px);
 
-    border: 1px solid var(--glass-border);
+    border: 1px solid #2a2a3e;
     border-radius: 14px;
 
     padding: 10px 16px;
@@ -4259,26 +4259,26 @@ main {
 
 /* Select styling */
 .sort-select {
-    background: transparent;
-    border: none;
+    width: 100%;
+    background-color: #1a1a28 !important;
+    border: 1px solid var(--rb-border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    color: #e8e0d0 !important;
+    -webkit-appearance: none;
+    appearance: none;
+    font-size: 0.95rem;
     outline: none;
+    }
 
-    font-family: "Georgia", serif;
-    font-size: 14px;
-    color: var(--text-main);
-
-    cursor: pointer;
-}
-
-/* Fancy focus */
 .sort-select:focus {
-    color: var(--accent-gold);
+    border-color: #c9a84c;
 }
 
-.logo img {
-    height: 40px;
+.sort-select option {
+    background: var(--rb-card);
+    color: var(--rb-text);
 }
-
 .search-icon {
     cursor: pointer;
 }
