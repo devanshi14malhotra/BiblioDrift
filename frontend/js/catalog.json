@@ -1,0 +1,4434 @@
+[
+  {
+    "id": "local_11",
+    "volumeInfo": {
+      "title": "Gone Girl",
+      "authors": [
+        "Gillian Flynn"
+      ],
+      "description": "A dark, psychological thriller involving a missing wife and a web of deceit.",
+      "categories": [
+        "Thriller",
+        "Mystery",
+        "Crime",
+        "Drama"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=k_9Yq1wP5qUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_10",
+    "volumeInfo": {
+      "title": "The Hobbit",
+      "authors": [
+        "J.R.R. Tolkien"
+      ],
+      "description": "A cozy but thrilling fantasy adventure about a hobbit who goes on an unexpected journey.",
+      "categories": [
+        "Fantasy",
+        "Adventure",
+        "Cozy",
+        "Classic"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=pD6arNyKyi8C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_9",
+    "volumeInfo": {
+      "title": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "description": "A sweeping sci-fi epic about politics, religion, and survival on a harsh desert planet.",
+      "categories": [
+        "Sci-Fi",
+        "Adventure",
+        "Action",
+        "Fantasy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=B1hSG45JCX4C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_8",
+    "volumeInfo": {
+      "title": "Madhushala",
+      "authors": [
+        "Harivansh Rai Bachchan"
+      ],
+      "description": "A highly celebrated philosophical Hindi poem using the metaphor of a tavern to explain the complexities of life.",
+      "categories": [
+        "Hindi",
+        "Poetry",
+        "Philosophy",
+        "Classic"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=XwJ2wAEACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_7",
+    "volumeInfo": {
+      "title": "Rashmirathi",
+      "authors": [
+        "Ramdhari Singh Dinkar"
+      ],
+      "description": "An epic Hindi poem focusing on the life of Karna from the Mahabharata, dealing with honor, justice, and destiny.",
+      "categories": [
+        "Hindi",
+        "Poetry",
+        "Mythology",
+        "Historical"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=J-v5EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_6",
+    "volumeInfo": {
+      "title": "Godan (The Gift of a Cow)",
+      "authors": [
+        "Munshi Premchand"
+      ],
+      "description": "A classic Hindi novel depicting the socio-economic deprivation and struggles of a poor peasant.",
+      "categories": [
+        "Hindi",
+        "Classic",
+        "Fiction",
+        "Tragedy",
+        "Drama"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=38e3EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_5",
+    "volumeInfo": {
+      "title": "The Book Thief",
+      "authors": [
+        "Markus Zusak"
+      ],
+      "description": "A tragic, beautiful historical novel narrated by Death.",
+      "categories": [
+        "Historical",
+        "Tragedy",
+        "Grief",
+        "Melancholy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=mF_1wB2H6KUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_4",
+    "volumeInfo": {
+      "title": "Pride and Prejudice",
+      "authors": [
+        "Jane Austen"
+      ],
+      "description": "A classic historical comedy of manners and enemies-to-lovers romance.",
+      "categories": [
+        "Romance",
+        "Historical",
+        "Comedy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=s1gVAAAAYAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_3",
+    "volumeInfo": {
+      "title": "A Psalm for the Wild-Built",
+      "authors": [
+        "Becky Chambers"
+      ],
+      "description": "A cozy, healing sci-fi journey about a tea monk and a robot.",
+      "categories": [
+        "Sci-Fi",
+        "Cozy",
+        "Healing",
+        "Adventure"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=h3P1DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_2",
+    "volumeInfo": {
+      "title": "The Secret History",
+      "authors": [
+        "Donna Tartt"
+      ],
+      "description": "A dark, thrilling tale of a group of eccentric students and a fatal secret.",
+      "categories": [
+        "Mystery",
+        "Thriller",
+        "Tragedy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=E8m_eK1G6ZQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "local_1",
+    "volumeInfo": {
+      "title": "The Night Circus",
+      "authors": [
+        "Erin Morgenstern"
+      ],
+      "description": "A magical, melancholy romance set in a mysterious wandering circus.",
+      "categories": [
+        "Fantasy",
+        "Romance",
+        "Magic",
+        "Melancholy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://books.google.com/books/content?id=Z01n0zB5Z_oC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262454W",
+    "volumeInfo": {
+      "title": "The Hound of the Baskervilles",
+      "authors": [
+        "Arthur Conan Doyle"
+      ],
+      "description": "A prominent Mystery book exploring themes of English Civil War, mires, tors.",
+      "categories": [
+        "crime novel",
+        "English Civil War",
+        "mires",
+        "tors",
+        "tombs"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8063264-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL166894W",
+    "volumeInfo": {
+      "title": "Преступление и наказание",
+      "authors": [
+        "Фёдор Михайлович Достоевский"
+      ],
+      "description": "A prominent Mystery book exploring themes of Russian literature, Novela psicológica, Fiction.",
+      "categories": [
+        "English Translations",
+        "Russian literature",
+        "Novela psicológica",
+        "Fiction",
+        "Translations into Yiddish"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9411873-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262421W",
+    "volumeInfo": {
+      "title": "The Adventures of Sherlock Holmes [12 stories]",
+      "authors": [
+        "Arthur Conan Doyle"
+      ],
+      "description": "A prominent Mystery book exploring themes of Murder, Mystery, Conclusions.",
+      "categories": [
+        "Classic Literature",
+        "Murder",
+        "Mystery",
+        "Conclusions",
+        "amorality"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6717853-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76487W",
+    "volumeInfo": {
+      "title": "The Man Who Was Thursday",
+      "authors": [
+        "Gilbert Keith Chesterton"
+      ],
+      "description": "A prominent Mystery book exploring themes of Novela de misterio, Police, Libros en letra grande.",
+      "categories": [
+        "Anarchists",
+        "Novela de misterio",
+        "Police",
+        "Libros en letra grande",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8242857-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL472715W",
+    "volumeInfo": {
+      "title": "The Mysterious Affair at Styles",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of Mystery, Crime Fiction, Mystery Thriller.",
+      "categories": [
+        "Fiction",
+        "Mystery",
+        "Crime Fiction",
+        "Mystery Thriller",
+        "Thriller"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13699667-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL471789W",
+    "volumeInfo": {
+      "title": "The Secret Adversary",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of English language, Fiction, Married people.",
+      "categories": [
+        "Classic Literature",
+        "English language",
+        "Fiction",
+        "Married people",
+        "Murder"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14590159-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL8763148W",
+    "volumeInfo": {
+      "title": "The mystery of Edwin Drood",
+      "authors": [
+        "Charles Dickens",
+        "Samuel Luke Fildes",
+        "Charles Bernard Derosne",
+        "TC",
+        "John Cuming Walters"
+      ],
+      "description": "A prominent Mystery book exploring themes of Triangles (Interpersonal relations), Fiction, Choral conductors.",
+      "categories": [
+        "Missing persons",
+        "Triangles (Interpersonal relations)",
+        "Fiction",
+        "Choral conductors",
+        "Separation (Psychology)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8243336-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262452W",
+    "volumeInfo": {
+      "title": "His Last Bow [8 stories]",
+      "authors": [
+        "Arthur Conan Doyle"
+      ],
+      "description": "A prominent Mystery book exploring themes of Detective and mystery fiction, Fiction, Mystery fiction.",
+      "categories": [
+        "short stories",
+        "Detective and mystery fiction",
+        "Fiction",
+        "Mystery fiction",
+        "Historical fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8243267-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL38663W",
+    "volumeInfo": {
+      "title": "Heart of Darkness",
+      "authors": [
+        "Joseph Conrad"
+      ],
+      "description": "A prominent Mystery book exploring themes of Romance, Degeneration, Literature.",
+      "categories": [
+        "Fiction",
+        "Romance",
+        "Degeneration",
+        "Literature",
+        "Description and travel"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12307847-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL23797W",
+    "volumeInfo": {
+      "title": "The Riddle of the Sands",
+      "authors": [
+        "Erskine Childers"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fiction, action & adventure, Fiction, thrillers, espionage, Fiction, alternative history.",
+      "categories": [
+        "Great britain, fiction",
+        "Fiction, action & adventure",
+        "Fiction, thrillers, espionage",
+        "Fiction, alternative history",
+        "Fiction, sea stories"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2293974-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76501W",
+    "volumeInfo": {
+      "title": "Greenmantle",
+      "authors": [
+        "John Buchan"
+      ],
+      "description": "A prominent Mystery book exploring themes of Hannay, richard (fictitious character), fiction, Great britain, fiction, World war, 1914-1918, fiction.",
+      "categories": [
+        "Fiction, thrillers, espionage",
+        "Hannay, richard (fictitious character), fiction",
+        "Great britain, fiction",
+        "World war, 1914-1918, fiction",
+        "Fiction, war & military"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/93023-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL176086W",
+    "volumeInfo": {
+      "title": "Basil",
+      "authors": [
+        "Wilkie Collins"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fathers and sons, Young men, Revenge.",
+      "categories": [
+        "Fiction",
+        "Fathers and sons",
+        "Young men",
+        "Revenge",
+        "Inheritance and succession"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12968342-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL82563W",
+    "volumeInfo": {
+      "title": "Harry Potter and the Philosopher's Stone",
+      "authors": [
+        "J. K. Rowling"
+      ],
+      "description": "A prominent Mystery book exploring themes of Ghosts, Monsters, Vampires.",
+      "categories": [
+        "series:Harry_Potter",
+        "Ghosts",
+        "Monsters",
+        "Vampires",
+        "Witches"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/15155833-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL176081W",
+    "volumeInfo": {
+      "title": "The Law and the Lady",
+      "authors": [
+        "Wilkie Collins",
+        "Camille de Cendrey",
+        "Jenny Bourne Taylor"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fiction, Mystery, Women detectives.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Mystery",
+        "Women detectives",
+        "Married women"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6396941-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1315930W",
+    "volumeInfo": {
+      "title": "Trent's Last Case",
+      "authors": [
+        "E. C. Bentley"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fiction, mystery & detective, general, Fiction, Philip Trent (Fictitious character).",
+      "categories": [
+        "Fiction, general",
+        "Fiction, mystery & detective, general",
+        "Fiction",
+        "Philip Trent (Fictitious character)",
+        "Private investigators"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/118583-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76595W",
+    "volumeInfo": {
+      "title": "Prester John",
+      "authors": [
+        "John Buchan"
+      ],
+      "description": "A prominent Mystery book exploring themes of Scots, Clergy, Zulu (African people).",
+      "categories": [
+        "Fiction",
+        "Scots",
+        "Clergy",
+        "Zulu (African people)",
+        "Viction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5981967-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2234917W",
+    "volumeInfo": {
+      "title": "Whose Body?",
+      "authors": [
+        "Dorothy L. Sayers"
+      ],
+      "description": "A prominent Mystery book exploring themes of Detectives, Lord Wimsey, Peter (Fictitious character), Translations into Russian.",
+      "categories": [
+        "Mystery",
+        "Detectives",
+        "Lord Wimsey, Peter (Fictitious character)",
+        "Translations into Russian",
+        "English Detective and mystery stories"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8311819-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL176068W",
+    "volumeInfo": {
+      "title": "The Black Robe",
+      "authors": [
+        "Wilkie Collins"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fiction, Mystery, Priesthood.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Mystery",
+        "Priesthood",
+        "Fiction, thrillers, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1759983-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL472073W",
+    "volumeInfo": {
+      "title": "Murder on the Links",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of Hercule Poirot (Fictitious character), Private investigators, Murder.",
+      "categories": [
+        "Fiction",
+        "Hercule Poirot (Fictitious character)",
+        "Private investigators",
+        "Murder",
+        "Investigation"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14582832-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL176085W",
+    "volumeInfo": {
+      "title": "Armadale",
+      "authors": [
+        "Wilkie Collins"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fate and fatalism, Fathers and sons, Fiction.",
+      "categories": [
+        "Classic Literature",
+        "Fate and fatalism",
+        "Fathers and sons",
+        "Fiction",
+        "Men"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/780215-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL6438811W",
+    "volumeInfo": {
+      "title": "Fifty Candles",
+      "authors": [
+        "Earl Derr Biggers"
+      ],
+      "description": "A prominent Mystery book exploring themes of Suspense, Fiction, Fiction, mystery & detective, general.",
+      "categories": [
+        "Mystery",
+        "Suspense",
+        "Fiction",
+        "Fiction, mystery & detective, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1956467-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1518053W",
+    "volumeInfo": {
+      "title": "The Angel of Terror",
+      "authors": [
+        "Edgar Wallace"
+      ],
+      "description": "A prominent Mystery book exploring themes of Mystery, Suspense, Fiction, mystery & detective, general.",
+      "categories": [
+        "Fiction",
+        "Mystery",
+        "Suspense",
+        "Fiction, mystery & detective, general",
+        "Crime, fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1814681-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL471576W",
+    "volumeInfo": {
+      "title": "Murder on the Orient Express",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of Private investigator, P.I., Hercule Poirot.",
+      "categories": [
+        "Agatha Christie",
+        "Private investigator",
+        "P.I.",
+        "Hercule Poirot",
+        "Detective"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11100465-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL176090W",
+    "volumeInfo": {
+      "title": "No name",
+      "authors": [
+        "Wilkie Collins"
+      ],
+      "description": "A prominent Mystery book exploring themes of Orphans, Disinheritance, Illegitimacy.",
+      "categories": [
+        "Fiction",
+        "Orphans",
+        "Disinheritance",
+        "Illegitimacy",
+        "Sisters"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/103261-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL250352W",
+    "volumeInfo": {
+      "title": "The Amateur Cracksman",
+      "authors": [
+        "E. W. Hornung"
+      ],
+      "description": "A prominent Mystery book exploring themes of Criminals, English Detective and mystery stories, Fiction.",
+      "categories": [
+        "Classic Literature",
+        "Criminals",
+        "English Detective and mystery stories",
+        "Fiction",
+        "Mystery"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2895793-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL471932W",
+    "volumeInfo": {
+      "title": "The Murder of Roger Ackroyd",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of detective fiction, mystery, murder.",
+      "categories": [
+        "Mystery",
+        "detective fiction",
+        "mystery",
+        "murder",
+        "investigation"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13151356-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL471940W",
+    "volumeInfo": {
+      "title": "Poirot investigates",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of Private investigators, Chief Inspector Japp (Fictitious character), Belgians.",
+      "categories": [
+        "Hercule Poirot (Fictitious character)",
+        "Private investigators",
+        "Chief Inspector Japp (Fictitious character)",
+        "Belgians",
+        "English Detective and mystery stories"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13670505-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76837W",
+    "volumeInfo": {
+      "title": "The Da Vinci Code",
+      "authors": [
+        "Dan Brown"
+      ],
+      "description": "A prominent Mystery book exploring themes of Spiritual Fiction, hieros gamos, Priory of Sion.",
+      "categories": [
+        "Suspense & Thriller",
+        "Spiritual Fiction",
+        "hieros gamos",
+        "Priory of Sion",
+        "Holy Grail"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9255229-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL137397W",
+    "volumeInfo": {
+      "title": "The After House",
+      "authors": [
+        "Mary Roberts Rinehart"
+      ],
+      "description": "A prominent Mystery book exploring themes of Fiction, mystery and suspense, Yachting.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "mystery and suspense",
+        "Yachting",
+        "Fiction, mystery & detective, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2757973-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL472549W",
+    "volumeInfo": {
+      "title": "The Man in the Brown Suit",
+      "authors": [
+        "Agatha Christie"
+      ],
+      "description": "A prominent Mystery book exploring themes of Mystery, English literature, Fiction, mystery & detective, general.",
+      "categories": [
+        "Fiction",
+        "Mystery",
+        "English literature",
+        "Fiction, mystery & detective, general",
+        "French fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11153508-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL24034W",
+    "volumeInfo": {
+      "title": "Treasure Island",
+      "authors": [
+        "Robert Louis Stevenson"
+      ],
+      "description": "A prominent Thriller book exploring themes of Treasure Island (Imaginary place), Treasure-trove, Pirates.",
+      "categories": [
+        "Fiction",
+        "Treasure Island (Imaginary place)",
+        "Treasure-trove",
+        "Pirates",
+        "Treasure troves"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13859660-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76524W",
+    "volumeInfo": {
+      "title": "The Thirty-Nine Steps",
+      "authors": [
+        "John Buchan"
+      ],
+      "description": "A prominent Thriller book exploring themes of Hannay, richard (fictitious character), fiction, Great britain, fiction, Fiction, espionage.",
+      "categories": [
+        "Thriller",
+        "Hannay, richard (fictitious character), fiction",
+        "Great britain, fiction",
+        "Fiction, espionage",
+        "English language"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/93020-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL85892W",
+    "volumeInfo": {
+      "title": "Dracula",
+      "authors": [
+        "Bram Stoker"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Horror, Horror stories.",
+      "categories": [
+        "English literature",
+        "Fiction",
+        "Horror",
+        "Horror stories",
+        "Horror tales"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12216503-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL85891W",
+    "volumeInfo": {
+      "title": "The Jewel of Seven Stars",
+      "authors": [
+        "Bram Stoker"
+      ],
+      "description": "A prominent Thriller book exploring themes of Horror, Fiction, Archaeologists.",
+      "categories": [
+        "Mummies",
+        "Horror",
+        "Fiction",
+        "Archaeologists",
+        "Classic Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2760301-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL20844W",
+    "volumeInfo": {
+      "title": "The Red Badge of Courage",
+      "authors": [
+        "Stephen Crane"
+      ],
+      "description": "A prominent Thriller book exploring themes of American Manuscripts, Cartoons and comics, Chancellorsville, Battle of, Chancellorsville, Va., 1863.",
+      "categories": [
+        "1783-1865",
+        "American Manuscripts",
+        "Cartoons and comics",
+        "Chancellorsville, Battle of, Chancellorsville, Va., 1863",
+        "Civil War, 1861-1865"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8236915-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL245401W",
+    "volumeInfo": {
+      "title": "The Prisoner of Zenda",
+      "authors": [
+        "Anthony Hope",
+        "Gary Hoppenstand",
+        "Diane Mowat",
+        "Alan Marks",
+        "Francesc Ràfols",
+        "Andrew Pugsley",
+        "Summer M. Hogan",
+        "Summer Hogan",
+        "Smidgen Press",
+        "Charles Dana Gibson",
+        "Daniel Lanza Barba",
+        "Javier Fornell Fernandez",
+        "Stephen Colbourn",
+        "Katy Jackson",
+        "James Wilby",
+        "Robinson, M."
+      ],
+      "description": "A prominent Thriller book exploring themes of Adventure, Fiction, action & adventure, Ruritania (imaginary place), fiction.",
+      "categories": [
+        "Fiction",
+        "Adventure",
+        "Fiction, action & adventure",
+        "Ruritania (imaginary place), fiction",
+        "British and irish fiction (fictional works by one author)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/105814-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL77950W",
+    "volumeInfo": {
+      "title": "The deerslayer",
+      "authors": [
+        "James Fenimore Cooper"
+      ],
+      "description": "A prominent Thriller book exploring themes of Male friendship, Hunters, Scouts and scouting in fiction.",
+      "categories": [
+        "United States in fiction",
+        "Male friendship",
+        "Hunters",
+        "Scouts and scouting in fiction",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8237593-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76598W",
+    "volumeInfo": {
+      "title": "Mr. Standfast",
+      "authors": [
+        "John Buchan"
+      ],
+      "description": "A prominent Thriller book exploring themes of World War, 1914-1918, Richard Hannay (Fictitious character), Intelligence service.",
+      "categories": [
+        "Fiction",
+        "World War, 1914-1918",
+        "Richard Hannay (Fictitious character)",
+        "Intelligence service",
+        "Classic Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6962564-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL78009W",
+    "volumeInfo": {
+      "title": "The Pathfinder",
+      "authors": [
+        "James Fenimore Cooper"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Frontier and pioneer life, Historical fiction.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Frontier and pioneer life",
+        "Historical fiction",
+        "History"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8980913-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1100007W",
+    "volumeInfo": {
+      "title": "Le Tour du Monde en Quatre-Vingts Jours",
+      "authors": [
+        "Jules Verne"
+      ],
+      "description": "A prominent Thriller book exploring themes of Translations into Gujarati, Fiction, Translations from French.",
+      "categories": [
+        "Viajes alrededor del mundo",
+        "Translations into Gujarati",
+        "Fiction",
+        "Translations from French",
+        "Children's stories, French"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6976035-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL74504W",
+    "volumeInfo": {
+      "title": "White Fang",
+      "authors": [
+        "Jack London"
+      ],
+      "description": "A prominent Thriller book exploring themes of Wolfdogs, Classic Literature, American Adventure stories.",
+      "categories": [
+        "Gold discoveries",
+        "Wolfdogs",
+        "Classic Literature",
+        "American Adventure stories",
+        "Open Library Staff Picks"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8236920-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1099280W",
+    "volumeInfo": {
+      "title": "Vingt mille lieues sous les mers",
+      "authors": [
+        "Jules Verne"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Specimens, Underwater exploration.",
+      "categories": [
+        "Toy and movable books",
+        "Fiction",
+        "Specimens",
+        "Underwater exploration",
+        "French language"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6573517-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL77997W",
+    "volumeInfo": {
+      "title": "The pioneers",
+      "authors": [
+        "James Fenimore Cooper"
+      ],
+      "description": "A prominent Thriller book exploring themes of Open Library Staff Picks, Natty Bumppo (Fictitious character), Fiction.",
+      "categories": [
+        "Frontier and pioneer life",
+        "Open Library Staff Picks",
+        "Natty Bumppo (Fictitious character)",
+        "Fiction",
+        "Classic Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9000512-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL24166W",
+    "volumeInfo": {
+      "title": "Kidnapped",
+      "authors": [
+        "Robert Louis Stevenson"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, History, Adventure and adventurers.",
+      "categories": [
+        "Juvenile fiction",
+        "Fiction",
+        "History",
+        "Adventure and adventurers",
+        "Scotland"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8267822-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL4885721W",
+    "volumeInfo": {
+      "title": "A strange disappearance",
+      "authors": [
+        "Anna Katharine Green",
+        "Anna Katharine Green",
+        "Cyanide Publishing",
+        "Anna Katherine Green",
+        "Anna Green"
+      ],
+      "description": "A prominent Thriller book exploring themes of Police, Missing persons, Women household employees.",
+      "categories": [
+        "Fiction",
+        "Police",
+        "Missing persons",
+        "Women household employees",
+        "Women domestics"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12657405-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2681032W",
+    "volumeInfo": {
+      "title": "The Evil Shepherd",
+      "authors": [
+        "Edward Phillips Oppenheim"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Thriller, Fiction, mystery & detective, general.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Thriller",
+        "Fiction, mystery & detective, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12648419-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2021957W",
+    "volumeInfo": {
+      "title": "Otto of the Silver Hand",
+      "authors": [
+        "Howard Pyle",
+        "Howard Pyle"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Juvenile fiction, Classic Literature.",
+      "categories": [
+        "Middle Ages",
+        "Fiction",
+        "Juvenile fiction",
+        "Classic Literature",
+        "Thriller"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7263483-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL17455W",
+    "volumeInfo": {
+      "title": "A Tale of Three Lions",
+      "authors": [
+        "H. Rider Haggard"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Thriller, Fiction, short stories (single author).",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Thriller",
+        "Fiction, short stories (single author)",
+        "Fiction, thrillers, suspense"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2009339-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL827304W",
+    "volumeInfo": {
+      "title": "The Beetle. A Mystery",
+      "authors": [
+        "Richard Marsh"
+      ],
+      "description": "A prominent Thriller book exploring themes of Egypt, fiction, Fiction, horror, London (england), fiction.",
+      "categories": [
+        "Fiction, occult & supernatural",
+        "Egypt, fiction",
+        "Fiction, horror",
+        "London (england), fiction",
+        "Antiquities"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/750958-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL100239W",
+    "volumeInfo": {
+      "title": "An American Tragedy",
+      "authors": [
+        "Theodore Dreiser"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Thriller, Trials (Murder), fiction.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Thriller",
+        "Trials (Murder), fiction",
+        "American literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12728401-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1099513W",
+    "volumeInfo": {
+      "title": "Voyage au Centre de la Terre",
+      "authors": [
+        "Jules Verne"
+      ],
+      "description": "A prominent Thriller book exploring themes of Science fiction, Imaginary Voyages, Imaginary voyages in fiction.",
+      "categories": [
+        "Fiction",
+        "Science fiction",
+        "Imaginary Voyages",
+        "Imaginary voyages in fiction",
+        "Explorers in fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5890987-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL455327W",
+    "volumeInfo": {
+      "title": "Lord of the Flies",
+      "authors": [
+        "William Golding"
+      ],
+      "description": "A prominent Thriller book exploring themes of fiction, relationships, adventure.",
+      "categories": [
+        "Thriller",
+        "fiction",
+        "relationships",
+        "adventure",
+        "morality"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8684447-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1517879W",
+    "volumeInfo": {
+      "title": "The Four Just Men",
+      "authors": [
+        "Edgar Wallace"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Thriller, Fiction, mystery & detective, general.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Thriller",
+        "Fiction, mystery & detective, general",
+        "Large type books"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12947886-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1099641W",
+    "volumeInfo": {
+      "title": "Michel Strogoff",
+      "authors": [
+        "Jules Verne"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, History, Tatars.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "History",
+        "Tatars",
+        "Heroes"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/10393209-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL85753W",
+    "volumeInfo": {
+      "title": "Casino Royale",
+      "authors": [
+        "Ian Fleming"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Fiction in English, Intelligence officers.",
+      "categories": [
+        "British",
+        "Fiction",
+        "Fiction in English",
+        "Intelligence officers",
+        "Secret service"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5540820-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL8127199W",
+    "volumeInfo": {
+      "title": "In Secret",
+      "authors": [
+        "Robert W. Chambers"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, historical, general, Classic Literature, Fiction.",
+      "categories": [
+        "World war, 1914-1918, fiction",
+        "Fiction, historical, general",
+        "Classic Literature",
+        "Fiction",
+        "Thriller"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1844837-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2344450W",
+    "volumeInfo": {
+      "title": "The Drums of Jeopardy",
+      "authors": [
+        "Harold MacGrath"
+      ],
+      "description": "A prominent Thriller book exploring themes of Fiction, Thriller, Fiction, action & adventure.",
+      "categories": [
+        "Classic Literature",
+        "Fiction",
+        "Thriller",
+        "Fiction, action & adventure",
+        "Fiction, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11351150-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2713465W",
+    "volumeInfo": {
+      "title": "Nightmare Abbey",
+      "authors": [
+        "Thomas Love Peacock"
+      ],
+      "description": "A prominent Thriller book exploring themes of Arthurian romances, Classic Literature, Fiction.",
+      "categories": [
+        "Adaptations",
+        "Arthurian romances",
+        "Classic Literature",
+        "Fiction",
+        "Kings and rulers"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1956635-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL138052W",
+    "volumeInfo": {
+      "title": "Alice's Adventures in Wonderland",
+      "authors": [
+        "Lewis Carroll"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Alice (fictitious character : carroll), fiction, British and irish fiction (fictional works by one author), Fiction, fantasy, general.",
+      "categories": [
+        "Fantasy",
+        "Alice (fictitious character : carroll), fiction",
+        "British and irish fiction (fictional works by one author)",
+        "Fiction, fantasy, general",
+        "JUVENILE FICTION"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/10527843-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18417W",
+    "volumeInfo": {
+      "title": "The Wonderful Wizard of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Spanish language materials, Fiction, Wizards.",
+      "categories": [
+        "Witches",
+        "Spanish language materials",
+        "Fiction",
+        "Wizards",
+        "Juvenile literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/552443-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL20600W",
+    "volumeInfo": {
+      "title": "Gulliver's Travels",
+      "authors": [
+        "Jonathan Swift"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Young adult, Juvenile, Fiction.",
+      "categories": [
+        "YA",
+        "Young adult",
+        "Juvenile",
+        "Fiction",
+        "Fantasy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12717083-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL259010W",
+    "volumeInfo": {
+      "title": "A Midsummer Night's Dream",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Courtship, Plays, Hippolyta (Greek mythology).",
+      "categories": [
+        "Drama",
+        "Courtship",
+        "Plays",
+        "Hippolyta (Greek mythology)",
+        "Theseus (Greek mythology)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7205924-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1089297W",
+    "volumeInfo": {
+      "title": "The Prince",
+      "authors": [
+        "Niccolò Machiavelli"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Political science, early works to 1800, Machiavel, Nicolas, 1469-1527. Prince, Classic Literature.",
+      "categories": [
+        "Fantasy",
+        "Political science, early works to 1800",
+        "Machiavel, Nicolas, 1469-1527. Prince",
+        "Classic Literature",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12726168-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL151406W",
+    "volumeInfo": {
+      "title": "Through the Looking-Glass",
+      "authors": [
+        "Lewis Carroll"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fiction, English Nonsense verses, Children's poetry, English.",
+      "categories": [
+        "Fantasy",
+        "Fiction",
+        "English Nonsense verses",
+        "Children's poetry, English",
+        "Nonsense verses"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11272464-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL28570037W",
+    "volumeInfo": {
+      "title": "The Wind in the Willows",
+      "authors": [
+        "Kenneth Grahame"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Animals, fiction, Friendship, fiction, England, fiction.",
+      "categories": [
+        "Children's fiction",
+        "Animals, fiction",
+        "Friendship, fiction",
+        "England, fiction",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13335427-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL99499W",
+    "volumeInfo": {
+      "title": "Five Children and It",
+      "authors": [
+        "Edith Nesbit"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fairies, Wishes, Brothers and sisters.",
+      "categories": [
+        "Fiction",
+        "Fairies",
+        "Wishes",
+        "Brothers and sisters",
+        "History"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/28174-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15449W",
+    "volumeInfo": {
+      "title": "The Princess and the Goblin",
+      "authors": [
+        "George MacDonald"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fantasy, Fiction, Juvenile Fiction.",
+      "categories": [
+        "Classic Literature",
+        "Fantasy",
+        "Fiction",
+        "Juvenile Fiction",
+        "Juvenile Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14363454-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262460W",
+    "volumeInfo": {
+      "title": "The Lost World",
+      "authors": [
+        "Arthur Conan Doyle"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Atlantis, Dinosaurs, Discovery and exploration.",
+      "categories": [
+        "Adventure stories",
+        "Atlantis",
+        "Dinosaurs",
+        "Discovery and exploration",
+        "English Detective and mystery stories"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8231444-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18396W",
+    "volumeInfo": {
+      "title": "The Marvelous Land of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile fiction, Translations into Russian, Children's literature, English.",
+      "categories": [
+        "Children's stories, American",
+        "Juvenile fiction",
+        "Translations into Russian",
+        "Children's literature, English",
+        "Children's literature, Russian"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12648656-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18415W",
+    "volumeInfo": {
+      "title": "Ozma of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Children's stories, Children's stories, American, Juvenile fiction.",
+      "categories": [
+        "Fantasy",
+        "Children's stories",
+        "Children's stories, American",
+        "Juvenile fiction",
+        "Fairy tales"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12648657-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL10263W",
+    "volumeInfo": {
+      "title": "Le petit prince",
+      "authors": [
+        "Antoine de Saint-Exupéry"
+      ],
+      "description": "A prominent Fantasy book exploring themes of adventure, fantasy, friendship.",
+      "categories": [
+        "Fantasy",
+        "adventure",
+        "fantasy",
+        "friendship",
+        "love"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/10708272-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18409W",
+    "volumeInfo": {
+      "title": "The Emerald City of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fiction, Oz (Imaginary place), Fantasy.",
+      "categories": [
+        "Juvenile fiction",
+        "Fiction",
+        "Oz (Imaginary place)",
+        "Fantasy",
+        "Princess Ozma (Fictitious character)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1473556-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18412W",
+    "volumeInfo": {
+      "title": "Dorothy and the Wizard in Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fiction, Oz (Imaginary place), Fantasy.",
+      "categories": [
+        "Fairy tales",
+        "Fiction",
+        "Oz (Imaginary place)",
+        "Fantasy",
+        "Classic Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12648659-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18411W",
+    "volumeInfo": {
+      "title": "The Lost Princess of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile literature, Children's stories, Classic Literature.",
+      "categories": [
+        "Fantasy",
+        "Juvenile literature",
+        "Children's stories",
+        "Classic Literature",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/854819-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL407476W",
+    "volumeInfo": {
+      "title": "The Story of the Amulet",
+      "authors": [
+        "Edith Nesbit"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Litterature fantastique, Classic Literature, Fiction.",
+      "categories": [
+        "Roman pour la jeunesse",
+        "Litterature fantastique",
+        "Classic Literature",
+        "Fiction",
+        "Juvenile Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13241470-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262358W",
+    "volumeInfo": {
+      "title": "The Complete Life and Adventures of Santa Claus",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fiction, Juvenile Fiction, Science Fiction & Fantasy.",
+      "categories": [
+        "Fantasy",
+        "Fiction",
+        "Juvenile Fiction",
+        "Science Fiction & Fantasy",
+        "Classic Literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1979059-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL151411W",
+    "volumeInfo": {
+      "title": "Alice's Adventures in Wonderland / Through the Looking Glass",
+      "authors": [
+        "Lewis Carroll"
+      ],
+      "description": "A prominent Fantasy book exploring themes of adventure and adventurers, adventure and adventurers, fiction, adventure stories.",
+      "categories": [
+        "Fantasy",
+        "adventure and adventurers",
+        "adventure and adventurers, fiction",
+        "adventure stories",
+        "adventure travel"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8595966-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1168083W",
+    "volumeInfo": {
+      "title": "Nineteen Eighty-Four",
+      "authors": [
+        "George Orwell"
+      ],
+      "description": "A prominent Fantasy book exploring themes of censorship, surveillance, rebels.",
+      "categories": [
+        "futurology",
+        "censorship",
+        "surveillance",
+        "rebels",
+        "sting operations"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9267242-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262390W",
+    "volumeInfo": {
+      "title": "The Road to Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile Fiction, Fiction, Oz (Imaginary place).",
+      "categories": [
+        "Fairy tales",
+        "Juvenile Fiction",
+        "Fiction",
+        "Oz (Imaginary place)",
+        "Fantasy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8243922-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262384W",
+    "volumeInfo": {
+      "title": "The Sea Fairies",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile fiction, Classic Literature, Fiction.",
+      "categories": [
+        "Children's stories",
+        "Juvenile fiction",
+        "Classic Literature",
+        "Fiction",
+        "Children's fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1814237-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262341W",
+    "volumeInfo": {
+      "title": "Baum's American Fairy Tales",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile Fiction, Fiction, Fantasy.",
+      "categories": [
+        "Children's stories, American",
+        "Juvenile Fiction",
+        "Fiction",
+        "Fantasy",
+        "Fairy tales"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/709869-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262385W",
+    "volumeInfo": {
+      "title": "Sky Island",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Children's fiction, Fantasy fiction, Adventure and adventurers, fiction.",
+      "categories": [
+        "Fantasy",
+        "Children's fiction",
+        "Fantasy fiction",
+        "Adventure and adventurers, fiction",
+        "Magic, fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2752804-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262352W",
+    "volumeInfo": {
+      "title": "The Scarecrow of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fantasy, Fiction, Fairy tales.",
+      "categories": [
+        "Classic Literature",
+        "Fantasy",
+        "Fiction",
+        "Fairy tales",
+        "Children's fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/431586-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18405W",
+    "volumeInfo": {
+      "title": "The Patchwork Girl of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile fiction, Fairy tales, Children's fiction.",
+      "categories": [
+        "Fantasy",
+        "Juvenile fiction",
+        "Fairy tales",
+        "Children's fiction",
+        "Fantasy fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1473369-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262380W",
+    "volumeInfo": {
+      "title": "The Magic of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile fiction, Wizard of Oz (Fictitious character), Dorothy Gale (Fictitious character).",
+      "categories": [
+        "Fantasy",
+        "Juvenile fiction",
+        "Wizard of Oz (Fictitious character)",
+        "Dorothy Gale (Fictitious character)",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5071176-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18414W",
+    "volumeInfo": {
+      "title": "Tik-Tok of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fantasy fiction, Juvenile fiction, Fiction.",
+      "categories": [
+        "Fairy tales",
+        "Fantasy fiction",
+        "Juvenile fiction",
+        "Fiction",
+        "Oz (Imaginary place)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8243277-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262376W",
+    "volumeInfo": {
+      "title": "Rinkitink in Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fantasy, Fantasy fiction, Fiction.",
+      "categories": [
+        "Classic Literature",
+        "Fantasy",
+        "Fantasy fiction",
+        "Fiction",
+        "Juvenile Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/765814-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL99541W",
+    "volumeInfo": {
+      "title": "The Enchanted Castle",
+      "authors": [
+        "Edith Nesbit"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fantasy, Magic, Rings.",
+      "categories": [
+        "Fiction",
+        "Fantasy",
+        "Magic",
+        "Rings",
+        "Friendship"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6644514-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15450W",
+    "volumeInfo": {
+      "title": "Phantastes",
+      "authors": [
+        "George MacDonald"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Scottish Fantasy fiction, Fiction, romance, fantasy, Fiction, science fiction, general.",
+      "categories": [
+        "Fairy tales",
+        "Scottish Fantasy fiction",
+        "Fiction, romance, fantasy",
+        "Fiction, science fiction, general",
+        "Fiction, fantasy, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14358814-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL27482W",
+    "volumeInfo": {
+      "title": "The Hobbit",
+      "authors": [
+        "J.R.R. Tolkien"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Arkenstone, Battle of Five Armies, invisibility.",
+      "categories": [
+        "Fantasy",
+        "Arkenstone",
+        "Battle of Five Armies",
+        "invisibility",
+        "thrushes"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14627509-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262381W",
+    "volumeInfo": {
+      "title": "The Tin Woodman of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Juvenile fiction, Fiction, Oz (Imaginary place).",
+      "categories": [
+        "Giants",
+        "Juvenile fiction",
+        "Fiction",
+        "Oz (Imaginary place)",
+        "Fantasy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/755973-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1418187W",
+    "volumeInfo": {
+      "title": "A Princess of Mars",
+      "authors": [
+        "Edgar Rice Burroughs"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fiction, Classic Literature, Dejah Thoris (Fictitious character).",
+      "categories": [
+        "John Carter (Fictitious character)",
+        "Fiction",
+        "Classic Literature",
+        "Dejah Thoris (Fictitious character)",
+        "Princesses"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/207226-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL262391W",
+    "volumeInfo": {
+      "title": "Glinda of Oz",
+      "authors": [
+        "L. Frank Baum"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Fantasy, Children's stories, Classic Literature.",
+      "categories": [
+        "Fiction",
+        "Fantasy",
+        "Children's stories",
+        "Classic Literature",
+        "Dorothy Gale (Fictitious character)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/758814-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL99535W",
+    "volumeInfo": {
+      "title": "The Magic City",
+      "authors": [
+        "Edith Nesbit"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Cities and towns, Juvenile fiction, Fiction.",
+      "categories": [
+        "Fantasy",
+        "Cities and towns",
+        "Juvenile fiction",
+        "Fiction",
+        "Children's fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1673063-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL462007W",
+    "volumeInfo": {
+      "title": "Peter Pan",
+      "authors": [
+        "J. M. Barrie"
+      ],
+      "description": "A prominent Fantasy book exploring themes of English Children's fiction, Pop-up books, Toy and movable books.",
+      "categories": [
+        "Open Library Staff Picks",
+        "English Children's fiction",
+        "Pop-up books",
+        "Toy and movable books",
+        "Never-Never Land (Imaginary place)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8237052-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL99539W",
+    "volumeInfo": {
+      "title": "The Phoenix and the Carpet",
+      "authors": [
+        "Edith Nesbit"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Magic, Brothers and sisters, Juvenile fiction.",
+      "categories": [
+        "English Fantasy fiction",
+        "Magic",
+        "Brothers and sisters",
+        "Juvenile fiction",
+        "Great Britain in fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/902122-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1527356W",
+    "volumeInfo": {
+      "title": "Le avventure di Pinocchio",
+      "authors": [
+        "Carlo Collodi"
+      ],
+      "description": "A prominent Fantasy book exploring themes of Puppets, Fiction, Fairy tales.",
+      "categories": [
+        "Fantasy",
+        "Puppets",
+        "Fiction",
+        "Fairy tales",
+        "Children's stories, Italian"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8597022-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL66554W",
+    "volumeInfo": {
+      "title": "Pride and Prejudice",
+      "authors": [
+        "Jane Austen"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Fiction, Romance, Historical, Regency, British and Irish fiction (fictional works by one author), Brothers and sisters.",
+      "categories": [
+        "Historical Fiction",
+        "Fiction, Romance, Historical, Regency",
+        "British and Irish fiction (fictional works by one author)",
+        "Brothers and sisters",
+        "Courtship"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14348537-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL21177W",
+    "volumeInfo": {
+      "title": "Wuthering Heights",
+      "authors": [
+        "Emily Brontë"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of genre:tragedy, genre:gothic, British and irish fiction (fictional works by one author).",
+      "categories": [
+        "form:novel",
+        "genre:tragedy",
+        "genre:gothic",
+        "British and irish fiction (fictional works by one author)",
+        "Children's fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12818862-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL53908W",
+    "volumeInfo": {
+      "title": "Adventures of Huckleberry Finn",
+      "authors": [
+        "Mark Twain"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of adventure and adventurers, Adventure stories, American fiction (fictional works by one author).",
+      "categories": [
+        "Historical Fiction",
+        "adventure and adventurers",
+        "Adventure stories",
+        "American fiction (fictional works by one author)",
+        "American literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8157718-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL45089W",
+    "volumeInfo": {
+      "title": "Robinson Crusoe",
+      "authors": [
+        "Daniel Defoe",
+        "J. J. Grandville",
+        "Petrus Borel",
+        "Les éditions du Rey",
+        "N. C. Wyeth"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Crusoe, robinson (fictitious character), fiction, British and irish fiction (fictional works by one author), Survival.",
+      "categories": [
+        "Historical Fiction",
+        "Crusoe, robinson (fictitious character), fiction",
+        "British and irish fiction (fictional works by one author)",
+        "Survival",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/368541-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL455305W",
+    "volumeInfo": {
+      "title": "The Scarlet Letter",
+      "authors": [
+        "Nathaniel Hawthorne"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Fiction, Puritans, Puritans in fiction.",
+      "categories": [
+        "Historical Fiction",
+        "Fiction",
+        "Puritans",
+        "Puritans in fiction",
+        "History"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5654516-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL66513W",
+    "volumeInfo": {
+      "title": "Emma",
+      "authors": [
+        "Jane Austen"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Mate selection, Fiction, Fathers and daughters.",
+      "categories": [
+        "Social life and customs",
+        "Mate selection",
+        "Fiction",
+        "Fathers and daughters",
+        "open_syllabus_project"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9278312-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL8193478W",
+    "volumeInfo": {
+      "title": "Oliver Twist",
+      "authors": [
+        "Charles Dickens"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Bildungsromans, Boys, Brigands and robbers.",
+      "categories": [
+        "Historical Fiction",
+        "Bildungsromans",
+        "Boys",
+        "Brigands and robbers",
+        "British and irish fiction (fictional works by one author)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13300802-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL8193465W",
+    "volumeInfo": {
+      "title": "A Tale of Two Cities",
+      "authors": [
+        "Charles Dickens"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of British, British and irish fiction (fictional works by one author), Children's fiction.",
+      "categories": [
+        "Historical Fiction",
+        "British",
+        "British and irish fiction (fictional works by one author)",
+        "Children's fiction",
+        "Criticism and interpretation"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13301713-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL29983W",
+    "volumeInfo": {
+      "title": "Little Women",
+      "authors": [
+        "Louisa May Alcott"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Romans, Jeunes filles, Soeurs.",
+      "categories": [
+        "Historical Fiction",
+        "Romans",
+        "Jeunes filles",
+        "Soeurs",
+        "Sisters"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8775559-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL36861W",
+    "volumeInfo": {
+      "title": "Les Trois Mousquetaires",
+      "authors": [
+        "Alexandre Dumas",
+        "Auguste Maquet"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of History, Fiction, Swordsmen.",
+      "categories": [
+        "Historical Fiction",
+        "History",
+        "Fiction",
+        "Swordsmen",
+        "France in fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11929973-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL53919W",
+    "volumeInfo": {
+      "title": "The Adventures of Tom Sawyer",
+      "authors": [
+        "Mark Twain"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of The Adventures of Tom Sawyer, Mark Twain, 1835-1910.",
+      "categories": [
+        "Historical Fiction",
+        "The Adventures of Tom Sawyer",
+        "Mark Twain",
+        "1835-1910",
+        "19th Century"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12043351-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL77958W",
+    "volumeInfo": {
+      "title": "The Last of the Mohicans",
+      "authors": [
+        "James Fenimore Cooper"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Adventure stories, Ficción, Fiction.",
+      "categories": [
+        "Historical Fiction",
+        "Adventure stories",
+        "Ficción",
+        "Fiction",
+        "Frontier and pioneer life"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8236937-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL8662242W",
+    "volumeInfo": {
+      "title": "David Copperfield",
+      "authors": [
+        "Charles Dickens"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Children's fiction, Orphans, fiction, England, fiction.",
+      "categories": [
+        "British and irish drama (dramatic works by one author)",
+        "Children's fiction",
+        "Orphans, fiction",
+        "England, fiction",
+        "Boys, fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1048892-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL53994W",
+    "volumeInfo": {
+      "title": "The Prince and the Pauper",
+      "authors": [
+        "Mark Twain"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Readers, Fiction, Poor.",
+      "categories": [
+        "Historical Fiction",
+        "Readers",
+        "Fiction",
+        "Poor",
+        "Kings and rulers"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8221267-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL36287W",
+    "volumeInfo": {
+      "title": "Le Comte de Monte Cristo",
+      "authors": [
+        "Alexandre Dumas"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of France -- History -- 19th century -- Fiction, France, Fiction.",
+      "categories": [
+        "Historical Fiction",
+        "France -- History -- 19th century -- Fiction",
+        "France",
+        "Fiction",
+        "France in fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14566393-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL88813W",
+    "volumeInfo": {
+      "title": "A Room with a View",
+      "authors": [
+        "E. M. Forster"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of British, Fiction, Young women.",
+      "categories": [
+        "Historical Fiction",
+        "British",
+        "Fiction",
+        "Young women",
+        "British in fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1748132-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL114967W",
+    "volumeInfo": {
+      "title": "The Jungle",
+      "authors": [
+        "Upton Sinclair"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Sociology, Lithuanian Americans, Fiction.",
+      "categories": [
+        "Slaughtering and slaughter-houses",
+        "Sociology",
+        "Lithuanian Americans",
+        "Fiction",
+        "Historical Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8231790-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL267171W",
+    "volumeInfo": {
+      "title": "War and Peace",
+      "authors": [
+        "Лев Толстой"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of History, Russian Empire, Fiction.",
+      "categories": [
+        "Classic",
+        "History",
+        "Russian Empire",
+        "Fiction",
+        "Russia"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12621906-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL12795W",
+    "volumeInfo": {
+      "title": "O Pioneers!",
+      "authors": [
+        "Willa Cather"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Fiction, Women pioneers, Women farmers.",
+      "categories": [
+        "Historical Fiction",
+        "Fiction",
+        "Women pioneers",
+        "Women farmers",
+        "Farm life"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8242999-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL86318W",
+    "volumeInfo": {
+      "title": "Ulysses",
+      "authors": [
+        "James Joyce"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Male friendship, Fiction, Historical Fiction.",
+      "categories": [
+        "Married people",
+        "Male friendship",
+        "Fiction",
+        "Historical Fiction",
+        "Psychological fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13136548-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1253285W",
+    "volumeInfo": {
+      "title": "The Scarlet Pimpernel",
+      "authors": [
+        "Emma Orczy"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Adventure and adventurers, Open Library Staff Picks, British.",
+      "categories": [
+        "Classic Literature",
+        "Adventure and adventurers",
+        "Open Library Staff Picks",
+        "British",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/479102-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL118388W",
+    "volumeInfo": {
+      "title": "Flatland",
+      "authors": [
+        "Edwin Abbott Abbott"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Fiction, general, Open Library Staff Picks, Denkbeeldige landen.",
+      "categories": [
+        "Fourth dimension",
+        "Fiction, general",
+        "Open Library Staff Picks",
+        "Denkbeeldige landen",
+        "Film and video adaptations"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/10069547-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1095397W",
+    "volumeInfo": {
+      "title": "Shirley",
+      "authors": [
+        "Charlotte Brontë"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of England, fiction, British and irish fiction (fictional works by one author), Fiction, historical, general.",
+      "categories": [
+        "Historical Fiction",
+        "England, fiction",
+        "British and irish fiction (fictional works by one author)",
+        "Fiction, historical, general",
+        "Napoleonic wars, 1800-1815, fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11024634-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1063588W",
+    "volumeInfo": {
+      "title": "Les Misérables",
+      "authors": [
+        "Victor Hugo"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Poverty, Fiction, Readers.",
+      "categories": [
+        "Historical Fiction",
+        "Poverty",
+        "Fiction",
+        "Readers",
+        "Fiction, historical"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/12721865-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL17453W",
+    "volumeInfo": {
+      "title": "She",
+      "authors": [
+        "H. Rider Haggard"
+      ],
+      "description": "A prominent Historical Fiction book exploring themes of Adventure and adventurers, Reincarnation, Fiction inEnglish.",
+      "categories": [
+        "Fiction in English",
+        "Adventure and adventurers",
+        "Reincarnation",
+        "Fiction inEnglish",
+        "Allan Quatermain (Fictitious character)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/295537-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL93082W",
+    "volumeInfo": {
+      "title": "La Divina Commedia",
+      "authors": [
+        "Dante Alighieri"
+      ],
+      "description": "A prominent Poetry book exploring themes of Literatura, Portraits, Paradise.",
+      "categories": [
+        "Poetry (poetic works by one author)",
+        "Literatura",
+        "Portraits",
+        "Paradise",
+        "Poetry"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/11621024-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL61981W",
+    "volumeInfo": {
+      "title": "Ἰλιάς",
+      "authors": [
+        "Όμηρος"
+      ],
+      "description": "A prominent Poetry book exploring themes of Greeks, Poetry, Classical literature.",
+      "categories": [
+        "Odysseus (Greek mythology)",
+        "Greeks",
+        "Poetry",
+        "Classical literature",
+        "Poesía"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7083790-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL61982W",
+    "volumeInfo": {
+      "title": "Ὀδύσσεια",
+      "authors": [
+        "Όμηρος"
+      ],
+      "description": "A prominent Poetry book exploring themes of Poetry, Fiction, Classical literature.",
+      "categories": [
+        "great_books_of_the_western_world",
+        "Poetry",
+        "Fiction",
+        "Classical literature",
+        "Open Library Staff Picks"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9045853-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL16333W",
+    "volumeInfo": {
+      "title": "Leaves of Grass",
+      "authors": [
+        "Walt Whitman"
+      ],
+      "description": "A prominent Poetry book exploring themes of United States Civil War, 1861-1865, Gay poets, Presidents.",
+      "categories": [
+        "Manuscripts",
+        "United States Civil War, 1861-1865",
+        "Gay poets",
+        "Presidents",
+        "Poetry"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9000447-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL531767W",
+    "volumeInfo": {
+      "title": "The Canterbury Tales",
+      "authors": [
+        "Geoffrey Chaucer",
+        "John E. Cunningham",
+        "Peter Ackroyd",
+        "Ted Stearn",
+        "V. A. Kolve",
+        "Glending Olson"
+      ],
+      "description": "A prominent Poetry book exploring themes of English Narrative poetry, Juvenile poetry, Christian pilgrims and pilgrimages in literature.",
+      "categories": [
+        "Death",
+        "English Narrative poetry",
+        "Juvenile poetry",
+        "Christian pilgrims and pilgrimages in literature",
+        "great_books_of_the_western_world"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5767180-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL16280231W",
+    "volumeInfo": {
+      "title": "Aeneis",
+      "authors": [
+        "Publius Vergilius Maro"
+      ],
+      "description": "A prominent Poetry book exploring themes of Aeneas (Legendary character), Latin Epic poetry, Translations into English.",
+      "categories": [
+        "Poetry",
+        "Aeneas (Legendary character)",
+        "Latin Epic poetry",
+        "Translations into English",
+        "Legends"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6968564-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362706W",
+    "volumeInfo": {
+      "title": "Sonnets",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Poetry book exploring themes of History and criticism, Bibliography, Translations into Yiddish.",
+      "categories": [
+        "English Sonnets",
+        "History and criticism",
+        "Bibliography",
+        "Translations into Yiddish",
+        "Problems, exercises"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8222090-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL52456W",
+    "volumeInfo": {
+      "title": "Faust",
+      "authors": [
+        "Johann Wolfgang von Goethe"
+      ],
+      "description": "A prominent Poetry book exploring themes of Drama, Redemption, Devil.",
+      "categories": [
+        "Good and evil",
+        "Drama",
+        "Redemption",
+        "Devil",
+        "German drama"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6499459-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL318900W",
+    "volumeInfo": {
+      "title": "The Prophet",
+      "authors": [
+        "Kahlil Gibran"
+      ],
+      "description": "A prominent Poetry book exploring themes of Classics, Literature & Fiction, Religion.",
+      "categories": [
+        "Poetry",
+        "Classics",
+        "Literature & Fiction",
+        "Religion"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/418324-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1548597W",
+    "volumeInfo": {
+      "title": "De rerum natura",
+      "authors": [
+        "Titus Lucretius Carus"
+      ],
+      "description": "A prominent Poetry book exploring themes of Ancient Philosophy, Poetry, Translations into English.",
+      "categories": [
+        "Latin Didactic poetry",
+        "Ancient Philosophy",
+        "Poetry",
+        "Translations into English",
+        "Translations into Italian"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/566208-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL151515W",
+    "volumeInfo": {
+      "title": "La Poetica",
+      "authors": [
+        "Aristotle"
+      ],
+      "description": "A prominent Poetry book exploring themes of Early works to 1800, Metaphysica (Aristoteles), Rhetoric, ancient.",
+      "categories": [
+        "Metaphysics",
+        "Early works to 1800",
+        "Metaphysica (Aristoteles)",
+        "Rhetoric, ancient",
+        "Ethics, greece"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/129771-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15292640W",
+    "volumeInfo": {
+      "title": "Metamorphoses",
+      "authors": [
+        "Ovid"
+      ],
+      "description": "A prominent Poetry book exploring themes of Classical Mythology, Metamorphosis, Mythology.",
+      "categories": [
+        "Poetry",
+        "Classical Mythology",
+        "Metamorphosis",
+        "Mythology",
+        "Latin Fables"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7212118-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL30056W",
+    "volumeInfo": {
+      "title": "Flower Fables",
+      "authors": [
+        "Louisa May Alcott"
+      ],
+      "description": "A prominent Poetry book exploring themes of Fairies, Flowers, Literary collections.",
+      "categories": [
+        "Fairy tales",
+        "Fairies",
+        "Flowers",
+        "Literary collections",
+        "Poetry"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/755980-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL93227W",
+    "volumeInfo": {
+      "title": "Inferno",
+      "authors": [
+        "Dante Alighieri"
+      ],
+      "description": "A prominent Poetry book exploring themes of Hell, Illustrations, Iconography.",
+      "categories": [
+        "Poetry",
+        "Hell",
+        "Illustrations",
+        "Iconography",
+        "Translations into English"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6387077-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL810991W",
+    "volumeInfo": {
+      "title": "Paradise Lost",
+      "authors": [
+        "John Milton"
+      ],
+      "description": "A prominent Poetry book exploring themes of Biography, Criticism and interpretation, Devil.",
+      "categories": [
+        "Bible",
+        "Biography",
+        "Criticism and interpretation",
+        "Devil",
+        "Early works to 1800"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5992814-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL655908W",
+    "volumeInfo": {
+      "title": "The Night Before Christmas",
+      "authors": [
+        "Clement Clarke Moore"
+      ],
+      "description": "A prominent Poetry book exploring themes of Juvenile poetry, Poetry, Santa Claus.",
+      "categories": [
+        "Santa in juvenile prison",
+        "Juvenile poetry",
+        "Poetry",
+        "Santa Claus",
+        "Christmas"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8236410-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL26386W",
+    "volumeInfo": {
+      "title": "Poems",
+      "authors": [
+        "William Wordsworth"
+      ],
+      "description": "A prominent Poetry book exploring themes of Specimens, Facsimiles, English poetry.",
+      "categories": [
+        "Gift books",
+        "Specimens",
+        "Facsimiles",
+        "English poetry",
+        "Children's poetry, English"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/102874-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2316015W",
+    "volumeInfo": {
+      "title": "Samasrotīya śabdāvalī",
+      "authors": [
+        "Braja Bihārī Kumāra"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi language, Hindi, Manipuri language.",
+      "categories": [
+        "Dictionaries",
+        "Hindi language",
+        "Hindi",
+        "Manipuri language",
+        "Bodo"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL319027W",
+    "volumeInfo": {
+      "title": "Saundaryalaharī",
+      "authors": [
+        "Ādi Shankara"
+      ],
+      "description": "A classic Hindi book exploring themes of English, English Hindu hymns, Gujarati.",
+      "categories": [
+        "Cult",
+        "English",
+        "English Hindu hymns",
+        "Gujarati",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL11694W",
+    "volumeInfo": {
+      "title": "Mahimnaḥstava",
+      "authors": [
+        "Puṣpadanta"
+      ],
+      "description": "A classic Hindi book exploring themes of Cult, Gujarati, Hindi.",
+      "categories": [
+        "Bengali",
+        "Cult",
+        "Gujarati",
+        "Hindi",
+        "Hindi Hindu hymns"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL3237565W",
+    "volumeInfo": {
+      "title": "Colloquial Urdu",
+      "authors": [
+        "Tej K. Bhatia"
+      ],
+      "description": "A classic Hindi book exploring themes of Conversation and phrase books, English, Self-instruction.",
+      "categories": [
+        "Urdu language",
+        "Conversation and phrase books",
+        "English",
+        "Self-instruction",
+        "Textbooks for foreign speakers"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1206107-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1493926W",
+    "volumeInfo": {
+      "title": "Records of the colony of Rhode Island and Providence Plantations, in New England",
+      "authors": [
+        "Rhode Island."
+      ],
+      "description": "A classic Hindi book exploring themes of History, Western Hindi literature, Bibliography.",
+      "categories": [
+        "Sources",
+        "History",
+        "Western Hindi literature",
+        "Bibliography",
+        "Panjabi literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6093045-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL43419W",
+    "volumeInfo": {
+      "title": "A dictionary of Urdū, classical Hindī, and English",
+      "authors": [
+        "John T. Platts"
+      ],
+      "description": "A classic Hindi book exploring themes of English, English language, Urdu language.",
+      "categories": [
+        "Dictionaries",
+        "English",
+        "English language",
+        "Urdu language",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL6587103W",
+    "volumeInfo": {
+      "title": "Bhargava's standard illustrated dictionary of the English language",
+      "authors": [
+        "R. C. Pathak"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi, English language, Hindi language.",
+      "categories": [
+        "Dictionaries",
+        "Hindi",
+        "English language",
+        "Hindi language",
+        "English"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL8534897W",
+    "volumeInfo": {
+      "title": "Urdu for Children Book 2",
+      "authors": [
+        "Sajida Alvi"
+      ],
+      "description": "A classic Hindi book exploring themes of Study and teaching, Ourdou (Langue), Étude et enseignement (Primaire).",
+      "categories": [
+        "Urdu language",
+        "Study and teaching",
+        "Ourdou (Langue)",
+        "Étude et enseignement (Primaire)",
+        "FOREIGN LANGUAGE STUDY"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5086735-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL44472W",
+    "volumeInfo": {
+      "title": "Bhojapurī aura Hindī",
+      "authors": [
+        "Śukadeva Siṃha"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi language, Bhojpuri language, Bhojpuri.",
+      "categories": [
+        "Comparative Grammar",
+        "Hindi language",
+        "Bhojpuri language",
+        "Bhojpuri",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL15112333W",
+    "volumeInfo": {
+      "title": "Jaina pāribhāshika śabdakośa =",
+      "authors": [
+        "Mahāprajña"
+      ],
+      "description": "A classic Hindi book exploring themes of Sanskrit language, Prakrit, Jainism.",
+      "categories": [
+        "Dictionaries",
+        "Sanskrit language",
+        "Prakrit",
+        "Jainism",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL20342181W",
+    "volumeInfo": {
+      "title": "Hindi Dalit Literature and the Politics of Representation",
+      "authors": [
+        "Sarah Beth Hunt"
+      ],
+      "description": "A classic Hindi book exploring themes of Dalits, Hindi literature, Dalit authors.",
+      "categories": [
+        "Hindi literature, history and criticism",
+        "Dalits",
+        "Hindi literature",
+        "Dalit authors",
+        "History and criticism"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9007045-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL16637126W",
+    "volumeInfo": {
+      "title": "Hindi cinema",
+      "authors": [
+        "Nandini Bhattacharya"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi Motion pictures, SOCIAL SCIENCE / Media Studies, History.",
+      "categories": [
+        "SOCIAL SCIENCE / Ethnic Studies / General",
+        "Hindi Motion pictures",
+        "SOCIAL SCIENCE / Media Studies",
+        "History",
+        "Motion pictures, india"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13460917-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1054031W",
+    "volumeInfo": {
+      "title": "Bhaktāmarastotra",
+      "authors": [
+        "Mānatuṅga."
+      ],
+      "description": "A classic Hindi book exploring themes of Prayer-books and devotions, Sanskrit, Hindi.",
+      "categories": [
+        "Jainism",
+        "Prayer-books and devotions",
+        "Sanskrit",
+        "Hindi",
+        "Gujarati"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL321481W",
+    "volumeInfo": {
+      "title": "Stutikusumāñjaliḥ",
+      "authors": [
+        "Jagaddhara"
+      ],
+      "description": "A classic Hindi book exploring themes of Prayer-books and devotions, Kashmir Saivism, Śaivism.",
+      "categories": [
+        "Siva (Hindu deity)",
+        "Prayer-books and devotions",
+        "Kashmir Saivism",
+        "Śaivism",
+        "Sanskrit"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL20744239W",
+    "volumeInfo": {
+      "title": "Probes and Their Horizons",
+      "authors": [
+        "Stefan Keine"
+      ],
+      "description": "A classic Hindi book exploring themes of Grammar, comparative and general, syntax, Urdu language, Linguistics.",
+      "categories": [
+        "German language, syntax",
+        "Grammar, comparative and general, syntax",
+        "Urdu language",
+        "Linguistics",
+        "Comparative and general Grammar"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13283415-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL11946643W",
+    "volumeInfo": {
+      "title": "English-Hindi, Hindi-English",
+      "authors": [
+        "Joseph W Raker",
+        "Davidovic Mladen",
+        "Hippocrene Books"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi language, Hindi, English language.",
+      "categories": [
+        "Dictionaries",
+        "Hindi language",
+        "Hindi",
+        "English language",
+        "English"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5354410-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15485613W",
+    "volumeInfo": {
+      "title": "Muslima-kālīna itihāsakāra aura unakā lekhana",
+      "authors": [
+        "Dāmodaralāla Garga"
+      ],
+      "description": "A classic Hindi book exploring themes of Muslim historians, Hindi, History.",
+      "categories": [
+        "Historiography",
+        "Muslim historians",
+        "Hindi",
+        "History",
+        "Dictionaries"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL4259228W",
+    "volumeInfo": {
+      "title": "The modern English-Hindi dictionary =",
+      "authors": [
+        "I. N. Anand"
+      ],
+      "description": "A classic Hindi book exploring themes of English language, Hindi.",
+      "categories": [
+        "Dictionaries",
+        "English language",
+        "Hindi"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14264293-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL3742509W",
+    "volumeInfo": {
+      "title": "The Oxford Hindi-English dictionary",
+      "authors": [
+        "R. S. McGregor"
+      ],
+      "description": "A classic Hindi book exploring themes of English, English language, Hindi.",
+      "categories": [
+        "Dictionaries",
+        "English",
+        "English language",
+        "Hindi",
+        "Hindi language"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/4006595-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL9324597W",
+    "volumeInfo": {
+      "title": "The Tenth Rasa",
+      "authors": [
+        "Michael Heyman"
+      ],
+      "description": "A classic Hindi book exploring themes of literary nonsense, nonsense literature, Bengali.",
+      "categories": [
+        "nonsense",
+        "literary nonsense",
+        "nonsense literature",
+        "Bengali",
+        "Hindi"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/2325221-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL11628210W",
+    "volumeInfo": {
+      "title": "Apabhraṃśa-Hindī-kośa =",
+      "authors": [
+        "Nareśa Kumāra Ph. D."
+      ],
+      "description": "A classic Hindi book exploring themes of Apabhraṃśa language, Hindi.",
+      "categories": [
+        "Dictionaries",
+        "Apabhraṃśa language",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL310449W",
+    "volumeInfo": {
+      "title": "On ancient Hindu astronomy and chronology",
+      "authors": [
+        "F. Max Müller"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindu Chronology, Astronomy, Hindi.",
+      "categories": [
+        "Hindu astronomy",
+        "Hindu Chronology",
+        "Astronomy",
+        "Hindi"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5814845-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL4171872W",
+    "volumeInfo": {
+      "title": "The Hindi public sphere, 1920-1940",
+      "authors": [
+        "Francesca Orsini"
+      ],
+      "description": "A classic Hindi book exploring themes of Language policy, Nationalism, Political aspects of Hindi language.",
+      "categories": [
+        "Hindi language",
+        "Language policy",
+        "Nationalism",
+        "Political aspects of Hindi language",
+        "Social aspects of Hindi language"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/4295287-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL44627W",
+    "volumeInfo": {
+      "title": "Bhāratīya mithaka kośa",
+      "authors": [
+        "Ushā Purī"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi, Indic Mythology, Religion.",
+      "categories": [
+        "Dictionaries",
+        "Hindi",
+        "Indic Mythology",
+        "Religion"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL223942W",
+    "volumeInfo": {
+      "title": "Shuddh Sangeet Shastra",
+      "authors": [
+        "Baldev Singh Share"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi, Raga, Music.",
+      "categories": [
+        "Dictionaries",
+        "Hindi",
+        "Raga",
+        "Music"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13186499-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1058160W",
+    "volumeInfo": {
+      "title": "Mukundamālā",
+      "authors": [
+        "Kulacēkarar"
+      ],
+      "description": "A classic Hindi book exploring themes of Prayer-books and devotions, Sanskrit, English.",
+      "categories": [
+        "Krishna (Hindu deity)",
+        "Prayer-books and devotions",
+        "Sanskrit",
+        "English",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL327098W",
+    "volumeInfo": {
+      "title": "Bhāratīẏa saṅgītakosha",
+      "authors": [
+        "Vimalakānta Rôya Caudhurī"
+      ],
+      "description": "A classic Hindi book exploring themes of Music, Hindi, Genealogy.",
+      "categories": [
+        "Dictionaries",
+        "Music",
+        "Hindi",
+        "Genealogy",
+        "Bio-bibliography"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL3439534W",
+    "volumeInfo": {
+      "title": "Abhidhānappadīpikā",
+      "authors": [
+        "Moggallāna"
+      ],
+      "description": "A classic Hindi book exploring themes of Pali language, Sanskrit, Hindi.",
+      "categories": [
+        "Dictionaries",
+        "Pali language",
+        "Sanskrit",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL21124635W",
+    "volumeInfo": {
+      "title": "Filming Horror",
+      "authors": [
+        "Meraj Ahmed Mubarki"
+      ],
+      "description": "A classic Hindi book exploring themes of Horror films, history and criticism, Motion pictures, social aspects, Motion pictures.",
+      "categories": [
+        "Motion pictures, india",
+        "Horror films, history and criticism",
+        "Motion pictures, social aspects",
+        "Motion pictures",
+        "History and criticism"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13642525-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL21113305W",
+    "volumeInfo": {
+      "title": "Festival of Colors",
+      "authors": [
+        "Surishtha Sehgal",
+        "Kabir Sehgal",
+        "Vashti Harrison"
+      ],
+      "description": "A classic Hindi book exploring themes of festivals, India, picture books.",
+      "categories": [
+        "Hindi",
+        "festivals",
+        "India",
+        "picture books",
+        "juvenile literature"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/10327632-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15301737W",
+    "volumeInfo": {
+      "title": "Bhāratīya bhāshāoṃ ke bīca antaḥ sambandha",
+      "authors": [
+        "Pī. Vī Jaganamohana"
+      ],
+      "description": "A classic Hindi book exploring themes of Tamil language, Verb, Comparative Grammar.",
+      "categories": [
+        "Hindi language",
+        "Tamil language",
+        "Verb",
+        "Comparative Grammar",
+        "Roots"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL13852997W",
+    "volumeInfo": {
+      "title": "Nimāṛī-Hindī śabdakośa, vyākaraṇa, aura alaṅkāra",
+      "authors": [
+        "Mahādeva Prasāda Caturvedī Mādhyā"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi, Comparative Grammar, Hindi language.",
+      "categories": [
+        "Nimadi dialect",
+        "Hindi",
+        "Comparative Grammar",
+        "Hindi language",
+        "Figures of speech"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL10248302W",
+    "volumeInfo": {
+      "title": "Learn Arabic in a month",
+      "authors": [
+        "Rekha Chawla",
+        "R. Chawla",
+        "M. Kumar"
+      ],
+      "description": "A classic Hindi book exploring themes of Hindi, Self-instruction, Arabic language.",
+      "categories": [
+        "Textbooks for foreign speakers",
+        "Hindi",
+        "Self-instruction",
+        "Arabic language",
+        "English"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL13209089W",
+    "volumeInfo": {
+      "title": "Let's study Urdu =",
+      "authors": [
+        "Ali S. Asani",
+        "Ali S. Asani",
+        "Syed Akbar Hyder"
+      ],
+      "description": "A classic Hindi book exploring themes of Textbooks for English speakers, Alphabet, Grammar.",
+      "categories": [
+        "Urdu language",
+        "Textbooks for English speakers",
+        "Alphabet",
+        "Grammar",
+        "Language teaching & learning material & coursework"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1162211-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL18596675W",
+    "volumeInfo": {
+      "title": "Dictionary of bhakti",
+      "authors": [
+        "Winand M. Callewaert",
+        "Winand M. Callewaert"
+      ],
+      "description": "A classic Hindi book exploring themes of Prayers and devotions, Dictionaries, Khari Boli language.",
+      "categories": [
+        "Khari Boli",
+        "Prayers and devotions",
+        "Dictionaries",
+        "Khari Boli language",
+        "Bhakti"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/13214860-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL3878858W",
+    "volumeInfo": {
+      "title": "Mishmi-English-Hindi dictionary",
+      "authors": [
+        "G. Devi Prasada Sastry"
+      ],
+      "description": "A classic Hindi book exploring themes of English, Hindi, Mishmi language.",
+      "categories": [
+        "Dictionaries",
+        "English",
+        "Hindi",
+        "Mishmi language"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL11320055W",
+    "volumeInfo": {
+      "title": "A dictionary of Urdu classical Hindi and English",
+      "authors": [
+        "John T. Platts"
+      ],
+      "description": "A classic Hindi book exploring themes of Dictionaries, English, Hindi language.",
+      "categories": [
+        "Urdu language",
+        "Dictionaries",
+        "English",
+        "Hindi language",
+        "English language"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL944692W",
+    "volumeInfo": {
+      "title": "Abujhamāṛiyā śabda-kośa",
+      "authors": [
+        "Hira Lal Shukla"
+      ],
+      "description": "A classic Hindi book exploring themes of Dictionaries, Hindi.",
+      "categories": [
+        "Abujhmaria dialect",
+        "Dictionaries",
+        "Hindi"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL13495940W",
+    "volumeInfo": {
+      "title": "An introducton to Hindī and Urdū",
+      "authors": [
+        "Richard Keith Barz",
+        "Richard C. Barz",
+        "Yogendra Yadav"
+      ],
+      "description": "A classic Hindi book exploring themes of Foreign Language - Dictionaries / Phrase Books, Hindi, Urdu.",
+      "categories": [
+        "Language teaching & learning material & coursework",
+        "Foreign Language - Dictionaries / Phrase Books",
+        "Hindi",
+        "Urdu",
+        "Language"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/4884031-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL316184W",
+    "volumeInfo": {
+      "title": "The millennium Kabīr vānī",
+      "authors": [
+        "Kabir",
+        "Winand M. Callewaert"
+      ],
+      "description": "A classic Hindi book exploring themes of Religions of Indic & Oriental origin, Hindi, Poetry (poetic works by one author).",
+      "categories": [
+        "Poetry & poets: classical, early & medieval",
+        "Religions of Indic & Oriental origin",
+        "Hindi",
+        "Poetry (poetic works by one author)",
+        "Hindi poetry"
+      ],
+      "imageLinks": null
+    }
+  },
+  {
+    "id": "/works/OL258758W",
+    "volumeInfo": {
+      "title": "The Merchant of Venice",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of Jews, Moneylenders, Shylock (Fictitious character).",
+      "categories": [
+        "Drama",
+        "Jews",
+        "Moneylenders",
+        "Shylock (Fictitious character)",
+        "Juvenile drama"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7182819-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362671W",
+    "volumeInfo": {
+      "title": "Two Gentlemen of Verona",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of Triangles (Interpersonal relations), Exiles, Plays.",
+      "categories": [
+        "Drama",
+        "Triangles (Interpersonal relations)",
+        "Exiles",
+        "Plays",
+        "English Young adult drama"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8791306-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362698W",
+    "volumeInfo": {
+      "title": "As You Like It",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of Fathers and daughters, Exiles, Juvenile drama.",
+      "categories": [
+        "Drama",
+        "Fathers and daughters",
+        "Exiles",
+        "Juvenile drama",
+        "Stage history"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7338874-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL27776452W",
+    "volumeInfo": {
+      "title": "The Importance of Being Earnest",
+      "authors": [
+        "Oscar Wilde"
+      ],
+      "description": "A prominent Comedy book exploring themes of English life, Readers, etiquette.",
+      "categories": [
+        "British and irish drama (dramatic works by one author)",
+        "English life",
+        "Readers",
+        "etiquette",
+        "love"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1260453-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362691W",
+    "volumeInfo": {
+      "title": "Much Ado About Nothing",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of mistaken identities, performing arts, comedy.",
+      "categories": [
+        "Comedy",
+        "mistaken identities",
+        "performing arts",
+        "comedy",
+        "Drama"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8290853-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL259017W",
+    "volumeInfo": {
+      "title": "Measure for Measure",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of Chastity, Brothers and sisters, Comedy.",
+      "categories": [
+        "Drama",
+        "Chastity",
+        "Brothers and sisters",
+        "Comedy",
+        "Problems, exercises"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7339281-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362289W",
+    "volumeInfo": {
+      "title": "Plays (36)",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of sources, English Manuscripts, English literature: Shakespeare texts.",
+      "categories": [
+        "Comedy",
+        "sources",
+        "English Manuscripts",
+        "English literature: Shakespeare texts",
+        "Classics"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9023411-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL13703833W",
+    "volumeInfo": {
+      "title": "Poetics",
+      "authors": [
+        "Aristotle"
+      ],
+      "description": "A prominent Comedy book exploring themes of Aesthetics, Poetry, Poetics.",
+      "categories": [
+        "Early works to 1800",
+        "Aesthetics",
+        "Poetry",
+        "Poetics",
+        "Philosophy and esthetics"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6528920-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL259028W",
+    "volumeInfo": {
+      "title": "Works [37 plays, 6 poems, sonnets]",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of Early Modern and Elizabethan English Drama, English literature, English drama.",
+      "categories": [
+        "Comedy",
+        "Early Modern and Elizabethan English Drama",
+        "English literature",
+        "English drama",
+        "English poetry"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8779054-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1062586W",
+    "volumeInfo": {
+      "title": "The school for scandal, 1780",
+      "authors": [
+        "Richard Brinsley Sheridan"
+      ],
+      "description": "A prominent Comedy book exploring themes of English drama (Comedy), English Plays, Drama.",
+      "categories": [
+        "English drama",
+        "English drama (Comedy)",
+        "English Plays",
+        "Drama",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/5853583-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL76650W",
+    "volumeInfo": {
+      "title": "Le rire; essai sur la signification du comique",
+      "authors": [
+        "Henri Bergson",
+        "Cloudesley Brereton",
+        "Fred Rothwell",
+        "Cloudesley Shovell Henry 1863 Brereton",
+        "Fred [From Old Catalog] Joint Rothwell",
+        "David Soler García",
+        "Rafael Blanco",
+        "Éditions CdBF",
+        "Cloudesley Brereton and Fred Rothwell",
+        "George Meredith"
+      ],
+      "description": "A prominent Comedy book exploring themes of Laughter, Classic Literature, Fiction.",
+      "categories": [
+        "Comedy",
+        "Laughter",
+        "Classic Literature",
+        "Fiction",
+        "History and criticism"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14016039-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL461990W",
+    "volumeInfo": {
+      "title": "The Admirable Crichton",
+      "authors": [
+        "J. M. Barrie"
+      ],
+      "description": "A prominent Comedy book exploring themes of Manners and customs, Shipwrecks, Classic Literature.",
+      "categories": [
+        "Drama",
+        "Manners and customs",
+        "Shipwrecks",
+        "Classic Literature",
+        "Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/6336288-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL52261W",
+    "volumeInfo": {
+      "title": "Kipps",
+      "authors": [
+        "H. G. Wells"
+      ],
+      "description": "A prominent Comedy book exploring themes of Young men, Working class, Orphans.",
+      "categories": [
+        "Fiction",
+        "Young men",
+        "Working class",
+        "Orphans",
+        "British and irish fiction (fictional works by one author)"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8244473-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL361393W",
+    "volumeInfo": {
+      "title": "Works [37 plays, 5 poems, sonnets]",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of Tragedies, Comedies, mistaken identities.",
+      "categories": [
+        "Comedy",
+        "Tragedies",
+        "Comedies",
+        "mistaken identities",
+        "performing arts"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8774653-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15144788W",
+    "volumeInfo": {
+      "title": "Tartuffe",
+      "authors": [
+        "Molière"
+      ],
+      "description": "A prominent Comedy book exploring themes of French drama, French language, Drama.",
+      "categories": [
+        "Translations into English",
+        "French drama",
+        "French language",
+        "Drama",
+        "Clergy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8240407-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL6585787W",
+    "volumeInfo": {
+      "title": "Figures of Earth",
+      "authors": [
+        "James Branch Cabell"
+      ],
+      "description": "A prominent Comedy book exploring themes of Poictesme (imaginary place), fiction, Wit and humor, Humor, general.",
+      "categories": [
+        "Fiction, fantasy, general",
+        "Poictesme (imaginary place), fiction",
+        "Wit and humor",
+        "Humor, general",
+        "Heroes"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/854317-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1179318W",
+    "volumeInfo": {
+      "title": "The conscious lovers",
+      "authors": [
+        "Sir Richard Steele"
+      ],
+      "description": "A prominent Comedy book exploring themes of British and irish drama (dramatic works by one author), English drama (Comedy), Early works to 1800.",
+      "categories": [
+        "English drama",
+        "British and irish drama (dramatic works by one author)",
+        "English drama (Comedy)",
+        "Early works to 1800",
+        "Steele, Richard, Sir, 1672-1729"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7963908-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL14915565W",
+    "volumeInfo": {
+      "title": "The Comedies (All's Well That Ends Well / As You Like It / Comedy of Errors / Love's Labour's Lost / Measure for Measure / Merchant of Venice / Merry Wives of Windsor / Midsummer Night's Dream / Much Ado About Nothing / Taming of the Shrew / Tempest / Twelfth Night / Two Gentlemen of Verona / Winter's Tale)",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Comedy book exploring themes of humorous plays, Early modern and Elizabethan English drama, mistaken identities.",
+      "categories": [
+        "Comedy",
+        "humorous plays",
+        "Early modern and Elizabethan English drama",
+        "mistaken identities",
+        "performing arts"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8774847-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL6585778W",
+    "volumeInfo": {
+      "title": "The Cords of Vanity",
+      "authors": [
+        "James Branch Cabell"
+      ],
+      "description": "A prominent Comedy book exploring themes of Authors -- Fiction, United States -- Social life and customs -- Fiction, Marriage -- Fiction.",
+      "categories": [
+        "Fiction, humorous, general",
+        "Authors -- Fiction",
+        "United States -- Social life and customs -- Fiction",
+        "Marriage -- Fiction",
+        "Comedy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1760686-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL9170454W",
+    "volumeInfo": {
+      "title": "Hamlet",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Stage history, Reyes, reinas, soberanos, Venganza.",
+      "categories": [
+        "performing arts",
+        "Stage history",
+        "Reyes, reinas, soberanos",
+        "Venganza",
+        "History and criticism"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8281954-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL258902W",
+    "volumeInfo": {
+      "title": "Macbeth",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Regicides, Kings and rulers, Texts.",
+      "categories": [
+        "Drama",
+        "Regicides",
+        "Kings and rulers",
+        "Texts",
+        "French-Canadian dialect"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/872432-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL259026W",
+    "volumeInfo": {
+      "title": "King Lear",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of King Lear (Legendary character), Fathers and daughters, Kings and rulers.",
+      "categories": [
+        "Drama",
+        "King Lear (Legendary character)",
+        "Fathers and daughters",
+        "Kings and rulers",
+        "Inheritance and succession"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7420452-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362427W",
+    "volumeInfo": {
+      "title": "Romeo and Juliet",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of British and irish drama (dramatic works by one author), Conflicto entre generaciones, Conflict of generations.",
+      "categories": [
+        "Classical Literature",
+        "British and irish drama (dramatic works by one author)",
+        "Conflicto entre generaciones",
+        "Conflict of generations",
+        "courtship"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8257991-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362695W",
+    "volumeInfo": {
+      "title": "Antony and Cleopatra",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Antonius, Marcus, 83?-30 B.C., Bibliography, Drama.",
+      "categories": [
+        "Antonius, Marcus,",
+        "Antonius, Marcus, 83?-30 B.C.",
+        "Bibliography",
+        "Drama",
+        "Dramatic production"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8222096-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL258850W",
+    "volumeInfo": {
+      "title": "Othello",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Othello (Fictitious character), Printing, Specimens.",
+      "categories": [
+        "Drama",
+        "Othello (Fictitious character)",
+        "Printing",
+        "Specimens",
+        "Dramatic production"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/7165018-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL13114895W",
+    "volumeInfo": {
+      "title": "The Life and Adventures of Nicholas Nickleby",
+      "authors": [
+        "Charles Dickens"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Young men, Boarding schools, Poor families.",
+      "categories": [
+        "Fiction",
+        "Young men",
+        "Boarding schools",
+        "Poor families",
+        "Theatrical companies"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9283905-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL15692719W",
+    "volumeInfo": {
+      "title": "Der Antichrist",
+      "authors": [
+        "Friedrich Nietzsche"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Controversial literature, Antichrist, Christianity, controversial literature.",
+      "categories": [
+        "Christianity",
+        "Controversial literature",
+        "Antichrist",
+        "Christianity, controversial literature",
+        "Philosophy"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1759313-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL1132652W",
+    "volumeInfo": {
+      "title": "Manon Lescaut",
+      "authors": [
+        "Abbé Prévost"
+      ],
+      "description": "A prominent Tragedy book exploring themes of History, France in fiction, French language.",
+      "categories": [
+        "Fiction",
+        "History",
+        "France in fiction",
+        "French language",
+        "Louisiana in fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8236918-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL362675W",
+    "volumeInfo": {
+      "title": "Titus Andronicus",
+      "authors": [
+        "William Shakespeare"
+      ],
+      "description": "A prominent Tragedy book exploring themes of Drama, English Historical drama, Fiction.",
+      "categories": [
+        "Bibliography",
+        "Drama",
+        "English Historical drama",
+        "Fiction",
+        "Generals"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/9020748-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL2319934W",
+    "volumeInfo": {
+      "title": "The Coral Island",
+      "authors": [
+        "Robert Michael Ballantyne",
+        "Ralph Crane",
+        "George Dalziel",
+        "Edward Dalziel"
+      ],
+      "description": "A prominent Adventure book exploring themes of Adventure and adventurers, Shipwrecks, Juvenile fiction.",
+      "categories": [
+        "Fiction",
+        "Adventure and adventurers",
+        "Shipwrecks",
+        "Juvenile fiction",
+        "Survival"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/8242206-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL17531W",
+    "volumeInfo": {
+      "title": "Cleopatra",
+      "authors": [
+        "H. Rider Haggard"
+      ],
+      "description": "A prominent Adventure book exploring themes of History, Romans, Histoire.",
+      "categories": [
+        "Fiction",
+        "History",
+        "Romans",
+        "Histoire",
+        "Fiction, historical, general"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/1748730-M.jpg"
+      }
+    }
+  },
+  {
+    "id": "/works/OL36738W",
+    "volumeInfo": {
+      "title": "Le vicomte de Bragelonne, ou, dix ans plus tard",
+      "authors": [
+        "Alexandre Dumas",
+        "Auguste Maquet",
+        "Auguste Maquet"
+      ],
+      "description": "A prominent Adventure book exploring themes of History, Romans, Histoire.",
+      "categories": [
+        "Fiction",
+        "History",
+        "Romans",
+        "Histoire",
+        "Historical Fiction"
+      ],
+      "imageLinks": {
+        "thumbnail": "https://covers.openlibrary.org/b/id/14564690-M.jpg"
+      }
+    }
+  }
+]

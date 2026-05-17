@@ -16,123 +16,28 @@ class EdgeAIEngine {
         ];
 
         // Local fallback catalog for when Google Books API rate limits (HTTP 429)
-        this.localCatalog = [
-            {
-                id: 'local_1',
-                volumeInfo: {
-                    title: 'The Night Circus',
-                    authors: ['Erin Morgenstern'],
-                    description: 'A magical, melancholy romance set in a mysterious wandering circus.',
-                    categories: ['Fantasy', 'Romance', 'Magic', 'Melancholy'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=Z01n0zB5Z_oC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_2',
-                volumeInfo: {
-                    title: 'The Secret History',
-                    authors: ['Donna Tartt'],
-                    description: 'A dark, thrilling tale of a group of eccentric students and a fatal secret.',
-                    categories: ['Mystery', 'Thriller', 'Tragedy'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=E8m_eK1G6ZQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_3',
-                volumeInfo: {
-                    title: 'A Psalm for the Wild-Built',
-                    authors: ['Becky Chambers'],
-                    description: 'A cozy, healing sci-fi journey about a tea monk and a robot.',
-                    categories: ['Sci-Fi', 'Cozy', 'Healing', 'Adventure'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=h3P1DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_4',
-                volumeInfo: {
-                    title: 'Pride and Prejudice',
-                    authors: ['Jane Austen'],
-                    description: 'A classic historical comedy of manners and enemies-to-lovers romance.',
-                    categories: ['Romance', 'Historical', 'Comedy'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=s1gVAAAAYAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_5',
-                volumeInfo: {
-                    title: 'The Book Thief',
-                    authors: ['Markus Zusak'],
-                    description: 'A tragic, beautiful historical novel narrated by Death.',
-                    categories: ['Historical', 'Tragedy', 'Grief', 'Melancholy'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=mF_1wB2H6KUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_6',
-                volumeInfo: {
-                    title: 'Godan (The Gift of a Cow)',
-                    authors: ['Munshi Premchand'],
-                    description: 'A classic Hindi novel depicting the socio-economic deprivation and struggles of a poor peasant.',
-                    categories: ['Hindi', 'Classic', 'Fiction', 'Tragedy', 'Drama'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=38e3EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_7',
-                volumeInfo: {
-                    title: 'Rashmirathi',
-                    authors: ['Ramdhari Singh Dinkar'],
-                    description: 'An epic Hindi poem focusing on the life of Karna from the Mahabharata, dealing with honor, justice, and destiny.',
-                    categories: ['Hindi', 'Poetry', 'Mythology', 'Historical'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=J-v5EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_8',
-                volumeInfo: {
-                    title: 'Madhushala',
-                    authors: ['Harivansh Rai Bachchan'],
-                    description: 'A highly celebrated philosophical Hindi poem using the metaphor of a tavern to explain the complexities of life.',
-                    categories: ['Hindi', 'Poetry', 'Philosophy', 'Classic'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=XwJ2wAEACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_9',
-                volumeInfo: {
-                    title: 'Dune',
-                    authors: ['Frank Herbert'],
-                    description: 'A sweeping sci-fi epic about politics, religion, and survival on a harsh desert planet.',
-                    categories: ['Sci-Fi', 'Adventure', 'Action', 'Fantasy'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=B1hSG45JCX4C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_10',
-                volumeInfo: {
-                    title: 'The Hobbit',
-                    authors: ['J.R.R. Tolkien'],
-                    description: 'A cozy but thrilling fantasy adventure about a hobbit who goes on an unexpected journey.',
-                    categories: ['Fantasy', 'Adventure', 'Cozy', 'Classic'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=pD6arNyKyi8C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            },
-            {
-                id: 'local_11',
-                volumeInfo: {
-                    title: 'Gone Girl',
-                    authors: ['Gillian Flynn'],
-                    description: 'A dark, psychological thriller involving a missing wife and a web of deceit.',
-                    categories: ['Thriller', 'Mystery', 'Crime', 'Drama'],
-                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=k_9Yq1wP5qUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
-                }
-            }
-        ];
+        // Will be populated dynamically from catalog.json
+        this.localCatalog = [];
     }
 
     async init(onProgress = null) {
         if (this.isReady || this.isInitializing) return;
         this.isInitializing = true;
+
+        // Load dynamic 300+ book catalog first
+        if (this.localCatalog.length === 0) {
+            try {
+                const catalogResponse = await fetch('../js/catalog.json');
+                if (catalogResponse.ok) {
+                    this.localCatalog = await catalogResponse.json();
+                    console.log(`Loaded ${this.localCatalog.length} books into the offline catalog.`);
+                } else {
+                    console.warn("Failed to load catalog.json - Offline catalog may be empty");
+                }
+            } catch (error) {
+                console.warn("Error loading catalog.json:", error);
+            }
+        }
 
         try {
             // Import from CDN if not already available
