@@ -13,14 +13,23 @@
     </script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
-<script src="../js/db.js"></script>
+    <script src="../js/db.js"></script>
 
-<script src="../js/app.js"></script>
-<script src="../js/library-3d.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/library-3d.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
-    <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
+    <!-- SEO & Open Graph meta tags -->
+    <meta name="description"
+        content="My Library on BiblioDrift — View your saved books, track your reading progress, and revisit your personal reading journey all in one place." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/library" />
+    <meta property="og:title" content="My Library | BiblioDrift" />
+    <meta property="og:description"
+        content="My Library on BiblioDrift — View your saved books, track your reading progress, and revisit your personal reading journey all in one place." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
@@ -84,36 +93,38 @@
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
             <div class="view-toggles" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
-                <button id="view-shelves-btn" class="btn-primary active-view" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                <button id="view-shelves-btn" class="btn-primary active-view"
+                    style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-server"></i> Shelves
                 </button>
-                <button id="view-constellation-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                <button id="view-constellation-btn" class="btn-secondary"
+                    style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-chart-nodes"></i> Constellation
                 </button>
             </div>
             <div class="sort-controls">
-            <div class="sort-controls" role="region" aria-label="Library filter and sort controls">
-                <div class="filter-group">
-                    <i class="fa-solid fa-filter"></i>
-                    <select id="library-filter" class="sort-select" aria-label="Filter books by shelf"
-                        title="Filter books by shelf">
-                        <option value="all">All Shelves</option>
-                        <option value="current">Currently Immersed</option>
-                        <option value="want">Anticipated Journeys</option>
-                        <option value="finished">Finished Books</option>
-                    </select>
+                <div class="sort-controls" role="region" aria-label="Library filter and sort controls">
+                    <div class="filter-group">
+                        <i class="fa-solid fa-filter"></i>
+                        <select id="library-filter" class="sort-select" aria-label="Filter books by shelf"
+                            title="Filter books by shelf">
+                            <option value="all">All Shelves</option>
+                            <option value="current">Currently Immersed</option>
+                            <option value="want">Anticipated Journeys</option>
+                            <option value="finished">Finished Books</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <i class="fa-solid fa-arrow-down-short-wide"></i>
+                        <select id="library-sort" class="sort-select" aria-label="Sort books" title="Sort books">
+                            <option value="title">Sort by Title</option>
+                            <option value="author">Sort by Author</option>
+                            <option value="rating">Sort by Rating</option>
+                            <option value="mood">Sort by Mood</option>
+                            <option value="pages">Sort by Pages</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="filter-group">
-                    <i class="fa-solid fa-arrow-down-short-wide"></i>
-                    <select id="library-sort" class="sort-select" aria-label="Sort books" title="Sort books">
-                        <option value="title">Sort by Title</option>
-                        <option value="author">Sort by Author</option>
-                        <option value="rating">Sort by Rating</option>
-                        <option value="mood">Sort by Mood</option>
-                        <option value="pages">Sort by Pages</option>
-                    </select>
-                </div>
-            </div>
         </section>
 
 
@@ -231,7 +242,8 @@
                     <div class="book-stage">
                         <div class="book-3d-scene">
                             <!-- Click on the book to flip it -->
-                            <div class="book-object" id="book-3d-object" role="button" tabindex="0" aria-label="Book 3D object. Press Enter or Space to flip the book.">
+                            <div class="book-object" id="book-3d-object" role="button" tabindex="0"
+                                aria-label="Book 3D object. Press Enter or Space to flip the book.">
                                 <!-- Front Face -->
                                 <div class="book-face face-front" aria-hidden="true">
                                     <img id="modal-cover" src="" alt="Book Cover">
@@ -310,8 +322,7 @@
                                     title="Share book">
                                     <i class="fa-solid fa-share-nodes"></i> Share
                                 </button>
-                                <button class="btn-preview" id="modal-preview-btn-lib"
-                                    title="Preview this book">
+                                <button class="btn-preview" id="modal-preview-btn-lib" title="Preview this book">
                                     <i class="fa-solid fa-book-open"></i> Preview
                                 </button>
                             </div>
@@ -326,15 +337,16 @@
 
                                 <!-- Mode toggle: percentage vs pages -->
                                 <div class="progress-mode-toggle">
-                                    <button class="progress-mode-btn active" id="progress-mode-pct" data-mode="percent">% Done</button>
-                                    <button class="progress-mode-btn" id="progress-mode-pages" data-mode="pages">Pages</button>
+                                    <button class="progress-mode-btn active" id="progress-mode-pct"
+                                        data-mode="percent">% Done</button>
+                                    <button class="progress-mode-btn" id="progress-mode-pages"
+                                        data-mode="pages">Pages</button>
                                 </div>
 
                                 <!-- Percentage mode -->
                                 <div class="progress-input-group" id="progress-pct-group">
-                                    <input type="range" min="0" max="100" value="0"
-                                        class="progress-range-slider" id="modal-progress-slider"
-                                        aria-label="Reading progress percentage">
+                                    <input type="range" min="0" max="100" value="0" class="progress-range-slider"
+                                        id="modal-progress-slider" aria-label="Reading progress percentage">
                                     <div class="progress-bar-track">
                                         <div class="progress-bar-fill" id="modal-progress-bar"></div>
                                     </div>
