@@ -294,6 +294,11 @@ Tell me: what is stirring in you today?`,
 
             books = await this.searchGoogleBooks(augmentedQuery);
             
+            if (books.length === 0 && window.edgeAI.searchLocalCatalog) {
+                console.log("Google Books API failed or rate-limited. Using Local Offline Catalog.");
+                books = window.edgeAI.searchLocalCatalog(keywords.concat(prefs ? prefs.split(', ') : []));
+            }
+
             if (books.length > 0) {
                 return {
                     message: "I looked deep into my local archives and found these tailored recommendations based on your preferences and mood:",

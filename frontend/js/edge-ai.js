@@ -14,6 +14,60 @@ class EdgeAIEngine {
             'non-fiction', 'horror', 'historical', 'comedy', 'tragedy', 
             'cozy', 'melancholy', 'adventure', 'healing', 'grief', 'magic'
         ];
+
+        // Local fallback catalog for when Google Books API rate limits (HTTP 429)
+        this.localCatalog = [
+            {
+                id: 'local_1',
+                volumeInfo: {
+                    title: 'The Night Circus',
+                    authors: ['Erin Morgenstern'],
+                    description: 'A magical, melancholy romance set in a mysterious wandering circus.',
+                    categories: ['Fantasy', 'Romance', 'Magic', 'Melancholy'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=Z01n0zB5Z_oC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_2',
+                volumeInfo: {
+                    title: 'The Secret History',
+                    authors: ['Donna Tartt'],
+                    description: 'A dark, thrilling tale of a group of eccentric students and a fatal secret.',
+                    categories: ['Mystery', 'Thriller', 'Tragedy'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=E8m_eK1G6ZQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_3',
+                volumeInfo: {
+                    title: 'A Psalm for the Wild-Built',
+                    authors: ['Becky Chambers'],
+                    description: 'A cozy, healing sci-fi journey about a tea monk and a robot.',
+                    categories: ['Sci-Fi', 'Cozy', 'Healing', 'Adventure'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=h3P1DwAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_4',
+                volumeInfo: {
+                    title: 'Pride and Prejudice',
+                    authors: ['Jane Austen'],
+                    description: 'A classic historical comedy of manners and enemies-to-lovers romance.',
+                    categories: ['Romance', 'Historical', 'Comedy'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=s1gVAAAAYAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_5',
+                volumeInfo: {
+                    title: 'The Book Thief',
+                    authors: ['Markus Zusak'],
+                    description: 'A tragic, beautiful historical novel narrated by Death.',
+                    categories: ['Historical', 'Tragedy', 'Grief', 'Melancholy'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=mF_1wB2H6KUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            }
+        ];
     }
 
     async init(onProgress = null) {
@@ -81,6 +135,51 @@ class EdgeAIEngine {
             console.error("Error during Edge AI inference:", error);
             return [];
         }
+    }
+
+    /**
+     * Searches the local fallback catalog using extracted keywords.
+     * @param {Array<string>} keywords 
+     * @returns {Array<Object>} Matches from the local catalog
+     */
+    searchLocalCatalog(keywords) {
+        if (!keywords || keywords.length === 0) {
+            // Return random 3 if no keywords
+            return this.localCatalog.sort(() => 0.5 - Math.random()).slice(0, 3);
+        }
+
+        const normalizedKeywords = keywords.map(k => k.toLowerCase());
+
+        // Score each book in the local catalog
+        const scoredBooks = this.localCatalog.map(book => {
+            let score = 0;
+            const textToSearch = [
+                book.volumeInfo.title,
+                book.volumeInfo.description,
+                ...(book.volumeInfo.categories || [])
+            ].join(' ').toLowerCase();
+
+            normalizedKeywords.forEach(keyword => {
+                if (textToSearch.includes(keyword)) {
+                    score += 1;
+                }
+            });
+
+            return { book, score };
+        });
+
+        // Filter and sort
+        const matches = scoredBooks
+            .filter(b => b.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(b => b.book);
+
+        // If no matches found with keywords, return random fallback
+        if (matches.length === 0) {
+            return this.localCatalog.sort(() => 0.5 - Math.random()).slice(0, 2);
+        }
+
+        return matches.slice(0, 3); // Return top 3 matches
     }
 }
 
