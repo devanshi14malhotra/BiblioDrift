@@ -1,0 +1,78 @@
+name: Setup GSSOC Labels
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/labels-setup.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  setup-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or Update Labels
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const labels = [
+              // QUALITY (OPTIONAL) - Teal
+              { name: "quality:clean", color: "c5f0ed", description: "PR follows all coding standards and is well-structured (for GSSoC'26)" },
+              { name: "quality:exceptional", color: "c5f0ed", description: "PR goes above and beyond in terms of quality and optimization (for GSSoC'26)" },
+              
+              // TYPE BONUS (OPTIONAL) - Gray
+              { name: "type:docs", color: "f1f2f6", description: "Additions or updates to documentation (for GSSoC'26)" },
+              { name: "type:testing", color: "f1f2f6", description: "Adding or improving tests (for GSSoC'26)" },
+              { name: "type:accessibility", color: "f1f2f6", description: "Improvements related to web accessibility (for GSSoC'26)" },
+              { name: "type:performance", color: "f1f2f6", description: "Changes that improve speed or resource usage (for GSSoC'26)" },
+              { name: "type:security", color: "f1f2f6", description: "Security-related fixes or enhancements (for GSSoC'26)" },
+              { name: "type:design", color: "f1f2f6", description: "Changes to UI, layout, or visual elements (for GSSoC'26)" },
+              { name: "type:refactor", color: "f1f2f6", description: "Code changes that neither fix a bug nor add a feature (for GSSoC'26)" },
+              { name: "type:devops", color: "f1f2f6", description: "Changes to CI/CD, build scripts, or infrastructure (for GSSoC'26)" },
+              { name: "type:bug", color: "f1f2f6", description: "Fixes for identified issues or errors (for GSSoC'26)" },
+              { name: "type:feature", color: "f1f2f6", description: "Introduction of new functionality (for GSSoC'26)" },
+              
+              // VALIDATION (ADMIN DECIDES)
+              { name: "gssoc:approved", color: "c5f0ed", description: "PR has been reviewed and is eligible for GSSoC points (for GSSoC'26)" },
+              { name: "gssoc:invalid", color: "ffcccb", description: "PR does not meet requirements or is out of scope (for GSSoC'26)" },
+              { name: "gssoc:spam", color: "ffcccb", description: "PR is low-effort or automated spam (for GSSoC'26)" },
+              { name: "gssoc:ai-slop", color: "ffcccb", description: "PR contains low-quality AI-generated content (for GSSoC'26)" },
+            ];
+
+            for (const label of labels) {
+              try {
+                const { data: existingLabel } = await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name
+                });
+                
+                console.log(`Updating label: ${label.name}`);
+                await github.rest.issues.updateLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  new_name: label.name,
+                  color: label.color,
+                  description: label.description
+                });
+              } catch (error) {
+                if (error.status === 404) {
+                  console.log(`Creating label: ${label.name}`);
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description
+                  });
+                } else {
+                  console.error(`Error processing label ${label.name}:`, error);
+                }
+              }
+            }

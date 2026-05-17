@@ -11,9 +11,11 @@ class ChatInterface {
         this.conversationHistory = [];
         this.isProcessing = false;
 
-        // Ensure backend connection is initialized
-        if (typeof window !== 'undefined' && !window.MOOD_API_BASE) {
-            window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+        // Ensure backend connection is initialized with proper fallback
+        if (typeof window !== 'undefined') {
+            if (!window.MOOD_API_BASE || window.MOOD_API_BASE.includes(':5001')) {
+                window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+            }
         }
 
         this.init();
@@ -411,6 +413,42 @@ Tell me: what is stirring in you today?`,
     }
 
     /**
+     * Build DOM nodes for lightweight markdown.
+     * Supports: **bold** for book titles, *italic* for authors, \n for line breaks.
+     * @param {HTMLElement} container - The container element
+     * @param {string} text - The raw message text
+     */
+    buildMarkdownNodes(container, text) {
+        const regex = /\*\*(.+?)\*\*|\*(.+?)\*|(\n)/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = regex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+                container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+            }
+
+            if (match[1]) {
+                const strong = document.createElement('strong');
+                strong.textContent = match[1];
+                container.appendChild(strong);
+            } else if (match[2]) {
+                const em = document.createElement('em');
+                em.textContent = match[2];
+                container.appendChild(em);
+            } else if (match[3]) {
+                container.appendChild(document.createElement('br'));
+            }
+
+            lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            container.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+    }
+
+    /**
      * Render lightweight markdown in AI responses.
      * Supports: **bold** for book titles, *italic* for authors, \n\n for paragraphs.
      * Uses textContent assignment (not innerHTML) for user messages to prevent XSS.
@@ -424,11 +462,7 @@ Tell me: what is stirring in you today?`,
             if (!paragraph.trim()) return;
             const p = document.createElement('p');
             if (isAI) {
-                // Render **bold** and *italic* safely — no raw HTML from user
-                p.innerHTML = paragraph.trim()
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/\n/g, '<br>');
+                this.buildMarkdownNodes(p, paragraph.trim());
             } else {
                 p.textContent = paragraph.trim();
             }

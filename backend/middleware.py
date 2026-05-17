@@ -5,7 +5,13 @@ Includes Content-Type validation, request size limits, and header validation.
 import logging
 from functools import wraps
 from flask import request, jsonify
-from .error_responses import invalid_json_error
+
+try:
+    from .error_responses import invalid_json_error
+    from .security_parsers import validate_content_type as _validate_content_type_header
+except ImportError:
+    from error_responses import invalid_json_error
+    from security_parsers import validate_content_type as _validate_content_type_header
 
 logger = logging.getLogger(__name__)
 
@@ -30,26 +36,14 @@ def validate_content_type_middleware(f):
         # Skip for requests without body
         if request.content_length is None or request.content_length == 0:
             return f(*args, **kwargs)
-        
-        # Validate Content-Type header
-        content_type = request.content_type
-        
-        if not content_type:
-            logger.warning(f"Request to {request.path} missing Content-Type header")
-            return invalid_json_error("Missing Content-Type header")
-        
-        # Check for JSON content type
-        base_type = content_type.split(';')[0].strip().lower()
-        
-        if base_type not in ['application/json', 'application/x-www-form-urlencoded']:
+
+        is_valid, error_message = _validate_content_type_header()
+        if not is_valid:
             logger.warning(
-                f"Invalid Content-Type '{content_type}' for {request.method} "
+                f"Invalid Content-Type '{request.content_type}' for {request.method} "
                 f"{request.path} from {request.remote_addr}"
             )
-            return invalid_json_error(
-                f"Invalid Content-Type: {content_type}. "
-                "Expected: application/json"
-            )
+            return invalid_json_error(error_message)
         
         return f(*args, **kwargs)
     
@@ -144,14 +138,14 @@ def safe_request_handler(
         def decorated_function(*args, **kwargs):
             # Content-Type validation
             if validate_content_type and request.method not in ['GET', 'HEAD']:
-                ct = request.content_type
                 allowed = ['application/json'] if require_json else [
                     'application/json',
                     'application/x-www-form-urlencoded'
                 ]
-                if not ct or ct.split(';')[0].strip() not in allowed:
+                is_valid, error_message = _validate_content_type_header(allowed)
+                if not is_valid:
                     logger.warning(f"Content-Type validation failed for {request.path}")
-                    return invalid_json_error("Invalid or missing Content-Type header")
+                    return invalid_json_error(error_message)
             
             # Size validation
             if max_size_bytes and request.content_length is not None:
@@ -173,3 +167,57 @@ def safe_request_handler(
         return decorated_function
     
     return decorator
+def csrf_token_required(f):
+    """
+    =============================================================================
+    EXPLICIT CSRF TOKEN VALIDATION DECORATOR
+    =============================================================================
+    While CSRFProtect (Flask-WTF) handles validation globally for all 
+    state-mutating requests, this decorator can be used for explicit validation 
+    or when fine-grained control is required over CSRF error handling.
+    
+    It manually triggers the CSRF validation logic and returns a standardized 
+    BiblioDrift error response upon failure.
+    
+    Why this matters?:
+    By providing an explicit decorator, we empower developers to selectively 
+    enforce or bypass CSRF on specific high-risk endpoints, and provide 
+    clearer error context than the generic global handler.
+    =============================================================================
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        from flask_wtf.csrf import validate_csrf, CSRFError
+        try:
+            # We look for the token in the 'X-CSRF-Token' header by default
+            token = request.headers.get('X-CSRF-Token')
+            if not token:
+                # Fallback to form data if header is missing
+                token = request.form.get('csrf_token')
+                
+            if not token:
+                logger.warning(f"CSRF Token missing in request from {request.remote_addr}")
+                return jsonify({
+                    "success": False,
+                    "error": "CSRF_TOKEN_MISSING",
+                    "message": "Security token is required for this action."
+                }), 400
+                
+            validate_csrf(token)
+            return f(*args, **kwargs)
+        except CSRFError as e:
+            logger.error(f"CSRF Validation failure in middleware: {e.description}")
+            return jsonify({
+                "success": False,
+                "error": "CSRF_TOKEN_INVALID",
+                "message": f"Security validation failed: {e.description}"
+            }), 400
+        except Exception as e:
+            logger.error(f"Unexpected error during CSRF validation: {str(e)}")
+            return jsonify({
+                "success": False,
+                "error": "SECURITY_ERROR",
+                "message": "An internal security error occurred."
+            }), 500
+            
+    return decorated_function

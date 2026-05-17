@@ -33,6 +33,8 @@ def validate_content_type(allowed_types: Optional[list] = None) -> Tuple[bool, O
     """
     if allowed_types is None:
         allowed_types = ['application/json', 'application/x-www-form-urlencoded']
+
+    normalized_allowed_types = [content_type.strip().lower() for content_type in allowed_types]
     
     content_type = request.content_type
     
@@ -41,10 +43,10 @@ def validate_content_type(allowed_types: Optional[list] = None) -> Tuple[bool, O
         return False, "Missing Content-Type header"
     
     # Extract base content type (without charset)
-    base_content_type = content_type.split(';')[0].strip()
+    base_content_type = content_type.split(';')[0].strip().lower()
     
     # Check if content type is in allowed list
-    if base_content_type not in allowed_types:
+    if base_content_type not in normalized_allowed_types:
         allowed_str = ', '.join(allowed_types)
         return False, f"Invalid Content-Type: {content_type}. Allowed: {allowed_str}"
     

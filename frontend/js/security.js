@@ -7,8 +7,12 @@
  * Initialize DOMPurify configuration
  * Configures DOMPurify with strict defaults to prevent XSS
  */
+function isDOMPurifyAvailable() {
+    return typeof DOMPurify !== 'undefined' && DOMPurify && typeof DOMPurify.sanitize === 'function';
+}
+
 function initializeDOMPurify() {
-    if (typeof DOMPurify === 'undefined') {
+    if (!isDOMPurifyAvailable()) {
         console.error('DOMPurify library not loaded. XSS protection may be compromised.');
         return null;
     }
@@ -67,6 +71,11 @@ function sanitizeHTML(dirty) {
         RETURN_DOM: false,
     };
 
+    if (!isDOMPurifyAvailable()) {
+        console.error('DOMPurify library not loaded. Falling back to escaped text for safe rendering.');
+        return HTML.escape(dirty);
+    }
+
     return DOMPurify.sanitize(dirty, config);
 }
 
@@ -86,7 +95,7 @@ function setElementContent(element, content, asHTML = false) {
 
     if (asHTML) {
         // Sanitize before inserting as HTML
-        element.innerHTML = sanitizeForDisplay(content);
+        element.innerHTML = sanitizeHTML(content);
     } else {
         // Use textContent for plain text (always safe)
         element.textContent = content;

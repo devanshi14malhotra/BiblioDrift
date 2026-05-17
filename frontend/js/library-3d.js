@@ -253,6 +253,45 @@ const SAMPLE_BOOKS = {
     ]
 };
 
+const StorageHelper = {
+    get: function(key) {
+        return typeof SafeStorage !== 'undefined' ? SafeStorage.get(key) : localStorage.getItem(key);
+    },
+    set: function(key, value) {
+        if (typeof SafeStorage !== 'undefined') {
+            SafeStorage.set(key, value);
+        } else {
+            localStorage.setItem(key, value);
+        }
+    }
+};
+
+// Action to cache or remove book from local IndexedDB
+async function toggleOfflineBook(book, buttonElement) {
+    try {
+        // Use the global window object database reference
+        const existingBook = await window.db.books.get(book.id);
+
+        if (existingBook) {
+            await window.db.books.delete(book.id);
+            console.log(`"${book.title}" removed from offline shelf.`);
+            updateDownloadIcon(buttonElement, false);
+        } else {
+            await window.db.books.add({
+                id: book.id,
+                title: book.title,
+                author: book.author || 'Unknown Author',
+                content: book.content || book.description || 'No summary available.',
+                mood: book.mood || 'general',
+                coverUrl: book.coverUrl || ''
+            });
+            console.log(`"${book.title}" downloaded for offline reading!`);
+            updateDownloadIcon(buttonElement, true);
+        }
+    } catch (error) {
+        console.error("Failed to alter local shelf cache:", error);
+    }
+}
 class BookshelfRenderer3D {
     constructor() {
         this.tooltip = document.getElementById('book-tooltip');
@@ -267,7 +306,6 @@ class BookshelfRenderer3D {
         this.cleanupCallbacks = [];
         this.isDestroyed = false;
         this._modalBackdropHandler = null;
-        this._escHandler = null;
 
         // Create live region for screen reader announcements
         this.liveRegion = document.createElement('div');
@@ -300,7 +338,7 @@ class BookshelfRenderer3D {
         }
 
         const storageKey = 'bibliodrift_library';
-        return JSON.parse(localStorage.getItem(storageKey)) || {
+        return JSON.parse(StorageHelper.get(storageKey)) || {
             current: [],
             want: [],
             finished: []
@@ -403,6 +441,13 @@ class BookshelfRenderer3D {
         });
         this.addManagedListener(window, 'bibliodrift:library-manager-synced', () => {
             this.refreshShelves();
+        });
+
+        // Attach global ESC listener for modal exactly once
+        this.addManagedListener(document, 'keydown', (e) => {
+            if (e.key === 'Escape' && this.modal && this.modal.classList.contains('active')) {
+                this.closeModal();
+            }
         });
 
         // Setup modal close handlers
@@ -681,6 +726,27 @@ class BookshelfRenderer3D {
         spine.addEventListener('mousemove', (e) => this.moveTooltip(e));
         spine.addEventListener('mouseleave', () => this.hideTooltip());
         spine.addEventListener('click', () => this.openModal(book));
+       
+        // Keyboard Accessibility (Issue #534)
+spine.setAttribute('tabindex', '0');
+spine.setAttribute('role', 'button');
+spine.setAttribute('aria-label', `${book.title} by ${book.author}. Rating: ${book.rating}. Press Enter or Space to view details.`);
+
+spine.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.openModal(book);
+    }
+});
+
+spine.addEventListener('focus', () => {
+    const rect = spine.getBoundingClientRect();
+    this.showTooltip(
+        { clientX: rect.right, clientY: rect.top + rect.height / 2 },
+        book
+    );
+});
+spine.addEventListener('blur', () => this.hideTooltip());
 
         // Add mood icon if primary mood exists
         if (book.moods && book.moods.length > 0) {
@@ -1075,7 +1141,7 @@ class BookshelfRenderer3D {
 
         // Find current shelf for this book
         const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {};
         let currentShelfForProgress = 'want';
         ['current', 'want', 'finished'].forEach(shelf => {
             const found = (localLibrary[shelf] || []).find(b => b.id === book.id || (b.volumeInfo && b.id === book.id));
@@ -1201,12 +1267,12 @@ class BookshelfRenderer3D {
                                 await window.libManager.updateBook(book.id, { progress: newProgress });
                             } else {
                                 // Fallback: update localStorage directly
-                                const lib = JSON.parse(localStorage.getItem('bibliodrift_library')) || {};
+                                const lib = JSON.parse(StorageHelper.get('bibliodrift_library')) || {};
                                 ['current', 'want', 'finished'].forEach(shelf => {
                                     const b = (lib[shelf] || []).find(x => x.id === book.id);
                                     if (b) b.progress = newProgress;
                                 });
-                                localStorage.setItem('bibliodrift_library', JSON.stringify(lib));
+                                StorageHelper.set('bibliodrift_library', JSON.stringify(lib));
                             }
 
                             // Update the book object in memory
@@ -1443,16 +1509,6 @@ class BookshelfRenderer3D {
             this.addManagedListener(this.modal, 'click', this._modalBackdropHandler);
         }
 
-        // ESC key to close (bind once to avoid listener leaks).
-        if (!this._escHandler) {
-            this._escHandler = (e) => {
-                if (e.key === 'Escape' && this.modal && this.modal.classList.contains('active')) {
-                    this.closeModal();
-                }
-            };
-            this.addManagedListener(document, 'keydown', this._escHandler);
-        }
-
         // Add to library button logic
         const addBtn = document.getElementById('modal-add-btn');
         if (addBtn) {
@@ -1527,7 +1583,7 @@ class BookshelfRenderer3D {
 
         // Get existing library from localStorage
         const storageKey = 'bibliodrift_library';
-        let library = JSON.parse(localStorage.getItem(storageKey)) || {
+        let library = JSON.parse(StorageHelper.get(storageKey)) || {
             current: [],
             want: [],
             finished: []
@@ -1552,7 +1608,7 @@ class BookshelfRenderer3D {
             }
         });
 
-        localStorage.setItem(storageKey, JSON.stringify(library));
+        StorageHelper.set(storageKey, JSON.stringify(library));
         console.log(`Added ${book.title} to library`);
     }
 
@@ -1570,7 +1626,7 @@ class BookshelfRenderer3D {
         }
 
         const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {};
 
         // Find existing lists
         if (!localLibrary[fromShelf]) localLibrary[fromShelf] = [];
@@ -1593,7 +1649,7 @@ class BookshelfRenderer3D {
         localLibrary[toShelf].push(book);
 
         // Save and refresh
-        localStorage.setItem(storageKey, JSON.stringify(localLibrary));
+        StorageHelper.set(storageKey, JSON.stringify(localLibrary));
         this.refreshShelves();
 
         // Visual Feedback (optional)
@@ -1608,7 +1664,7 @@ class BookshelfRenderer3D {
         }
 
         const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {};
 
         let removed = false;
         ['current', 'want', 'finished'].forEach(shelf => {
@@ -1620,7 +1676,7 @@ class BookshelfRenderer3D {
         });
 
         if (removed) {
-            localStorage.setItem(storageKey, JSON.stringify(localLibrary));
+            StorageHelper.set(storageKey, JSON.stringify(localLibrary));
             this.refreshShelves();
             this.announceToScreenReader(`Book removed from library`);
             console.log(`Removed book ${bookId}`);
@@ -1660,7 +1716,7 @@ class BookshelfRenderer3D {
         });
 
         if (found) {
-            localStorage.setItem(storageKey, JSON.stringify(localLibrary));
+            StorageHelper.set(storageKey, JSON.stringify(localLibrary));
             this.refreshShelves();
         }
     }
@@ -1689,7 +1745,7 @@ class BookshelfRenderer3D {
         
         // Gather all books
         const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {
             current: [],
             want: [],
             finished: []

@@ -8,6 +8,28 @@ import logging
 from datetime import timedelta
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
+from dotenv import load_dotenv
+
+# =============================================================================
+# ENVIRONMENT LOADING
+# =============================================================================
+# Load environment variables from config directory based on APP_ENV.
+# This ensures that all configuration classes have access to .env values
+# even when config.py is imported directly (e.g., in scripts or tests).
+# =============================================================================
+def load_environment():
+    env = os.getenv('APP_ENV', 'development')
+    # Try to find the .env file in the config directory relative to this file
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env_path = os.path.join(base_dir, 'config', f'.env.{env}')
+    
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+    else:
+        # Fallback to standard .env in root
+        load_dotenv()
+
+load_environment()
 
 
 @dataclass
@@ -41,8 +63,14 @@ class JWTConfig:
     @classmethod
     def from_env(cls) -> 'JWTConfig':
         """Create JWT config from environment variables."""
+        # Sensitivity: Must be set in .env for production.
+        # We provide a default only for local development ease.
+        secret_key = os.getenv('JWT_SECRET_KEY')
+        if not secret_key:
+            secret_key = 'default-dev-secret-key'
+            
         return cls(
-            secret_key=os.getenv('JWT_SECRET_KEY', 'default-dev-secret-key'),
+            secret_key=secret_key,
             access_token_expires=timedelta(
                 days=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES_DAYS', '7'))
             ),
@@ -120,6 +148,63 @@ class AIServiceConfig:
         )
 
 
+@dataclass
+class EmailConfig:
+    """Email service configuration (e.g., SendGrid, Mailgun)."""
+    api_key: Optional[str]
+    from_email: Optional[str]
+    service_provider: str = 'sendgrid'
+    
+    @classmethod
+    def from_env(cls) -> 'EmailConfig':
+        """Create email config from environment variables."""
+        return cls(
+            api_key=os.getenv('EMAIL_API_KEY'),
+            from_email=os.getenv('EMAIL_FROM'),
+            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid')
+        )
+
+
+@dataclass
+class StorageConfig:
+    """External storage configuration (e.g., AWS S3, Cloudinary)."""
+    access_key: Optional[str]
+    secret_key: Optional[str]
+    bucket_name: Optional[str]
+    region: str = 'us-east-1'
+    
+    @classmethod
+    def from_env(cls) -> 'StorageConfig':
+        """Create storage config from environment variables."""
+        return cls(
+            access_key=os.getenv('STORAGE_ACCESS_KEY'),
+            secret_key=os.getenv('STORAGE_SECRET_KEY'),
+            bucket_name=os.getenv('STORAGE_BUCKET'),
+            region=os.getenv('STORAGE_REGION', 'us-east-1')
+        )
+
+
+@dataclass
+class RedisConfig:
+    """Redis configuration for caching and rate limiting."""
+    url: str
+    max_memory: str
+    eviction_policy: str
+    socket_timeout: float
+    connect_timeout: float
+    
+    @classmethod
+    def from_env(cls) -> 'RedisConfig':
+        """Create Redis config from environment variables."""
+        return cls(
+            url=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+            max_memory=os.getenv('REDIS_MAXMEMORY', '512mb'),
+            eviction_policy=os.getenv('REDIS_EVICTION_POLICY', 'allkeys-lru'),
+            socket_timeout=float(os.getenv('REDIS_SOCKET_TIMEOUT', '2.0')),
+            connect_timeout=float(os.getenv('REDIS_CONNECT_TIMEOUT', '2.0'))
+        )
+
+
 class Config:
     """Base configuration class."""
     
@@ -130,6 +215,9 @@ class Config:
         self.server = ServerConfig.from_env()
         self.logging = LoggingConfig.from_env()
         self.ai_service = AIServiceConfig.from_env()
+        self.redis = RedisConfig.from_env()
+        self.email = EmailConfig.from_env()
+        self.storage = StorageConfig.from_env()
         
         # Additional Flask configuration
         self.flask_config = self._get_flask_config()
@@ -148,6 +236,20 @@ class Config:
             'JWT_COOKIE_SAMESITE': 'Lax',
             'SQLALCHEMY_DATABASE_URI': self.database.url,
             'SQLALCHEMY_TRACK_MODIFICATIONS': self.database.track_modifications,
+            
+            # =========================================================================
+            # SECURITY: CSRF CONFIGURATION (FLASK-WTF)
+            # =========================================================================
+            # We enable and configure CSRF protection at the application level.
+            # Using 'X-CSRF-Token' as the header name is a common standard for 
+            # single-page applications and AJAX-heavy frontends.
+            # =========================================================================
+            'WTF_CSRF_ENABLED': True,
+            'WTF_CSRF_SECRET_KEY': self.jwt.secret_key, # Reuse for simplicity, but ideally separate
+            'WTF_CSRF_HEADERS': ['X-CSRF-Token'],
+            'WTF_CSRF_SSL_STRICT': self.is_production(),
+            'WTF_CSRF_TIME_LIMIT': 3600, # 1 hour token validity
+            'WTF_CSRF_METHODS': ['POST', 'PUT', 'PATCH', 'DELETE'],
         }
     
     def validate(self) -> tuple[bool, list[str]]:
@@ -270,6 +372,10 @@ class Config:
         if self.logging.level not in valid_levels:
             errors.append(f"Invalid log level: {self.logging.level}. Must be one of {valid_levels}")
         
+        # Validate Redis configuration
+        if not self.redis.url.startswith('redis://') and not self.redis.url.startswith('rediss://'):
+            errors.append(f"Invalid Redis URL: {self.redis.url}. Must start with redis:// or rediss://")
+            
         return len(errors) == 0, errors
     
     def is_production(self) -> bool:

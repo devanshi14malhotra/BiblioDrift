@@ -19,49 +19,271 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        body.auth-page {
+            background:
+                radial-gradient(circle at top left, rgba(212, 175, 55, 0.12), transparent 34%),
+                radial-gradient(circle at bottom right, rgba(93, 64, 55, 0.12), transparent 28%),
+                var(--bg-color);
+        }
+
+        body.auth-page::before,
+        body.auth-page::after {
+            content: "";
+            position: fixed;
+            inset: auto;
+            pointer-events: none;
+            z-index: 0;
+            border-radius: 50%;
+            filter: blur(10px);
+            opacity: 0.7;
+        }
+
+        body.auth-page::before {
+            width: 18rem;
+            height: 18rem;
+            top: -4rem;
+            right: -5rem;
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        body.auth-page::after {
+            width: 16rem;
+            height: 16rem;
+            bottom: -5rem;
+            left: -4rem;
+            background: rgba(93, 64, 55, 0.08);
+        }
+
+        body.auth-page main.auth-main {
+            position: relative;
+            z-index: 1;
+            max-width: none;
+            min-height: calc(100vh - 120px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 4rem 4rem;
+        }
+
+        .auth-shell {
+            width: min(1120px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        .auth-intro {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(2rem, 4vw, 3.5rem);
+            border-radius: 28px;
+            background:
+                linear-gradient(145deg, rgba(44, 36, 32, 0.92), rgba(93, 64, 55, 0.85)),
+                var(--wood-dark);
+            color: #fff7ef;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100%;
+        }
+
+        .auth-intro::after {
+            content: "";
+            position: absolute;
+            inset: auto -8rem -8rem auto;
+            width: 20rem;
+            height: 20rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.16), transparent 70%);
+        }
+
+        .auth-eyebrow,
+        .auth-kicker {
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .auth-intro h1 {
+            margin-top: 0.85rem;
+            max-width: 10ch;
+            font-size: clamp(2.25rem, 4vw, 4.25rem);
+            line-height: 0.98;
+        }
+
+        .auth-copy {
+            margin-top: 1.25rem;
+            max-width: 34rem;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: rgba(255, 247, 239, 0.84);
+        }
+
+        .auth-highlights {
+            list-style: none;
+            margin-top: 2rem;
+            display: grid;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-highlights li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 1rem 1.1rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 247, 239, 0.93);
+        }
+
+        .auth-highlights i {
+            margin-top: 0.1rem;
+            color: var(--accent-gold);
+            flex-shrink: 0;
+        }
+
         .auth-container {
-            max-width: 400px;
-            margin: 8rem auto;
-            background: var(--book-bg, #fff);
-            padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .auth-input {
             width: 100%;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-family: 'Georgia', serif;
+            max-width: none;
+            margin: 0;
+            padding: clamp(2rem, 4vw, 3.25rem);
+            border-radius: 28px;
+            text-align: left;
+            background: var(--book-bg);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(0, 0, 0, 0.06);
         }
 
-        .auth-btn {
-            width: 100%;
-            padding: 1rem;
-            background: #2c2c2c;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem;
+        .auth-kicker {
+            color: var(--accent-gold);
         }
 
-        .toggle-link {
-            display: block;
-            margin-top: 1.5rem;
-            color: #666;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-decoration: underline;
+        #authTitle {
+            margin-top: 0.7rem;
+            font-size: clamp(2rem, 3vw, 2.6rem);
+            line-height: 1.05;
+        }
+
+        .auth-subtitle {
+            margin-top: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        #authForm {
+            margin-top: 1.75rem;
+            display: grid;
+            gap: 1rem;
         }
 
         #nameField {
             display: none;
+        }
+
+        .input-group {
+            margin: 0;
+        }
+
+        .auth-input {
+            width: 100%;
+            min-height: 3.5rem;
+            padding: 1rem 1.05rem;
+            border: 1px solid var(--input-border);
+            border-radius: 16px;
+            background: var(--input-bg);
+            font-family: "Georgia", serif;
+            color: var(--text-main);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+        }
+
+        .auth-input::placeholder {
+            color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+        }
+
+        .auth-input:focus {
+            outline: none;
+            background: var(--book-bg);
+            border-color: rgba(212, 175, 55, 0.55);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.16);
+            transform: translateY(-1px);
+        }
+
+        .auth-btn {
+            width: 100%;
+            min-height: 3.65rem;
+            padding: 1rem 1.2rem;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--wood-dark), #1f1a17);
+            color: #fff7ef;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.08rem;
+            letter-spacing: 0.03em;
+            box-shadow: 0 14px 30px rgba(44, 36, 32, 0.22);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 34px rgba(44, 36, 32, 0.28);
+            filter: brightness(1.04);
+        }
+
+        .auth-footer {
+            margin-top: 1.25rem;
+            text-align: center;
+        }
+
+        .toggle-link {
+            display: inline-flex;
+            color: var(--text-muted);
+            font-size: 0.96rem;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 0.2em;
+        }
+
+        @media (max-width: 900px) {
+            body.auth-page main.auth-main {
+                padding: 1.5rem 1rem 2.5rem;
+            }
+
+            .auth-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-intro {
+                order: 2;
+                min-height: auto;
+            }
+
+            .auth-container {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 560px) {
+            body.auth-page main.auth-main {
+                padding-inline: 0.75rem;
+            }
+
+            .auth-intro,
+            .auth-container {
+                border-radius: 22px;
+            }
+
+            .auth-highlights li {
+                padding: 0.9rem 0.95rem;
+            }
         }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
@@ -74,7 +296,7 @@
     <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
 </head>
 
-<body>
+<body class="auth-page">
     <header>
         <a href="index.html" class="logo">
             <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
@@ -108,47 +330,62 @@
         </div>
     </header>
 
-    <main>
-        <!-- 
-            =============================================================
-            Authentication Container Area
-            =============================================================
-            This container encapsulates the core authentication workflow 
-            for the application. 
-            
-            By default, it renders the 'Sign In' view, but dynamically 
-            toggles to 'Registration' mode based on user interaction with 
-            the 'toggleText' link below.
+    <main class="auth-main">
+        <section class="auth-shell">
+            <aside class="auth-intro" aria-label="Authentication benefits">
+                <p class="auth-eyebrow">Member access</p>
+                <h1>Sign in to your shelf.</h1>
+                <p class="auth-copy">
+                    Keep your recommendations, reading history, and mood-based picks synced across devices.
+                </p>
+                <ul class="auth-highlights">
+                    <li><i class="fa-solid fa-book-open"></i> Continue from your latest reading session</li>
+                    <li><i class="fa-solid fa-comments"></i> Pick up saved chats and book suggestions</li>
+                    <li><i class="fa-solid fa-shield-heart"></i> Manage your account in one secure place</li>
+                </ul>
+            </aside>
 
-            Features:
-            - Fully responsive design via 'auth-container' class.
-            - JavaScript intercepts submission via 'handleAuth(event)'.
-            - Name field is hidden by default and only shown during sign up.
-            =============================================================
-        -->
-        <div class="auth-container">
-            
-            <!-- Dynamic Form Header -->
-            <h2 id="authTitle" style="font-family: 'Playfair Display'; margin-bottom: 2rem;">
-                Welcome Back
-            </h2>
-            
-            <!-- Authentication Form: Handles both Sign In and Registration dynamically -->
-            <form id="authForm" onsubmit="handleAuth(event)">
-                
-                <!-- Registration Specific Field (Hidden during Sign In) -->
-                <div id="nameField">
-                    <input type="text" id="username" class="auth-input" placeholder="Full Name">
+            <div class="auth-container">
+                <p class="auth-kicker">BiblioDrift account</p>
+                <h2 id="authTitle">Welcome Back</h2>
+                <p class="auth-subtitle">Use your account to continue where you left off.</p>
+
+                <form id="authForm" data-mode="login" onsubmit="handleAuth(event)">
+                    <div id="nameField">
+                        <input type="text" id="username" class="auth-input" placeholder="Full Name" autocomplete="name">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required autocomplete="email">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123" required autocomplete="current-password">
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="auth-btn">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <span id="toggleText" class="toggle-link">
+                        No account? Create one.
+                    </span>
                 </div>
                 
-                <!-- Standard Credentials -->
-                <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required>
-                </div>
-                
-                <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="password" class="auth-input" placeholder="Password" value="demo123" required>
-                </div>
+                <!-- 
+                    =============================================================
+                    SECURITY COMPLIANCE: CSRF TOKEN FIELD
+                    =============================================================
+                    This hidden input is dynamically populated with a one-time 
+                    security token provided by the backend. It protects against
+                    Cross-Site Request Forgery attacks by ensuring that the 
+                    form submission originated from this specific application 
+                    instance.
+                    =============================================================
+                -->
+                <input type="hidden" id="csrf_token" name="csrf_token" value="">
                 
                 <!-- Primary Action Button -->
                 <button type="submit" id="submitBtn" class="auth-btn">
@@ -162,8 +399,7 @@
                     No account? Create one.
                 </span>
             </div>
-            
-        </div>
+        </section>
     </main>
 
     <script src="../js/config.js"></script>
@@ -176,6 +412,7 @@
         const authTitle = document.getElementById('authTitle');
         const nameField = document.getElementById('nameField');
         const submitBtn = document.getElementById('submitBtn');
+        const passwordInput = document.getElementById('password');
 
         if (toggleText) {
             toggleText.addEventListener('click', () => {
@@ -186,17 +423,56 @@
                     nameField.style.display = 'block';
                     submitBtn.textContent = 'Sign Up';
                     toggleText.textContent = 'Already have an account? Sign in.';
+                    passwordInput.autocomplete = 'new-password';
                 } else {
                     authForm.dataset.mode = 'login';
                     authTitle.textContent = 'Welcome Back';
                     nameField.style.display = 'none';
                     submitBtn.textContent = 'Sign In';
                     toggleText.textContent = 'No account? Create one.';
+                    passwordInput.autocomplete = 'current-password';
                 }
             });
         }
     </script>
     <script src="../js/pwa.js"></script>
+    <script>
+        /**
+         * ==============================================================================
+         * CSRF INITIALIZATION LOGIC
+         * ==============================================================================
+         * On document load, we query the backend's CSRF endpoint to retrieve a 
+         * fresh security token. This token is then stored in the hidden form 
+         * field and utilized in the 'handleAuth' submission headers.
+         * ==============================================================================
+         */
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // We use MOOD_API_BASE from config.js
+                const response = await fetch(`${MOOD_API_BASE}/csrf-token`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const token = result.data?.csrf_token;
+                    
+                    if (token) {
+                        const csrfInput = document.getElementById('csrf_token');
+                        if (csrfInput) {
+                            csrfInput.value = token;
+                            if (window.IS_DEV) console.log('[Security] CSRF Token initialized successfully.');
+                        }
+                    }
+                } else {
+                    console.error('[Security] Failed to fetch CSRF token from backend.');
+                }
+            } catch (error) {
+                console.error('[Security] Network error while fetching security token:', error);
+            }
+        });
+    </script>
 </body>
 
 </html>
