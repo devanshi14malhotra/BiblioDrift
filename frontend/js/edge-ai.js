@@ -66,6 +66,66 @@ class EdgeAIEngine {
                     categories: ['Historical', 'Tragedy', 'Grief', 'Melancholy'],
                     imageLinks: { thumbnail: 'https://books.google.com/books/content?id=mF_1wB2H6KUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
                 }
+            },
+            {
+                id: 'local_6',
+                volumeInfo: {
+                    title: 'Godan (The Gift of a Cow)',
+                    authors: ['Munshi Premchand'],
+                    description: 'A classic Hindi novel depicting the socio-economic deprivation and struggles of a poor peasant.',
+                    categories: ['Hindi', 'Classic', 'Fiction', 'Tragedy', 'Drama'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=38e3EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_7',
+                volumeInfo: {
+                    title: 'Rashmirathi',
+                    authors: ['Ramdhari Singh Dinkar'],
+                    description: 'An epic Hindi poem focusing on the life of Karna from the Mahabharata, dealing with honor, justice, and destiny.',
+                    categories: ['Hindi', 'Poetry', 'Mythology', 'Historical'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=J-v5EAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_8',
+                volumeInfo: {
+                    title: 'Madhushala',
+                    authors: ['Harivansh Rai Bachchan'],
+                    description: 'A highly celebrated philosophical Hindi poem using the metaphor of a tavern to explain the complexities of life.',
+                    categories: ['Hindi', 'Poetry', 'Philosophy', 'Classic'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=XwJ2wAEACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_9',
+                volumeInfo: {
+                    title: 'Dune',
+                    authors: ['Frank Herbert'],
+                    description: 'A sweeping sci-fi epic about politics, religion, and survival on a harsh desert planet.',
+                    categories: ['Sci-Fi', 'Adventure', 'Action', 'Fantasy'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=B1hSG45JCX4C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_10',
+                volumeInfo: {
+                    title: 'The Hobbit',
+                    authors: ['J.R.R. Tolkien'],
+                    description: 'A cozy but thrilling fantasy adventure about a hobbit who goes on an unexpected journey.',
+                    categories: ['Fantasy', 'Adventure', 'Cozy', 'Classic'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=pD6arNyKyi8C&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
+            },
+            {
+                id: 'local_11',
+                volumeInfo: {
+                    title: 'Gone Girl',
+                    authors: ['Gillian Flynn'],
+                    description: 'A dark, psychological thriller involving a missing wife and a web of deceit.',
+                    categories: ['Thriller', 'Mystery', 'Crime', 'Drama'],
+                    imageLinks: { thumbnail: 'https://books.google.com/books/content?id=k_9Yq1wP5qUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api' }
+                }
             }
         ];
     }
