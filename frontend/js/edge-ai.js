@@ -103,31 +103,43 @@ class EdgeAIEngine {
     }
 
     /**
-     * Searches the local fallback catalog using extracted keywords.
+     * Searches the local fallback catalog using extracted keywords and raw query.
      * @param {Array<string>} keywords 
+     * @param {string} rawQuery
      * @returns {Array<Object>} Matches from the local catalog
      */
-    searchLocalCatalog(keywords) {
-        if (!keywords || keywords.length === 0) {
-            // Return random 3 if no keywords
-            return this.localCatalog.sort(() => 0.5 - Math.random()).slice(0, 3);
+    searchLocalCatalog(keywords, rawQuery = "") {
+        if (this.localCatalog.length === 0) return [];
+
+        if ((!keywords || keywords.length === 0) && !rawQuery) {
+            // Return random 3 if no keywords and no raw query
+            return [...this.localCatalog].sort(() => 0.5 - Math.random()).slice(0, 3);
         }
 
-        const normalizedKeywords = keywords.map(k => k.toLowerCase());
+        const normalizedKeywords = (keywords || []).map(k => k.toLowerCase());
+        const rawTokens = rawQuery.toLowerCase().split(/\W+/).filter(t => t.length > 2);
 
         // Score each book in the local catalog
         const scoredBooks = this.localCatalog.map(book => {
             let score = 0;
-            const textToSearch = [
-                book.volumeInfo.title,
-                book.volumeInfo.description,
-                ...(book.volumeInfo.categories || [])
-            ].join(' ').toLowerCase();
+            
+            const title = (book.volumeInfo.title || '').toLowerCase();
+            const authors = (book.volumeInfo.authors || []).join(' ').toLowerCase();
+            const description = (book.volumeInfo.description || '').toLowerCase();
+            const categories = (book.volumeInfo.categories || []).join(' ').toLowerCase();
+            
+            const textToSearch = [title, description, categories].join(' ');
 
+            // 1. Direct raw query matching (Massive Boosts)
+            rawTokens.forEach(token => {
+                if (authors.includes(token)) score += 50; // Author match is most important
+                if (title.includes(token)) score += 20;   // Title match is second most important
+            });
+
+            // 2. Mood/Genre Keyword matching
             normalizedKeywords.forEach(keyword => {
-                if (textToSearch.includes(keyword)) {
-                    score += 1;
-                }
+                if (categories.includes(keyword)) score += 5;
+                else if (textToSearch.includes(keyword)) score += 1;
             });
 
             return { book, score };
@@ -141,7 +153,7 @@ class EdgeAIEngine {
 
         // If no matches found with keywords, return random fallback
         if (matches.length === 0) {
-            return this.localCatalog.sort(() => 0.5 - Math.random()).slice(0, 2);
+            return [...this.localCatalog].sort(() => 0.5 - Math.random()).slice(0, 2);
         }
 
         return matches.slice(0, 3); // Return top 3 matches

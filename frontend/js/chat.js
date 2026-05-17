@@ -296,7 +296,10 @@ Tell me: what is stirring in you today?`,
             
             if (books.length === 0 && window.edgeAI.searchLocalCatalog) {
                 console.log("Google Books API failed or rate-limited. Using Local Offline Catalog.");
-                books = window.edgeAI.searchLocalCatalog(keywords.concat(prefs ? prefs.split(', ') : []));
+                books = window.edgeAI.searchLocalCatalog(
+                    keywords.concat(prefs ? prefs.split(', ') : []),
+                    userMessage // Pass raw query for author/title matching
+                );
             }
 
             if (books.length > 0) {
