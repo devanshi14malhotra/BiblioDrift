@@ -160,6 +160,69 @@ Built with ☕ and code by **Devanshi Malhotra** and contributors.
 </div>
 
 ---
+## 🚀 Beginner Setup Guide
+
+Follow these steps to run BiblioDrift locally.
+
+### 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/devanshi14malhotra/bibliodrift.git
+cd bibliodrift
+```
+
+### 2️⃣ Create a Virtual Environment
+
+#### Windows
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+#### Linux / macOS
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3️⃣ Install Dependencies
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4️⃣ Run the Backend
+
+```bash
+python app.py
+```
+
+### 5️⃣ Open the Application
+
+Visit:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+## ⚠️ Common Errors & Fixes
+
+### `ModuleNotFoundError`
+Run:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Virtual environment not activating
+Make sure you are inside the project folder before running activation commands.
+
+### Port already in use
+Close the existing process or change the Flask port.
+
 
 ## 📄 License
 
