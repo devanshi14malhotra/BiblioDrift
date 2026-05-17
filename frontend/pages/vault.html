@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Your Vault — A cozy, AI-powered reading sanctuary to upload books, mix ambient loops, and enjoy distraction-free reading." />
+  <title>Your Vault | BiblioDrift</title>
+  
+  <script>
+      (function () {
+          try {
+              const theme = localStorage.getItem('bibliodrift_theme');
+              if (theme === 'night') {
+                  document.documentElement.setAttribute('data-theme', 'night');
+              }
+          } catch (e) {
+              console.warn('Storage access blocked or unavailable', e);
+          }
+      })();
+  </script>
+
+  <!-- CDNs & Dependencies -->
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+  <script src="../js/db.js"></script>
+
+  <!-- Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/style-responsive.css">
+  <link rel="stylesheet" href="../css/vault.css">
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+</head>
+
+<body>
+  <!-- Global Ambient Light Overlay -->
+  <div class="candlelight-glow"></div>
+  <div class="dust-particles" id="dustParticles"></div>
+
+  <!-- Header Navigation -->
+  <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html">Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html">My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html">Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <div class="tooltip">
+          <a href="vault.html" class="active">Your Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> Reading Sanctuary</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink">Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Sanctuary View -->
+  <main class="vault-container">
+    
+    <!-- Hero Sanctuary Section -->
+    <section class="vault-hero">
+      <div class="hero-glow"></div>
+      <h1>Your Vault</h1>
+      <p class="subtitle">Your personal sanctuary of stories.</p>
+      
+      <div class="hero-actions">
+        <button id="btnScrollUpload" class="btn-primary"><i class="fa-solid fa-arrow-up-from-bracket"></i> Upload New Story</button>
+        <button id="btnScrollPublic" class="btn-outline"><i class="fa-solid fa-compass"></i> Explore Public Alcove</button>
+      </div>
+
+      <!-- Floating Cozy Quote -->
+      <div class="floating-quote" id="quoteContainer">
+        <p class="quote-text">"There is no barrier, obstacle, or chapel that can block the quiet sanctuary of the page."</p>
+      </div>
+    </section>
+
+    <!-- Sanctuary Workspace Partition -->
+    <div class="vault-workspace">
+      
+      <!-- COLUMN 1: Workspace controls (Upload & Audio Ambiance) -->
+      <div class="workspace-column sidebar">
+        
+        <!-- Drag & Drop Upload Panel -->
+        <div class="glass-card upload-panel" id="uploadPanel">
+          <h3><i class="fa-solid fa-cloud-arrow-up gold-text"></i> Archive a Book</h3>
+          
+          <div class="drop-zone" id="dropZone">
+            <i class="fa-solid fa-file-pdf pdf-icon"></i>
+            <p class="drop-text">Drag & drop your PDF here or <span class="browse-link">browse</span></p>
+            <span class="limit-text">Accepted format: PDF only (Max 15MB)</span>
+            <input type="file" id="fileInput" accept="application/pdf" style="display: none;" />
+          </div>
+
+          <!-- Progress Block (Initially Hidden) -->
+          <div class="upload-progress-container" id="uploadProgressContainer" hidden>
+            <div class="progress-info">
+              <span id="uploadFilename">book-spine.pdf</span>
+              <span id="uploadPercentage">45%</span>
+            </div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+          </div>
+
+          <!-- safety check from Elara (Initially Hidden) -->
+          <div class="elara-scanner" id="elaraScanner" hidden>
+            <div class="elara-pulse"></div>
+            <p id="elaraStatusText"><i class="fa-solid fa-eye-low-vision animated-spin"></i> Elara is scanning pages for authenticity...</p>
+          </div>
+        </div>
+
+        <!-- Book Metadata Form (Initially Hidden) -->
+        <div class="glass-card form-panel" id="metadataFormCard" hidden>
+          <h3><i class="fa-solid fa-feather-pointed gold-text"></i> Story Details</h3>
+          
+          <form id="metadataForm" class="cozy-form">
+            <div class="form-group">
+              <label for="bookTitle">Book Title</label>
+              <input type="text" id="bookTitle" required placeholder="Enter the story title..." />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bookAuthor">Author</label>
+                <input type="text" id="bookAuthor" required placeholder="Author name..." />
+              </div>
+              <div class="form-group">
+                <label for="bookYear">Pub Year</label>
+                <input type="number" id="bookYear" placeholder="e.g. 1925" min="1" max="2026" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="bookDescription">Description</label>
+              <textarea id="bookDescription" placeholder="Write a short reflection or summary..."></textarea>
+            </div>
+
+            <!-- AI Suggested Tags Overlay (Interactive) -->
+            <div class="ai-suggestion-box" id="aiSuggestionBox">
+              <span class="ai-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Elara AI Suggests</span>
+              <div class="suggested-content">
+                <p id="suggestedMoodText">Awaiting PDF scanning...</p>
+                <div class="suggested-tags" id="suggestedTagsContainer"></div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bookMood">Reading Mood</label>
+                <input type="text" id="bookMood" placeholder="e.g. Melancholic, Warm" />
+              </div>
+              <div class="form-group">
+                <label for="bookTone">Emotional Tone</label>
+                <input type="text" id="bookTone" placeholder="e.g. Cozy Dark" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bookVisibility">Sanctuary Privacy</label>
+                <select id="bookVisibility">
+                  <option value="private">Private Nook</option>
+                  <option value="public">Public Alcove</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="bookCover">Custom Cover (Optional)</label>
+                <input type="file" id="bookCover" accept="image/*" class="custom-file-input" />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary w-full" id="btnSaveBook"><i class="fa-solid fa-folder-plus"></i> Place on My Shelf</button>
+          </form>
+        </div>
+
+        <!-- Ambient Audio Generator -->
+        <div class="glass-card ambient-panel">
+          <div class="ambient-header">
+            <h3><i class="fa-solid fa-radio gold-text"></i> Cozy Soundscapes</h3>
+            <button id="btnToggleAllAmbiance" class="btn-icon-circle" title="Mute/Unmute Mixer"><i class="fa-solid fa-volume-xmark"></i></button>
+          </div>
+          <p class="ambient-sub">Mix layers to construct your perfect reading backdrop.</p>
+          
+          <div class="ambient-mixer">
+            <!-- Rain Slider -->
+            <div class="mixer-row" data-sound="rain">
+              <div class="mixer-info">
+                <span><i class="fa-solid fa-cloud-rain sound-icon"></i> Rain</span>
+                <button class="sound-toggle btn-play-sound"><i class="fa-solid fa-play"></i></button>
+              </div>
+              <input type="range" class="cozy-slider sound-volume" min="0" max="1" step="0.05" value="0.5" />
+            </div>
+
+            <!-- Fireplace Slider -->
+            <div class="mixer-row" data-sound="fireplace">
+              <div class="mixer-info">
+                <span><i class="fa-solid fa-fire sound-icon"></i> Fireplace</span>
+                <button class="sound-toggle btn-play-sound"><i class="fa-solid fa-play"></i></button>
+              </div>
+              <input type="range" class="cozy-slider sound-volume" min="0" max="1" step="0.05" value="0.5" />
+            </div>
+
+            <!-- Vinyl Slider -->
+            <div class="mixer-row" data-sound="vinyl">
+              <div class="mixer-info">
+                <span><i class="fa-solid fa-compact-disc sound-icon"></i> Vinyl Crackle</span>
+                <button class="sound-toggle btn-play-sound"><i class="fa-solid fa-play"></i></button>
+              </div>
+              <input type="range" class="cozy-slider sound-volume" min="0" max="1" step="0.05" value="0.3" />
+            </div>
+
+            <!-- Coffee Shop Slider -->
+            <div class="mixer-row" data-sound="cafe">
+              <div class="mixer-info">
+                <span><i class="fa-solid fa-mug-hot sound-icon"></i> Coffee Shop</span>
+                <button class="sound-toggle btn-play-sound"><i class="fa-solid fa-play"></i></button>
+              </div>
+              <input type="range" class="cozy-slider sound-volume" min="0" max="1" step="0.05" value="0.4" />
+            </div>
+
+            <!-- Piano Slider -->
+            <div class="mixer-row" data-sound="piano">
+              <div class="mixer-info">
+                <span><i class="fa-solid fa-music sound-icon"></i> Soft Piano</span>
+                <button class="sound-toggle btn-play-sound"><i class="fa-solid fa-play"></i></button>
+              </div>
+              <input type="range" class="cozy-slider sound-volume" min="0" max="1" step="0.05" value="0.5" />
+            </div>
+
+            <!-- Waves Slider -->
+            <div class="mixer-row" data-sound="waves">
+              <div class="mixer-info">
+                <span><i class="fa-solid fa-water sound-icon"></i> Ocean Waves</span>
+                <button class="sound-toggle btn-play-sound"><i class="fa-solid fa-play"></i></button>
+              </div>
+              <input type="range" class="cozy-slider sound-volume" min="0" max="1" step="0.05" value="0.4" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMN 2: Private Bookcase display -->
+      <div class="workspace-column main-shelf-workspace">
+        
+        <!-- Shelf Section Header -->
+        <div class="workspace-section-header">
+          <h2><i class="fa-solid fa-book-bookmark gold-text"></i> My Private Nook</h2>
+          <span>Your personal shelf of uploaded treasures.</span>
+        </div>
+
+        <!-- Animated 3D Shelf Container -->
+        <div class="bookshelf-3d-wrapper">
+          <div class="bookshelf-backlight"></div>
+          
+          <div class="bookshelf-shelf" id="bookshelfPrivate">
+            <!-- Multi-tiered levels populated dynamically via JS -->
+            <div class="shelf-level" id="shelfLevel1">
+              <div class="shelf-plank"></div>
+              <div class="shelf-books-container" id="privateBooksContainer">
+                <p class="empty-shelf-text"><i class="fa-solid fa-feather"></i> Your nook is quiet. Drag a PDF to place your first story.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Continue Reading Card (Initially Hidden) -->
+        <div class="glass-card continue-reading-card" id="continueReadingCard" hidden>
+          <div class="card-glow"></div>
+          <div class="continue-content">
+            <span class="reflect-badge"><i class="fa-solid fa-hourglass-half"></i> Continue Reading</span>
+            <h4 id="continueBookTitle">The Count of Monte Cristo</h4>
+            <p id="continueBookAuthor">Alexandre Dumas</p>
+            <div class="progress-details">
+              <div class="progress-percentage-bar">
+                <div class="progress-fill" id="continueProgressFill" style="width: 32%;"></div>
+              </div>
+              <span id="continueProgressText">Page 124 of 480 (25%)</span>
+            </div>
+          </div>
+          <button class="btn-primary" id="btnContinueReading"><i class="fa-solid fa-book-open"></i> Resume</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 4: Public Alcove -->
+    <section class="public-alcove-section" id="publicAlcove">
+      <div class="alcove-glow"></div>
+      <div class="workspace-section-header align-center">
+        <h2><i class="fa-solid fa-dungeon gold-text"></i> The Public Alcove</h2>
+        <p>A shared gallery of stories and sounds curated by the community.</p>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="alcove-filters glass-card">
+        <div class="search-box">
+          <input type="text" id="alcoveSearch" placeholder="Search titles, authors, or feelings..." />
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        
+        <div class="filter-pills" id="alcoveGenreFilters">
+          <button class="pill active" data-genre="all">All Genres</button>
+          <button class="pill" data-genre="fantasy">Fantasy</button>
+          <button class="pill" data-genre="mystery">Mystery</button>
+          <button class="pill" data-genre="romance">Romance</button>
+          <button class="pill" data-genre="classics">Classics</button>
+          <button class="pill" data-genre="poetry">Poetry</button>
+        </div>
+      </div>
+
+      <!-- Book Grid Container -->
+      <div class="alcove-books-grid" id="publicBooksGrid">
+        <!-- Dynamically Populated Shared Cards -->
+        <div class="no-public-books">
+          <i class="fa-solid fa-compass-drafting"></i>
+          <p>The alcove is currently quiet. Upload a story and set visibility to "Public Alcove" to share with others.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PDF READER MODE OVERLAY DIALOG -->
+  <dialog id="readerDialog" class="cozy-reader-dialog">
+    <div class="reader-header">
+      <div class="reader-meta">
+        <h2 id="readerBookTitle">Reading Sanctuary</h2>
+        <span id="readerBookAuthor">By Unknown</span>
+      </div>
+      <div class="reader-controls-row">
+        <!-- Ambiance floating volume controls -->
+        <button id="btnReaderAmbianceToggle" class="reader-action-btn" title="Reading Ambiance"><i class="fa-solid fa-volume-high"></i></button>
+        <button id="btnReaderModeToggle" class="reader-action-btn" title="Toggle Sepia/Night"><i class="fa-solid fa-eye"></i></button>
+        <button id="btnReaderFullscreen" class="reader-action-btn" title="Fullscreen Mode"><i class="fa-solid fa-expand"></i></button>
+        <button id="btnReaderClose" class="reader-action-btn close-btn" title="Close Sanctuary"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+
+    <!-- Floating ambiance volume panel in Reader Mode -->
+    <div class="floating-reader-mixer" id="floatingReaderMixer" hidden>
+      <h4>Ambiance Mix</h4>
+      <!-- Sliders mapped dynamically via JS -->
+      <div id="readerMixerSliders"></div>
+    </div>
+
+    <div class="reader-body-wrapper">
+      
+      <!-- Embedded PDF canvas view -->
+      <div class="pdf-canvas-container" id="pdfCanvasContainer">
+        <canvas id="pdfRenderCanvas"></canvas>
+        
+        <!-- Loading spinner -->
+        <div class="pdf-loader" id="pdfLoader">
+          <div class="cozy-spinner"></div>
+          <p>Unfolding the pages...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="reader-footer">
+      <div class="navigation-controls">
+        <button class="btn-reader-nav" id="btnPrevPage"><i class="fa-solid fa-chevron-left"></i> Previous</button>
+        <span class="page-indicator" id="pageIndicatorText">Page 1 of 1</span>
+        <button class="btn-reader-nav" id="btnNextPage">Next <i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="reading-progress-track">
+        <div class="progress-bar-fill" id="readerProgressFill" style="width: 0%;"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Warn Moderation Dialog -->
+  <dialog id="moderationDialog" class="glass-modal elara-moderation-dialog">
+    <div class="moderation-content">
+      <i class="fa-solid fa-circle-exclamation warn-icon"></i>
+      <h2>Elara safety Scanner</h2>
+      <p id="moderationErrorText">The uploaded document failed safety audits. Please review the file signature and try again.</p>
+      <button class="btn-primary" id="btnCloseModeration">Understood</button>
+    </div>
+  </dialog>
+
+  <!-- Footer Scripts -->
+  <script src="../js/config.js"></script>
+  <script src="../js/footer.js"></script>
+  <script src="../js/vault.js"></script>
+  <script src="../script/header-scroll.js"></script>
+</body>
+
+</html>

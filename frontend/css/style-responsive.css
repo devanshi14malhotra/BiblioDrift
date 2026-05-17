@@ -1153,3 +1153,116 @@ button, a, input {
 .book-container-3d.flipped {
     transform: rotateY(-180deg) translateZ(0px) !important;
 }
+
+/* --- Vault Sanctuary Responsive Styles --- */
+@media (max-width: 992px) {
+    .vault-workspace {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .vault-hero h1 {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .vault-container {
+        padding: 1.5rem 1rem 4rem;
+    }
+    
+    .vault-hero {
+        padding: 3rem 1rem 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .vault-hero h1 {
+        font-size: 2.4rem;
+    }
+    
+    .hero-actions {
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto 2rem;
+    }
+    
+    .hero-actions button {
+        width: 100%;
+        min-height: 48px;
+    }
+    
+    .glass-card {
+        padding: 1.5rem;
+    }
+    
+    .bookshelf-shelf {
+        gap: 4rem;
+    }
+    
+    .shelf-books-container {
+        height: 180px;
+        padding: 0 1rem;
+    }
+    
+    .shelf-book {
+        height: 150px;
+        width: 34px;
+        margin: 0 4px;
+    }
+    
+    .shelf-book:hover {
+        transform: translateZ(20px) rotateY(-10deg) translateY(-5px);
+        margin: 0 8px;
+    }
+    
+    .book-spine-title {
+        font-size: 0.75rem;
+        max-height: 90px;
+    }
+    
+    .book-spine-author {
+        display: none;
+    }
+    
+    .alcove-filters {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .filter-pills {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .cozy-reader-dialog {
+        padding: 0;
+    }
+    
+    .reader-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .reader-footer {
+        padding: 1rem;
+    }
+    
+    .navigation-controls {
+        gap: 1.5rem;
+    }
+    
+    .reading-progress-track {
+        width: 100%;
+        max-width: 260px;
+    }
+    
+    .continue-reading-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+    }
+}

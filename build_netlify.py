@@ -36,6 +36,8 @@ def rewrite_html(content: str) -> str:
         'src="app.js"': 'src="js/app.js"',
         'src="chat.js"': 'src="js/chat.js"',
         'src="library-3d.js"': 'src="js/library-3d.js"',
+        'src="vault.js"': 'src="js/vault.js"',
+        'href="vault.css"': 'href="css/vault.css"',
         'src="script/header-scroll.js"': 'src="script/header-scroll.js"',
         'src="js/header-scroll.js"': 'src="script/header-scroll.js"',
         '../assets/biblioDrift_favicon.png': 'assets/images/biblioDrift_favicon.png',

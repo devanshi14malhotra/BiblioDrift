@@ -6,6 +6,11 @@ window.db.version(1).stores({
     books: 'id, title, author, content, mood, coverUrl'
 });
 
+window.db.version(2).stores({
+    books: 'id, title, author, content, mood, coverUrl',
+    vault_books: 'id, title, author, visibility, mood, addedAt'
+});
+
 console.log("IndexedDB configuration loaded onto window.db!");
 // A safe initialization wrapper
 function initDatabase() {
@@ -21,6 +26,11 @@ function initDatabase() {
     // Define schema: Store books by 'id'
     window.db.version(1).stores({
         books: 'id, title, author, content, mood, coverUrl'
+    });
+
+    window.db.version(2).stores({
+        books: 'id, title, author, content, mood, coverUrl',
+        vault_books: 'id, title, author, visibility, mood, addedAt'
     });
 
     console.log("IndexedDB configuration loaded onto window.db successfully!");
