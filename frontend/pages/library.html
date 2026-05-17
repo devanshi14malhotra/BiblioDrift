@@ -3,29 +3,47 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        try {
-            if (localStorage.getItem('bibliodrift_theme') === 'night') {
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
                 document.documentElement.setAttribute('data-theme', 'night');
             }
-        } catch (e) {}
+        })();
     </script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+<script src="../js/db.js"></script>
+
+<script src="../js/app.js"></script>
+<script src="../js/library-3d.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
+    <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
     <title>My Library | BiblioDrift</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style-responsive.css">
-    <link rel="stylesheet" href="../css/keyboard-shortcuts.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/style-responsive.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2c2420">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BiblioDrift">
+    <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 
 <body>
 
     <header>
         <a href="index.html" class="logo">
-            <img style="height: 40px" src="biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
             <div class="search-bar">
@@ -58,19 +76,27 @@
     </header>
 
     <main>
-        <section class="hero" style="padding-bottom: 2rem; position: relative;">
+        <section class="hero library-hero">
             <h1>My Virtual Library</h1>
             <p>A quiet sanctuary for your stories.</p>
 
-            <button id="export-library" class="btn-icon" style="position: absolute; top: 45px; right: 0;"
-                title="Export Library" aria-label="Export your entire library as a file">
+            <button id="export-library" class="btn-icon library-export-btn" title="Export Library">
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
+            <div class="view-toggles" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
+                <button id="view-shelves-btn" class="btn-primary active-view" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                    <i class="fa-solid fa-server"></i> Shelves
+                </button>
+                <button id="view-constellation-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                    <i class="fa-solid fa-chart-nodes"></i> Constellation
+                </button>
+            </div>
+            <div class="sort-controls">
             <div class="sort-controls" role="region" aria-label="Library filter and sort controls">
                 <div class="filter-group">
                     <i class="fa-solid fa-filter"></i>
-                    <label for="library-filter" style="display: none;">Filter Books</label>
-                    <select id="library-filter" class="sort-select" aria-label="Filter books by shelf">
+                    <select id="library-filter" class="sort-select" aria-label="Filter books by shelf"
+                        title="Filter books by shelf">
                         <option value="all">All Shelves</option>
                         <option value="current">Currently Immersed</option>
                         <option value="want">Anticipated Journeys</option>
@@ -79,11 +105,11 @@
                 </div>
                 <div class="filter-group">
                     <i class="fa-solid fa-arrow-down-short-wide"></i>
-                    <label for="library-sort" style="display: none;">Sort Books</label>
-                    <select id="library-sort" class="sort-select" aria-label="Sort books by">
+                    <select id="library-sort" class="sort-select" aria-label="Sort books" title="Sort books">
                         <option value="title">Sort by Title</option>
                         <option value="author">Sort by Author</option>
                         <option value="rating">Sort by Rating</option>
+                        <option value="mood">Sort by Mood</option>
                         <option value="pages">Sort by Pages</option>
                     </select>
                 </div>
@@ -95,20 +121,29 @@
         <div class="bookshelf-3d-container" id="library-shelves" role="main" aria-label="3D bookshelf library">
 
             <!-- Empty State Placeholder (Visible when filter returns no books) -->
-            <div id="library-empty-state" class="library-empty-state" style="display: none;" role="status" aria-live="polite">
+            <div id="library-empty-state" class="library-empty-state" hidden>
                 <div class="empty-state-icon">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
                 <h2>No books found here</h2>
                 <p>Your search for adventure continues... try a different shelf or explore new titles!</p>
-                <a href="index.html" class="btn-primary" style="margin-top: 1.5rem; text-decoration: none;">
+                <a href="index.html" class="btn-primary library-empty-link">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Explore Books
                 </a>
             </div>
 
             <!-- Currently Reading Shelf -->
-            <div class="shelf-section-3d" role="region" aria-label="Currently reading shelf">
-                <span class="shelf-label">ðŸ"– Currently Immersed</span>
+            <div class="shelf-section-3d">
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-book-open-icon lucide-book-open">
+                        <path d="M12 7v14" />
+                        <path
+                            d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                    </svg>
+                    Currently Immersed
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-current-3d" role="list" aria-label="Books currently being read">
                         <!-- Books will be injected via JS -->
@@ -117,8 +152,17 @@
             </div>
 
             <!-- Want to Read Shelf -->
-            <div class="shelf-section-3d" role="region" aria-label="Want to read shelf">
-                <span class="shelf-label">ðŸ"š Anticipated Journeys</span>
+            <div class="shelf-section-3d">
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-book-marked-icon lucide-book-marked">
+                        <path d="M10 2v8l3-3 3 3V2" />
+                        <path
+                            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                    </svg>
+                    Anticipated Journeys
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-want-3d" role="list" aria-label="Books to read">
                         <!-- Books will be injected via JS -->
@@ -127,8 +171,17 @@
             </div>
 
             <!-- Finished Reading Shelf -->
-            <div class="shelf-section-3d" role="region" aria-label="Finished reading shelf">
-                <span class="shelf-label">âœ" Lifetime Favorites</span>
+            <div class="shelf-section-3d">
+                <span class="shelf-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-book-check-icon lucide-book-check">
+                        <path
+                            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                        <path d="m9 9.5 2 2 4-4" />
+                    </svg>
+                    Lifetime Favorites
+                </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-finished-3d" role="list" aria-label="Books already read">
                         <!-- Books will be injected via JS -->
@@ -136,6 +189,11 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- Constellation Container (Hidden by default) -->
+        <div id="constellation-container" class="constellation-container hidden">
+            <!-- D3 SVG will be injected here -->
         </div>
 
         <!-- Book Tooltip (positioned dynamically) -->
@@ -146,8 +204,15 @@
                     <div class="tooltip-title" id="tooltip-title"></div>
                     <div class="tooltip-author" id="tooltip-author"></div>
                     <div class="tooltip-rating">
-                        <span class="tooltip-stars" id="tooltip-stars" aria-label="Rating">â˜…â˜…â˜…â˜…â˜†</span>
+                        <span class="tooltip-stars" id="tooltip-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
                         <span class="tooltip-rating-text" id="tooltip-rating-text">4.2</span>
+                    </div>
+                    <!-- Reading progress shown in tooltip for currently-reading books -->
+                    <div class="tooltip-progress" id="tooltip-progress" style="display:none;">
+                        <div class="tooltip-progress-bar-track">
+                            <div class="tooltip-progress-bar-fill" id="tooltip-progress-fill"></div>
+                        </div>
+                        <span class="tooltip-progress-label" id="tooltip-progress-label"></span>
                     </div>
                 </div>
             </div>
@@ -156,8 +221,8 @@
         </div>
 
         <!-- Book Detail Modal -->
-        <div class="book-detail-modal" id="book-detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <button class="modal-close-btn" id="modal-close-btn" aria-label="Close book details dialog">
+        <div class="book-detail-modal" id="book-detail-modal">
+            <button class="modal-close-btn" id="modal-close-btn" title="Close details">
                 <i class="fa-solid fa-times"></i>
             </button>
             <div class="book-detail-content">
@@ -173,10 +238,10 @@
                                     <div class="spine-overlay" aria-hidden="true"></div>
                                     <div class="lighting-sheen" aria-hidden="true"></div>
                                 </div>
-                                
+
                                 <!-- Spine Face -->
-                                <div class="book-face face-spine" aria-hidden="true"></div>
-                                
+                                <div class="book-face face-spine"></div>
+
                                 <!-- Back Face -->
                                 <div class="book-face face-back">
                                     <div class="back-paper-texture">
@@ -187,7 +252,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Paper Edges -->
                                 <div class="book-face face-right"></div>
                                 <div class="book-face face-top"></div>
@@ -209,7 +274,8 @@
                         <div class="book-stats-row">
                             <div class="stat-item">
                                 <div class="book-rating-large">
-                                    <span class="rating-stars-large" id="modal-stars">â˜…â˜…â˜…â˜…â˜†</span>
+                                    <span class="rating-stars-large"
+                                        id="modal-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
                                     <span class="rating-score" id="modal-rating-score">4.2</span>
                                 </div>
                                 <span class="stat-label" id="modal-rating-count">1,234 ratings</span>
@@ -218,29 +284,108 @@
                                 <div class="book-categories" id="modal-categories"></div>
                             </div>
                         </div>
-                        
+
+                        <!-- AI Insight Box -->
+                        <div class="ai-insight-box" style="margin-bottom: 1.5rem;">
+                            <div class="ai-header"
+                                style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--accent-gold); font-size: 0.9rem; font-weight: 600;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>AI Insight</span>
+                            </div>
+                            <div id="modal-ai-note">
+                                <div class="text-skeleton skeleton"></div>
+                                <div class="text-skeleton skeleton" style="width: 90%"></div>
+                            </div>
+                        </div>
+
+                        <div class="book-actions-section">
+                            <div class="library-actions-group">
+                                <!-- Issue #23: Remove from Library button UI -->
+                                <button class="action-btn-primary remove-from-library library-remove-btn"
+                                    id="modal-remove-btn" title="Remove from library">
+                                    <i class="fa-solid fa-trash"></i>
+                                    Remove from Library
+                                </button>
+                                <button class="action-btn-secondary library-share-btn" id="modal-share-btn-lib"
+                                    title="Share book">
+                                    <i class="fa-solid fa-share-nodes"></i> Share
+                                </button>
+                                <button class="btn-preview" id="modal-preview-btn-lib"
+                                    title="Preview this book">
+                                    <i class="fa-solid fa-book-open"></i> Preview
+                                </button>
+                            </div>
+
+                            <!-- Reading Progress Tracker -->
+                            <div class="reading-progress-tracker" id="modal-progress-section" style="display:none;">
+                                <div class="progress-tracker-header">
+                                    <i class="fa-solid fa-book-open-reader"></i>
+                                    <span class="progress-tracker-title">Reading Progress</span>
+                                    <span class="progress-percent-badge" id="modal-progress-badge">0%</span>
+                                </div>
+
+                                <!-- Mode toggle: percentage vs pages -->
+                                <div class="progress-mode-toggle">
+                                    <button class="progress-mode-btn active" id="progress-mode-pct" data-mode="percent">% Done</button>
+                                    <button class="progress-mode-btn" id="progress-mode-pages" data-mode="pages">Pages</button>
+                                </div>
+
+                                <!-- Percentage mode -->
+                                <div class="progress-input-group" id="progress-pct-group">
+                                    <input type="range" min="0" max="100" value="0"
+                                        class="progress-range-slider" id="modal-progress-slider"
+                                        aria-label="Reading progress percentage">
+                                    <div class="progress-bar-track">
+                                        <div class="progress-bar-fill" id="modal-progress-bar"></div>
+                                    </div>
+                                    <div class="progress-range-labels">
+                                        <span>0%</span>
+                                        <span id="modal-progress-value">0%</span>
+                                        <span>100%</span>
+                                    </div>
+                                </div>
+
+                                <!-- Pages mode -->
+                                <div class="progress-input-group" id="progress-pages-group" style="display:none;">
+                                    <div class="pages-input-row">
+                                        <div class="pages-field">
+                                            <label for="modal-pages-read">Pages read</label>
+                                            <input type="number" id="modal-pages-read" min="0" value="0"
+                                                class="pages-number-input" aria-label="Pages read">
+                                        </div>
+                                        <span class="pages-divider">of</span>
+                                        <div class="pages-field">
+                                            <label for="modal-pages-total">Total pages</label>
+                                            <input type="number" id="modal-pages-total" min="1" value="300"
+                                                class="pages-number-input" aria-label="Total pages">
+                                        </div>
+                                    </div>
+                                    <div class="progress-bar-track" style="margin-top:0.5rem;">
+                                        <div class="progress-bar-fill" id="modal-pages-bar"></div>
+                                    </div>
+                                </div>
+
+                                <button class="progress-save-btn" id="modal-progress-save">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save Progress
+                                </button>
+                            </div>
+
+                            <div class="shelf-selection-row" style="margin-top: 10px;">
+                                <label for="modal-shelf-select" class="library-select-label">Move to Shelf:</label>
+                                <select id="modal-shelf-select" class="shelf-select library-shelf-select"
+                                    aria-label="Move book to shelf" title="Move book to shelf">
+                                    <option value="current">Currently Immersed</option>
+                                    <option value="want">Anticipated Journeys</option>
+                                    <option value="finished">Lifetime Favorites</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="book-reviews-section">
                             <h3>Reader Reviews</h3>
                             <div id="modal-reviews" class="reviews-scroll-container">
                                 <!-- Reviews injected via JS -->
                             </div>
-                        </div>
-
-                        <div class="book-actions-section">
-                            <label for="modal-shelf-select" style="margin-right: 10px; font-weight: bold;">Move to Shelf:</label>
-                            <select id="modal-shelf-select" class="shelf-select modal-shelf-select">
-                                <option value="current">Currently Immersed</option>
-                                <option value="want">Anticipated Journeys</option>
-                                <option value="finished">Lifetime Favorites</option>
-                            </select>
-                            <!-- Issue #23: Remove from Library button UI -->
-                            <button class="action-btn-secondary remove-from-library" id="modal-remove-btn">
-                                <i class="fa-solid fa-trash"></i>
-                                Remove
-                            </button>
-                            <button class="action-btn-secondary modal-share-btn-lib" id="modal-share-btn-lib">
-                                <i class="fa-solid fa-share-nodes"></i> Share
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -249,27 +394,58 @@
 
     </main>
 
-    <script src="config.js"></script>
-    <script src="library-3d.js"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-    <script src="footer.js"></script>
-    <script src="script/header-scroll.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const link = document.getElementById('navAuthLink');
-            const tooltip = document.getElementById('navAuthTooltip');
+    <script src="../js/config.js"></script>
+    <script src="../js/library-3d.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/book-preview.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../script/header-scroll.js"></script>
 
-            if (typeof window.verifyStoredAuthSession === 'function' && typeof window.renderAuthNavigation === 'function') {
-                window.verifyStoredAuthSession().then((user) => {
-                    window.renderAuthNavigation(link, tooltip, Boolean(user));
-                });
-                return;
-            }
 
-            window.renderAuthNavigation?.(link, tooltip, false);
-        });
-    </script>
+    <!-- Ambient Sanctuary UI -->
+    <div class="ambient-sanctuary">
+        <button id="ambientToggle" title="Ambient Sanctuary">
+            <i class="fa-solid fa-leaf"></i>
+        </button>
+        <div id="ambientPanel" class="ambient-panel">
+            <h3>Ambient Sanctuary</h3>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
+                <label class="switch">
+                    <input type="checkbox" id="rainToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
+                <label class="switch">
+                    <input type="checkbox" id="fireToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
+                <label class="switch">
+                    <input type="checkbox" id="oceanToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+                <label class="switch">
+                    <input type="checkbox" id="stormToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="volume-control">
+                <label for="ambientVolume"><i class="fa-solid fa-volume-high"></i> Volume</label>
+                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/ambient.js"></script>
+    <script src="../js/pwa.js"></script>
 </body>
 
 </html>

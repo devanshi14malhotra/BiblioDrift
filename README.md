@@ -1,174 +1,167 @@
-# BiblioDrift 📚☕
-[![Netlify Live App - Click here to view!](https://img.shields.io/badge/Netlify-Live%20App-5314C4?logo=netlify)](https://gitcanvas-dm.streamlit.app/)
+<div align="center">
+
+# 🌌 BiblioDrift — Drift Through Stories, Not Screens
+
+[![Live App](https://img.shields.io/badge/🌍%20Live%20App-Explore%20Now-5314C4?style=for-the-badge&logo=netlify)](https://bibliodrift-dm.netlify.app/)
+[![NSoC 2026](https://img.shields.io/badge/NSoC-2026-blue?style=for-the-badge)](docs/Open-Source-Event-Guidelines.md)
+[![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-purple?style=for-the-badge)](docs/Open-Source-Event-Guidelines.md)
+[![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+### 🌙 *A calm, immersive, AI-powered book discovery experience*
 
 > **"Find yourself in the pages."**
 
-BiblioDrift is a cozy, visual-first book discovery platform designed to make finding your next read feel like wandering through a warm, quiet bookstore rather than scrolling through a database.
+<p align="center">
+BiblioDrift transforms book discovery into an emotional journey —  
+where stories are explored through <b>mood, atmosphere, and feeling</b> instead of endless scrolling.
+</p>
 
-## Open Source Events Navigation
-
-[![Nexus Spring of Code- Contributor Guide](https://img.shields.io/badge/Nexus%20Spring%20Of%20Code-Contributor%20Guide-1D4ED8?style=for-the-badge)](Open-Source-Event-Guidelines.md)
-
-## 🌟 Core Philosophy
-- **"Zero UI Noise"**: No popups, no aggressive metrics. Just calm browsing.
-- **Tactile Interaction**: 3D books that you can pull from the shelf and flip over.
-- **Vibe-First**: Search for feelings ("rainy mystery"), not just keywords.
-
-## 🚀 Features (MVP & Roadmap)
-- **Interactive 3D Books**: Hover to pull, click to flip and **expand**.
-- **Virtual Library**: Realistic wooden shelves to save your "Want to Read", "Currently Reading", and "Favorites" list (Persistent via LocalStorage).
-- **Glassmorphism UI**: A soothing, modern interface that floats above the content.
-- **AI-Powered Recommendations** (Planned): All book recommendations must be generated exclusively by AI.  
-     No manual curation, static lists, or hardcoded recommendations are permitted.
-- **Dynamic Popups**: Click a book to see an expanded view with AI-generated blurbs.
-- **Curated Tables**: Horizontal scrolling lists based on moods like "Monsoon Reads".
-
-## 🛠️ Tech Stack
-- **Frontend**: Vanilla JavaScript, CSS3 (3D Transforms), HTML5
-- **API**: Google Books API (Real-time data)
-- **Storage**: LocalStorage (MVP), PostgreSQL (Planned)
-- **Backend (Planned)**: Python Flask
-- **AI (Planned)**: LLM integration for "Bookseller Notes"
-
-## 🤖 Project Structure 
-```
-BIBLIODRIFT/
-BIBLIODRIFT/
-│
-├── backend/                     #  Python backend logic
-│   ├── app.py
-│   ├── ai_service.py
-│   ├── cache_service.py
-│   ├── config.py
-│   ├── error_responses.py
-│   ├── models.py
-│   ├── security_utils.py
-│   ├── validators.py
-│   │
-│   ├── mood_analysis/          # mood-based recommendation logic
-│   └── purchase_links/         # purchase link generation
-|   ├── price_tracker/   
-│
-├── frontend/                   #  UI (client-side)
-│   ├── pages/                  # HTML files
-│   │   ├── index.html
-│   │   ├── auth.html
-│   │   ├── chat.html
-│   │   ├── library.html
-│   │   ├── profile.html
-│   │   └── 404.html
-│   │
-│   ├── js/                     # JavaScript
-│   │   ├── app.js
-│   │   ├── chat.js
-│   │   ├── config.js
-│   │   ├── footer.js
-│   │   └── library-3d.js
-│   │
-│   ├── css/                    # Styles
-│   │   ├── style.css
-│   │   ├── style_main.css
-│   │   └── style-responsive.css
-│   │
-│   ├── assets/                 # Images, sounds
-│   │   ├── images/
-│   │   └── sounds/
-│   │
-│   └── script/                 # extra JS (header scroll etc.)
-│
-├── config/                     # ⚙️ Configuration
-│   ├── .env.development
-│   ├── .env.example
-│   ├── .env.testing
-│   ├── requirements.txt
-│   └── runtime.txt
-│
-├── docs/                       # 📚 Documentation
-│   ├── contributing.md
-│   ├── Open-Source-Event-Guidelines.md
-│   ├── TUTORIAL.md
-│   └── page.png
-│
-├── tests/                      # 🧪 Test files
-│   ├── test_api.py
-│   ├── test_llm.py
-│   └── test_validation.py
-│
-├── .gitignore
-├── README.md
-├── LICENSE
-├── netlify/                    # deployment config
-├── script/ (if any left)       
-├── venv/                       
-└── .vscode/
-```
-## 🤖 AI Recommendation Policy
-
-BiblioDrift follows a **strict AI-only recommendation model**.
-
-- All recommendations must be generated dynamically using AI/LLMs.
-- Manual curation, editor picks, static mood lists, or hardcoded book mappings are **not allowed**.
-- AI outputs should be based on abstract signals such as:
-  - Vibes
-  - Mood descriptors
-  - Emotional tone
-  - Reader intent
-
-This ensures discovery stays organic, scalable, and aligned with BiblioDrift’s philosophy of vibe-first exploration.
-
-## 📦 Installation & Setup
-
-### Frontend (Current MVP)
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/devanshi14malhotra/bibliodrift.git
-   ```
-2. Open `index.html` in your browser.
-   - That's it! No build steps required for the vanilla frontend.
-
-### Backend (Future)
-Planned implementation using Python Flask.
-
-##  Screenshots
-
-### Home Page
-<img width="1912" height="921" alt="Screenshot 2026-02-09 212125" src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" />
-
-### Virtual Library
-<img width="1912" height="922" alt="Screenshot 2026-02-09 212207" src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" />
-
-### Sign In Page
-<img width="1917" height="916" alt="Screenshot 2026-02-09 212225" src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" />
+<p align="center">
+🌧️ Mood-first discovery • 📚 Immersive reading • 🤖 AI-powered storytelling
+</p>
 
 
-## 🧠 AI Service Integration
-To keep the frontend and backend synced, use the following mapping:
+[🚀 Live Demo](https://bibliodrift-dm.netlify.app/) •
+[📚 Documentation](docs/) •
+[🤝 Contributing](docs/contributing.md)
 
-| Feature | Frontend Call (`app.js`) | API Endpoint (`app.py`) | Logic Provider (`ai_service.py`) |
-| :--- | :--- | :--- | :--- |
-| **Book Vibe** | `POST /api/v1/generate-note` | `handle_generate_note()` | `generate_book_note()` |
-
-### API Integration
-- **Endpoint**: `POST /api/v1/generate-note`
-- **Logic**: Processed by `ai_service.py`
-
-## 🤝 Contributing
-We welcome contributions to make BiblioDrift cozier!
-
-1. Fork the repo.
-2. Create a feature branch such as `feature/cozy-mode`.
-3. Make your changes and test them locally.
-4. Push your branch and open a Pull Request.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the fuller workflow and contribution rules.
-
-## 📄 License
-MIT License.
+</div>
 
 ---
-*Built by Devanshi Malhotra and contributors, with ☕ and code.*
+
+## 🌌 Table of Contents
+
+<div align="center">
+
+| 📚 Section | 🔗 Description |
+|---|---|
+| 💭 **[The Idea](#-the-idea)** | Vision and inspiration behind BiblioDrift |
+| 🧘 **[Core Philosophy](#-core-philosophy)** | Principles that shape the experience |
+| ✨ **[Experience Highlights](#-experience-highlights)** | Main features and immersive interactions |
+| 🛠️ **[Tech Stack](#-tech-stack)** | Technologies powering the platform |
+| 🧠 **[System Architecture](#-system-architecture)** | Flow between frontend, backend, and AI |
+| 📸 **[Screenshots](#-screenshots)** | Visual preview of the application |
+| 📄 **[License](#-license)** | Project licensing information |
+
+</div>
 
 
-```bash
-If you like this project, please consider giving the repository a ⭐ STAR ⭐.
+## 🌿 The Idea
+
+Most platforms make reading feel like:
+- ❌ Endless scrolling  
+- ❌ Algorithm overload  
+- ❌ No emotional connection  
+
+**BiblioDrift is different.**
+
+It feels like:
+> 📚 Walking into a quiet bookstore  
+> ☕ Picking a book based on mood  
+> 🌧️ Letting the atmosphere guide you  
+
+---
+
+## 🌟 Core Philosophy
+
+- 🧘 **Zero UI Noise** → No clutter, no distractions  
+- 🎭 **Vibe-First Discovery** → Search by *feeling*, not metadata  
+- 📖 **Tactile Interaction** → Books behave like real objects  
+- 🤖 **AI as a Bookseller** → Not recommendations, but *conversations*  
+
+---
+
+## ✨ Experience Highlights
+
+### 📚 Interactive Library
+- 3D books you can **pull, flip, and explore**
+- Shelf-based organization (Want / Reading / Favorites)
+
+### 🧠 AI-Powered Discovery
+- Mood-based recommendations (e.g., *“rainy mystery”*)
+- Dynamic AI-generated blurbs
+- Conversational assistant → **Elara, the Bookseller**
+
+### 🌌 Immersive UX
+- Glassmorphism interface
+- Ambient sounds (rain, fireplace,Calm Ocean Waves,Stormy Rain)
+- Emotion-based tagging system
+
+### ⚡ Performance & UX
+- Skeleton loaders (smooth loading)
+- LocalStorage persistence
+- Seamless interactions
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|------|-----------|
+| Frontend | HTML5, CSS3 (3D), Vanilla JS |
+| API | Google Books API |
+| Backend | Flask, SQLAlchemy, JWT cookies |
+| AI | LLM-powered notes, chat, and mood analysis |
+| Storage | LocalStorage |
+
+---
+
+## 🧠 System Architecture
+
+```mermaid
+graph TD
+	A[Frontend UI] -->|Mood Query| B[Flask Backend]
+	B -->|Prompt Engineering| C[LLM / AI Service]
+	C -->|Generated Insight| B
+	B -->|JSON Response| A
+	A -->|Book Data| D[Google Books API]
+	A -->|Persistence| E[LocalStorage]
 ```
+
+
+## 📸 Screenshots
+
+<div align="center">
+	<h3>Discovery & Virtual Library</h3>
+	<img src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" width="85%" alt="Home Page" />
+	<br><br>
+	<img src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" width="47%" alt="Virtual Library" />
+	<img src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" width="47%" alt="Sign In Page" />
+	<p><i>Capturing the tactile, vibe-first essence of BiblioDrift.</i></p>
+</div>
+
+---
+
+## 📚 Documentation Hub
+
+<div align="center">
+
+| 📄 Document | ✨ Description |
+|---|---|
+| 🧠 **[Architecture Guide](docs/architecture.md)** | Detailed system design, data flow, and backend structure |
+| 📡 **[API Documentation](docs/api.md)** | API endpoints, request/response examples, and integration flow |
+| 🚀 **[Roadmap](docs/roadmap.md)** | Upcoming features and future development plans |
+| 🗂️ **[Project Structure](docs/project-structure.md)** | Complete folder hierarchy and project organization |
+| 📖 **[Tutorial Guide](docs/TUTORIAL.md)** | Step-by-step setup and usage walkthrough |
+| 🤝 **[Contributing Guide](docs/contributing.md)** | Contribution workflow, rules, and PR process |
+| 🧩 **[Mood Analysis Module](backend/mood_analysis/README.md)** | AI mood engine architecture and logic |
+| 🛒 **[Purchase Links Module](backend/purchase_links/README.md)** | Purchase link generation system documentation |
+
+</div>
+
+---
+
+<div align="center">
+
+Built with ☕ and code by **Devanshi Malhotra** and contributors.
+
+⭐ If you like this project, consider starring the repository.
+
+</div>
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+

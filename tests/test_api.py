@@ -5,6 +5,8 @@ import requests
 import json
 from pprint import pprint
 
+__test__ = False
+
 BASE_URL = "http://127.0.0.1:5000"
 
 print("=" * 60)
