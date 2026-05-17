@@ -1,0 +1,16 @@
+{
+  "name": "bibliodrift",
+  "version": "1.0.0",
+  "description": "Drift Through Stories, Not Screens - A calm, immersive, AI-powered book discovery experience",
+  "main": "frontend/pages/index.html",
+  "scripts": {
+    "dev:frontend": "vite --open frontend/pages/index.html",
+    "dev:backend": "python backend/app.py",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "python build_netlify.py"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "vite": "^5.0.0"
+  }
+}

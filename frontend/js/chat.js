@@ -25,6 +25,9 @@ class ChatInterface {
         // Load conversation history from localStorage
         this.loadConversationHistory();
 
+        // Initialize personal taste profile
+        this.initVibeProfile();
+
         // Set up event listeners
         this.setupEventListeners();
 
@@ -119,6 +122,38 @@ class ChatInterface {
         this.chatInput.addEventListener('input', () => {
             this.adjustTextareaHeight();
         });
+
+        // Taste Profile panel controls
+        const tasteBtn = document.getElementById('tasteProfileBtn');
+        const tastePanel = document.getElementById('tasteProfilePanel');
+        const closeTasteBtn = document.getElementById('closeTasteProfile');
+        const resetTasteBtn = document.getElementById('resetTasteProfile');
+
+        if (tasteBtn && tastePanel) {
+            tasteBtn.addEventListener('click', () => {
+                if (tastePanel.style.display === 'none') {
+                    tastePanel.style.display = 'flex';
+                    this.updateVibeDashboardUI();
+                } else {
+                    tastePanel.style.display = 'none';
+                }
+            });
+        }
+
+        if (closeTasteBtn && tastePanel) {
+            closeTasteBtn.addEventListener('click', () => {
+                tastePanel.style.display = 'none';
+            });
+        }
+
+        if (resetTasteBtn) {
+            resetTasteBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear your reading taste profile? This resets all learned vibe scores.')) {
+                    this.vibeProfile = this.getDefaultVibeProfile();
+                    this.saveVibeProfile();
+                }
+            });
+        }
     }
 
     addWelcomeMessage() {
@@ -231,8 +266,9 @@ Tell me: what is stirring in you today?`,
                 if (chatData.success) {
                     // Try to get actual books from Google Books API
                     const books = await this.searchGoogleBooks(userMessage);
+                    const parsedResponse = chatData.response || (chatData.data && chatData.data.response) || "I have cataloged some wonderful books for you.";
                     return {
-                        message: chatData.response,
+                        message: parsedResponse,
                         books: books
                     };
                 }
@@ -366,18 +402,223 @@ Tell me: what is stirring in you today?`,
         }
     }
 
+    // Dictionaries for local parsing
+    getVibeDictionaries() {
+        return {
+            moods: {
+                melancholy: ["melancholy", "melancholic", "sad", "depressing", "heavy heart", "grief", "melancholia", "rainy day", "lonely", "autumn"],
+                cozy: ["cozy", "comforting", "warm", "tea", "blankets", "fireplace", "peaceful", "quiet", "calm", "gentle", "soft", "nostalgic"],
+                escape: ["escape", "another world", "magical", "whimsical", "wonder", "dreamy", "portal", "enchanting", "dreamlike", "surreal"],
+                thrilling: ["thrilling", "tense", "dark", "mysterious", "suspense", "mystery", "chilling", "creepy", "spooky", "scary", "thriller", "spies"],
+                heartwarming: ["heartwarming", "healing", "uplifting", "hopeful", "beautiful", "inspiring", "touching", "sweet", "wholesome"],
+                intellectual: ["intellectual", "mind-expanding", "deep", "thought-provoking", "existential", "philosophical", "reflective", "clever"]
+            },
+            genres: {
+                romance: ["romance", "romantic", "love story", "love", "passion", "relationship", "relationships", "marriage"],
+                fantasy: ["fantasy", "magic", "wizards", "witches", "spells", "dragons", "mythology", "mythical", "kingdom"],
+                sciFi: ["sci-fi", "science fiction", "space", "future", "futuristic", "aliens", "technology", "time travel", "dystopian"],
+                mystery: ["mystery", "detective", "clue", "clues", "investigation", "crime", "murder", "puzzle", "secrets"],
+                thriller: ["thriller", "suspense", "danger", "psychological", "horror", "spooky", "ghost", "stalker"],
+                historical: ["historical", "history", "past", "victorian", "war", "century", "ancient", "era"]
+            },
+            tropes: {
+                tragicEnd: ["tragic end", "tragic ending", "sad ending", "tragedy", "heartbreak", "heartbroken", "tearjerker"],
+                enemiesToLovers: ["enemies to lovers", "enemies-to-lovers", "hate to love", "rivals"],
+                slowBurn: ["slow burn", "slow-burn", "patience", "gradual"],
+                darkAcademia: ["dark academia", "university", "boarding school", "secret society", "library", "gothic"],
+                foundFamily: ["found family", "ragtag", "crew", "misfits", "loyal friends"]
+            },
+            stopwords: [
+                "suggest me", "recommend", "books", "novel", "novels", "about", "with", "that", "feels", "like", 
+                "looking for", "want to", "read", "some", "something", "i want", "please", "give me", "find me",
+                "show me", "can you", "could you", "tell me"
+            ]
+        };
+    }
+
+    initVibeProfile() {
+        const stored = localStorage.getItem('bibliodrift_vibe_profile');
+        if (stored) {
+            try {
+                this.vibeProfile = JSON.parse(stored);
+            } catch (e) {
+                this.vibeProfile = this.getDefaultVibeProfile();
+            }
+        } else {
+            this.vibeProfile = this.getDefaultVibeProfile();
+        }
+        
+        // Render or update UI panel if elements exist
+        setTimeout(() => this.updateVibeDashboardUI(), 100);
+    }
+
+    getDefaultVibeProfile() {
+        return {
+            genres: { romance: 0, fantasy: 0, sciFi: 0, mystery: 0, thriller: 0, historical: 0 },
+            moods: { melancholy: 0, cozy: 0, escape: 0, thrilling: 0, heartwarming: 0, intellectual: 0 },
+            tropes: { tragicEnd: 0, enemiesToLovers: 0, slowBurn: 0, darkAcademia: 0, foundFamily: 0 },
+            history: []
+        };
+    }
+
+    saveVibeProfile() {
+        localStorage.setItem('bibliodrift_vibe_profile', JSON.stringify(this.vibeProfile));
+        this.updateVibeDashboardUI();
+    }
+
+    updateVibeProfileFromText(text) {
+        if (!text) return;
+        const lower = text.toLowerCase();
+        const dicts = this.getVibeDictionaries();
+        
+        let profileChanged = false;
+        
+        // Scan moods
+        for (const [mood, keywords] of Object.entries(dicts.moods)) {
+            keywords.forEach(kw => {
+                if (lower.includes(kw)) {
+                    this.vibeProfile.moods[mood] = (this.vibeProfile.moods[mood] || 0) + 1;
+                    profileChanged = true;
+                }
+            });
+        }
+        
+        // Scan genres
+        for (const [genre, keywords] of Object.entries(dicts.genres)) {
+            keywords.forEach(kw => {
+                if (lower.includes(kw)) {
+                    this.vibeProfile.genres[genre] = (this.vibeProfile.genres[genre] || 0) + 1;
+                    profileChanged = true;
+                }
+            });
+        }
+        
+        // Scan tropes
+        for (const [trope, keywords] of Object.entries(dicts.tropes)) {
+            keywords.forEach(kw => {
+                if (lower.includes(kw)) {
+                    this.vibeProfile.tropes[trope] = (this.vibeProfile.tropes[trope] || 0) + 1;
+                    profileChanged = true;
+                }
+            });
+        }
+        
+        if (profileChanged) {
+            this.saveVibeProfile();
+        }
+    }
+
     transformQueryForBooks(userQuery) {
-        // Use the original user query directly - let Google Books API handle the search
-        // This ensures no hardcoded mappings and truly AI-driven recommendations
-        return userQuery;
+        // Update user taste profile first
+        this.updateVibeProfileFromText(userQuery);
+        
+        const lower = userQuery.toLowerCase();
+        const dicts = this.getVibeDictionaries();
+        
+        // We'll collect actual words to search
+        let matchedMoods = [];
+        let matchedGenres = [];
+        let matchedTropes = [];
+        
+        for (const [mood, keywords] of Object.entries(dicts.moods)) {
+            keywords.forEach(kw => {
+                if (lower.includes(kw) && !matchedMoods.includes(mood)) {
+                    matchedMoods.push(mood);
+                }
+            });
+        }
+        for (const [genre, keywords] of Object.entries(dicts.genres)) {
+            keywords.forEach(kw => {
+                if (lower.includes(kw) && !matchedGenres.includes(genre)) {
+                    matchedGenres.push(genre);
+                }
+            });
+        }
+        for (const [trope, keywords] of Object.entries(dicts.tropes)) {
+            keywords.forEach(kw => {
+                if (lower.includes(kw) && !matchedTropes.includes(trope)) {
+                    matchedTropes.push(trope);
+                }
+            });
+        }
+        
+        // Clean query by removing common bookseller stopwords to isolate target keywords
+        let cleaned = lower;
+        dicts.stopwords.forEach(word => {
+            cleaned = cleaned.replace(new RegExp('\\b' + word + '\\b', 'g'), '');
+        });
+        cleaned = cleaned.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").replace(/\s{2,}/g, " ").trim();
+        
+        // Build optimized Google Books query
+        let searchTerms = [];
+        
+        if (matchedGenres.length > 0) {
+            searchTerms.push(`subject:"${matchedGenres[0]}"`);
+        }
+        
+        if (matchedMoods.length > 0) {
+            searchTerms.push(matchedMoods[0]);
+        }
+        
+        if (matchedTropes.length > 0) {
+            searchTerms.push(matchedTropes[0] === 'tragicEnd' ? 'tragedy' : matchedTropes[0]);
+        }
+        
+        // If the user's cleaned input has actual content words left, append them!
+        if (cleaned && cleaned.split(' ').length <= 4 && matchedGenres.length === 0 && matchedMoods.length === 0) {
+            return userQuery;
+        }
+        
+        const topGenre = Object.entries(this.vibeProfile.genres).sort((a,b) => b[1] - a[1])[0];
+        if (topGenre && topGenre[1] > 2 && !matchedGenres.includes(topGenre[0])) {
+            searchTerms.push(topGenre[0]);
+        }
+        
+        if (searchTerms.length > 0) {
+            return searchTerms.join(' ');
+        }
+        
+        return cleaned.split(' ').slice(0, 4).join(' ') || userQuery;
     }
 
     generateContextualResponse(userQuery, books) {
         const bookCount = books.length;
-
-        // If we couldn't find any books, guide the user to refine their request
+        
+        // If we couldn't find any books, generate a poetic response and show local curated recommendations
         if (bookCount === 0) {
-            return "I'm having trouble finding books for that specific request right now. Could you try describing what kind of mood or feeling you're going for? For example, 'something cozy for a rainy day' or 'an exciting adventure story'?";
+            const topMood = Object.entries(this.vibeProfile.moods).sort((a,b) => b[1] - a[1])[0]?.[0] || 'melancholy';
+            
+            const poeticFallbacks = {
+                melancholy: "Ah, I hear the quiet murmur of a heavy heart... The high shelves are filled with stories that know how to hold grief and tenderness in the same breath. Let us wander through these rooms together until you find the words you need.",
+                cozy: "Welcome to this quiet corner of the sanctuary. I can offer you a warm cup of tea and a blanket on a rainy Sunday morning. Here are a few soft, comforting stories to keep your heart warm.",
+                escape: "A weary soul seeking to drift away from reality... Step through the archway into another world, where magic is real and dreams weave the sky. Let these pages carry you to places untouched by time.",
+                thrilling: "The shadows grow long, and a mystery whispers from the dark shelves... You are seeking a story that catches your breath and keeps you turning pages deep into the night. Step carefully into the dark.",
+                heartwarming: "Ah, the light filtering through the stained glass... Let us find stories of healing, connection, and the beautiful threads that bind wandering souls together. Here is a place of hope.",
+                intellectual: "A restless mind seeking deep waters... The philosophical halls are calling. Let us explore books that challenge the shape of the world, asking the great questions of existence and identity."
+            };
+            
+            const responseText = poeticFallbacks[topMood] || poeticFallbacks.cozy;
+            
+            // Populate books with local curated fallback list of beautiful books matching topMood!
+            const localCuratedBooks = {
+                melancholy: [
+                    { volumeInfo: { title: "A Little Life", authors: ["Hanya Yanagihara"], description: "A beautifully written, devastating exploration of trauma, friendship, and grief that will break and heal your heart.", imageLinks: { thumbnail: "https://books.google.com/books/content?id=cK0pBwAAQBAJ&printsec=frontcover&img=1&zoom=1" } } },
+                    { volumeInfo: { title: "Norwegian Wood", authors: ["Haruki Murakami"], description: "A quiet, nostalgic, and melancholic novel about loss, burgeoning sexuality, and student activism in 1960s Tokyo.", imageLinks: { thumbnail: "https://books.google.com/books/content?id=3eCjCQAAQBAJ&printsec=frontcover&img=1&zoom=1" } } }
+                ],
+                cozy: [
+                    { volumeInfo: { title: "The House in the Cerulean Sea", authors: ["TJ Klune"], description: "A comforting, heartwarming fantasy about a quiet caseworker who is sent to inspect a peculiar orphanage on a beautiful island.", imageLinks: { thumbnail: "https://books.google.com/books/content?id=NreNDwAAQBAJ&printsec=frontcover&img=1&zoom=1" } } },
+                    { volumeInfo: { title: "Before the Coffee Gets Cold", authors: ["Toshikazu Kawaguchi"], description: "In a small back alley in Tokyo, there is a cafe that offers its customers the chance to travel back in time, cozy and gentle.", imageLinks: { thumbnail: "https://books.google.com/books/content?id=vF2dDwAAQBAJ&printsec=frontcover&img=1&zoom=1" } } }
+                ],
+                escape: [
+                    { volumeInfo: { title: "The Night Circus", authors: ["Erin Morgenstern"], description: "A magical, cinematic, and atmospheric fantasy about an enchanted competition between two young magicians inside a mysterious circus.", imageLinks: { thumbnail: "https://books.google.com/books/content?id=3T-h5LzR5PQC&printsec=frontcover&img=1&zoom=1" } } },
+                    { volumeInfo: { title: "Piranesi", authors: ["Susanna Clarke"], description: "A whimsical and dreamlike exploration of a spectacular infinite house containing an ocean, halls filled with statues, and a lonely inhabitant.", imageLinks: { thumbnail: "https://books.google.com/books/content?id=tBzoDwAAQBAJ&printsec=frontcover&img=1&zoom=1" } } }
+                ]
+            };
+            
+            const selectedBooks = localCuratedBooks[topMood] || localCuratedBooks.cozy;
+            books.push(...selectedBooks);
+            
+            return responseText;
         }
 
         // Build a contextual, data-driven response using the returned books
@@ -396,18 +637,18 @@ Tell me: what is stirring in you today?`,
 
         let titleSnippet = '';
         if (titles.length === 1) {
-            titleSnippet = titles[0];
+            titleSnippet = `**${titles[0]}**`;
         } else if (titles.length === 2) {
-            titleSnippet = `${titles[0]} and ${titles[1]}`;
+            titleSnippet = `**${titles[0]}** and **${titles[1]}**`;
         } else if (titles.length === 3) {
-            titleSnippet = `${titles[0]}, ${titles[1]}, and ${titles[2]}`;
+            titleSnippet = `**${titles[0]}**, **${titles[1]}**, and **${titles[2]}**`;
         }
 
-        let response = `I've found ${bookCount} books that match what you're looking for`;
+        let response = `Ah, I have searched the quiet corridors and found some wonderful matches for you. I have selected ${bookCount} volumes that harmonize with your current mood`;
         if (titleSnippet) {
-            response += `, including ${titleSnippet}`;
+            response += `, including the beautiful pages of ${titleSnippet}`;
         }
-        response += '.';
+        response += `. \n\nEach of these books holds a room you might want to wander in. Which one speaks to you?`;
 
         return response;
     }
@@ -578,6 +819,59 @@ Tell me: what is stirring in you today?`,
     }
 
     showBookDetails(book) {
+        // Boost profile based on details clicked!
+        if (book && book.volumeInfo) {
+            const categories = book.volumeInfo.categories || [];
+            const title = book.volumeInfo.title || "";
+            const description = book.volumeInfo.description || "";
+            const combinedText = (title + " " + description).toLowerCase();
+            const dicts = this.getVibeDictionaries();
+            let profileChanged = false;
+            
+            // Scan categories
+            categories.forEach(cat => {
+                const lowerCat = cat.toLowerCase();
+                for (const genre of Object.keys(dicts.genres)) {
+                    if (lowerCat.includes(genre)) {
+                        this.vibeProfile.genres[genre] = (this.vibeProfile.genres[genre] || 0) + 2;
+                        profileChanged = true;
+                    }
+                }
+            });
+            
+            // Scan text for keywords
+            for (const [genre, keywords] of Object.entries(dicts.genres)) {
+                keywords.forEach(kw => {
+                    if (combinedText.includes(kw)) {
+                        this.vibeProfile.genres[genre] = (this.vibeProfile.genres[genre] || 0) + 1;
+                        profileChanged = true;
+                    }
+                });
+            }
+            
+            for (const [mood, keywords] of Object.entries(dicts.moods)) {
+                keywords.forEach(kw => {
+                    if (combinedText.includes(kw)) {
+                        this.vibeProfile.moods[mood] = (this.vibeProfile.moods[mood] || 0) + 1;
+                        profileChanged = true;
+                    }
+                });
+            }
+
+            for (const [trope, keywords] of Object.entries(dicts.tropes)) {
+                keywords.forEach(kw => {
+                    if (combinedText.includes(kw)) {
+                        this.vibeProfile.tropes[trope] = (this.vibeProfile.tropes[trope] || 0) + 1;
+                        profileChanged = true;
+                    }
+                });
+            }
+            
+            if (profileChanged) {
+                this.saveVibeProfile();
+            }
+        }
+
         // Use existing modal functionality from app.js
         if (typeof showBookModal === 'function') {
             showBookModal(book);
@@ -924,6 +1218,48 @@ Tell me: what is stirring in you today?`,
 
             if (resp.ok) {
                 alert('Added to your library');
+                
+                // Boost profile when book is successfully added to library!
+                if (book && book.volumeInfo) {
+                    const categories = book.volumeInfo.categories || [];
+                    const title = book.volumeInfo.title || "";
+                    const description = book.volumeInfo.description || "";
+                    const combinedText = (title + " " + description).toLowerCase();
+                    const dicts = this.getVibeDictionaries();
+                    let profileChanged = false;
+                    
+                    categories.forEach(cat => {
+                        const lowerCat = cat.toLowerCase();
+                        for (const genre of Object.keys(dicts.genres)) {
+                            if (lowerCat.includes(genre)) {
+                                this.vibeProfile.genres[genre] = (this.vibeProfile.genres[genre] || 0) + 3; // Extra heavy boost!
+                                profileChanged = true;
+                            }
+                        }
+                    });
+                    
+                    for (const [genre, keywords] of Object.entries(dicts.genres)) {
+                        keywords.forEach(kw => {
+                            if (combinedText.includes(kw)) {
+                                this.vibeProfile.genres[genre] = (this.vibeProfile.genres[genre] || 0) + 2;
+                                profileChanged = true;
+                            }
+                        });
+                    }
+                    
+                    for (const [mood, keywords] of Object.entries(dicts.moods)) {
+                        keywords.forEach(kw => {
+                            if (combinedText.includes(kw)) {
+                                this.vibeProfile.moods[mood] = (this.vibeProfile.moods[mood] || 0) + 2;
+                                profileChanged = true;
+                            }
+                        });
+                    }
+                    
+                    if (profileChanged) {
+                        this.saveVibeProfile();
+                    }
+                }
             } else if (resp.status === 401) {
                 alert('Please sign in to add books to your library.');
             } else {
@@ -934,6 +1270,66 @@ Tell me: what is stirring in you today?`,
             console.error('Add to library failed', e);
             alert('Failed to add book to library');
         }
+    }
+
+    updateVibeDashboardUI() {
+        const container = document.getElementById('vibeTagsContainer');
+        const tropesContainer = document.getElementById('vibeTropesContainer');
+        if (!container || !this.vibeProfile) return;
+        
+        container.innerHTML = '';
+        if (tropesContainer) tropesContainer.innerHTML = '';
+        
+        // Render top active genres and moods
+        const topMoods = Object.entries(this.vibeProfile.moods)
+            .filter(([_, score]) => score > 0)
+            .sort((a,b) => b[1] - a[1]);
+            
+        const topGenres = Object.entries(this.vibeProfile.genres)
+            .filter(([_, score]) => score > 0)
+            .sort((a,b) => b[1] - a[1]);
+            
+        const topTropes = Object.entries(this.vibeProfile.tropes)
+            .filter(([_, score]) => score > 0)
+            .sort((a,b) => b[1] - a[1]);
+            
+        // Render moods
+        topMoods.forEach(([mood, val]) => {
+            const span = document.createElement('span');
+            span.style.cssText = "background: rgba(139, 69, 19, 0.08); border: 1px solid rgba(139, 69, 19, 0.15); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; color: #2c2420; display: inline-flex; align-items: center; gap: 4px; animation: fadeIn 0.3s ease;";
+            span.innerHTML = `<i class="fa-solid fa-cloud" style="color: #b8860b; font-size: 0.65rem;"></i> ${mood} <small style="opacity: 0.6;">(${val})</small>`;
+            container.appendChild(span);
+        });
+        
+        // Render genres
+        topGenres.forEach(([genre, val]) => {
+            const span = document.createElement('span');
+            span.style.cssText = "background: rgba(184, 134, 11, 0.1); border: 1px solid rgba(184, 134, 11, 0.25); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; color: #2c2420; display: inline-flex; align-items: center; gap: 4px; animation: fadeIn 0.3s ease;";
+            span.innerHTML = `<i class="fa-solid fa-book-open" style="color: #8b4513; font-size: 0.65rem;"></i> ${genre} <small style="opacity: 0.6;">(${val})</small>`;
+            container.appendChild(span);
+        });
+        
+        if (topMoods.length === 0 && topGenres.length === 0) {
+            container.innerHTML = '<span style="font-size: 0.75rem; opacity: 0.6; font-style: italic;">No active preferences yet. Start chatting to build your profile!</span>';
+        }
+        
+        // Render tropes in their section
+        if (tropesContainer) {
+            topTropes.forEach(([trope, val]) => {
+                const span = document.createElement('span');
+                span.style.cssText = "background: rgba(44, 36, 32, 0.05); border: 1px solid rgba(44, 36, 32, 0.1); border-radius: 12px; padding: 2px 6px; font-size: 0.7rem; color: #2c2420; display: inline-flex; align-items: center; gap: 4px;";
+                span.innerHTML = `<i class="fa-solid fa-feather" style="color: #b8860b; font-size: 0.6rem;"></i> ${this.formatTropeName(trope)} <small style="opacity: 0.6;">(${val})</small>`;
+                tropesContainer.appendChild(span);
+            });
+            
+            if (topTropes.length === 0) {
+                tropesContainer.innerHTML = '<span style="font-size: 0.75rem; opacity: 0.6; font-style: italic;">No tropes discovered yet.</span>';
+            }
+        }
+    }
+    
+    formatTropeName(trope) {
+        return trope.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
     }
 }
 

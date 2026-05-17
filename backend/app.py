@@ -1,6 +1,17 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
+import sys
+import os
+
+# Robust path insertion so imports work regardless of how script is executed
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(backend_dir)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -15,14 +26,10 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 from backend.spine_generator import create_spine
-import os
 import requests
 
 import logging
 from datetime import datetime, timedelta, timezone
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
 
