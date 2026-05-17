@@ -33,6 +33,19 @@
     --book-width: 160px;
     --book-height: 240px;
     --book-thick: 40px;
+    
+    /* Mood Themes */
+    --theme-cozy-bg: #f6efe7;
+    --theme-cozy-text: #4b382a;
+
+    --theme-rainy-bg: #2f3e46;
+    --theme-rainy-text: #e0fbfc;
+
+    --theme-dark-bg: #1b1b1b;
+    --theme-dark-text: #f5f5f5;
+
+    --theme-romance-bg: #fff0f3;
+    --theme-romance-text: #7b2d26;
 }
 
 [data-theme="night"] {
@@ -65,6 +78,8 @@ html {
 }
 
 body {
+    background: var(--bg-color);
+    color: var(--text-main);
     background-color: var(--bg-color);
     color: var(--text-main);
     font-family: "Georgia", serif;

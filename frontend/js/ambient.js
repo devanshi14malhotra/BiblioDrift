@@ -61,6 +61,15 @@ class AmbientManager {
         this.oceanAudio.volume = 0.5;
     }
 
+    // Apply mood theme
+applyTheme(bgColor, textColor) {
+    document.documentElement.style.setProperty('--bg-color', bgColor);
+    document.documentElement.style.setProperty('--text-main', textColor);
+
+    localStorage.setItem('ambient_bg', bgColor);
+    localStorage.setItem('ambient_text', textColor);
+}
+
     init() {
         // Toggle Panel
         this.toggleBtn.addEventListener('click', (e) => {
@@ -79,6 +88,7 @@ class AmbientManager {
         // Rain Toggle
         this.rainToggle.addEventListener('change', () => {
             if (this.rainToggle.checked) {
+                this.applyTheme('var(--theme-rainy-bg)', 'var(--theme-rainy-text)');
                 this.rainAudio.currentTime = 0;
                 this.rainAudio.play()
                     .then(() => console.log("Rain audio playing"))
@@ -96,6 +106,7 @@ class AmbientManager {
         // Fire Toggle
         this.fireToggle.addEventListener('change', () => {
             if (this.fireToggle.checked) {
+                this.applyTheme('var(--theme-cozy-bg)', 'var(--theme-cozy-text)');
                 this.fireAudio.currentTime = 0;
                 this.fireAudio.play()
                     .then(() => console.log("Fire audio playing"))
@@ -110,6 +121,7 @@ class AmbientManager {
         // Ocean Waves Toggle
         this.oceanToggle.addEventListener('change', () => {
             if (this.oceanToggle.checked) {
+                this.applyTheme('var(--theme-romance-bg)', 'var(--theme-romance-text)');
                 this.oceanAudio.currentTime = 0;
                 this.oceanAudio.play()
                     .then(() => console.log("Ocean audio playing"))
@@ -127,6 +139,7 @@ class AmbientManager {
         // Stormy Rain Toggle
         this.stormToggle.addEventListener('change', () => {
             if (this.stormToggle.checked) {
+                this.applyTheme('var(--theme-dark-bg)', 'var(--theme-dark-text)');
                 this.stormAudio.currentTime = 0;
                 this.stormAudio.play()
                     .then(() => console.log("Storm audio playing"))
