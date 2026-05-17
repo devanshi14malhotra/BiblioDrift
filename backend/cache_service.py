@@ -12,6 +12,7 @@ from typing import Optional, Any, Dict, Callable, List, Union
 from functools import wraps
 from datetime import datetime, timedelta
 from enum import Enum
+from flask_caching import Cache
 
 try:
     import redis

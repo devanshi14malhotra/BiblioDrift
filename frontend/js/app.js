@@ -677,41 +677,60 @@ class BookRenderer {
     }
 
     async fetchAIVibe(title, author, description) {
-        try {
-            const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ title, author, description })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                return data.data?.vibe || null;
-            }
-        } catch (e) {
-            // Silently fail to use fallback
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                title,
+                author,
+                description
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data.data?.vibe || null;
         }
-        return null;
+
+    } catch (e) {
+        console.error(e);
     }
 
-    async fetchAIBlurb(bookId, title, author, description, categories = []) {
-        try {
-            const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ bookId, title, author, description, categories })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                return data.data?.blurb || null;
-            }
-        } catch (e) {
-            // Silently fail to use fallback
+    return null;
+}
+
+async fetchAIBlurb(bookId, title, author, description, categories = []) {
+    try {
+        const res = await fetch(`${MOOD_API_BASE}v1/generate-note`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                bookId,
+                title,
+                author,
+                description,
+                categories
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return data.data?.blurb || null;
         }
-        return null;
+
+    } catch (e) {
+        console.error(e);
     }
 
+    return null;
+}
     generateVibe(text, categories = []) {
         // Fallback vibes if AI hasn't loaded yet.
         const lowerText = text.toLowerCase();

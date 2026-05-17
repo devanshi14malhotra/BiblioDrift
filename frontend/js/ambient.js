@@ -10,15 +10,28 @@ class AmbientManager {
         this.rainToggle = document.getElementById('rainToggle');
         this.fireToggle = document.getElementById('fireToggle');
         this.volumeSlider = document.getElementById('ambientVolume');
+        this.birdToggle = document.getElementById('birdToggle');
+        this.oceanToggle = document.getElementById('oceanToggle');
+        this.chimesToggle = document.getElementById('chimesToggle');
+        this.pianoToggle = document.getElementById('pianoToggle');
 
         // Defensive check: only initialize if elements exist
         if (!this.toggleBtn || !this.panel) return;
 
         this.rainAudio = new Audio('https://archive.org/download/Red_Library_Nature_Rain/R22-25-General%20Rain.mp3');
         this.fireAudio = new Audio('https://archive.org/download/1-hour-cozy-fire-crackling-fireplace-320/1%20hour%20Cozy%20Fire%20Crackling%20Fireplace%20320.mp3');
+        this.birdAudio = new Audio('../assets/sounds/bird.mp3');
+        this.oceanAudio = new Audio('../assets/sounds/ocean.mp3');
+        this.chimesAudio = new Audio('../assets/sounds/softchimes.mp3');
+        this.pianoAudio = new Audio('../assets/sounds/piano.mp3');
+        
         
         this.rainAudio.loop = true;
         this.fireAudio.loop = true;
+        this.birdAudio.loop = true;
+        this.oceanAudio.loop = true;
+        this.chimesAudio.loop = true;
+        this.pianoAudio.loop = true;
 
         // Prevent the weird 'high bass' or thunder sound at the very end of the rain track
         // by artificially looping it a few seconds before the track actually ends.
@@ -95,17 +108,76 @@ class AmbientManager {
             }
         });
 
+        // Bird Toggle
+        this.birdToggle.addEventListener('change',()=>{
+            if(this.birdToggle.checked){
+                this.birdAudio.currentTime = 0;
+                this.birdAudio.play()
+                    .then(() => console.log("Bird audio playing"))
+                    .catch(e => {
+                        console.error("Bird audio failed:", e);
+                    });
+            } else {
+                this.birdAudio.pause();
+            }
+        })
+        //Ocean Toggle
+        this.oceanToggle.addEventListener('change',()=>{
+            if(this.oceanToggle.checked){
+                this.oceanAudio.currentTime = 0;
+                this.oceanAudio.play()
+                    .then(() => console.log("Ocean audio playing"))
+                    .catch(e => {
+                        console.error("Ocean audio failed:", e);
+                    });
+            } else {
+                this.oceanAudio.pause();
+            }
+        })
+        //Chimes Toggle
+        this.chimesToggle.addEventListener('change',()=>{
+            if(this.chimesToggle.checked){
+                this.chimesAudio.currentTime = 0;
+                this.chimesAudio.play()
+                    .then(() => console.log("Chimes audio playing"))
+                    .catch(e => {
+                        console.error("Chimes audio failed:", e);
+                    });
+            } else { this.chimesAudio.pause(); 
+            }
+        })
+        //Piano Toggle
+        this.pianoToggle.addEventListener('change',()=>{
+            if(this.pianoToggle.checked){
+                this.pianoAudio.currentTime = 0;
+                this.pianoAudio.play()
+                    .then(() => console.log("Piano audio playing"))
+                    .catch(e => {
+                        console.error("Piano audio failed:", e);
+                    });
+            } else { this.pianoAudio.pause();
+            }
+        })
+
         // Volume Control
         this.volumeSlider.addEventListener('input', () => {
             const volume = parseFloat(this.volumeSlider.value);
             this.rainAudio.volume = volume;
             this.fireAudio.volume = volume;
+            this.birdAudio.volume = volume;
+            this.oceanAudio.volume = volume;
+            this.chimesAudio.volume = volume;
+            this.pianoAudio.volume = volume;
         });
 
         // Initial sync
         const startVolume = parseFloat(this.volumeSlider.value) || 0.5;
         this.rainAudio.volume = startVolume;
         this.fireAudio.volume = startVolume;
+        this.birdAudio.volume = startVolume;
+        this.oceanAudio.volume = startVolume;
+        this.chimesAudio.volume = startVolume;
+        this.pianoAudio.volume = startVolume;
     }
 }
 
