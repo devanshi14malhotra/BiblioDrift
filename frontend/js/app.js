@@ -148,6 +148,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    authSessionPromise = null;
 }
 
 function parseStoredUser() {
@@ -187,41 +188,45 @@ async function verifyStoredAuthSession() {
     authSessionPromise = (async () => {
         const token = SafeStorage.get('bibliodrift_token');
         const storedUser = parseStoredUser();
-
-        if (!token) {
-            if (storedUser || SafeStorage.get('isLoggedIn') === 'true') {
-                clearStoredAuthState();
-            }
-            return null;
-        }
+        const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
 
         if (token === 'demo-token-12345') {
             return storedUser;
         }
 
+        // Real logins use HttpOnly JWT cookies (see backend JWT_TOKEN_LOCATION). Optional CSRF cookie is readable by JS.
+        const shouldProbe = thinksLoggedIn || storedUser || getCookie('csrf_access_token');
+        if (!shouldProbe) {
+            return null;
+        }
+
         try {
+            const headers = {};
+            const csrf = getCookie('csrf_access_token');
+            if (csrf) {
+                headers['X-CSRF-TOKEN'] = csrf;
+            }
+
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                method: 'GET',
+                credentials: 'include',
+                headers,
             });
 
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 422) {
-                    clearStoredAuthState();
+            if (response.ok) {
+                const data = await response.json();
+                const verifiedUser = data.user || storedUser;
+                if (verifiedUser) {
+                    SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
                 }
-                return null;
+                SafeStorage.set('isLoggedIn', 'true');
+                return verifiedUser || null;
             }
 
-            const data = await response.json();
-            const verifiedUser = data.user || storedUser;
-
-            if (verifiedUser) {
-                SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+            if (response.status === 401 || response.status === 422) {
+                clearStoredAuthState();
             }
-            SafeStorage.set('isLoggedIn', 'true');
-
-            return verifiedUser;
+            return null;
         } catch (error) {
             console.warn('Auth verification failed; using cached session state if available.', error);
             return storedUser;
@@ -551,55 +556,47 @@ class BookRenderer {
         const safeVibe = escapeHTML(vibe);
         const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
 
-scene.innerHTML = `
-    <div class="book-container-3d" data-id="${escapeHTML(id)}">
-        <div class="book-spine-3d" style="background-image: url('${spineImagePath}'); background-size: cover; background-position: center;"></div>
-        
-        <div class="book-cover-3d" style="background-image: url('${safeThumb}'); background-size: cover; background-position: center;"></div>
-        
-        <div class="book-back-3d">
-            <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
-                <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
-                ${bookData.moods && bookData.moods.length > 0 ? `
-                <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
-                    ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+        scene.innerHTML = `
+            <div class="book" data-id="${escapeHTML(id)}">
+                <div class="book__face book__face--front">
+                    <img src="${safeThumb}" alt="${safeTitle}">
                 </div>
-                ` : ''}
-                <div class="book-blurb" data-book-id="${escapeHTML(id)}" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify; min-height: 60px;">${safeOriginalDescription}</div>
+                <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
+                <div class="book__face book__face--right"></div>
+                <div class="book__face book__face--top"></div>
+                <div class="book__face book__face--bottom"></div>
+                <div class="book__face book__face--back">
+                    <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        ${bookData.moods && bookData.moods.length > 0 ? `
+                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <button class="read-details-btn" title="Read Details">
+                        <i class="fa-solid fa-circle-info"></i> Read Details
+                    </button>
+
+                    ${shelf === 'current' ? `
+                    <div class="reading-progress">
+                        <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
+                        <small>${progress}% read</small>
+                    </div>` : ''}
+                    <div class="book-actions">
+                        <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
+                        <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                </div>
             </div>
-            ${shelf === 'current' ? `
-            <div class="reading-progress">
-                <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
-                <small>${progress}% read</small>
-            </div>` : ''}
-            <div class="book-actions">
-                <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
-                <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-            </div>
-        </div>
-        
         <div class="book-pages-3d"></div>
-    </div>
     <div class="glass-overlay">
         <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
     </div>
 `;
-
-        // Fetch AI-generated blurb asynchronously
-        const blurbElement = scene.querySelector('.book-blurb');
-        if (blurbElement) {
-            this.fetchAIBlurb(id, title, authors, volumeInfo.description || "", categories)
-                .then(aiBlurb => {
-                    if (aiBlurb && blurbElement) {
-                        blurbElement.textContent = aiBlurb;
-                    }
-                })
-                .catch(err => {
-                    // Silently keep fallback description
-                });
-        }
 
         // Interaction: Progress Slider
         const slider = scene.querySelector('.progress-slider');
@@ -647,7 +644,7 @@ scene.innerHTML = `
         });
 
         // Info Button
-        scene.querySelector('.info-btn').addEventListener('click', (e) => {
+        scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
         });
@@ -702,7 +699,8 @@ scene.innerHTML = `
             });
             if (res.ok) {
                 const data = await res.json();
-                return data.data?.vibe || null;
+                const payload = data.data || data;
+                return payload?.vibe || payload?.bookseller_note || payload?.insight || payload?.note || null;
             }
         } catch (e) {
             // Silently fail to use fallback
@@ -1955,16 +1953,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.value = query;
     }
 
-    if (query && document.getElementById('row-rainy')) {
-        document.querySelector('main').innerHTML = `
-            <section class="hero">
-                <h1>Results for "${query}"</h1>
-                <p>Found specific books matching your vibe.</p>
-            </section>
-            <section class="curated-section">
-                <div class="curated-row" id="search-results" style="flex-wrap: wrap; justify-content: center;"></div>
-            </section>`;
-        renderer.renderCuratedSection(query, 'search-results', 20);
+    if (query && document.getElementById('search-results-section')) {
+        const searchSection = document.getElementById('search-results-section');
+        const queryDisplay = document.getElementById('search-query-display');
+        
+        queryDisplay.textContent = `Results for "${query}"`;
+        searchSection.removeAttribute('hidden');
+        
+        // Hide other main content to focus on search without destroying modals
+        document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        renderer.renderCuratedSection(query, 'search-results-grid', 20);
     } else if (document.getElementById('row-rainy')) {
         console.log('📚 Initializing Curated Discovery Sections...');
         const discoveryShelves = [
@@ -2311,13 +2312,36 @@ async function handleAuth(event) {
         payload = { username: email, password: password };
     }
 
+    // =========================================================================
+    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
+    // =========================================================================
+    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
+    // This token is then injected into the 'X-CSRF-Token' header. 
+    // The Flask-WTF backend expects this header for all state-changing
+    // AJAX requests. This protects against Cross-Site Request Forgery 
+    // by ensuring that the request is authenticated via the browser's 
+    // Same-Origin Policy and session-bound secrets.
+    // =========================================================================
+    const csrfToken = document.getElementById('csrf_token')?.value;
+
     try {
-        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
+        const fetchOptions = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             credentials: 'include',
             body: JSON.stringify(payload)
-        });
+        };
+
+        // Inject CSRF token into headers if available
+        if (csrfToken) {
+            fetchOptions.headers['X-CSRF-Token'] = csrfToken;
+        } else if (IS_DEV) {
+            console.warn('[Security] No CSRF token found in DOM. Request may be rejected by server.');
+        }
+
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
 
         const data = await res.json();
 

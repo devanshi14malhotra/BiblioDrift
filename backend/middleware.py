@@ -167,3 +167,57 @@ def safe_request_handler(
         return decorated_function
     
     return decorator
+def csrf_token_required(f):
+    """
+    =============================================================================
+    EXPLICIT CSRF TOKEN VALIDATION DECORATOR
+    =============================================================================
+    While CSRFProtect (Flask-WTF) handles validation globally for all 
+    state-mutating requests, this decorator can be used for explicit validation 
+    or when fine-grained control is required over CSRF error handling.
+    
+    It manually triggers the CSRF validation logic and returns a standardized 
+    BiblioDrift error response upon failure.
+    
+    Why this matters?:
+    By providing an explicit decorator, we empower developers to selectively 
+    enforce or bypass CSRF on specific high-risk endpoints, and provide 
+    clearer error context than the generic global handler.
+    =============================================================================
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        from flask_wtf.csrf import validate_csrf, CSRFError
+        try:
+            # We look for the token in the 'X-CSRF-Token' header by default
+            token = request.headers.get('X-CSRF-Token')
+            if not token:
+                # Fallback to form data if header is missing
+                token = request.form.get('csrf_token')
+                
+            if not token:
+                logger.warning(f"CSRF Token missing in request from {request.remote_addr}")
+                return jsonify({
+                    "success": False,
+                    "error": "CSRF_TOKEN_MISSING",
+                    "message": "Security token is required for this action."
+                }), 400
+                
+            validate_csrf(token)
+            return f(*args, **kwargs)
+        except CSRFError as e:
+            logger.error(f"CSRF Validation failure in middleware: {e.description}")
+            return jsonify({
+                "success": False,
+                "error": "CSRF_TOKEN_INVALID",
+                "message": f"Security validation failed: {e.description}"
+            }), 400
+        except Exception as e:
+            logger.error(f"Unexpected error during CSRF validation: {str(e)}")
+            return jsonify({
+                "success": False,
+                "error": "SECURITY_ERROR",
+                "message": "An internal security error occurred."
+            }), 500
+            
+    return decorated_function

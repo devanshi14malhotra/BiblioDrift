@@ -6,8 +6,8 @@ const createFooter = () => {
       <div class="footer-container">
         <!-- Brand Section -->
         <div class="footer-brand">
-          <a href="/index.html" class="logo" aria-label="BiblioDrift Home">
-            <img class="footer-logo" src="/assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+          <a href="index.html" class="logo" aria-label="BiblioDrift Home">
+            <img class="footer-logo" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
           </a>
           <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
           <p class="footer-subtext">&mdash; Emily Dickinson</p>
@@ -17,10 +17,10 @@ const createFooter = () => {
         <nav class="footer-nav" aria-label="Footer Navigation">
           <h3>Explore</h3>
           <ul>
-            <li><a href="/index.html">Discovery</a></li>
-            <li><a href="/library.html">My Library</a></li>
-            <li><a href="/chat.html">Literary Chat</a></li>
-            <li><a href="/auth.html">Account</a></li>
+            <li><a href="../index.html">Discovery</a></li>
+            <li><a href="../library.html">My Library</a></li>
+            <li><a href="../chat.html">Literary Chat</a></li>
+            <li><a href="../auth.html">Account</a></li>
           </ul>
         </nav>
 

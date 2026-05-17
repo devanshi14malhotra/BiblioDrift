@@ -11,6 +11,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from sqlalchemy.orm import joinedload
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 from backend.spine_generator import create_spine
@@ -25,14 +26,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
 
-# Load environment variables from config directory based on APP_ENV
-env = os.getenv('APP_ENV', 'development')
-env_path = os.path.join(os.path.dirname(__file__), '..', 'config', f'.env.{env}')
-if os.path.exists(env_path):
-    load_dotenv(env_path)
-else:
-    load_dotenv()
-
+# Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
 from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
@@ -111,6 +105,28 @@ validate_required_env_vars()
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
 
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: CSRF PROTECTION (FLASK-WTF)
+# =====================================================================
+# Cross-Site Request Forgery (CSRF) is a serious vulnerability where 
+# an attacker tricks a user into performing actions they didn't intend
+# to do on a different website where they are authenticated.
+#
+# While JWT-Extended provides CSRF protection for authenticated 
+# requests via cookies, the initial authentication flow (Login/Register) 
+# often remains vulnerable if not explicitly protected.
+#
+# We initialize Flask-WTF's CSRFProtect to provide a secondary layer
+# of defense. This will automatically validate CSRF tokens for all
+# POST, PUT, PATCH, and DELETE requests.
+# =====================================================================
+csrf = CSRFProtect(app)
+
+# Exclude certain endpoints from global CSRF if they are handled by JWT CSRF
+# or if they are intended to be public-facing without token requirements.
+# In this architecture, we prefer explicit protection on all mutation routes.
+# csrf.exempt(some_blueprint) 
+
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
@@ -150,6 +166,30 @@ def page_not_found(e: Exception):
     if request.path.startswith('/api/'):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
     return app.send_static_file('404.html'), 404
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    """
+    =========================================================================
+    CUSTOM CSRF ERROR HANDLER
+    =========================================================================
+    Intercepts CSRF validation failures and returns a standardized JSON 
+    error response instead of the default HTML error page.
+    
+    This is critical for a RESTful API architecture where the client 
+    expects consistent JSON structures even during security failures.
+    
+    Status: 400 Bad Request (as per Flask-WTF default for CSRF failures)
+    =========================================================================
+    """
+    logger.warning(f"CSRF Validation Failed: {e.description} | Remote IP: {request.remote_addr}")
+    return jsonify({
+        "success": False,
+        "error": "CSRF_VALIDATION_FAILED",
+        "message": f"Security token validation failed: {e.description}. Please refresh the page.",
+        "code": 400
+    }), 400
 
 
 @app.after_request
@@ -308,6 +348,25 @@ def get_config():
         "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
         "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
     })
+
+# =====================================================================
+# ENDPOINT: CSRF Token Retrieval
+# =====================================================================
+# Since this is a decoupled frontend, we need a way for the client-side
+# application to "prime" itself with a valid CSRF token before attempting
+# a state-mutating request (like Login or Register).
+#
+# This endpoint generates a new token and sets the associated session 
+# cookie. The frontend should call this on page load of sensitive forms.
+# =====================================================================
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf_token():
+    """
+    Generate and return a fresh CSRF token.
+    The token is automatically tied to the user's session.
+    """
+    token = generate_csrf()
+    return success_response(data={"csrf_token": token})
 
 @app.route('/')
 def index():
@@ -1090,6 +1149,15 @@ def register():
     try:
         data = request.get_json()
         
+        # =========================================================================
+        # SECURITY AUDIT: REGISTRATION ATTEMPT
+        # =========================================================================
+        # All registration attempts are logged for security auditing purposes.
+        # CSRF protection is enforced automatically by Flask-WTF for this 
+        # POST request, ensuring the signup originates from our own UI.
+        # =========================================================================
+        logger.info(f"Registration attempt for user: {data.get('username')} from IP: {request.remote_addr}")
+        
         is_valid, validated_data = validate_request(RegisterRequest, data)
         if not is_valid:
             return jsonify(validated_data), 400
@@ -1134,6 +1202,15 @@ def login():
     try:
         data = request.get_json()
         
+        # =========================================================================
+        # SECURITY AUDIT: LOGIN ATTEMPT
+        # =========================================================================
+        # All login attempts are strictly validated against CSRF tokens.
+        # This prevents an attacker from creating a malicious site that 
+        # automatically logs a user into an account they control.
+        # =========================================================================
+        logger.info(f"Login attempt for identifier: {data.get('username')} from IP: {request.remote_addr}")
+        
         is_valid, validated_data = validate_request(LoginRequest, data)
         if not is_valid:
             return jsonify(validated_data), 400
@@ -1167,6 +1244,22 @@ def logout():
     resp, status = success_response(message="Logout successful")
     unset_jwt_cookies(resp)
     return resp, status
+
+
+@app.route('/api/v1/auth/verify', methods=['GET'])
+@jwt_required()
+def verify_auth_session():
+    """Validate JWT from access cookie and return the current user (session restore)."""
+    try:
+        uid = get_jwt_identity()
+        user = User.query.get(int(uid))
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify({
+            "user": {"id": user.id, "username": user.username, "email": user.email}
+        }), 200
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid session"}), 401
 
 
 # ==================== READING STATS ENDPOINTS ====================

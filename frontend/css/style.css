@@ -492,6 +492,38 @@ main {
     margin-bottom: 1rem;
 }
 
+/* Read details Button */
+.read-details-btn {
+    background-color: #3e2723; 
+    color: #fffdf9;
+    border: 1px solid var(--accent-gold);
+    padding: 6px 16px; 
+    border-radius: 6px;
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px; 
+    margin: 8px auto 14px auto;
+    width: 96%; 
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.2s ease-in-out;
+    white-space: nowrap; 
+}
+
+.read-details-btn:hover {
+    background-color: #5d4037;
+}
+
+.book__face--back .book-actions {
+    justify-content: space-around;
+    padding: 0 10px;
+    width: 100%;
+    margin-bottom: -6px;
+}
+
 .book-actions {
     display: flex;
     gap: 0.35rem;
@@ -1782,15 +1814,12 @@ main {
 
 /* ===== GENRE SECTION STYLES ===== */
 .genre-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    padding: 2rem 1rem;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+display: grid;
+   
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.25rem;
+    padding: 2rem 0.5rem
 }
-
 
 /* Genre Card - Vintage Book Spine Look */
 /* Genre Card - Compact Vintage Rectangular Look */
@@ -1800,19 +1829,20 @@ main {
     /* Horizontal layout */
     align-items: center;
     justify-content: flex-start;
-    padding: 1.25rem 1.75rem;
+    gap: 1rem;
+    padding: 1.35rem 1.6rem;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 
     /* Rectangular Shape */
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 
-    height: 100px;
+    min-height: 112px;
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    gap: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
 }
 
 /* Remove gold lines for cleaner small look */
@@ -1822,7 +1852,7 @@ main {
 }
 
 .genre-card i {
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     margin-bottom: 0;
     margin-right: 0;
     color: rgba(255, 255, 255, 0.95);
@@ -1845,11 +1875,12 @@ main {
     writing-mode: horizontal-tb;
     /* Horizontal Text */
     transform: none;
+    line-height: 1.2;
 }
 
 .genre-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
     z-index: 10;
 }
 
@@ -2058,18 +2089,20 @@ main {
 /* Genre Responsive */
 @media (max-width: 900px) {
     .genre-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
 }
 
 @media (max-width: 600px) {
     .genre-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.9rem;
     }
 
     .genre-card {
-        padding: 1.25rem 0.75rem;
+        min-height: 96px;
+        padding: 1rem 1rem;
+        gap: 0.85rem;
     }
 
     .genre-card i {
@@ -5094,66 +5127,12 @@ input:checked+.slider {
 input:checked+.slider:before {
     transform: translateX(14px);
 }
-html[data-theme="night"] .glass-overlay,
-body.night-mode .glass-overlay,
-[data-theme="night"] .glass-overlay {
-    background-color: #1e140c !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+html, body {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23cca43b' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23cca43b' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, auto !important;
 }
-
-html[data-theme="night"] .tooltip-title,
-body.night-mode .tooltip-title {
-    color: #ffffff !important;
-}
-
-html[data-theme="night"] .tooltip-author,
-body.night-mode .tooltip-author {
-    color: #cccccc !important;
-}
-
-
-.footer-logo {
-  height: 40px;
-  width: auto;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-
-.main-footer {
- 
-  padding: 4rem 2rem 1rem;
-}
-
-.footer-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2rem;
-}
-
-.footer-container a {
- 
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-
-
-.social-icons {
-  display: flex;
-  gap: 1rem;
-}
-
-.footer-bottom {
-  text-align: center;
-  margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: 1px solid #374151;
+*:hover {
+  cursor: pointer !important; 
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23ffca3a' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23ffca3a' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, pointer !important;
 }
 
 /* ============================================================
