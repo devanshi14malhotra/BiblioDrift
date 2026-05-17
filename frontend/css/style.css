@@ -68,12 +68,151 @@ body {
     background-color: var(--bg-color);
     color: var(--text-main);
     font-family: "Georgia", serif;
-    /* Classic serif for books */
     overflow-x: hidden;
     min-height: 100vh;
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
+/* ===== BACKGROUND THEMES ===== */
+body[data-bg="default"] {
+    background: 
+        linear-gradient(135deg, rgba(249,247,242,0.55) 0%, rgba(249,247,242,0.55) 100%),
+        url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1920') center/cover fixed;
+}
 
+body[data-bg="parchment"] {
+    background:
+        linear-gradient(135deg, rgba(249,244,225,0.55) 0%, rgba(249,244,225,0.55) 100%),
+        url('https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1920') center/cover fixed;
+}
+
+body[data-bg="library"] {
+    background:
+        linear-gradient(135deg, rgba(249,247,242,0.55) 0%, rgba(249,247,242,0.55) 100%),
+        url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1920') center/cover fixed;
+}
+
+body[data-bg="oldbooks"] {
+    background:
+        linear-gradient(135deg, rgba(245,238,220,0.55) 0%, rgba(245,238,220,0.55) 100%),
+        url('https://images.unsplash.com/photo-1474932430478-367dbb6832c1?w=1920') center/cover fixed;
+}
+
+body[data-bg="grain"] {
+    background:
+        linear-gradient(135deg, rgba(249,247,242,0.55) 0%, rgba(249,247,242,0.55) 100%),
+        url('https://images.unsplash.com/photo-1549241520-425e3dfc01cb?w=1920') center/cover fixed;
+}
+
+body[data-bg="none"] {
+    background: var(--bg-color);
+}
+
+/* Dark mode overrides for bg themes */
+[data-theme="night"] body[data-bg="default"],
+[data-theme="night"] body[data-bg="library"] {
+    background:
+        linear-gradient(135deg, rgba(30,26,24,0.88) 0%, rgba(30,26,24,0.88) 100%),
+        url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1920') center/cover fixed;
+}
+
+[data-theme="night"] body[data-bg="parchment"],
+[data-theme="night"] body[data-bg="oldbooks"],
+[data-theme="night"] body[data-bg="grain"],
+[data-theme="night"] body[data-bg="linen"] {
+    background:
+        linear-gradient(135deg, rgba(30,26,24,0.88) 0%, rgba(30,26,24,0.88) 100%),
+        url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1920') center/cover fixed;
+}
+
+/* Background selector UI */
+.bg-theme-selector {
+    position: fixed;
+    bottom: 10rem;
+    right: 2rem;
+    z-index: 10003;
+}
+
+.bg-theme-btn {
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 50%;
+    background: var(--header-bg);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.bg-theme-btn:hover {
+    background: var(--accent-gold);
+    color: white;
+    transform: scale(1.05);
+}
+
+.bg-theme-panel {
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    width: 220px;
+    background: var(--header-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 10004;
+}
+
+.bg-theme-panel.active {
+    display: flex;
+}
+
+.bg-theme-panel h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    color: var(--accent-gold);
+    margin-bottom: 0.5rem;
+}
+
+.bg-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    border: 1px solid transparent;
+}
+
+.bg-option:hover {
+    background: rgba(212,175,55,0.1);
+    border-color: var(--accent-gold);
+}
+
+.bg-option.active {
+    background: rgba(212,175,55,0.15);
+    border-color: var(--accent-gold);
+    font-weight: bold;
+}
+
+.bg-option-preview {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.1);
+    background-size: cover;
+    background-position: center;
+}
 /* Explicit night-mode overrides — bulletproof fallback */
 [data-theme="night"] body,
 html[data-theme="night"],
@@ -304,12 +443,12 @@ main {
 }
 
 .section-header {
-    margin-: 0 1rem 0.5rem 1rem;
+    margin: 0 1rem 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1rem
+    gap: 1rem;
     justify-content: space-between;
     align-items: baseline;
 }
@@ -1976,7 +2115,6 @@ display: grid;
     display: flex;
     flex-direction: column;
 }
-
 .genre-modal-header {
     display: flex;
     justify-content: space-between;

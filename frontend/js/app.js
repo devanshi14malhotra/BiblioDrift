@@ -1754,6 +1754,7 @@ class GenreManager {
 
         const genreName = genre.charAt(0).toUpperCase() + genre.slice(1);
         this.modalTitle.textContent = `${genreName} Books`;
+        this.modal.setAttribute('data-genre', genre);
         this.modal.showModal();
         document.body.style.overflow = 'hidden'; // Prevent scrolling
 
