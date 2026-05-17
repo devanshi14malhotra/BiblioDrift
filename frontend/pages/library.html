@@ -5,9 +5,13 @@
     <meta charset="UTF-8">
     <script>
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
-            if (theme === 'night') {
-                document.documentElement.setAttribute('data-theme', 'night');
+            try {
+                const theme = localStorage.getItem('bibliodrift_theme');
+                if (theme === 'night') {
+                    document.documentElement.setAttribute('data-theme', 'night');
+                }
+            } catch (e) {
+                console.warn('Storage access blocked or unavailable', e);
             }
         })();
     </script>
@@ -15,8 +19,6 @@
 
 <script src="../js/db.js"></script>
 
-<script src="../js/app.js"></script>
-<script src="../js/library-3d.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->

@@ -115,20 +115,7 @@ async function loadConfig() {
         console.warn('Failed to load backend config', e);
     }
 }
-import { saveBookOffline, removeOfflineBook, db } from './db.js';
 
-// Example click handler for your custom "Save for Offline" icon
-async function handleDownloadToggle(bookCard, bookData) {
-    const isAlreadyDownloaded = await db.downloadedBooks.get(bookData.id);
-    
-    if (isAlreadyDownloaded) {
-        const success = await removeOfflineBook(bookData.id);
-        if (success) bookCard.classList.remove('is-downloaded');
-    } else {
-        const success = await saveBookOffline(bookData);
-        if (success) bookCard.classList.add('is-downloaded');
-    }
-}
 // Toast Notification Helper
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
@@ -496,6 +483,7 @@ function getFallbackBooks(query, maxResults = 5) {
     return pool.slice(0, maxResults);
 }
 
+const SVG_FALLBACK_COVER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTk2IiB2aWV3Qm94PSIwIDAgMTI4IDE5NiI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzJjMjQyMCIvPjxyZWN0IHg9IjYiIHk9IjYiIHdpZHRoPSIxMTYiIGhlaWdodD0iMTg0IiBmaWxsPSJub25lIiBzdHJva2U9IiNkNGFmMzciIHN0cm9rZS13aWR0aD0iMiIvPjx0ZXh0IHg9IjUwJSIgeT0iNDUlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iR2VvcmdpYSwgc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiNmZmY1ZjUiIGZvbnQtc3R5bGU9Iml0YWxpYyI+QmlibGlvRHJpZnQ8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCBzZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0iI2Q0YWYzNyI+Tm8gQ292ZXIgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg==';
 
 class BookRenderer {
     constructor(libraryManager = null) {
@@ -522,7 +510,7 @@ class BookRenderer {
         const progress = typeof bookData.progress === 'number' ? bookData.progress : 0;
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
-        const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
+        const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : SVG_FALLBACK_COVER;
         const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
         const categories = volumeInfo.categories || [];
 
@@ -559,7 +547,7 @@ class BookRenderer {
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+                    <img src="${safeThumb}" alt="${safeTitle}" onerror="this.src='${SVG_FALLBACK_COVER}'; this.onerror=null;">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -2099,7 +2087,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     card.className = 'progress-overview-card';
                     card.innerHTML = `
                         <div class="progress-card-cover">
-                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy" onerror="this.src='${SVG_FALLBACK_COVER}'; this.onerror=null;">` : '<i class="fa-solid fa-book"></i>'}
                         </div>
                         <div class="progress-card-info">
                             <div class="progress-card-title">${title}</div>
@@ -2775,7 +2763,7 @@ async function triggerOfflineLibraryView() {
                 bookCard.className = 'book-card offline-card';
                 bookCard.innerHTML = `
                     <div class="book-cover-wrapper">
-                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img" />
+                        <img src="${book.coverUrl || SVG_FALLBACK_COVER}" alt="${book.title}" class="book-cover-img" onerror="this.src='${SVG_FALLBACK_COVER}'; this.onerror=null;" />
                     </div>
                     <div class="book-details">
                         <h3>${book.title}</h3>

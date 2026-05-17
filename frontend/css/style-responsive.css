@@ -4,6 +4,7 @@
 :root {
     --book-width: 180px;
     --book-height: 280px;
+}
 /* Universal Mobile-First Improvements */
 * {
     -webkit-tap-highlight-color: transparent;
@@ -125,12 +126,15 @@ button, a, input {
     }
 
     .header-controls {
-        flex-direction: column;
-        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr auto;
         gap: 0.5rem;
+        width: 100%;
+        align-items: center;
     }
 
     .search-bar {
+        grid-column: 1 / 2;
         width: 100%;
     }
 
@@ -138,16 +142,23 @@ button, a, input {
         width: 100%;
     }
 
+    #themeToggle {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+        justify-self: end;
+    }
+
     .nav-links {
+        grid-column: 1 / 3;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center; 
         font-size: 14px;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 1.25rem;
         width: 100%;
-        margin-top: 10px;
+        margin-top: 5px;
     }
 
     .nav-links a {
@@ -175,6 +186,7 @@ button, a, input {
         gap: 1rem;
         padding-bottom: 1rem;
         overflow-x: auto;
+    }
     .hero h1 {
         font-size: clamp(1.8rem, 5vw, 2.5rem);
     }
@@ -338,6 +350,7 @@ button, a, input {
     :root {
         --book-width: 110px;
         --book-height: 170px;
+    }
 
     .spine-author {
         font-size: 0.5rem;
@@ -1070,6 +1083,7 @@ button, a, input {
         width: 96vw;
         max-height: 85vh;
     }
+}
 
 /* Style the container for controls */
 .sort-controls {

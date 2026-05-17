@@ -1,5 +1,4 @@
-:root {
-    /* Fix: WCAG AA Contrast Floor - Issue #534 */
+/* Fix: WCAG AA Contrast Floor - Issue #534 */
 .glass-panel,
 .book-tooltip,
 .book-detail-modal,
@@ -8,6 +7,8 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 }
+
+:root {
     /* Day Theme (Default) */
     --bg-color: #f9f7f2;
     --header-bg: rgba(249, 247, 242, 0.8);
@@ -304,14 +305,12 @@ main {
 }
 
 .section-header {
-    margin-: 0 1rem 0.5rem 1rem;
+    margin: 0 1rem 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1rem
-    justify-content: space-between;
-    align-items: baseline;
+    gap: 1rem;
 }
 
 .curated-row {
@@ -4542,7 +4541,7 @@ display: grid;
     border-radius: 50% !important;
     background: var(--accent-gold) !important;
     color: white !important;
-    display: flex !important;
+    display: flex;
     justify-content: center !important;
     align-items: center !important;
     z-index: 10000 !important;
@@ -4550,6 +4549,10 @@ display: grid;
     cursor: pointer !important;
     border: none !important;
     transition: all 0.3s ease !important;
+}
+
+.back-to-top.hidden {
+    display: none !important;
 }
 
 /* Ambient Sanctuary Wrapper Position */

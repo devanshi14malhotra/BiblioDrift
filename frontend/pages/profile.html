@@ -5,9 +5,13 @@
     <meta charset="UTF-8">
     <script>
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
-            if (theme === 'night') {
-                document.documentElement.setAttribute('data-theme', 'night');
+            try {
+                const theme = localStorage.getItem('bibliodrift_theme');
+                if (theme === 'night') {
+                    document.documentElement.setAttribute('data-theme', 'night');
+                }
+            } catch (e) {
+                console.warn('Storage access blocked or unavailable', e);
             }
         })();
     </script>
