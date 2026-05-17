@@ -363,6 +363,9 @@
                     <button class="action-btn" onclick="exportChat()" title="Export conversation">
                         <i class="fa-solid fa-download"></i>
                     </button>
+                    <button class="action-btn" onclick="document.getElementById('personalizationModal').style.display='flex'" title="Personalization Settings">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
                 </div>
             </div>
 
@@ -433,6 +436,55 @@
         </div>
     </main>
 
+    <!-- Personalization Modal -->
+    <div id="personalizationModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+        <div class="modal-content" style="background:var(--card-bg, #fff); padding:2rem; border-radius:12px; max-width:500px; width:90%; position:relative;">
+            <button onclick="document.getElementById('personalizationModal').style.display='none'" style="position:absolute; top:10px; right:15px; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h2 style="font-family:'Playfair Display', serif; margin-bottom:1rem;">Deep Personalization Engine</h2>
+            <p style="margin-bottom:1rem; opacity:0.8;">Elara learns your reading tastes over time. The Local Edge AI uses this to find the perfect books just for you!</p>
+            
+            <div style="margin-bottom:1rem;">
+                <label style="display:block; font-weight:bold; margin-bottom:0.5rem;">Explicit Preferences (e.g., 'Mystery', 'Enemies to Lovers'):</label>
+                <input type="text" id="explicitPrefsInput" placeholder="Add a genre or trope..." style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ccc; margin-bottom:0.5rem;">
+                <button onclick="addExplicitPreference()" style="padding:0.5rem 1rem; background:var(--primary-color, #8b4513); color:#fff; border:none; border-radius:6px; cursor:pointer;">Add Preference</button>
+            </div>
+            
+            <div id="currentPrefsList" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem;">
+                <!-- Prefs injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addExplicitPreference() {
+            const input = document.getElementById('explicitPrefsInput');
+            const val = input.value.trim();
+            if (val && window.personalization) {
+                window.personalization.updateWeight('tropes', val, 2.0); // Explicit weight
+                input.value = '';
+                renderPrefs();
+            }
+        }
+        function renderPrefs() {
+            const list = document.getElementById('currentPrefsList');
+            if(!list || !window.personalization) return;
+            list.innerHTML = '';
+            const prefs = window.personalization.getTopPreferences().split(', ').filter(Boolean);
+            if (prefs.length === 0) {
+                list.innerHTML = '<span style="opacity:0.6; font-style:italic;">No preferences learned yet.</span>';
+                return;
+            }
+            prefs.forEach(p => {
+                const tag = document.createElement('span');
+                tag.style.cssText = 'background:rgba(139, 69, 19, 0.1); padding:0.25rem 0.5rem; border-radius:12px; font-size:0.85rem; border:1px solid rgba(139, 69, 19, 0.3);';
+                tag.textContent = p;
+                list.appendChild(tag);
+            });
+        }
+        // Render when modal opens
+        document.querySelector('button[title="Personalization Settings"]').addEventListener('click', renderPrefs);
+    </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const link = document.getElementById('navAuthLink');
@@ -450,6 +502,8 @@
     </script>
     <script src="../js/config.js"></script>
     <script src="../js/ambient.js"></script>
+    <script src="../js/edge-ai.js"></script>
+    <script src="../js/personalization.js"></script>
     <script src="../js/chat.js"></script>
     <script src="../js/app.js"></script>
     <script src="../js/footer.js"></script>

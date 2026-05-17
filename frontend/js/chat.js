@@ -269,7 +269,39 @@ Tell me: what is stirring in you today?`,
         }
 
         // Final fallback to Google Books API only
-        const books = await this.searchGoogleBooks(userMessage);
+        let books = await this.searchGoogleBooks(userMessage);
+
+        // EDGE AI & PERSONALIZATION FALLBACK (Fixes #627 Loop)
+        if (books.length === 0 && window.edgeAI && window.personalization) {
+            console.log("Standard search failed. Using Edge AI and Personalization for fallback.");
+            
+            // Show typing indicator during model execution if needed
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.querySelector('.typing-label').textContent = 'Elara is analyzing your mood locally...';
+            }
+
+            const keywords = await window.edgeAI.extractKeywords(userMessage);
+            const prefs = window.personalization.getTopPreferences();
+            
+            let augmentedQuery = keywords.join('+');
+            if (prefs) {
+                augmentedQuery += '+' + prefs.replace(/, /g, '+');
+            }
+            if (!augmentedQuery) {
+                augmentedQuery = 'fiction'; // safe ultimate fallback
+            }
+
+            books = await this.searchGoogleBooks(augmentedQuery);
+            
+            if (books.length > 0) {
+                return {
+                    message: "I looked deep into my local archives and found these tailored recommendations based on your preferences and mood:",
+                    books: books
+                };
+            }
+        }
+
         return {
             message: this.generateContextualResponse(userMessage, books),
             books: books
@@ -578,6 +610,11 @@ Tell me: what is stirring in you today?`,
     }
 
     showBookDetails(book) {
+        // Record implicit interaction for personalization
+        if (window.personalization) {
+            window.personalization.recordBookInteraction(book, false);
+        }
+
         // Use existing modal functionality from app.js
         if (typeof showBookModal === 'function') {
             showBookModal(book);
