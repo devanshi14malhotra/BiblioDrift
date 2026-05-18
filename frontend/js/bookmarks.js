@@ -9,9 +9,6 @@ class BookmarkManager {
         this.api = '/api';
     }
 
-    /**
-     * Initialize bookmark UI on page load
-     */
     async init() {
         await this.loadBookmarks();
         this.attachEventListeners();
@@ -19,9 +16,6 @@ class BookmarkManager {
         this.updateAllBookmarkButtons();
     }
 
-    /**
-     * Load all bookmarks for the current user
-     */
     async loadBookmarks() {
         try {
             const response = await fetch(`${this.api}/bookmarks`, {
@@ -49,24 +43,16 @@ class BookmarkManager {
         }
     }
 
-    /**
-     * Check if a specific book is bookmarked
-     */
-    async isBookmarked(bookId) {
+    isBookmarked(bookId) {
         return this.bookmarks.has(bookId);
     }
 
-    /**
-     * Toggle bookmark for a book
-     */
     async toggleBookmark(bookId, pageNumber = null, notes = '') {
         try {
             if (this.bookmarks.has(bookId)) {
-                // Remove bookmark
                 const bookmark = this.bookmarks.get(bookId);
                 await this.deleteBookmark(bookmark.id);
             } else {
-                // Add bookmark
                 await this.createBookmark(bookId, pageNumber, notes);
             }
         } catch (error) {
@@ -75,9 +61,6 @@ class BookmarkManager {
         }
     }
 
-    /**
-     * Create a new bookmark
-     */
     async createBookmark(bookId, pageNumber = null, notes = '') {
         try {
             const response = await fetch(`${this.api}/bookmarks`, {
@@ -94,16 +77,17 @@ class BookmarkManager {
                 })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to create bookmark');
+                throw new Error(data.message || 'Failed to create bookmark');
             }
 
-            const data = await response.json();
             if (data.success) {
                 this.bookmarks.set(bookId, data.data.bookmark);
                 this.updateBookmarkButton(bookId, true);
                 showNotification('Book bookmarked!', 'success');
+                this.renderBookmarks();
             }
         } catch (error) {
             console.error('Error creating bookmark:', error);
@@ -111,9 +95,6 @@ class BookmarkManager {
         }
     }
 
-    /**
-     * Update an existing bookmark
-     */
     async updateBookmark(bookmarkId, pageNumber = null, notes = '') {
         try {
             const response = await fetch(`${this.api}/bookmarks/${bookmarkId}`, {
@@ -129,15 +110,17 @@ class BookmarkManager {
                 })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Failed to update bookmark');
+                throw new Error(data.message || 'Failed to update bookmark');
             }
 
-            const data = await response.json();
             if (data.success) {
                 const bookmark = data.data.bookmark;
                 this.bookmarks.set(bookmark.book_id, bookmark);
                 showNotification('Bookmark updated!', 'success');
+                this.renderBookmarks();
             }
         } catch (error) {
             console.error('Error updating bookmark:', error);
@@ -145,9 +128,6 @@ class BookmarkManager {
         }
     }
 
-    /**
-     * Delete a bookmark
-     */
     async deleteBookmark(bookmarkId) {
         try {
             const response = await fetch(`${this.api}/bookmarks/${bookmarkId}`, {
@@ -158,13 +138,13 @@ class BookmarkManager {
                 }
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Failed to delete bookmark');
+                throw new Error(data.message || 'Failed to delete bookmark');
             }
 
-            const data = await response.json();
             if (data.success) {
-                // Find and remove the bookmark
                 for (const [bookId, bookmark] of this.bookmarks.entries()) {
                     if (bookmark.id === bookmarkId) {
                         this.bookmarks.delete(bookId);
@@ -173,6 +153,7 @@ class BookmarkManager {
                         break;
                     }
                 }
+                this.renderBookmarks();
             }
         } catch (error) {
             console.error('Error deleting bookmark:', error);
@@ -180,22 +161,19 @@ class BookmarkManager {
         }
     }
 
-    /**
-     * Update bookmark button UI state with star icon
-     */
     updateBookmarkButton(bookId, isBookmarked) {
         const btn = document.querySelector(`[data-book-id="${bookId}"] .bookmark-btn`);
         if (btn) {
             btn.classList.toggle('bookmarked', isBookmarked);
-            btn.innerHTML = `<svg class="star-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+            btn.innerHTML = `
+                <svg class="star-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>`;
             btn.setAttribute('aria-label', isBookmarked ? 'Remove bookmark' : 'Add bookmark');
             btn.title = isBookmarked ? 'Remove bookmark' : 'Add bookmark';
         }
     }
 
-    /**
-     * Update all bookmark buttons on page
-     */
     updateAllBookmarkButtons() {
         document.querySelectorAll('.book-card').forEach(card => {
             const bookId = parseInt(card.getAttribute('data-book-id'));
@@ -204,13 +182,10 @@ class BookmarkManager {
         });
     }
 
-    /**
-     * Attach event listeners to bookmark buttons
-     */
     attachEventListeners() {
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.bookmark-btn')) {
-                const btn = e.target.closest('.bookmark-btn');
+            const btn = e.target.closest('.bookmark-btn');
+            if (btn) {
                 const bookId = parseInt(btn.closest('[data-book-id]').getAttribute('data-book-id'));
                 this.toggleBookmark(bookId);
                 e.preventDefault();
@@ -218,40 +193,40 @@ class BookmarkManager {
         });
     }
 
-    /**
-     * Render bookmarks list
-     */
     renderBookmarks() {
         const container = document.getElementById('bookmarks-list');
         if (!container) return;
 
-        if (this.bookmarks.size === 0 class="no-bookmarks">No bookmarks yet. Start bookmarking books!</p>';
+        if (this.bookmarks.size === 0) {
+            container.innerHTML =
+                '<p class="no-bookmarks">No bookmarks yet. Start bookmarking books!</p>';
             return;
         }
 
         let html = '<ul class="bookmarks-ul">';
+
         this.bookmarks.forEach((bookmark) => {
             const bookTitle = bookmark.book?.title || 'Unknown Book';
             const pageInfo = bookmark.page_number ? `Page ${bookmark.page_number}` : '';
-            const notes = bookmark.notes ? `<small class="bookmark-notes">${bookmark.notes}</small>` : '';
+            const notes = bookmark.notes
+                ? `<small class="bookmark-notes">${bookmark.notes}</small>`
+                : '';
 
             html += `
                 <li class="bookmark-item" data-bookmark-id="${bookmark.id}">
                     <div class="bookmark-header">
                         <strong>${bookTitle}</strong>
-                        <button class="remove-bookmark" data-bookmark-id="${bookmark.id}" aria-label="Remove bookmark
-                        <button class="remove-bookmark" data-bookmark-id="${bookmark.id}">✕</button>
+                        <button class="remove-bookmark" data-bookmark-id="${bookmark.id}" aria-label="Remove bookmark">✕</button>
                     </div>
                     ${pageInfo ? `<div class="bookmark-page">${pageInfo}</div>` : ''}
                     ${notes}
                 </li>
             `;
         });
-        html += '</ul>';
 
+        html += '</ul>';
         container.innerHTML = html;
 
-        // Attach remove listeners
         document.querySelectorAll('.remove-bookmark').forEach(btn => {
             btn.addEventListener('click', () => {
                 const bookmarkId = parseInt(btn.dataset.bookmarkId);
@@ -261,8 +236,9 @@ class BookmarkManager {
     }
 }
 
-// Initialize on page load
+// Initialize
 const bookmarkManager = new BookmarkManager();
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => bookmarkManager.init());
 } else {
