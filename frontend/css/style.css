@@ -14,6 +14,15 @@
     --input-border: rgba(0, 0, 0, 0.1);
     --book-bg: #fff;
     --paper-color: #fffdf9;
+    --surface-panel: rgba(255, 255, 255, 0.78);
+    --surface-panel-strong: rgba(247, 241, 231, 0.94);
+    --surface-panel-muted: rgba(255, 255, 255, 0.62);
+    --surface-border: rgba(141, 110, 99, 0.14);
+    --surface-shadow: 0 18px 40px rgba(44, 36, 32, 0.08);
+    --surface-shadow-strong: 0 24px 60px rgba(44, 36, 32, 0.12);
+    --focus-ring: rgba(212, 175, 55, 0.2);
+    --section-gap: 1.25rem;
+    --control-radius: 18px;
 
     /* Vibe Colors */
     --vibe-mystery: #78909c;
@@ -42,6 +51,13 @@
     --input-border: rgba(255, 255, 255, 0.1);
     --book-bg: #2c2420;
     --paper-color: #e0d5cb;
+    --surface-panel: rgba(34, 28, 24, 0.95);
+    --surface-panel-strong: rgba(24, 19, 16, 0.92);
+    --surface-panel-muted: rgba(255, 255, 255, 0.04);
+    --surface-border: rgba(255, 255, 255, 0.08);
+    --surface-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+    --surface-shadow-strong: 0 24px 60px rgba(0, 0, 0, 0.32);
+    --focus-ring: rgba(252, 203, 78, 0.2);
 }
 
 * {
@@ -6749,20 +6765,22 @@ main {
 
 /* UI hierarchy refinements for library and detail views */
 #book-detail-modal {
-    background: radial-gradient(circle at top, rgba(59, 42, 33, 0.88), rgba(24, 17, 14, 0.92));
-    backdrop-filter: blur(10px);
+    background:
+        radial-gradient(circle at top, rgba(212, 175, 55, 0.14), transparent 30%),
+        radial-gradient(circle at center, rgba(59, 42, 33, 0.9), rgba(24, 17, 14, 0.96));
+    backdrop-filter: blur(14px);
 }
 
 .ai-insight-box {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 1.15rem;
-    padding: 1.35rem 1.45rem;
-    border-radius: 20px;
-    border: 1px solid rgba(212, 175, 55, 0.18);
-    background: linear-gradient(180deg, rgba(255, 250, 242, 0.96), rgba(247, 240, 229, 0.88));
-    box-shadow: 0 18px 40px rgba(44, 36, 32, 0.08);
+    gap: 0.85rem;
+    margin-top: 1.1rem;
+    padding: 1.4rem 1.5rem;
+    border-radius: 24px;
+    border: 1px solid rgba(212, 175, 55, 0.16);
+    background: linear-gradient(180deg, var(--surface-panel), var(--surface-panel-strong));
+    box-shadow: var(--surface-shadow);
     position: relative;
     overflow: hidden;
 }
@@ -6770,7 +6788,7 @@ main {
 [data-theme="night"] .ai-insight-box {
     background: linear-gradient(180deg, rgba(34, 28, 24, 0.98), rgba(24, 19, 16, 0.94));
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+    box-shadow: var(--surface-shadow-strong);
 }
 
 .ai-insight-box::after {
@@ -6778,7 +6796,7 @@ main {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 45%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 48%);
 }
 
 .ai-header {
@@ -6786,7 +6804,7 @@ main {
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    padding: 0.4rem 0.8rem;
+    padding: 0.5rem 0.85rem;
     border-radius: 999px;
     background: rgba(212, 175, 55, 0.12);
     color: var(--wood-dark);
@@ -6803,7 +6821,7 @@ main {
 }
 
 #modal-summary {
-    line-height: 1.72;
+    line-height: 1.78;
     color: var(--text-main);
     margin: 0;
 }
@@ -6811,37 +6829,70 @@ main {
 .sort-controls {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
+    gap: 1rem;
     width: min(100%, 760px);
-    margin: 1.4rem auto 0;
-    padding: 1rem;
-    border-radius: 20px;
-    border: 1px solid var(--glass-border);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(247, 241, 231, 0.9));
-    box-shadow: 0 18px 40px rgba(44, 36, 32, 0.08);
-    backdrop-filter: blur(16px);
+    margin: 1.5rem auto 0;
+    padding: 1.1rem;
+    border-radius: 24px;
+    border: 1px solid var(--surface-border);
+    background: linear-gradient(180deg, var(--surface-panel), var(--surface-panel-strong));
+    box-shadow: var(--surface-shadow);
+    backdrop-filter: blur(18px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 [data-theme="night"] .sort-controls {
     background: linear-gradient(180deg, rgba(34, 28, 24, 0.92), rgba(24, 19, 16, 0.9));
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+    box-shadow: var(--surface-shadow-strong);
+}
+
+.sort-controls:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--surface-shadow-strong);
+}
+
+.sort-controls:focus-within {
+    border-color: rgba(212, 175, 55, 0.3);
 }
 
 .filter-group {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
     width: 100%;
-    min-height: 56px;
-    padding: 0.75rem 0.9rem;
-    border-radius: 16px;
-    border: 1px solid rgba(141, 110, 99, 0.15);
+    min-height: 88px;
+    padding: 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(141, 110, 99, 0.12);
     background: rgba(255, 255, 255, 0.6);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
 }
 
 [data-theme="night"] .filter-group {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.08);
+}
+
+.filter-group:hover {
+    transform: translateY(-1px);
+    border-color: rgba(212, 175, 55, 0.24);
+    box-shadow: 0 12px 24px rgba(44, 36, 32, 0.06);
+}
+
+.filter-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 1.4rem;
+}
+
+.control-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
 
 .filter-group i {
@@ -6858,11 +6909,11 @@ main {
     -webkit-appearance: none;
     -moz-appearance: none;
     width: 100%;
-    min-height: 48px;
-    padding: 0.85rem 2.7rem 0.85rem 1rem;
-    border-radius: 14px;
-    border: 1px solid rgba(141, 110, 99, 0.2);
-    background-color: rgba(255, 255, 255, 0.86);
+    min-height: 52px;
+    padding: 0.9rem 2.8rem 0.9rem 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(141, 110, 99, 0.18);
+    background-color: rgba(255, 255, 255, 0.9);
     background-image:
         linear-gradient(45deg, transparent 50%, currentColor 50%),
         linear-gradient(135deg, currentColor 50%, transparent 50%);
@@ -6875,8 +6926,10 @@ main {
     font-family: inherit;
     font-size: 0.95rem;
     line-height: 1.2;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+    cursor: pointer;
 }
 
 [data-theme="night"] .sort-select,
@@ -6889,15 +6942,16 @@ main {
 
 .sort-select:hover,
 .shelf-select:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     border-color: rgba(212, 175, 55, 0.35);
+    box-shadow: 0 14px 24px rgba(44, 36, 32, 0.08);
 }
 
 .sort-select:focus-visible,
 .shelf-select:focus-visible {
     outline: none;
     border-color: var(--accent-gold);
-    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.18);
+    box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
 .sort-select option,
@@ -6912,14 +6966,12 @@ main {
 }
 
 .book-info-panel {
-    background: linear-gradient(180deg, rgba(255, 250, 243, 0.98), rgba(245, 237, 226, 0.94));
-    border: 1px solid rgba(141, 110, 99, 0.16);
-    border-radius: 26px;
-    box-shadow:
-        0 24px 60px rgba(44, 36, 32, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.72);
-    padding: 2.4rem;
-    gap: 1.2rem;
+    background: linear-gradient(180deg, var(--surface-panel), var(--surface-panel-strong));
+    border: 1px solid var(--surface-border);
+    border-radius: 28px;
+    box-shadow: var(--surface-shadow-strong), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    padding: 2.2rem;
+    gap: var(--section-gap);
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-gold) transparent;
@@ -6928,9 +6980,7 @@ main {
 [data-theme="night"] .book-info-panel {
     background: linear-gradient(180deg, rgba(31, 26, 23, 0.98), rgba(22, 18, 16, 0.94));
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 24px 60px rgba(0, 0, 0, 0.32),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: var(--surface-shadow-strong), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .book-header {
@@ -6969,9 +7019,9 @@ main {
     grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
     gap: 1rem;
     align-items: center;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(247, 241, 231, 0.92));
+    background: linear-gradient(180deg, var(--surface-panel), var(--surface-panel-strong));
     padding: 1rem 1.1rem;
-    border-radius: 18px;
+    border-radius: 20px;
     border: 1px solid rgba(141, 110, 99, 0.12);
 }
 
@@ -6999,12 +7049,13 @@ main {
     gap: 0.5rem;
     flex-wrap: wrap;
     justify-content: flex-end;
+    align-items: center;
 }
 
 .category-tag {
     background: rgba(141, 110, 99, 0.08);
     border: 1px solid rgba(141, 110, 99, 0.16);
-    padding: 0.45rem 0.8rem;
+    padding: 0.48rem 0.85rem;
     border-radius: 999px;
     font-size: 0.78rem;
     color: #5d4a40;
@@ -7035,9 +7086,9 @@ main {
 }
 
 .review-item {
-    background: rgba(255, 255, 255, 0.64);
+    background: var(--surface-panel-muted);
     border: 1px solid rgba(141, 110, 99, 0.12);
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 1rem 1.1rem;
     margin-bottom: 1rem;
     box-shadow: 0 10px 24px rgba(44, 36, 32, 0.05);
@@ -7056,6 +7107,17 @@ main {
     grid-template-columns: minmax(220px, 1.35fr) repeat(2, minmax(140px, 1fr));
     gap: 0.85rem;
     align-items: center;
+}
+
+.shelf-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.shelf-control .control-label {
+    color: var(--text-muted);
 }
 
 .action-btn-primary,

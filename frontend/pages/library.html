@@ -68,8 +68,10 @@
             </button>
             <div class="sort-controls" role="region" aria-label="Library filter and sort controls">
                 <div class="filter-group">
-                    <i class="fa-solid fa-filter"></i>
-                    <label for="library-filter" style="display: none;">Filter Books</label>
+                    <div class="filter-meta">
+                        <i class="fa-solid fa-filter"></i>
+                        <label for="library-filter" class="control-label">Shelf</label>
+                    </div>
                     <select id="library-filter" class="sort-select" aria-label="Filter books by shelf">
                         <option value="all">All Shelves</option>
                         <option value="current">Currently Immersed</option>
@@ -78,8 +80,10 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <i class="fa-solid fa-arrow-down-short-wide"></i>
-                    <label for="library-sort" style="display: none;">Sort Books</label>
+                    <div class="filter-meta">
+                        <i class="fa-solid fa-arrow-down-short-wide"></i>
+                        <label for="library-sort" class="control-label">Sort</label>
+                    </div>
                     <select id="library-sort" class="sort-select" aria-label="Sort books by">
                         <option value="title">Sort by Title</option>
                         <option value="author">Sort by Author</option>
@@ -227,12 +231,14 @@
                         </div>
 
                         <div class="book-actions-section">
-                            <label for="modal-shelf-select" style="margin-right: 10px; font-weight: bold;">Move to Shelf:</label>
-                            <select id="modal-shelf-select" class="shelf-select modal-shelf-select">
-                                <option value="current">Currently Immersed</option>
-                                <option value="want">Anticipated Journeys</option>
-                                <option value="finished">Lifetime Favorites</option>
-                            </select>
+                            <div class="shelf-control">
+                                <label for="modal-shelf-select" class="control-label">Move to Shelf</label>
+                                <select id="modal-shelf-select" class="shelf-select modal-shelf-select">
+                                    <option value="current">Currently Immersed</option>
+                                    <option value="want">Anticipated Journeys</option>
+                                    <option value="finished">Lifetime Favorites</option>
+                                </select>
+                            </div>
                             <!-- Issue #23: Remove from Library button UI -->
                             <button class="action-btn-secondary remove-from-library" id="modal-remove-btn">
                                 <i class="fa-solid fa-trash"></i>

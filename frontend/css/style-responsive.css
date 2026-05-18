@@ -246,6 +246,10 @@
         justify-content: flex-start;
     }
 
+    .sort-controls .filter-meta {
+        width: 100%;
+    }
+
     .sort-controls select {
         width: 100%;
         min-height: 48px;
@@ -255,6 +259,10 @@
 @media (max-width: 1024px) {
     .book-actions-section {
         grid-template-columns: 1fr;
+    }
+
+    .book-actions-section > * {
+        width: 100%;
     }
 }
 
