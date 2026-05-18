@@ -167,6 +167,293 @@ def page_not_found(e: Exception):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
     return app.send_static_file('404.html'), 404
 
+# =========================================================================
+# GLOBAL EXCEPTION HANDLER (SECURITY & COMPLIANCE UPDATE)
+# =========================================================================
+# The following global exception handler is designed to catch all unhandled
+# exceptions that bubble up to the Flask application level. 
+# 
+# WHY THIS MATTERS (SECURITY & COMPLIANCE):
+# 1. Information Leakage Prevention: In default Flask configurations, unhandled
+#    exceptions can result in raw stack traces being returned to the client in
+#    the HTTP 500 response. These stack traces often expose sensitive internal
+#    application logic, directory structures, third-party library versions, 
+#    and potentially database schema details. Attackers can use this information
+#    to craft targeted exploits against the application infrastructure.
+# 2. Consistent API Responses: By catching all exceptions globally, we ensure
+#    that clients always receive a well-structured JSON response, even when 
+#    catastrophic failures occur. This improves client-side error handling and
+#    overall system reliability.
+# 3. Centralized Auditing: This handler serves as a single choke point for
+#    logging critical failures. All unhandled exceptions are logged with full
+#    tracebacks internally, ensuring that developers have the information needed
+#    to debug issues without exposing that information to the end user.
+# 4. Production vs. Development: In production environments, generic error
+#    messages are returned to obscure system details. In development environments
+#    (as determined by app_config), more detailed error information may be
+#    included to assist in local debugging.
+# 5. Incident Response Facilitation: By assigning a unique Error Reference ID
+#    to each occurrence, customer support and engineering teams can easily
+#    correlate a user's reported problem with the specific log entry containing
+#    the full stack trace and request context.
+#
+# ANATOMY OF A SECURE ERROR RESPONSE:
+# - error: A generic string like "Internal Server Error"
+# - error_code: A consistent, machine-readable string like "INTERNAL_ERROR"
+# - reference_id: A UUID string like "a1b2c3d4-..."
+# - timestamp: ISO 8601 formatted timestamp of the occurrence
+#
+# WHAT IS EXCLUDED FROM THE RESPONSE:
+# - Raw stack traces (traceback module output)
+# - Exception messages (str(e)) which might contain SQL query fragments
+# - Local variable states
+# - System paths (e.g., /var/www/app/backend/...)
+# - Dependency versions
+#
+# EXCEPTION HANDLING STRATEGY:
+# - Step 1: Intercept the exception.
+# - Step 2: Determine if it's a known HTTP exception (e.g., 404, 405). If so,
+#   let it proceed or format it appropriately.
+# - Step 3: Generate a unique error reference ID (UUID).
+# - Step 4: Extract request context (method, URL, headers - excluding auth).
+# - Step 5: Log the full traceback, request context, and the reference ID at
+#   the ERROR or CRITICAL level.
+# - Step 6: Construct the safe, generic JSON response.
+# - Step 7: Return the response with a 500 status code.
+# =========================================================================
+
+from werkzeug.exceptions import HTTPException
+import traceback
+import uuid
+import json
+
+@app.errorhandler(Exception)
+def handle_unhandled_exception(e):
+    """
+    Global catch-all exception handler to prevent stack trace leakage and 
+    ensure uniform error responses across the entire application API.
+    
+    Args:
+        e (Exception): The unhandled exception instance caught by Flask.
+        
+    Returns:
+        tuple: A Flask JSON response object and an HTTP status code.
+    """
+    
+    # 1. Handle HTTP Exceptions Normally
+    # If the exception is an intentional HTTP error (e.g., abort(404)),
+    # we should return its intended status code and message, assuming it's
+    # already formatted safely.
+    if isinstance(e, HTTPException):
+        # We can safely return the description of HTTP exceptions
+        logger.warning(
+            f"HTTP Exception encountered: {e.code} {e.name} - {e.description} "
+            f"| Path: {request.path}"
+        )
+        return jsonify({
+            "success": False,
+            "error_code": "HTTP_EXCEPTION",
+            "error": e.description,
+            "status_code": e.code
+        }), e.code
+
+    # 2. Database Session Cleanup
+    # If the exception occurred during a database transaction, the session
+    # might be left in an invalid state. We must roll it back to prevent
+    # subsequent requests in the same thread from failing.
+    try:
+        from sqlalchemy.exc import SQLAlchemyError
+        if isinstance(e, SQLAlchemyError):
+            db.session.rollback()
+            logger.error("Rolled back database session due to SQLAlchemyError in global handler.")
+    except ImportError:
+        pass
+    except Exception as db_rollback_error:
+        # Failsafe: If rollback itself fails, we log it but don't crash the handler
+        logger.critical(f"Failed to rollback DB session: {db_rollback_error}")
+
+    # 3. Generate Error Reference ID
+    # This UUID will be returned to the client so they can provide it to support.
+    # It will also be logged alongside the stack trace.
+    error_reference_id = str(uuid.uuid4())
+    
+    # 4. Extract Safe Request Context
+    # We want to log what the user was trying to do, but we MUST NOT log
+    # sensitive information like passwords, tokens, or full credit card numbers.
+    request_method = request.method
+    request_url = request.url
+    client_ip = request.remote_addr
+    
+    # Safely extract headers (excluding Authorization and Cookies)
+    safe_headers = {}
+    for key, value in request.headers.items():
+        if key.lower() not in ['authorization', 'cookie', 'x-api-key']:
+            safe_headers[key] = value
+            
+    # Safely extract query parameters
+    query_params = dict(request.args)
+    
+    # 5. Structure the Log Payload
+    # Create a detailed dictionary for logging purposes
+    log_payload = {
+        "error_reference_id": error_reference_id,
+        "exception_type": type(e).__name__,
+        "exception_message": str(e),
+        "request": {
+            "method": request_method,
+            "url": request_url,
+            "client_ip": client_ip,
+            "headers": safe_headers,
+            "query_parameters": query_params
+        }
+    }
+    
+    # 6. Log the Exception
+    # We use logger.error with exc_info=True to automatically append the
+    # full stack trace to the log entry. This is critical for debugging.
+    # We prefix the log message with the reference ID for easy searching.
+    logger.error(
+        f"[ERROR REF: {error_reference_id}] Unhandled Exception: {type(e).__name__} "
+        f"at {request_method} {request_url}\n"
+        f"Details: {json.dumps(log_payload, indent=2)}",
+        exc_info=True
+    )
+    
+    # 7. Determine Response Content based on Environment
+    # In development, we MIGHT want to return the stack trace for convenience.
+    # In production, we MUST return a generic message.
+    
+    # Check if we are in production mode using the imported is_production_mode helper
+    # or the app_config object.
+    is_prod = True
+    try:
+        if hasattr(app_config, 'is_production'):
+            is_prod = app_config.is_production()
+        elif hasattr(app_config, 'flask_config'):
+            is_prod = app_config.flask_config.get('ENV') == 'production'
+    except Exception:
+        # Default to secure production behavior if config check fails
+        is_prod = True
+        
+    # Construct the base response
+    response_data = {
+        "success": False,
+        "error_code": "INTERNAL_SERVER_ERROR",
+        "error": "An unexpected internal server error occurred.",
+        "message": "Our team has been notified. Please try again later.",
+        "reference_id": error_reference_id,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # If explicitly NOT in production, we can append debug info
+    if not is_prod:
+        response_data["_debug"] = {
+            "exception": type(e).__name__,
+            "message": str(e),
+            "traceback": traceback.format_exc().splitlines()
+        }
+        logger.warning(
+            f"[ERROR REF: {error_reference_id}] Returning detailed error response "
+            f"because environment is NOT production."
+        )
+    else:
+        logger.info(
+            f"[ERROR REF: {error_reference_id}] Returning generic secure error response "
+            f"because environment is production."
+        )
+        
+    # 8. Return the Secure JSON Response
+    # Always return a 500 Internal Server Error status code for unhandled exceptions.
+    response = jsonify(response_data)
+    
+    # Adding security headers to error responses as defense in depth
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    
+    return response, 500
+
+# =========================================================================
+# DATABASE EXCEPTION HANDLER (SECURITY & COMPLIANCE UPDATE)
+# =========================================================================
+# Why a separate handler for database errors?
+# Database errors (like IntegrityError, OperationalError) often contain
+# raw SQL queries, table names, or constraint names in their string
+# representations. Exposing these details is a severe security risk 
+# (Information Exposure).
+# 
+# This handler intercepts all exceptions deriving from SQLAlchemyError,
+# securely logs the full details (including the potentially sensitive query),
+# and returns a highly sanitized, generic error to the client.
+# 
+# Key Actions:
+# 1. Rolls back the active database session to prevent bad state.
+# 2. Generates a unique tracking ID.
+# 3. Logs the raw error internally.
+# 4. Returns a safe "Database Operation Failed" message.
+# =========================================================================
+from sqlalchemy.exc import SQLAlchemyError
+
+@app.errorhandler(SQLAlchemyError)
+def handle_sqlalchemy_exception(e):
+    """
+    Dedicated handler for database-related exceptions to prevent SQL injection
+    reconnaissance and schema leakage.
+    """
+    # 1. Ensure the session is rolled back safely
+    try:
+        db.session.rollback()
+    except Exception as rollback_err:
+        logger.critical(f"Failed to rollback DB session during SQLAlchemyError handling: {rollback_err}")
+        
+    # 2. Generate Tracking ID
+    error_reference_id = str(uuid.uuid4())
+    
+    # 3. Secure Internal Logging
+    # We log the full error (which may contain SQL) but ONLY internally.
+    logger.error(
+        f"[DB ERROR REF: {error_reference_id}] Database Exception: {type(e).__name__} "
+        f"at {request.method} {request.path}\n"
+        f"Message: {str(e)}",
+        exc_info=True
+    )
+    
+    # 4. Safe External Response
+    response_data = {
+        "success": False,
+        "error_code": "DATABASE_ERROR",
+        "error": "A database operation failed.",
+        "message": "The issue has been logged and our team is investigating.",
+        "reference_id": error_reference_id,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # In non-production, we might want to see the error, but even then
+    # we should be careful. We'll only expose the type, not the full SQL.
+    is_prod = True
+    try:
+        if hasattr(app_config, 'is_production'):
+            is_prod = app_config.is_production()
+        elif hasattr(app_config, 'flask_config'):
+            is_prod = app_config.flask_config.get('ENV') == 'production'
+    except Exception:
+        is_prod = True
+        
+    if not is_prod:
+        response_data["_debug"] = {
+            "exception": type(e).__name__,
+            "message": "Database error details are suppressed for security, see logs.",
+            "traceback": traceback.format_exc().splitlines()
+        }
+        
+    response = jsonify(response_data)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response, 500
+
+# =========================================================================
+# END OF GLOBAL EXCEPTION HANDLERS
+# =========================================================================
+
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
@@ -1842,6 +2129,12 @@ def get_price_history(book_id):
         
         history = price_tracker.get_price_history(book_id=book.id, retailer=retailer, limit=limit)
         latest_prices = price_tracker.get_latest_prices(book.id)
+        
+        # If no history exists, fetch the current price and record it
+        if not history and not latest_prices:
+            price_tracker.update_prices_for_book(book.id, book.google_books_id)
+            history = price_tracker.get_price_history(book_id=book.id, retailer=retailer, limit=limit)
+            latest_prices = price_tracker.get_latest_prices(book.id)
         
         return jsonify({
             "book_id": book.id,

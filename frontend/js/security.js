@@ -8,7 +8,67 @@
  * Configures DOMPurify with strict defaults to prevent XSS
  */
 function isDOMPurifyAvailable() {
-    return typeof DOMPurify !== 'undefined' && DOMPurify && typeof DOMPurify.sanitize === 'function';
+    return typeof globalThis !== 'undefined'
+        && typeof globalThis.DOMPurify !== 'undefined'
+        && globalThis.DOMPurify
+        && typeof globalThis.DOMPurify.sanitize === 'function'
+        && typeof globalThis.DOMPurify.addHook === 'function';
+}
+
+const SAFE_HREF_PROTOCOLS = ['http:', 'https:', 'mailto:'];
+const SAFE_HREF_PATTERN = /^(?:(?:https?:|mailto:)[^\s]*|#.*|\/(?!\/)[^\s]*|[^:/\s][^:\s]*)$/i;
+let domPurifyHooksRegistered = false;
+
+function getDOMPurify() {
+    return isDOMPurifyAvailable() ? globalThis.DOMPurify : null;
+}
+
+function isSafeHref(href) {
+    if (typeof href !== 'string') return false;
+
+    const trimmed = href.trim();
+    if (!trimmed) return false;
+
+    if (!SAFE_HREF_PATTERN.test(trimmed)) return false;
+
+    try {
+        const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'https://example.invalid/';
+        const parsed = new URL(trimmed, base);
+        if (SAFE_HREF_PROTOCOLS.includes(parsed.protocol)) {
+            return true;
+        }
+    } catch (e) {
+        // Relative paths and fragment links may fail URL parsing in some environments.
+        return trimmed.startsWith('#') || trimmed.startsWith('/');
+    }
+
+    return trimmed.startsWith('#') || trimmed.startsWith('/');
+}
+
+function createSanitizeHTMLConfig() {
+    return {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'a'],
+        ALLOWED_ATTR: {
+            'a': ['href', 'title']
+        },
+        ALLOWED_URI_REGEXP: SAFE_HREF_PATTERN,
+        KEEP_CONTENT: true,
+        RETURN_DOM: false,
+    };
+}
+
+function registerDOMPurifyHooks() {
+    const purify = getDOMPurify();
+    if (!purify || domPurifyHooksRegistered) return;
+
+    purify.addHook('uponSanitizeAttribute', (node, data) => {
+        if (!node || !data || node.nodeName !== 'A' || data.attrName !== 'href') return;
+        if (!isSafeHref(data.attrValue)) {
+            data.keepAttr = false;
+        }
+    });
+
+    domPurifyHooksRegistered = true;
 }
 
 function initializeDOMPurify() {
@@ -48,7 +108,7 @@ function sanitizeForDisplay(dirty, customConfig = null) {
     const config = customConfig || initializeDOMPurify();
     if (!config) return HTML.escape(dirty);
 
-    return DOMPurify.sanitize(dirty, config);
+    return getDOMPurify().sanitize(dirty, config);
 }
 
 /**
@@ -62,21 +122,14 @@ function sanitizeHTML(dirty) {
     if (!dirty) return '';
     if (typeof dirty !== 'string') return String(dirty);
 
-    const config = {
-        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'a'],
-        ALLOWED_ATTR: {
-            'a': ['href', 'title']
-        },
-        KEEP_CONTENT: true,
-        RETURN_DOM: false,
-    };
-
-    if (!isDOMPurifyAvailable()) {
+    const purify = getDOMPurify();
+    if (!purify) {
         console.error('DOMPurify library not loaded. Falling back to escaped text for safe rendering.');
         return HTML.escape(dirty);
     }
 
-    return DOMPurify.sanitize(dirty, config);
+    registerDOMPurifyHooks();
+    return purify.sanitize(dirty, createSanitizeHTMLConfig());
 }
 
 /**
@@ -372,6 +425,11 @@ function makeContentEditableSafe(element) {
 // Export for use in modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        isDOMPurifyAvailable,
+        getDOMPurify,
+        isSafeHref,
+        createSanitizeHTMLConfig,
+        registerDOMPurifyHooks,
         initializeDOMPurify,
         sanitizeForDisplay,
         sanitizeHTML,
