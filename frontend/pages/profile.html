@@ -111,6 +111,18 @@
         </section>
 
         <section class="profile-content">
+            <div class="reading-heatmap-section profile-stat-box" style="margin-bottom: 2rem; width: 100%;">
+                <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-calendar-days"></i> Reading Heatmap</h2>
+                <div class="heatmap-scroll-container" style="overflow-x: auto; padding-bottom: 10px;">
+                    <div id="reading-heatmap"></div>
+                </div>
+                <div class="heatmap-legend" style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: 0.8rem; margin-top: 10px; color: var(--text-muted);">
+                    <span>Less</span>
+                    <div class="heatmap-cell" style="width: 12px; height: 12px; border-radius: 3px; background: rgba(139, 115, 85, 0.1);"></div>
+                    <div class="heatmap-cell" style="width: 12px; height: 12px; border-radius: 3px; background: rgba(139, 115, 85, 0.3);"></div>
+                    <div class="heatmap-cell" style="width: 12px; height: 12px; border-radius: 3px; background: rgba(139, 115, 85, 0.6);"></div>
+                    <div class="heatmap-cell" style="width: 12px; height: 12px; border-radius: 3px; background: rgba(139, 115, 85, 0.9);"></div>
+                    <span>More</span>
             <!-- Reading Progress Overview -->
             <div class="reading-progress-overview" id="reading-progress-overview">
                 <h2><i class="fa-solid fa-chart-line"></i> Reading Progress</h2>
@@ -147,6 +159,7 @@
 
     <script src="../js/config.js"></script>
     <script src="../script/header-scroll.js"></script>
+    <script src="../js/heatmap.js"></script>
     <script src="../js/app.js"></script>
     <script src="../js/footer.js"></script>
 

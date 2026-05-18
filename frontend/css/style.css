@@ -23,15 +23,6 @@
     --input-border: rgba(0, 0, 0, 0.1);
     --book-bg: #fff;
     --paper-color: #fffdf9;
-    --surface-panel: rgba(255, 255, 255, 0.78);
-    --surface-panel-strong: rgba(247, 241, 231, 0.94);
-    --surface-panel-muted: rgba(255, 255, 255, 0.62);
-    --surface-border: rgba(141, 110, 99, 0.14);
-    --surface-shadow: 0 18px 40px rgba(44, 36, 32, 0.08);
-    --surface-shadow-strong: 0 24px 60px rgba(44, 36, 32, 0.12);
-    --focus-ring: rgba(212, 175, 55, 0.2);
-    --section-gap: 1.25rem;
-    --control-radius: 18px;
 
     /* Vibe Colors */
     --vibe-mystery: #78909c;
@@ -60,13 +51,6 @@
     --input-border: rgba(255, 255, 255, 0.1);
     --book-bg: #2c2420;
     --paper-color: #e0d5cb;
-    --surface-panel: rgba(34, 28, 24, 0.95);
-    --surface-panel-strong: rgba(24, 19, 16, 0.92);
-    --surface-panel-muted: rgba(255, 255, 255, 0.04);
-    --surface-border: rgba(255, 255, 255, 0.08);
-    --surface-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
-    --surface-shadow-strong: 0 24px 60px rgba(0, 0, 0, 0.32);
-    --focus-ring: rgba(252, 203, 78, 0.2);
 }
 
 * {
@@ -4686,3 +4670,122 @@ html, body {
   cursor: pointer !important; 
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23ffca3a' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23ffca3a' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, pointer !important;
 }
+
+/* ============================================================ */
+/* READING HEATMAP STYLES */
+/* ============================================================ */
+
+.heatmap-scroll-container {
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-gold) transparent;
+}
+
+.heatmap-scroll-container::-webkit-scrollbar {
+    height: 6px;
+}
+.heatmap-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+.heatmap-scroll-container::-webkit-scrollbar-thumb {
+    background-color: var(--wood-light);
+    border-radius: 3px;
+}
+
+.heatmap-grid {
+    display: flex;
+    gap: 4px;
+    padding-top: 10px;
+    min-width: max-content;
+}
+
+.heatmap-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.heatmap-cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background-color: var(--glass-bg);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+[data-theme='night'] .heatmap-cell {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.2);
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Base intensity color uses wood-light/accent-gold palette to match theme */
+.heatmap-cell.intensity-0 { background-color: rgba(139, 115, 85, 0.05); }
+.heatmap-cell.intensity-1 { background-color: rgba(139, 115, 85, 0.25); }
+.heatmap-cell.intensity-2 { background-color: rgba(139, 115, 85, 0.50); }
+.heatmap-cell.intensity-3 { background-color: rgba(139, 115, 85, 0.75); }
+.heatmap-cell.intensity-4 { background-color: rgba(139, 115, 85, 1.0); }
+
+/* Night theme overrides */
+[data-theme='night'] .heatmap-cell.intensity-0 { background-color: rgba(212, 175, 55, 0.05); }
+[data-theme='night'] .heatmap-cell.intensity-1 { background-color: rgba(212, 175, 55, 0.25); }
+[data-theme='night'] .heatmap-cell.intensity-2 { background-color: rgba(212, 175, 55, 0.50); }
+[data-theme='night'] .heatmap-cell.intensity-3 { background-color: rgba(212, 175, 55, 0.75); }
+[data-theme='night'] .heatmap-cell.intensity-4 { background-color: rgba(212, 175, 55, 1.0); }
+
+
+/* Heatmap Tooltip */
+.heatmap-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: var(--text-main);
+    color: var(--bg-color);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    text-align: center;
+    line-height: 1.4;
+}
+
+[data-theme='night'] .heatmap-tooltip {
+    background: #e0dfdc;
+    color: #1a1a1a;
+}
+
+.heatmap-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--text-main) transparent transparent transparent;
+}
+
+[data-theme='night'] .heatmap-tooltip::after {
+    border-color: #e0dfdc transparent transparent transparent;
+}
+
+.heatmap-cell:hover .heatmap-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+

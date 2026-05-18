@@ -80,6 +80,7 @@
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
 const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const moodAnalysisCache = new Map();
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -115,6 +116,118 @@ async function loadConfig() {
         console.warn('Failed to load backend config', e);
     }
 }
+
+const CollectionAPI = {
+    getHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const csrf = getCookie('csrf_access_token');
+        if (csrf) {
+            headers['X-CSRF-TOKEN'] = csrf;
+        }
+        return headers;
+    },
+    async createCollection(userId, name, description = '', isPublic = false) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ user_id: parseInt(userId), name, description, is_public: isPublic })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async getCollections(userId) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections?user_id=${userId}`, {
+            method: 'GET',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        return data.collections || [];
+    },
+    async getCollection(id) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${id}`, {
+            method: 'GET',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        return data.collection;
+    },
+    async updateCollection(id, name, description, isPublic) {
+        const payload = {};
+        if (name !== undefined) payload.name = name;
+        if (description !== undefined) payload.description = description;
+        if (isPublic !== undefined) payload.is_public = isPublic;
+
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${id}`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async deleteCollection(id) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${id}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async addBookToCollection(collectionId, userId, bookId, title, authors = '', thumbnail = '') {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${collectionId}/books`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({
+                user_id: parseInt(userId),
+                google_books_id: bookId,
+                title: title,
+                authors: Array.isArray(authors) ? authors.join(', ') : authors,
+                thumbnail: thumbnail
+            })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async removeBookFromCollection(collectionId, bookId) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${collectionId}/books/${bookId}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    }
+};
+window.CollectionAPI = CollectionAPI;
 import { saveBookOffline, removeOfflineBook, db } from './db.js';
 
 // Example click handler for your custom "Save for Offline" icon
@@ -588,6 +701,7 @@ class BookRenderer {
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button class="btn-icon mood-btn" title="Explore Mood"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
                         <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
@@ -659,6 +773,12 @@ class BookRenderer {
                 console.error('Failed to copy text: ', err);
                 showToast('Failed to copy book details.', 'error');
             });
+        });
+
+        // Explore Mood Button
+        scene.querySelector('.mood-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.exploreBookMood(title, authors);
         });
 
         // Flip Back Button
@@ -838,6 +958,14 @@ class BookRenderer {
             };
         }
 
+        // Explore Mood Button
+        const moodBtnModal = document.getElementById('modal-mood-btn');
+        if (moodBtnModal) {
+            moodBtnModal.onclick = () => {
+                this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
+            };
+        }
+
         modal.showModal();
         document.getElementById('closeModalBtn').onclick = () => modal.close();
 
@@ -892,19 +1020,330 @@ class BookRenderer {
                 }
             };
         });
+
+        // Custom Collections Section
+        let collectionsSection = document.getElementById('modal-discovery-collections-tagging');
+        if (!collectionsSection) {
+            collectionsSection = document.createElement('div');
+            collectionsSection.id = 'modal-discovery-collections-tagging';
+            collectionsSection.className = 'collections-tagging-section';
+            collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+        }
+        
+        if (actions) {
+            const existing = actions.parentNode.querySelector('#modal-discovery-collections-tagging');
+            if (existing) existing.remove();
+            actions.parentNode.insertBefore(collectionsSection, actions);
+        } else if (modalBody) {
+            const existing = modalBody.querySelector('#modal-discovery-collections-tagging');
+            if (existing) existing.remove();
+            modalBody.appendChild(collectionsSection);
+        }
+
+        const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+        if (!userObj) {
+            collectionsSection.innerHTML = `
+                <h4 style="margin: 0 0 5px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem;">Save in Custom Collections</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;"><a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to save this book in custom shelves.</p>
+            `;
+        } else {
+            collectionsSection.innerHTML = `
+                <h4 style="margin: 0 0 8px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
+                </h4>
+                <div id="modal-discovery-collections-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
+                </div>
+            `;
+            
+            (async () => {
+                try {
+                    const cols = await window.CollectionAPI.getCollections(userObj.id);
+                    const listEl = document.getElementById('modal-discovery-collections-list');
+                    if (!listEl) return;
+                    
+                    if (cols.length === 0) {
+                        listEl.innerHTML = `
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">No custom collections created yet. Go to Custom Collections view to create one!</span>
+                        `;
+                        return;
+                    }
+                    
+                    const colsWithItems = await Promise.all(
+                        cols.map(async (c) => {
+                            try {
+                                return await window.CollectionAPI.getCollection(c.id);
+                            } catch (e) {
+                                return { id: c.id, name: c.name, items: [] };
+                            }
+                        })
+                    );
+                    
+                    listEl.innerHTML = '';
+                    colsWithItems.forEach(col => {
+                        const existingItem = col.items.find(item => item.google_books_id === book.id);
+                        const isChecked = !!existingItem;
+                        const label = document.createElement('label');
+                        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = isChecked;
+                        checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
+                        
+                        if (isChecked) {
+                            checkbox.dataset.bookId = existingItem.book_id;
+                        }
+                        
+                        checkbox.onchange = async () => {
+                            checkbox.disabled = true;
+                            try {
+                                if (checkbox.checked) {
+                                    const authorStr = Array.isArray(book.volumeInfo.authors) ? book.volumeInfo.authors.join(', ') : (book.volumeInfo.authors || 'Unknown Author');
+                                    const res = await window.CollectionAPI.addBookToCollection(
+                                        col.id,
+                                        userObj.id,
+                                        book.id,
+                                        book.volumeInfo.title,
+                                        authorStr,
+                                        book.volumeInfo.imageLinks?.thumbnail || ''
+                                    );
+                                    checkbox.dataset.bookId = res.item.book_id;
+                                    showToast(`Added to "${col.name}"`, 'success');
+                                } else {
+                                    const bookId = checkbox.dataset.bookId;
+                                    if (bookId) {
+                                        await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
+                                        delete checkbox.dataset.bookId;
+                                        showToast(`Removed from "${col.name}"`, 'success');
+                                    }
+                                }
+                            } catch (err) {
+                                checkbox.checked = !checkbox.checked; // Revert
+                                showToast(err.message, 'error');
+                            } finally {
+                                checkbox.disabled = false;
+                            }
+                        };
+                        
+                        label.appendChild(checkbox);
+                        
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = col.name;
+                        label.appendChild(textSpan);
+                        
+                        listEl.appendChild(label);
+                    });
+                } catch (e) {
+                    console.error('Modal collections load failed', e);
+                    const listEl = document.getElementById('modal-discovery-collections-list');
+                    if (listEl) {
+                        listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+                    }
+                }
+            })();
+        }
+    }
+
+    async exploreBookMood(title, author) {
+        const cacheKey = `${title.toLowerCase().trim()}|${(author || '').toLowerCase().trim()}`;
+        
+        // 1. Create and show the mood modal dynamically
+        let modal = document.getElementById('mood-analysis-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'mood-analysis-modal';
+            modal.className = 'mood-modal';
+            document.body.appendChild(modal);
+        } else {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
+
+        const escapeHTML = (str) => {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        };
+
+        modal.innerHTML = `
+            <div class="mood-modal-content">
+                <div class="mood-modal-header">
+                    <h3>Mood Deep-Dive: ${escapeHTML(title)}</h3>
+                    <button class="close-modal" id="close-mood-modal">&times;</button>
+                </div>
+                <div class="mood-modal-body">
+                    <div id="mood-modal-loader" class="mood-loading-section" style="text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--accent-gold); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Scraping GoodReads reviews & analyzing sentiment...</p>
+                    </div>
+                    <div id="mood-modal-error" class="mood-error-section hidden" style="text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x" style="color: #f44336; margin-bottom: 1rem;"></i>
+                        <p id="mood-error-message" style="color: var(--text-main); font-size: 0.95rem;"></p>
+                    </div>
+                    <div id="mood-modal-results" class="mood-results-section hidden">
+                        <div class="mood-section">
+                            <h4>Primary Moods</h4>
+                            <div class="mood-tags-large" id="mood-modal-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem;">
+                                <!-- Mood tags go here -->
+                            </div>
+                        </div>
+                        <div class="mood-section" style="margin-top: 1.5rem;">
+                            <h4>Overall Sentiment</h4>
+                            <div class="sentiment-bar">
+                                <div class="sentiment-fill" id="mood-modal-sentiment-fill" style="width: 0%;"></div>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;" id="mood-modal-sentiment-desc"></p>
+                        </div>
+                        <div class="mood-section" style="margin-top: 1.5rem;">
+                            <h4>Bookseller's Vibe</h4>
+                            <div class="vibe-quote" id="mood-modal-vibe" style="margin-top: 0.5rem;">
+                                <!-- Vibe quote goes here -->
+                            </div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 1.5rem;" id="mood-modal-meta">
+                            <!-- Meta info goes here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        };
+
+        modal.querySelector('#close-mood-modal').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const showLoader = () => {
+            modal.querySelector('#mood-modal-loader').classList.remove('hidden');
+            modal.querySelector('#mood-modal-error').classList.add('hidden');
+            modal.querySelector('#mood-modal-results').classList.add('hidden');
+        };
+
+        const showError = (msg) => {
+            modal.querySelector('#mood-modal-loader').classList.add('hidden');
+            modal.querySelector('#mood-modal-error').classList.remove('hidden');
+            modal.querySelector('#mood-modal-error p').textContent = msg;
+            modal.querySelector('#mood-modal-results').classList.add('hidden');
+        };
+
+        const renderResults = (analysis) => {
+            modal.querySelector('#mood-modal-loader').classList.add('hidden');
+            modal.querySelector('#mood-modal-error').classList.add('hidden');
+            const resultsSection = modal.querySelector('#mood-modal-results');
+            resultsSection.classList.remove('hidden');
+
+            // Render primary moods
+            const tagsContainer = modal.querySelector('#mood-modal-tags');
+            tagsContainer.innerHTML = '';
+            if (analysis.primary_moods && analysis.primary_moods.length > 0) {
+                analysis.primary_moods.forEach(moodObj => {
+                    const moodVal = moodObj.mood;
+                    const confidence = moodObj.confidence;
+                    const tag = document.createElement('span');
+                    const moodClass = `mood-${moodVal.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+                    tag.className = `mood-tag-large ${moodClass}`;
+                    tag.innerHTML = `<i class="fa-solid ${this.getMoodIcon(moodVal)}"></i> ${escapeHTML(moodVal)} (${Math.round(confidence * 100)}%)`;
+                    tagsContainer.appendChild(tag);
+                });
+            } else {
+                tagsContainer.innerHTML = '<span style="font-size: 0.9rem; color: var(--text-muted);">No distinct moods detected.</span>';
+            }
+
+            // Render sentiment bar
+            const compoundScore = analysis.overall_sentiment?.compound_score || 0;
+            const percentage = Math.round(((compoundScore + 1) / 2) * 100);
+            modal.querySelector('#mood-modal-sentiment-fill').style.width = `${percentage}%`;
+            modal.querySelector('#mood-modal-sentiment-desc').textContent = `${analysis.mood_description || 'Sentiment analyzed successfully.'} (Score: ${compoundScore.toFixed(2)})`;
+
+            // Render vibe
+            modal.querySelector('#mood-modal-vibe').innerHTML = `<p>${escapeHTML(analysis.bibliodrift_vibe || 'A quiet read with deep undertones.')}</p>`;
+
+            // Render metadata
+            const totalReviews = analysis.total_reviews_analyzed || 0;
+            const confidenceScore = analysis.analysis_confidence ? Math.round(analysis.analysis_confidence * 100) : 50;
+            modal.querySelector('#mood-modal-meta').textContent = `Analyzed ${totalReviews} Goodreads reviews. Vibe confidence: ${confidenceScore}%.`;
+        };
+
+        // 2. Fetch or load from cache
+        if (moodAnalysisCache.has(cacheKey)) {
+            if (IS_DEV) console.log(`Cache hit for mood analysis: ${cacheKey}`);
+            renderResults(moodAnalysisCache.get(cacheKey));
+            return;
+        }
+
+        showLoader();
+
+        try {
+            const csrf = getCookie('csrf_access_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrf) {
+                headers['X-CSRF-TOKEN'] = csrf;
+            }
+
+            const res = await fetch(`${MOOD_API_BASE}/analyze-mood`, {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ title, author })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const analysis = data.data?.mood_analysis || data.mood_analysis;
+                if (analysis && analysis.success) {
+                    moodAnalysisCache.set(cacheKey, analysis);
+                    renderResults(analysis);
+                } else {
+                    showError(analysis?.error || 'Could not parse mood analysis for this book.');
+                }
+            } else {
+                if (res.status === 429) {
+                    const data = await res.json().catch(() => ({}));
+                    const retryAfter = data.retry_after || 60;
+                    showError(`Rate limit exceeded. Please try again in ${retryAfter} seconds.`);
+                } else if (res.status === 503) {
+                    showError('Mood analysis is currently offline (missing backend dependencies).');
+                } else if (res.status === 404) {
+                    showError('No Goodreads reviews found for this title to analyze.');
+                } else {
+                    showError(`Failed to fetch mood analysis (Server error: ${res.status}).`);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to explore book mood:', err);
+            showError('Network error connecting to mood analysis service.');
+        }
     }
 
     getMoodIcon(mood) {
+        if (!mood) return 'fa-tag';
         const icons = {
-            'Melancholic': 'fa-cloud-showers-heavy',
-            'Cozy': 'fa-mug-hot',
-            'Tense': 'fa-bolt',
-            'Inspiring': 'fa-lightbulb',
-            'Whimsical': 'fa-wand-magic-sparkles',
-            'Dark': 'fa-moon',
-            'Adventurous': 'fa-compass'
+            'melancholic': 'fa-cloud-showers-heavy',
+            'melancholy': 'fa-cloud-showers-heavy',
+            'cozy': 'fa-mug-hot',
+            'tense': 'fa-bolt',
+            'inspiring': 'fa-lightbulb',
+            'uplifting': 'fa-lightbulb',
+            'whimsical': 'fa-wand-magic-sparkles',
+            'dark': 'fa-moon',
+            'adventurous': 'fa-compass',
+            'mysterious': 'fa-mask',
+            'romantic': 'fa-heart',
+            'intense': 'fa-fire',
+            'thought-provoking': 'fa-brain',
+            'thoughtful': 'fa-brain'
         };
-        return icons[mood] || 'fa-tag';
+        return icons[mood.toLowerCase().trim()] || 'fa-tag';
     }
 
     async renderCuratedSection(query, elementId, maxResults = 5) {
@@ -1420,6 +1859,9 @@ class LibraryManager {
         if (IS_DEV) {
             console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
         }
+        if (typeof window.logReadingActivity === 'function') {
+            window.logReadingActivity('add', `Added "${book.volumeInfo.title}" to ${shelf}`);
+        }
 
         // 2. Update Backend
         const user = this.getUser();
@@ -1471,6 +1913,9 @@ class LibraryManager {
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
             this.library.finished.push(book);
             showToast(`Congrats! You finished ${book.volumeInfo.title}!`, "success");
+            if (typeof window.logReadingActivity === 'function') {
+                window.logReadingActivity('finish', `Finished reading "${book.volumeInfo.title}"`);
+            }
         }
 
         this.saveLocally();
