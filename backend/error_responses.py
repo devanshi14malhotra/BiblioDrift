@@ -150,11 +150,11 @@ def missing_fields_error(fields: str) -> tuple:
     )
 
 
-def invalid_json_error() -> tuple:
-    """Return an invalid JSON error response"""
+def invalid_json_error(message: str = "Invalid JSON or missing request body") -> tuple:
+    """Return an invalid JSON error response."""
     return error_response(
         ErrorCodes.INVALID_JSON,
-        "Invalid JSON or missing request body",
+        message,
         400
     )
 

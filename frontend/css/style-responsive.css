@@ -1,5 +1,103 @@
 /* Responsive Design Improvements for BiblioDrift */
 
+/* --- Desktop Defaults (Safety Net) --- */
+:root {
+    --book-width: 180px;
+    --book-height: 280px;
+/* Universal Mobile-First Improvements */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Ensure proper scrolling on iOS */
+.curated-row,
+.shelf-section-3d,
+.books-row-3d {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Better touch targets on mobile */
+button, a, input {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+@media (max-width: 768px) {
+    button, a {
+        min-height: 48px;
+        min-width: 48px;
+    }
+}
+
+/* --- Extra Large Screens (1200px+) --- */
+@media (min-width: 1200px) {
+    main {
+        padding: 2rem 4rem;
+    }
+
+    .curated-row {
+        gap: 3rem;
+        padding: 2rem 1rem;
+    }
+
+    .genre-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* --- Tablet Landscape (769px - 1199px) --- */
+@media (min-width: 769px) and (max-width: 1199px) {
+    main {
+        padding: 1.5rem 2rem;
+    }
+
+    .curated-row {
+        gap: 2rem;
+        padding: 1.5rem 1rem;
+    }
+
+    .genre-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.8rem;
+    }
+
+    header {
+        padding: 1.5rem 2rem;
+        gap: 1.5rem;
+    }
+
+    /* Bookshelf tablet adjustments */
+    .shelf-row {
+        padding: 0 1.5rem 1rem 1.5rem;
+        gap: 1rem;
+        min-height: 260px;
+    }
+
+    .shelf-label {
+        font-size: 1.1rem;
+    }
+
+    /* Mood modal tablet */
+    .mood-modal-content {
+        max-width: 85vw;
+    }
+
+    .book-rec-cover {
+        width: 55px;
+        height: 85px;
+    }
+
+    .book-rec-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.75rem;
+    }
+}
+
 /* --- Mobile Breakpoint (max-width: 768px) --- */
 @media (max-width: 768px) {
     /* Adjust global variables for book sizes */
@@ -8,18 +106,28 @@
         --book-height: 200px;
     }
 
+    /* Main content padding */
+    main {
+        padding: 1rem;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
     /* Header Stack Layout */
     header {
         flex-direction: column;
-        padding: 1rem;
-        gap: 1rem;
+        padding: 0.5rem; 
+        gap: 0.5rem; 
         height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 100;
     }
 
     .header-controls {
         flex-direction: column;
         width: 100%;
-        gap: 1rem;
+        gap: 0.5rem;
     }
 
     .search-bar {
@@ -30,16 +138,16 @@
         width: 100%;
     }
 
-    .search-input:focus {
-        width: 100%;
-    }
-
     .nav-links {
         display: flex;
+        flex-direction: column;
+        align-items: center; 
+        font-size: 14px;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 1rem;
+        gap: 0.5rem;
         width: 100%;
+        margin-top: 10px;
     }
 
     .nav-links a {
@@ -51,116 +159,275 @@
         display: inline-block;
     }
 
+    .tooltip-text {
+        font-size: 0.75rem;
+        padding: 8px 10px;
+    }
+
     /* Hero Section */
     .hero {
-        padding: 4rem 1rem;
-    }
-
-    .hero h1 {
-        font-size: 2.5rem;
-    }
-
-    .hero p {
-        font-size: 1.1rem;
+        padding: 2rem 1rem;
+        margin: 0;
     }
 
     /* Curated Sections */
+    .curated-row {
+        gap: 1rem;
+        padding-bottom: 1rem;
+        overflow-x: auto;
+    .hero h1 {
+        font-size: clamp(1.8rem, 5vw, 2.5rem);
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    /* Curated Sections - Improved Mobile Layout */
     .section-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+        padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .section-header span {
+        font-size: 0.85rem;
     }
     
     .curated-row {
         gap: 1rem;
-        padding-bottom: 1rem;
-        overflow-x: auto; /* Allow horizontal scrolling on tablet too */
+        padding: 0.5rem;
+        overflow-x: auto;
+        overflow-y: visible;
         justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(212, 175, 55, 0.5) rgba(0, 0, 0, 0.1);
+    }
+
+    /* Custom scrollbar styling for curated rows */
+    .curated-row::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .curated-row::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+    }
+
+    .curated-row::-webkit-scrollbar-thumb {
+        background: rgba(212, 175, 55, 0.5);
+        border-radius: 3px;
+    }
+
+    .curated-row::-webkit-scrollbar-thumb:hover {
+        background: rgba(212, 175, 55, 0.7);
     }
     
     .curated-row .book-scene {
-        flex-shrink: 0; /* Prevent books from squishing */
+        flex-shrink: 0;
+        min-width: 130px;
     }
     
-    /* Genre Grid: 2 columns on tablet/large phone */
+    /* Genre Grid: Responsive columns on tablet/phone */
     .genre-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        gap: 0.8rem;
+        padding: 0.5rem;
+        max-width: 100%;
+    }
+
+    .genre-card {
+        height: 70px;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+    }
+
+    .genre-card i {
+        font-size: 1.5rem;
+    }
+
+    .genre-card span {
+        font-size: 1rem;
     }
     
     /* Book Shelf (Library View) */
     .bookshelf-row,
     .books-row-3d {
-        justify-content: flex-start; /* Allow horizontal scrolling */
+        justify-content: flex-start;
     }
     
     .book-scene,
     .book-spine-3d {
         margin: 0.5rem;
-        transform: scale(0.9); /* Scale down books slightly */
-        flex-shrink: 0; /* IMPT: Prevent books from being squished */
+        transform: scale(0.9);
+        flex-shrink: 0;
     }
     
-    /* Specific tweak for spines in library to rotate slightly */
     .book-spine-3d {
-         transform: rotateY(-5deg) scale(0.9);
+        transform: rotateY(-5deg) scale(0.9);
     }
 
     .shelf-section-3d {
-        overflow-x: auto; /* Enable horizontal scroll */
+        overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 1rem;
+        margin-bottom: 2rem;
     }
     
     .bookshelf-3d {
-        width: max-content; /* Allow content to dictate width for scrolling */
+        width: auto;
         min-width: 100%;
+    }
+
+    /* Shelf row mobile optimizations */
+    .shelf-row {
+        padding: 0 1rem 1rem 1rem;
+        gap: 0.75rem;
+        min-height: 240px;
+        border-bottom: 20px solid #281a15;
+        border-radius: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        align-items: flex-end;
+        justify-content: flex-start;
+    }
+
+    .shelf-label {
+        position: static;
+        font-size: 1rem;
+        color: var(--wood-light);
+        font-style: italic;
+        margin-bottom: 0.5rem;
+        display: block;
+        width: 100%;
+    }
+
+    /* Mood modal mobile-first responsive */
+    .mood-modal {
+        z-index: 1000;
+    }
+
+    .mood-modal-content {
+        max-width: 95vw;
+        width: 95%;
+        max-height: 85vh;
+        border-radius: 12px;
+    }
+
+    .mood-modal-header {
+        padding: 1rem;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .mood-modal-header h3 {
+        font-size: 1.2rem;
+    }
+
+    .close-modal {
+        width: 28px;
+        height: 28px;
+        font-size: 1.4rem;
+    }
+
+    .mood-modal-body {
+        padding: 1rem;
+        max-height: calc(85vh - 80px);
+        overflow-y: auto;
+    }
+
+    .mood-tags-large {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .mood-tag-large {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    /* Book recommendation cards mobile */
+    .book-rec-item {
+        padding: 0.75rem;
+        border-radius: 6px;
+    }
+
+    .book-rec-cover {
+        width: 50px;
+        height: 75px;
+        margin: 0 auto 0.5rem;
+    }
+
+    .book-rec-info h4 {
+        font-size: 0.75rem;
+    }
+
+    .book-rec-info p {
+        font-size: 0.65rem;
     }
 
     /* --- 3D Bookshelf Mobile Improvements --- */
     .bookshelf-3d-container {
-        perspective: 800px; /* Reduce perspective strength for mobile */
-        perspective-origin: center 50%; /* Center the perspective origin */
-        padding: 1rem 0; /* Reduce vertical padding */
+        perspective: 800px;
+        perspective-origin: center 50%;
+        padding: 1rem 0;
     }
 
     .bookshelf-3d {
-        padding: 15px 12px 10px; /* Tighter padding */
-        margin: 0 -5px; /* Reduce negative margin overflow */
-        min-height: 200px; /* Reduce min-height for mobile */
-        transform: rotateX(0); /* Remove tilt on mobile */
+        padding: 15px 12px 10px;
+        margin: 0 -5px;
+        min-height: 200px;
+        transform: rotateX(0);
     }
 
     .books-row-3d {
-        gap: 2px; /* Minimal gap between books */
-        height: 150px; /* Reduce height for small screens */
-        overflow-x: auto; /* Enable scrolling */
+        gap: 2px;
+        height: 150px;
+        overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 10px;
+        flex-wrap: nowrap;
     }
 
     .book-spine-3d {
-        transform: rotateY(-3deg) rotateZ(-2deg); /* Subtle rotation only */
-        margin-right: 1px; /* Minimal spacing */
-        width: auto; /* Auto width to prevent overflow */
+        transform: rotateY(-3deg) rotateZ(-2deg);
+        margin-right: 1px;
+        width: auto;
         flex-shrink: 0;
-        min-width: 40px; /* Minimum width for readability */
+        min-width: 40px;
     }
 
     .book-spine-3d:nth-child(even),
     .book-spine-3d:nth-child(3n),
     .book-spine-3d:nth-child(4n) {
-        transform: rotateY(-2deg) rotateZ(-1deg); /* Reduce variation on mobile */
+        transform: rotateY(-2deg) rotateZ(-1deg);
     }
 
     .book-spine-3d:hover {
-        transform: rotateY(-1deg) rotateZ(0deg) translateZ(10px) translateY(-5px); /* Subtle hover effect */
+        transform: rotateY(-1deg) rotateZ(0deg) translateZ(10px) translateY(-5px);
     }
 
     .spine-title {
         font-size: 0.6rem;
         padding: 2px 1px;
     }
+}
+
+/* --- Tablet to Phone Transition (600px) --- */
+@media (max-width: 600px) {
+    :root {
+        --book-width: 110px;
+        --book-height: 170px;
 
     .spine-author {
         font-size: 0.5rem;
@@ -170,65 +437,155 @@
     /* Modal Adjustments */
     .modal-content {
         width: 95%;
-        margin: 5% auto;
-        padding: 1.5rem;
+        margin: auto;
+        padding: 1.5rem 1rem;
         flex-direction: column;
+        max-width: 90vw;
     }
 
-    .modal-cover {
-        width: 120px;
-        margin: 0 auto 1.5rem;
+    .modal-body {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 
-    .modal-details {
+    .modal-media {
+        min-height: 200px;
+    }
+
+    .modal-media img {
+        max-width: 150px;
+        height: auto;
+    }
+
+    .modal-info {
         text-align: center;
+    }
+
+    .modal-info h2 {
+        font-size: 1.8rem;
+    }
+
+    .modal-subtitle {
+        font-size: 1rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-preview {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    /* Modal - Prevent overflow */
+    .glass-modal {
+        width: 100%;
+        max-width: 100%;
+        padding: 1rem;
+    }
+
+    .glass-modal::backdrop {
+        background: rgba(0, 0, 0, 0.5);
     }
     
     /* Auth Form - higher specificity to override internal styles */
     body .auth-container {
-        margin: 4rem 1rem;
-        padding: 2rem 1rem;
+        margin: 1rem 0;
+        padding: 1.5rem 1rem;
+        max-width: 100%;
+        border-radius: 0;
     }
     
     /* Chat Interface - higher specificity */
     body .chat-container {
         width: 100%;
-        height: calc(100vh - 180px); /* Adjust for stacked header */
-        margin: 1rem 0;
+        height: calc(100vh - 180px);
+        margin: 0;
         border-radius: 0;
+        border: none;
+    }
+
+    /* Genre Modal Responsive */
+    .genre-modal-content {
+        width: 95%;
+        max-width: 95vw;
+        max-height: 90vh;
+        margin: 2rem auto;
+        border-radius: 16px;
+    }
+
+    .genre-modal-header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .genre-modal-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .genre-books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
     }
 }
 
 
 /* --- Library Page Specific Adjustments --- */
 @media (max-width: 768px) {
-    /* Reset absolute positioning for controls in hero */
-    .hero {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-bottom: 2rem !important; /* Override inline padding if needed */
-        position: relative; 
+    .library-hero {
+        padding: 1.5rem 1rem;
     }
 
-    /* Target the specific elements using ID and class to override inline styles */
-    #export-library[style],
-    .sort-controls,
+    .library-hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero .view-toggles {
+        margin-top: 1rem !important;
+        gap: 0.75rem !important;
+    }
+
+    .view-toggles button {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem;
+    }
+
     #export-library {
-        position: static !important; /* Force static positioning */
-        width: 100%;
-        max-width: 300px;
+        position: static !important;
+        width: auto;
+        max-width: 100%;
         margin: 0.5rem 0 !important;
-        transform: none !important; /* Just in case */
     }
 
-    #export-library {
-        order: 2; /* Put export button below sort controls */
+    .sort-controls {
+        flex-direction: column;
+        gap: 0.8rem;
+        padding: 1rem 0.5rem;
+        width: 100%;
+    }
+
+    .filter-group {
+        width: 100%;
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .sort-select {
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 0.9rem;
     }
 }
 
-@media (max-width: 600px) {
-    /* --- Tablet to Phone Transition (600px-768px) --- */
+/* --- Tablet to Phone Transition (600px - 768px) --- */
+@media (max-width: 767px) and (min-width: 600px) {
     .bookshelf-3d-container {
         perspective: 750px;
         perspective-origin: center 52%;
@@ -243,14 +600,33 @@
     }
 
     .books-row-3d {
-        gap: 2px;
-        height: 155px;
+        gap: 10px;
         overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 10px;
+        padding-bottom: 15px;
     }
 
     .book-spine-3d {
+        width: var(--book-width) !important;
+        min-width: var(--book-width) !important;
+        height: var(--book-height) !important;
+        flex: 0 0 var(--book-width) !important;
+        background-size: cover !important;
+        background-position: center !important;
+    }
+}
+
+/* --- Small Phone (480px) --- */
+@media (max-width: 480px) {
+    :root {
+        --book-width: 100px;
+        --book-height: 150px;
+    }
+
+    .book-spine-3d {
+        width: var(--book-width) !important;
+        min-width: var(--book-width) !important;
+        height: var(--book-height) !important;
+        flex: 0 0 var(--book-width) !important;
         transform: rotateY(-2deg) rotateZ(-1deg);
         margin-right: 0;
         flex-shrink: 0;
@@ -276,112 +652,384 @@
         margin-top: 3px;
     }
 
-    .shelf-section-3d {
-        margin-bottom: 3rem;
+    .genre-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
     }
 
-    .shelf-section-3d .shelf-label {
-        font-size: 1.15rem;
-        margin-bottom: 1rem;
+    .curated-row {
+        gap: 1.5rem;
+    }
+
+    /* Shelf row 600-768px */
+    .shelf-row {
+        padding: 0 0.75rem 0.75rem 0.75rem;
+        min-height: 220px;
+        gap: 0.6rem;
+        border-bottom: 18px solid #281a15;
+    }
+
+    .shelf-label {
+        font-size: 1rem;
+    }
+
+    /* Mood modal 600-768px */
+    .mood-modal-content {
+        max-width: 90vw;
+        max-height: 80vh;
+    }
+
+    .book-rec-cover {
+        width: 48px;
+        height: 72px;
+    }
+
+    .book-rec-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.6rem;
     }
 }
 
-@media (max-width: 480px) {
+/* --- Small Tablets & Large Phones (600px) --- */
+@media (max-width: 599px) {
     :root {
-        --book-width: 110px;
-        --book-height: 170px;
+        --book-width: 120px;
+        --book-height: 180px;
+    }
+
+    /* Additional space tightening */
+    main {
+        padding: 0.75rem;
+    }
+
+    header {
+        padding: 0.75rem;
+    }
+
+    .hero {
+        padding: 1.5rem 0.75rem;
+    }
+
+    .hero h1 {
+        font-size: clamp(1.5rem, 5vw, 2rem);
+    }
+
+    .section-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .genre-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.7rem;
+        padding: 0.5rem;
+    }
+
+    .genre-card {
+        height: 65px;
+        padding: 0.6rem 0.8rem;
+        gap: 0.8rem;
+    }
+
+    .genre-card i {
+        font-size: 1.3rem;
+    }
+
+    .genre-card span {
+        font-size: 0.95rem;
+    }
+
+    .curated-row {
+        gap: 0.75rem;
+        padding: 0.5rem;
+    }
+
+    .curated-row .book-scene {
+        min-width: 120px;
+    }
+
+    .shelf-section-3d {
+        margin-bottom: 1.5rem;
+    }
+
+    .shelf-label {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Shelf row 599px */
+    .shelf-row {
+        padding: 0 0.5rem 0.75rem 0.5rem;
+        min-height: 200px;
+        gap: 0.5rem;
+        border-bottom: 16px solid #281a15;
+    }
+
+    /* Mood tags smaller on small phones */
+    .mood-tag {
+        font-size: 0.65rem;
+        padding: 2px 4px;
+    }
+
+    .mood-modal-content {
+        max-width: 92vw;
+        max-height: 80vh;
+    }
+
+    .book-rec-cover {
+        width: 45px;
+        height: 68px;
+    }
+
+    .book-rec-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .book-rec-item {
+        padding: 0.5rem;
+    }
+}
+
+/* --- Small Phones (480px) --- */
+@media (max-width: 479px) {
+    :root {
+        --book-width: 100px;
+        --book-height: 150px;
+    }
+
+    main {
+        padding: 0.5rem;
+    }
+
+    header {
+        padding: 0.75rem 0.5rem;
+        gap: 0.75rem;
+    }
+
+    .logo {
+        font-size: 1.2rem;
+    }
+
+    .logo img {
+        height: 30px !important;
     }
 
     /* Header Compact */
     .nav-links {
-        gap: 0.8rem;
+        gap: 0.6rem;
+        justify-content: center;
     }
     
     .nav-links a {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        margin-left: 0;
+    }
+
+    .tooltip-text {
+        display: none;
     }
 
     /* Hero */
-    .hero h1 {
-        font-size: 2rem;
+    .hero {
+        padding: 1.25rem 0.5rem;
     }
 
-    /* Genre Grid: 1 column on small screens */
+    .hero h1 {
+        font-size: clamp(1.3rem, 5vw, 1.8rem);
+        margin-bottom: 1rem;
+    }
+
+    .hero p {
+        font-size: 0.95rem;
+    }
+
+    /* Curated Section */
+    .curated-section {
+        margin-bottom: 3rem;
+    }
+
+    .section-header {
+        gap: 0.25rem;
+        padding: 0.25rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .section-header span {
+        font-size: 0.75rem;
+    }
+
+    .curated-row {
+        gap: 0.5rem;
+        padding: 0.25rem;
+        margin: 0;
+    }
+
+    .curated-row .book-scene {
+        min-width: 100px;
+    }
+
+    /* Genre Grid: Single column on very small screens */
     .genre-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+        padding: 0.5rem;
+    }
+
+    .genre-card {
+        height: 60px;
+        padding: 0.5rem;
+        gap: 0.6rem;
+    }
+
+    .genre-card i {
+        font-size: 1.2rem;
+    }
+
+    .genre-card span {
+        font-size: 0.9rem;
+    }
+
+    /* Modal Adjustments */
+    .modal-content {
+        padding: 1rem 0.75rem;
+    }
+
+    .modal-info h2 {
+        font-size: 1.5rem;
+    }
+
+    .ai-insight-box {
+        padding: 0.75rem 1rem;
     }
 
     /* Books can stay in a flex row but might need scrolling or wrapping */
-    .curated-row {
-        justify-content: flex-start; /* Ensure scroll works */
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Hide some secondary UI if needed or stacks further */
-    .search-bar {
-        margin-bottom: 0.5rem;
-    }
-
-    /* --- 3D Bookshelf for Very Small Phones --- */
     .bookshelf-3d-container {
-        perspective: 600px; /* Further reduce perspective */
+        perspective: 600px;
         perspective-origin: center 60%;
         padding: 0.5rem 0;
     }
 
     .bookshelf-3d {
-        padding: 10px 8px 8px; /* Minimal padding */
+        padding: 10px 8px 8px;
         margin: 0 -3px;
         min-height: 180px;
         transform: rotateX(0);
     }
 
     .books-row-3d {
-        gap: 1px; /* Ultra-minimal gap */
-        height: 140px; /* Further reduce height */
+        gap: 1px;
+        height: 140px;
         padding-bottom: 8px;
     }
 
     .book-spine-3d {
-        transform: rotateY(-1deg); /* Minimal rotation */
-        margin-right: 0; /* No margin, gap handles it */
+        transform: rotateY(-1deg);
+        margin-right: 0;
         min-width: 35px;
     }
 
-    .book-spine-3d:nth-child(even),
-    .book-spine-3d:nth-child(3n),
-    .book-spine-3d:nth-child(4n) {
-        transform: rotateY(-1deg);
-    }
-
-    .book-spine-3d:hover {
-        transform: rotateY(0deg) translateZ(8px) translateY(-3px);
-    }
-
-    .spine-title {
-        font-size: 0.55rem;
-        padding: 1px 0.5px;
+    .books-row-3d {
+        gap: 8px;
     }
 
     .spine-author {
-        display: none; /* Hide author on very small screens */
+        display: none;
     }
 
     .shelf-section-3d {
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
 
-    .shelf-section-3d .shelf-label {
+    .shelf-label {
         font-size: 1rem;
         margin-bottom: 0.8rem;
     }
 
+    /* Chat Adjustments */
+    .chat-container {
+        height: calc(100vh - 150px);
+    }
+
+    .message {
+        max-width: 95%;
+        font-size: 0.9rem;
+    }
+
+    .book-rec-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
     /* Adjust shelf lip size for smaller screens */
-    .bookshelf-3d::after {
-        height: 15px;
+    .shelf-row {
+        border-bottom: 20px solid #281a15;
+        min-height: 200px;
+    }
+
+    /* Auth Container */
+    body .auth-container {
+        margin: 0.5rem;
+        padding: 1rem 0.75rem;
     }
 }
+
+/* --- Ultra Small Phones (under 360px) --- */
+@media (max-width: 359px) {
+    :root {
+        --book-width: 90px;
+        --book-height: 135px;
+    }
+
+    .curated-row .book-scene {
+        min-width: 90px;
+    }
+
+    .genre-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .genre-card {
+        height: 55px;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .hero h1 {
+        font-size: 1.2rem;
+    }
+
+    .section-header h2 {
+        font-size: 1rem;
+    }
+
+    /* Ultra small shelves */
+    .shelf-row {
+        min-height: 160px;
+        border-bottom: 14px solid #281a15;
+        padding: 0 0.25rem 0.5rem 0.25rem;
+        gap: 0.3rem;
+    }
+
+    .shelf-label {
+        font-size: 0.9rem;
+    }
+
+    .book-rec-cover {
+        width: 38px;
+        height: 57px;
+    }
+
+    .book-rec-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.4rem;
+    }
+
+    .mood-modal-content {
+        width: 96vw;
+        max-height: 85vh;
+    }
 
 /* Style the container for controls */
 .sort-controls {
@@ -389,25 +1037,65 @@
     flex-direction: column;
     gap: 1rem;
     align-items: center;
-    background: transparent;
 }
 
-.filter-group {
-    justify-content: center;
-    display: flex;
-    flex-direction: row;
-    display: flex;
-    gap: 0.8rem;
-    align-items: center;
-    padding: 1rem;
-    border-radius: 8px;
-}
+/* --- 3D Book Geometry & Extrusion Styles --- */
 
-.sort-controls select {
+/* Parent container establishing the 3D space */
+.book-container-3d {
     width: 100%;
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: row;
-    border-radius: 5px;
-    background: rgb(249,247,242); /* Add background for better visibility */
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Base properties for all individual book surfaces */
+.book-spine-3d, .book-cover-3d, .book-back-3d, .book-pages-3d {
+    position: absolute;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+/* 1. FRONT COVER: Pushed forward along the Z-axis */
+.book-cover-3d {
+    width: 100%;
+    transform: rotateY(0deg) translateZ(15px); /* 15px is half the book thickness */
+    border-radius: 0 4px 4px 0;
+    z-index: 2;
+}
+
+/* 2. DYNAMIC SPINE: Rotated 90 degrees left, acting as the left edge */
+.book-spine-3d {
+    width: 30px; /* This sets the thickness of your book */
+    left: 0;
+    transform: rotateY(-90deg) translateZ(15px);
+    transform-origin: left center;
+}
+
+/* 3. REALISTIC BACK COVER: Pushed backward along the Z-axis and flipped */
+.book-back-3d {
+    width: 100%;
+    background: #2c2420; /* Default vintage back cover tint */
+    padding: 15px;
+    box-sizing: border-box;
+    transform: rotateY(180deg) translateZ(15px);
+    border-radius: 4px 0 0 4px;
+}
+
+/* 4. PAPER PAGES EDGE: Rotated 90 degrees right, acting as the right edge */
+.book-pages-3d {
+    width: 28px; /* Slightly thinner than spine for a realistic inset look */
+    right: 0;
+    background: #fcfaf2; /* Soft warm vintage paper color */
+    transform: rotateY(90deg) translateZ(14px);
+    transform-origin: right center;
+    box-shadow: inset 5px 0 10px rgba(0,0,0,0.08);
+}
+
+/* Interactive Flip Behavior: Flips 180 degrees to reveal back-cover details */
+.book-container-3d.flipped {
+    transform: rotateY(-180deg) translateZ(0px) !important;
 }

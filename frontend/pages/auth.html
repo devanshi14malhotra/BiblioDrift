@@ -90,6 +90,10 @@
                     <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
                 </div>
                 <div class="tooltip">
+             <a href="vault.html">My Vault</a>
+            <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+            </div>
+                <div class="tooltip">
                     <a href="library.html">My Library</a>
                     <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
                 </div>
@@ -138,16 +142,16 @@
                 
                 <!-- Registration Specific Field (Hidden during Sign In) -->
                 <div id="nameField">
-                    <input type="text" id="username" class="auth-input" placeholder="Full Name">
+                    <input type="text" id="username" class="auth-input" placeholder="Full Name" autocomplete="name">
                 </div>
                 
                 <!-- Standard Credentials -->
                 <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required>
+                    <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required autocomplete="email">
                 </div>
                 
                 <div class="input-group" style="margin-bottom: 1rem;">
-                    <input type="password" class="auth-input" placeholder="Password" value="demo123" required>
+                    <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123" required autocomplete="current-password">
                 </div>
                 
                 <!-- Primary Action Button -->
@@ -176,6 +180,7 @@
         const authTitle = document.getElementById('authTitle');
         const nameField = document.getElementById('nameField');
         const submitBtn = document.getElementById('submitBtn');
+        const passwordInput = document.getElementById('password');
 
         if (toggleText) {
             toggleText.addEventListener('click', () => {
@@ -186,12 +191,14 @@
                     nameField.style.display = 'block';
                     submitBtn.textContent = 'Sign Up';
                     toggleText.textContent = 'Already have an account? Sign in.';
+                    passwordInput.autocomplete = 'new-password';
                 } else {
                     authForm.dataset.mode = 'login';
                     authTitle.textContent = 'Welcome Back';
                     nameField.style.display = 'none';
                     submitBtn.textContent = 'Sign In';
                     toggleText.textContent = 'No account? Create one.';
+                    passwordInput.autocomplete = 'current-password';
                 }
             });
         }

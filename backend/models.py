@@ -617,3 +617,38 @@ class Review(db.Model, SoftDeleteMixin):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "is_deleted": self.is_deleted
         }
+
+
+# ==================== PERSONAL READING JOURNAL ====================
+
+class JournalEntry(db.Model, SoftDeleteMixin):
+    query_class = SoftDeleteQuery
+    """Model for user's private reading journal entries."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=True, index=True)
+    title = db.Column(db.String(255), nullable=False)  # Entry title (e.g., "Reflections on Chapter 4")
+    content = db.Column(db.Text, nullable=False)      # The actual journal text
+    mood = db.Column(db.String(50), nullable=True)     # Emotional state during reading
+    is_private = db.Column(db.Boolean, default=True)   # Journal entries are private by default
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('journal_entries', lazy=True))
+    book = db.relationship('Book', backref=db.backref('journal_entries', lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "book_id": self.book_id,
+            "book_title": self.book.title if self.book else None,
+            "title": self.title,
+            "content": self.content,
+            "mood": self.mood,
+            "is_private": self.is_private,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "is_deleted": self.is_deleted
+        }
