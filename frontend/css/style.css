@@ -1,5 +1,4 @@
-:root {
-    /* Fix: WCAG AA Contrast Floor - Issue #534 */
+/* Fix: WCAG AA Contrast Floor - Issue #534 */
 .glass-panel,
 .book-tooltip,
 .book-detail-modal,
@@ -8,6 +7,8 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 }
+
+:root {
     /* Day Theme (Default) */
     --bg-color: #f9f7f2;
     --header-bg: rgba(249, 247, 242, 0.8);
@@ -304,14 +305,12 @@ main {
 }
 
 .section-header {
-    margin-: 0 1rem 0.5rem 1rem;
+    margin: 0 1rem 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1rem
-    justify-content: space-between;
-    align-items: baseline;
+    gap: 1rem;
 }
 
 .curated-row {
@@ -4669,4 +4668,166 @@ html, body {
 *:hover {
   cursor: pointer !important; 
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23ffca3a' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23ffca3a' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, pointer !important;
+}
+
+/* ============================================================
+   GENRE SECTION — completely missing styles restored (Issue #613)
+   ============================================================ */
+
+.genre-section {
+    margin-bottom: 6rem;
+}
+
+.genre-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+}
+
+.genre-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 1.4rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    text-align: center;
+    user-select: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.genre-card i {
+    font-size: 1.6rem;
+    color: var(--accent-gold);
+    transition: transform 0.2s ease;
+}
+
+.genre-card span {
+    font-size: 0.85rem;
+    color: var(--text-main);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+}
+
+.genre-card:hover {
+    transform: translateY(-6px) scale(1.05);
+    background: rgba(212, 175, 55, 0.12);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.genre-card:hover i {
+    transform: scale(1.2) rotate(-8deg);
+}
+
+.genre-card:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+.genre-modal {
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    background: var(--bg-color);
+    max-width: 90vw;
+    width: 1100px;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+
+.genre-modal::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+}
+
+.genre-modal-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 85vh;
+}
+
+.genre-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+}
+
+.genre-modal-header h2 {
+    color: var(--text-main);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.close-genre-modal {
+    background: none;
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-genre-modal:hover {
+    background: var(--glass-bg);
+    color: var(--text-main);
+    transform: rotate(90deg);
+}
+
+.genre-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+}
+
+.genre-books-grid {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.genre-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem;
+    color: var(--text-muted);
+    font-size: 1rem;
+    width: 100%;
+}
+
+.genre-loading i {
+    font-size: 2rem;
+    color: var(--accent-gold);
+}
+
+[data-theme="night"] .genre-card {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="night"] .genre-card:hover {
+    background: rgba(212, 175, 55, 0.1);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
