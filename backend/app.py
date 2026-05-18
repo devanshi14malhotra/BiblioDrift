@@ -887,6 +887,30 @@ def handle_category_books():
         logger.error(f"Error in handle_category_books: {str(e)}", exc_info=True)
         return internal_error(str(e))
 
+
+@app.route('/api/v1/books/purchase-links', methods=['GET'])
+@rate_limit('purchase_links')
+def handle_purchase_links():
+    """Get purchase links for a book."""
+    try:
+        title = request.args.get('title')
+        author = request.args.get('author', '')
+        isbn = request.args.get('isbn', '')
+        
+        if not title:
+            return jsonify({'success': False, 'error': 'Title is required'}), 400
+            
+        from purchase_links import PurchaseManager
+        manager = PurchaseManager()
+        
+        links = manager.get_quick_links(title=title, author=author, isbn=isbn)
+        
+        return success_response(data={"links": links})
+        
+    except Exception as e:
+        logger.error(f"Error getting purchase links: {str(e)}", exc_info=True)
+        return internal_error(str(e))
+
 @app.route('/api/v1/generate-note', methods=['POST'])
 @rate_limit('generate_note')
 def handle_generate_note():

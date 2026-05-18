@@ -778,10 +778,16 @@ class BookshelfRenderer3D {
         books = books.map(b => {
             // If it's already flat (like sample), keep it. If it's Google Books style (volumeInfo), flatten it.
             if (b.volumeInfo) {
+                let isbnVal = '';
+                if (b.volumeInfo.industryIdentifiers) {
+                    const identifier = b.volumeInfo.industryIdentifiers.find(i => i.type === 'ISBN_13' || i.type === 'ISBN_10');
+                    if (identifier) isbnVal = identifier.identifier;
+                }
                 return {
                     id: b.id,
                     title: b.volumeInfo.title || 'Untitled',
                     author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
+                    isbn: isbnVal,
                     cover: b.volumeInfo.imageLinks?.thumbnail || '',
                     description: b.volumeInfo.description || '',
                     rating: b.volumeInfo.averageRating || 4.0,
@@ -1814,6 +1820,33 @@ spine.addEventListener('blur', () => this.hideTooltip());
             });
         }
 
+        // Fetch and render purchase links
+        const purchaseLinksEl = document.getElementById('modal-purchase-links-lib');
+        if (purchaseLinksEl) {
+            purchaseLinksEl.innerHTML = '<div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>';
+            
+            const title = encodeURIComponent(book.title || '');
+            const author = encodeURIComponent(book.author || '');
+            const isbn = encodeURIComponent(book.isbn || '');
+            
+            fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.links && data.links.length > 0) {
+                        const linksHtml = data.links.map(link => {
+                            return `<a href="${link.url}" target="_blank" class="purchase-link-btn" style="background-color: ${link.color || 'var(--wood-dark)'}; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; margin-right: 5px; margin-bottom: 5px; font-size: 0.85rem;">
+                                <i class="${link.icon || 'fa-solid fa-book'}"></i> ${link.name}
+                            </a>`;
+                        }).join('');
+                        purchaseLinksEl.innerHTML = linksHtml;
+                    } else {
+                        purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">No purchase links available.</p>';
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load purchase links', err);
+                    purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
+                });
         // Custom Collections Section
         let collectionsSection = document.getElementById('modal-collections-tagging');
         if (!collectionsSection) {
