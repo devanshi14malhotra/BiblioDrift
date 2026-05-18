@@ -225,7 +225,8 @@ class BookmarkManager {
         const container = document.getElementById('bookmarks-list');
         if (!container) return;
 
-        if (this.bookmarks.size === 0 class="no-bookmarks">No bookmarks yet. Start bookmarking books!</p>';
+        if (this.bookmarks.size === 0) {
+            container.innerHTML = '<p class="no-bookmarks">No bookmarks yet. Start bookmarking books!</p>';
             return;
         }
 
@@ -239,8 +240,7 @@ class BookmarkManager {
                 <li class="bookmark-item" data-bookmark-id="${bookmark.id}">
                     <div class="bookmark-header">
                         <strong>${bookTitle}</strong>
-                        <button class="remove-bookmark" data-bookmark-id="${bookmark.id}" aria-label="Remove bookmark
-                        <button class="remove-bookmark" data-bookmark-id="${bookmark.id}">✕</button>
+                        <button class="remove-bookmark" data-bookmark-id="${bookmark.id}" aria-label="Remove bookmark">✕</button>
                     </div>
                     ${pageInfo ? `<div class="bookmark-page">${pageInfo}</div>` : ''}
                     ${notes}
