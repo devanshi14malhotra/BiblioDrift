@@ -304,12 +304,12 @@ main {
 }
 
 .section-header {
-    margin-: 0 1rem 0.5rem 1rem;
+    margin: 0 1rem 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1rem
+    gap: 1rem;
     justify-content: space-between;
     align-items: baseline;
 }
