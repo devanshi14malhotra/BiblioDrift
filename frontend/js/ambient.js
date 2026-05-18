@@ -16,6 +16,10 @@ class AmbientManager {
         // Defensive check: only initialize if elements exist
         if (!this.toggleBtn || !this.panel) return;
 
+        // ARIA: connect toggle to panel and set initial state
+        this.toggleBtn.setAttribute('aria-controls', 'ambientPanel');
+        this.toggleBtn.setAttribute('aria-expanded', 'false');
+
         this.rainAudio = new Audio('https://archive.org/download/Red_Library_Nature_Rain/R22-25-General%20Rain.mp3');
         this.rainAudio.preload = 'auto';
         this.fireAudio = new Audio('https://archive.org/download/1-hour-cozy-fire-crackling-fireplace-320/1%20hour%20Cozy%20Fire%20Crackling%20Fireplace%20320.mp3');
@@ -62,17 +66,25 @@ class AmbientManager {
     }
 
     init() {
-        // Toggle Panel
+        // Toggle Panel with ARIA and button active animation
         this.toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.unlockAudio(); // Explicitly unlock audio here since propagation is stopped!
-            this.panel.classList.toggle('active');
+            const isActive = this.panel.classList.toggle('active');
+            // mirror state on the button for styling and accessibility
+            this.toggleBtn.classList.toggle('active', isActive);
+            this.toggleBtn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
         });
 
-        // Close panel when clicking outside
+        // Close panel when clicking outside (and update ARIA/button state)
         document.addEventListener('click', (e) => {
             if (!this.panel.contains(e.target) && e.target !== this.toggleBtn) {
+                const wasActive = this.panel.classList.contains('active');
                 this.panel.classList.remove('active');
+                if (wasActive) {
+                    this.toggleBtn.classList.remove('active');
+                    this.toggleBtn.setAttribute('aria-expanded', 'false');
+                }
             }
         });
 
@@ -142,12 +154,81 @@ class AmbientManager {
         });
 
         // Volume Control
+        this.updateVolumeUI = (val) => {
+            const pct = Math.round((val || 0) * 100);
+            // update track fill using numeric CSS variable (0-100)
+            // JS sets a number so CSS can calc offsets (percent + px)
+            this.volumeSlider.style.setProperty('--ambient-fill', `${pct}`);
+            // add transient class to animate thumb pop
+            this.volumeSlider.classList.add('volume-animate');
+            clearTimeout(this._volAnimTimeout);
+            this._volAnimTimeout = setTimeout(() => {
+                this.volumeSlider.classList.remove('volume-animate');
+            }, 380);
+        };
+
         this.volumeSlider.addEventListener('input', () => {
             const volume = parseFloat(this.volumeSlider.value);
             this.rainAudio.volume = volume;
             this.fireAudio.volume = volume;
             this.oceanAudio.volume = volume;
             this.stormAudio.volume = volume;
+            this.updateVolumeUI(volume);
+        });
+
+        // cache the fill element for the track (if present)
+        this.rangeFill = this.panel.querySelector('.volume-control .range-fill');
+
+        // Also attempt to play any checked audio immediately on input (more responsive than 'change')
+        this.volumeSlider.addEventListener('input', () => {
+            const vol = parseFloat(this.volumeSlider.value);
+            console.log('Ambient volume (input):', vol, 'rain paused?', this.rainAudio.paused, 'fire paused?', this.fireAudio.paused);
+            const tryPlayNow = (audio, toggle) => {
+                if (!toggle) return;
+                if (toggle.checked) {
+                    audio.volume = vol;
+                    audio.play().catch(e => {
+                        // log at debug level; autoplay policies may block play()
+                        console.debug('Play attempt blocked:', e);
+                    });
+                }
+            };
+
+            tryPlayNow(this.rainAudio, this.rainToggle);
+            tryPlayNow(this.fireAudio, this.fireToggle);
+            tryPlayNow(this.oceanAudio, this.oceanToggle);
+            tryPlayNow(this.stormAudio, this.stormToggle);
+
+            // update overlay fill width if element exists
+            if (this.rangeFill) {
+                const pct = Math.round(vol * 100);
+                this.rangeFill.style.width = pct + '%';
+            }
+        });
+
+        // Ensure any enabled ambient sound starts playing when the user adjusts volume
+        this.volumeSlider.addEventListener('change', () => {
+            const vol = parseFloat(this.volumeSlider.value);
+            // Debug log to help trace issues where volume changes but no sound is heard
+            console.log('Ambient volume set to', vol);
+
+            const tryPlay = (audio, toggle) => {
+                if (!toggle) return;
+                if (toggle.checked) {
+                    // If audio is paused, try to play at the new volume
+                    if (audio.paused) {
+                        audio.play().catch(e => {
+                            // ignore play errors (browser autoplay policy) but log for debugging
+                            console.debug('Ambient audio play blocked or failed:', e);
+                        });
+                    }
+                }
+            };
+
+            tryPlay(this.rainAudio, this.rainToggle);
+            tryPlay(this.fireAudio, this.fireToggle);
+            tryPlay(this.oceanAudio, this.oceanToggle);
+            tryPlay(this.stormAudio, this.stormToggle);
         });
 
         // Initial sync
@@ -156,6 +237,8 @@ class AmbientManager {
         this.fireAudio.volume = startVolume;
         this.oceanAudio.volume = startVolume;
         this.stormAudio.volume = startVolume;
+        // initialize UI fill
+        this.updateVolumeUI(startVolume);
     }
 }
 

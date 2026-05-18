@@ -25,6 +25,11 @@ function initDatabase() {
 
     console.log("IndexedDB configuration loaded onto window.db successfully!");
 }
+const db = new Dexie("BiblioDriftVaultDB");
+//for vault module
+db.version(1).stores({
+  vaultFiles: '++id, name, type, uploadedAt' 
+});
 
 // Execute the safe initializer
 initDatabase();

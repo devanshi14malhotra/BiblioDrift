@@ -113,6 +113,8 @@ When proposing an enhancement, describe:
 
 - Keep the frontend vanilla unless a change explicitly needs otherwise.
 - Preserve the calm, tactile visual style.
+- For frontend UI changes, edit the source files under `frontend/`. Do not edit generated `dist/` files unless a maintainer explicitly asks for a built output update.
+- When changing navigation or shared UI states, verify the active, hover, and keyboard-focus states on each affected page.
 - Follow existing Python style and naming patterns.
 
 ## Notes on Documentation

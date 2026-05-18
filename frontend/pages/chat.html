@@ -277,20 +277,24 @@
             </div>
             <nav class="nav-links">
                 <div class="tooltip">
-                    <a href="index.html" class="active">Discovery</a>
+                    <a href="index.html">Discovery</a>
                     <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="vault.html">My Vault</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
                 </div>
                 <div class="tooltip">
                     <a href="library.html">My Library</a>
                     <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
                 </div>
                 <div class="tooltip">
-                    <a href="chat.html">Chat</a>
+                    <a href="chat.html" class="active">Chat</a>
                     <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
                 </div>
                 <div class="tooltip">
-                    <a href="auth.html">Sign In</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
+                    <a href="auth.html" id="navAuthLink">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
                 </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
@@ -412,6 +416,37 @@
                     <button class="suggestion-btn" onclick="sendQuickMessage('I want a book that completely changed how someone sees the world')">
                         <i class="fa-solid fa-lightbulb"></i>
                         Mind-Expanding
+                    </button>
+                </div>
+
+                <!-- Ambient Playlist Prompts -->
+                <div class="suggestions-header" style="margin-top: 1.25rem;">
+                    <span><i class="fa-solid fa-music" style="margin-right: 0.4rem; opacity: 0.8;"></i>Create your ambient reading playlist</span>
+                </div>
+                <div class="suggestions-list">
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m about to read a dark gothic novel by candlelight. Which ambient sounds from the sanctuary should I layer together, and how loud?')">
+                        <i class="fa-solid fa-moon"></i>
+                        Gothic Candlelight
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m curled up with a cozy mystery and chamomile tea. Help me build the perfect ambient atmosphere — rain, fireplace, or both?')">
+                        <i class="fa-solid fa-fire"></i>
+                        Cozy Mystery Nook
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m reading a sweeping ocean adventure. What ambient soundscape from the sanctuary would put me right on the high seas?')">
+                        <i class="fa-solid fa-water"></i>
+                        Ocean Adventure
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('Build me an ambient reading sanctuary for late-night literary fiction — hushed, contemplative, a little melancholy. Which sounds suit this best?')">
+                        <i class="fa-solid fa-star"></i>
+                        Late-Night Literary
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m diving into a fantasy epic with ancient forests and magic. What ambient layers from the sanctuary would bring that world alive?')">
+                        <i class="fa-solid fa-leaf"></i>
+                        Forest &amp; Magic
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a stormy, tense atmosphere for the thriller I\'m reading. Should I use the stormy rain sound? Help me set the scene.')">
+                        <i class="fa-solid fa-bolt"></i>
+                        Stormy Thriller
                     </button>
                 </div>
             </div>

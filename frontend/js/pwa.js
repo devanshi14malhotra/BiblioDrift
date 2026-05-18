@@ -111,7 +111,7 @@
                 <img src="/frontend/assets/images/biblioDrift_favicon.png"
                      alt="BiblioDrift icon" class="pwa-banner-icon">
                 <div class="pwa-banner-text">
-                    <strong>Install BiblioDrift</strong>
+                    <strong>Install BiblioDrift.</strong>
                     <span>Read offline, anytime.</span>
                 </div>
             </div>
@@ -127,7 +127,7 @@
             </div>
         `;
 
-        document.body.appendChild(banner);
+        document.querySelector("main").appendChild(banner);
 
         // Animate in
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));

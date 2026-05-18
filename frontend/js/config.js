@@ -1,5 +1,32 @@
-// API Base URL - point to the local backend server
-const MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+const LOCAL_MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+
+/**
+ * Resolve API base for dev vs static hosting (Netlify, etc.).
+ * Public HTTPS pages must not call loopback (127.0.0.1); use same-origin /api/v1
+ * when a reverse proxy or Netlify redirect points /api to a deployed backend.
+ * Optional build-time override: window.__MOOD_API_BASE_OVERRIDE__ (see build_netlify.py).
+ */
+function resolveMoodApiBase() {
+    if (typeof window !== 'undefined' && window.__MOOD_API_BASE_OVERRIDE__) {
+        return String(window.__MOOD_API_BASE_OVERRIDE__).replace(/\/$/, '');
+    }
+    if (typeof window === 'undefined') {
+        return LOCAL_MOOD_API_BASE;
+    }
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+        return LOCAL_MOOD_API_BASE;
+    }
+    return `${window.location.origin}/api/v1`;
+}
+
+const MOOD_API_BASE = resolveMoodApiBase();
+
+// Vault API Base - temp_app.py runs on port 5001 and serves
+// both the HTML pages and the vault /api/v1/library endpoints.
+// If you're using VS Code Live Server (port 5500), vault.js
+// will fall back to MOOD_API_BASE (port 5000) for API calls.
+window.VAULT_API_BASE = 'http://127.0.0.1:5001/api/v1';
 
 const CONFIG = {
     // Google Books API - loaded from backend config endpoint
@@ -24,7 +51,7 @@ const CONFIG = {
 
 if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
-    window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
+    window.MOOD_API_BASE = MOOD_API_BASE;
     window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
         setKeys(keys) {
