@@ -243,6 +243,23 @@
             text-align: center;
         }
 
+        .google-auth-btn {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            margin-top: 1rem;
+            background: #fff;
+            color: #2c2c2c;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
         .toggle-link {
             display: inline-flex;
             color: var(--text-muted);
@@ -320,8 +337,8 @@
                     <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
                 </div>
                 <div class="tooltip">
-                    <a href="auth.html" class="active">Sign In</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
+                    <a href="auth.html" class="active" id="navAuthLink">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
                 </div>
             </nav>
             <button id="themeToggle" class="btn-icon" title="Toggle Theme">
@@ -391,6 +408,11 @@
                 <button type="submit" id="submitBtn" class="auth-btn">
                     Sign In
                 </button>
+
+                <button type="button" id="googleAuthBtn" class="google-auth-btn">
+                    <i class="fa-brands fa-google"></i>
+                    <span>Sign in with Google</span>
+                </button>
             </form>
             
             <!-- Mode Toggle Link -->
@@ -412,6 +434,16 @@
         const authTitle = document.getElementById('authTitle');
         const nameField = document.getElementById('nameField');
         const submitBtn = document.getElementById('submitBtn');
+        const googleAuthBtn = document.getElementById('googleAuthBtn');
+
+        if (googleAuthBtn) {
+            googleAuthBtn.addEventListener('click', () => {
+                const mode = authForm.dataset.mode === 'register' ? 'register' : 'login';
+                googleAuthBtn.disabled = true;
+                googleAuthBtn.querySelector('span').textContent = 'Redirecting to Google...';
+                window.location.href = `${MOOD_API_BASE}/auth/google?mode=${encodeURIComponent(mode)}`;
+            });
+        }
         const passwordInput = document.getElementById('password');
 
         if (toggleText) {
@@ -422,6 +454,7 @@
                     authTitle.textContent = 'Create Account';
                     nameField.style.display = 'block';
                     submitBtn.textContent = 'Sign Up';
+                    googleAuthBtn.querySelector('span').textContent = 'Sign up with Google';
                     toggleText.textContent = 'Already have an account? Sign in.';
                     passwordInput.autocomplete = 'new-password';
                 } else {
@@ -429,6 +462,7 @@
                     authTitle.textContent = 'Welcome Back';
                     nameField.style.display = 'none';
                     submitBtn.textContent = 'Sign In';
+                    googleAuthBtn.querySelector('span').textContent = 'Sign in with Google';
                     toggleText.textContent = 'No account? Create one.';
                     passwordInput.autocomplete = 'current-password';
                 }

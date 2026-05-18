@@ -4,6 +4,7 @@
 :root {
     --book-width: 180px;
     --book-height: 280px;
+}
 /* Universal Mobile-First Improvements */
 * {
     -webkit-tap-highlight-color: transparent;
@@ -332,12 +333,15 @@ button, a, input {
         padding: 2px 1px;
     }
 }
+}
+
 
 /* --- Tablet to Phone Transition (600px) --- */
 @media (max-width: 600px) {
     :root {
         --book-width: 110px;
         --book-height: 170px;
+    }
 
     .spine-author {
         font-size: 0.5rem;
@@ -462,48 +466,93 @@ button, a, input {
 
 /* --- Library Page Specific Adjustments --- */
 @media (max-width: 768px) {
-    .library-hero {
-        padding: 1.5rem 1rem;
+    body.library-page .library-hero {
+        padding: 1.25rem 1rem;
     }
 
-    .library-hero h1 {
-        font-size: 2rem;
+    body.library-page .library-hero h1 {
+        font-size: clamp(1.7rem, 5vw, 2rem);
+        line-height: 1.1;
     }
 
-    .hero .view-toggles {
+    body.library-page .library-hero p {
+        max-width: 28rem;
+        margin-inline: auto;
+    }
+
+    body.library-page .hero .view-toggles {
         margin-top: 1rem !important;
         gap: 0.75rem !important;
+        flex-wrap: wrap;
     }
 
-    .view-toggles button {
+    body.library-page .view-toggles button {
+        flex: 1 1 11rem;
+        min-width: 9rem;
         padding: 0.5rem 1rem !important;
         font-size: 0.9rem;
     }
 
-    #export-library {
+    body.library-page #export-library {
         position: static !important;
-        width: auto;
+        width: min(100%, 20rem);
         max-width: 100%;
-        margin: 0.5rem 0 !important;
+        margin: 0.5rem auto 0 !important;
     }
 
-    .sort-controls {
+    body.library-page .sort-controls {
         flex-direction: column;
         gap: 0.8rem;
         padding: 1rem 0.5rem;
         width: 100%;
     }
 
-    .filter-group {
+    body.library-page .filter-group {
         width: 100%;
         padding: 0.75rem;
         gap: 0.5rem;
     }
 
-    .sort-select {
+    body.library-page .sort-select {
         width: 100%;
         padding: 0.5rem;
         font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body.library-page .library-hero {
+        padding: 1rem 0.75rem;
+    }
+
+    body.library-page .library-hero h1 {
+        font-size: 1.55rem;
+    }
+
+    body.library-page .library-hero p {
+        font-size: 0.95rem;
+    }
+
+    body.library-page .hero .view-toggles {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    body.library-page .view-toggles button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    body.library-page #export-library {
+        width: 100%;
+    }
+
+    body.library-page .filter-group {
+        flex-wrap: wrap;
+    }
+
+    body.library-page .filter-group i {
+        flex: 0 0 auto;
     }
 }
 
@@ -1070,6 +1119,7 @@ button, a, input {
         width: 96vw;
         max-height: 85vh;
     }
+}
 
 /* Style the container for controls */
 .sort-controls {
