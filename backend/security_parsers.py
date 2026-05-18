@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 # Configuration for request size limits
 MAX_JSON_SIZE_BYTES = 1_000_000  # 1 MB max JSON payload
 MAX_NESTED_DEPTH = 50  # Prevent deeply nested JSON attacks
-DEFAULT_ALLOWED_CONTENT_TYPES = ('application/json', 'application/x-www-form-urlencoded')
 
 
 class JSONParseError(ValueError):
@@ -33,9 +32,7 @@ def validate_content_type(allowed_types: Optional[list] = None) -> Tuple[bool, O
         Tuple[bool, Optional[str]]: (is_valid, error_message)
     """
     if allowed_types is None:
-        allowed_types = list(DEFAULT_ALLOWED_CONTENT_TYPES)
-
-    normalized_allowed_types = [content_type.strip().lower() for content_type in allowed_types]
+        allowed_types = ['application/json', 'application/x-www-form-urlencoded']
     
     content_type = request.content_type
     
@@ -44,10 +41,10 @@ def validate_content_type(allowed_types: Optional[list] = None) -> Tuple[bool, O
         return False, "Missing Content-Type header"
     
     # Extract base content type (without charset)
-    base_content_type = content_type.split(';')[0].strip().lower()
+    base_content_type = content_type.split(';')[0].strip()
     
     # Check if content type is in allowed list
-    if base_content_type not in normalized_allowed_types:
+    if base_content_type not in allowed_types:
         allowed_str = ', '.join(allowed_types)
         return False, f"Invalid Content-Type: {content_type}. Allowed: {allowed_str}"
     
@@ -59,12 +56,7 @@ def safe_get_json(
     silent: bool = False,
     max_size: int = MAX_JSON_SIZE_BYTES,
     validate_type: bool = True,
-    require_object: bool = True,
-    allowed_types: Optional[list] = None,
-    fields: Optional[Dict[str, type]] = None,
-    allow_extra_fields: bool = False,
-    max_array_len: Optional[int] = None,
-    max_object_keys: Optional[int] = None
+    require_object: bool = True
 ) -> Tuple[bool, Optional[Any], Optional[str]]:
     """
     Safely parse JSON from request body with size and depth limits.
@@ -75,11 +67,6 @@ def safe_get_json(
         max_size: Maximum allowed request body size in bytes (default: 1MB)
         validate_type: Validate Content-Type header (default: True)
         require_object: Require the parsed JSON root to be an object/dict (default: True)
-        allowed_types: Explicit Content-Type allowlist to use during validation
-        fields: Required fields and their expected types for payload validation
-        allow_extra_fields: Allow keys beyond those listed in fields (default: False)
-        max_array_len: Maximum allowed length for any array in the payload
-        max_object_keys: Maximum allowed number of keys for any object in the payload
     
     Returns:
         Tuple[bool, Optional[Dict], Optional[str]]: (success, parsed_data, error_message)
@@ -96,7 +83,7 @@ def safe_get_json(
     try:
         # Step 1: Content-Type validation (skip if force=True)
         if validate_type and not force:
-            is_valid, type_error = validate_content_type(allowed_types=allowed_types)
+            is_valid, type_error = validate_content_type()
             if not is_valid:
                 logger.warning(f"Content-Type validation failed: {type_error}")
                 return False, None, type_error
@@ -132,14 +119,8 @@ def safe_get_json(
             return False, None, error_msg
         
         # Step 5: Validate structure (check nesting depth)
-        structure_valid, structure_error = _validate_json_structure(
-            parsed_data,
-            max_depth=MAX_NESTED_DEPTH,
-            max_array_len=max_array_len,
-            max_object_keys=max_object_keys,
-        )
-        if not structure_valid:
-            error_msg = structure_error or f"JSON nesting too deep (max depth: {MAX_NESTED_DEPTH})"
+        if not _validate_depth(parsed_data, max_depth=MAX_NESTED_DEPTH):
+            error_msg = f"JSON nesting too deep (max depth: {MAX_NESTED_DEPTH})"
             logger.warning(error_msg)
             return False, None, error_msg
         
@@ -148,27 +129,6 @@ def safe_get_json(
             error_msg = "JSON root must be an object, not array or primitive"
             logger.warning(error_msg)
             return False, None, error_msg
-
-        # Step 7: Enforce required fields and schema if requested
-        if fields is not None:
-            if not isinstance(parsed_data, dict):
-                error_msg = "Expected JSON object (dict), not array or primitive"
-                logger.warning(error_msg)
-                return False, None, error_msg
-
-            if not allow_extra_fields:
-                extra_fields = sorted(set(parsed_data.keys()) - set(fields.keys()))
-                if extra_fields:
-                    error_msg = f"Unexpected field(s): {', '.join(extra_fields)}"
-                    logger.warning(error_msg)
-                    return False, None, error_msg
-
-            success, extracted_fields, field_error = extract_json_payload(parsed_data, fields=fields)
-            if not success:
-                logger.warning(field_error)
-                return False, None, field_error
-
-            parsed_data = extracted_fields
         
         logger.debug(f"Successfully parsed JSON payload: {len(raw_data)} bytes")
         return True, parsed_data, None
@@ -213,52 +173,6 @@ def _validate_depth(obj: Any, current_depth: int = 0, max_depth: int = MAX_NESTE
                 stack.append((child, next_depth))
 
     return True
-
-
-def _validate_json_structure(
-    obj: Any,
-    current_depth: int = 0,
-    max_depth: int = MAX_NESTED_DEPTH,
-    max_array_len: Optional[int] = None,
-    max_object_keys: Optional[int] = None,
-) -> Tuple[bool, Optional[str]]:
-    """
-    Iteratively validate JSON depth and container sizes to prevent resource exhaustion.
-
-    Args:
-        obj: Object to validate
-        current_depth: Starting depth for the provided object
-        max_depth: Maximum allowed nesting depth
-        max_array_len: Maximum allowed length for any array in the payload
-        max_object_keys: Maximum allowed key count for any object in the payload
-
-    Returns:
-        Tuple[bool, Optional[str]]: (is_valid, error_message)
-    """
-    stack = [(obj, current_depth)]
-
-    while stack:
-        value, depth = stack.pop()
-
-        if depth > max_depth:
-            return False, f"JSON nesting too deep (max depth: {max_depth})"
-
-        if isinstance(value, dict):
-            if max_object_keys is not None and len(value) > max_object_keys:
-                return False, f"JSON object has too many keys (max: {max_object_keys})"
-
-            next_depth = depth + 1
-            for child in value.values():
-                stack.append((child, next_depth))
-        elif isinstance(value, (list, tuple)):
-            if max_array_len is not None and len(value) > max_array_len:
-                return False, f"JSON array has too many elements (max: {max_array_len})"
-
-            next_depth = depth + 1
-            for child in value:
-                stack.append((child, next_depth))
-
-    return True, None
 
 
 def get_request_arg_safe(

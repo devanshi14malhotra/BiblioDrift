@@ -327,4 +327,5 @@ BiblioDrift is continuously evolving. Planned features include:
 
 ---
 
-*Happy reading! May you find yourself in the pages. 📖✨*
+*Happy reading! May you find yourself in the pages. 📖✨*</content>
+<parameter name="filePath">c:\Open Source Project\BiblioDrift\TUTORIAL.md
