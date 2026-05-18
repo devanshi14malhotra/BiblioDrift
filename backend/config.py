@@ -120,6 +120,27 @@ class AIServiceConfig:
         )
 
 
+@dataclass
+class RedisConfig:
+    """Redis configuration for caching and rate limiting."""
+    url: str
+    max_memory: str
+    eviction_policy: str
+    socket_timeout: float
+    connect_timeout: float
+    
+    @classmethod
+    def from_env(cls) -> 'RedisConfig':
+        """Create Redis config from environment variables."""
+        return cls(
+            url=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+            max_memory=os.getenv('REDIS_MAXMEMORY', '512mb'),
+            eviction_policy=os.getenv('REDIS_EVICTION_POLICY', 'allkeys-lru'),
+            socket_timeout=float(os.getenv('REDIS_SOCKET_TIMEOUT', '2.0')),
+            connect_timeout=float(os.getenv('REDIS_CONNECT_TIMEOUT', '2.0'))
+        )
+
+
 class Config:
     """Base configuration class."""
     
@@ -130,6 +151,7 @@ class Config:
         self.server = ServerConfig.from_env()
         self.logging = LoggingConfig.from_env()
         self.ai_service = AIServiceConfig.from_env()
+        self.redis = RedisConfig.from_env()
         
         # Additional Flask configuration
         self.flask_config = self._get_flask_config()
@@ -141,8 +163,27 @@ class Config:
             'JWT_SECRET_KEY': self.jwt.secret_key,
             'JWT_ACCESS_TOKEN_EXPIRES': self.jwt.access_token_expires,
             'JWT_ALGORITHM': self.jwt.algorithm,
+            'JWT_TOKEN_LOCATION': ['cookies'],
+            'JWT_COOKIE_CSRF_PROTECT': True,
+            'JWT_ACCESS_COOKIE_PATH': '/',
+            'JWT_COOKIE_HTTPONLY': True,
+            'JWT_COOKIE_SAMESITE': 'Lax',
             'SQLALCHEMY_DATABASE_URI': self.database.url,
             'SQLALCHEMY_TRACK_MODIFICATIONS': self.database.track_modifications,
+            
+            # =========================================================================
+            # SECURITY: CSRF CONFIGURATION (FLASK-WTF)
+            # =========================================================================
+            # We enable and configure CSRF protection at the application level.
+            # Using 'X-CSRF-Token' as the header name is a common standard for 
+            # single-page applications and AJAX-heavy frontends.
+            # =========================================================================
+            'WTF_CSRF_ENABLED': True,
+            'WTF_CSRF_SECRET_KEY': self.jwt.secret_key, # Reuse for simplicity, but ideally separate
+            'WTF_CSRF_HEADERS': ['X-CSRF-Token'],
+            'WTF_CSRF_SSL_STRICT': self.is_production(),
+            'WTF_CSRF_TIME_LIMIT': 3600, # 1 hour token validity
+            'WTF_CSRF_METHODS': ['POST', 'PUT', 'PATCH', 'DELETE'],
         }
     
     def validate(self) -> tuple[bool, list[str]]:
@@ -176,6 +217,79 @@ class Config:
             elif len(self.jwt.secret_key) < 32:
                 errors.append("JWT_SECRET_KEY should be at least 32 characters long")
         
+        # =====================================================================
+        # DATABASE CONFIGURATION VALIDATION (PARSER-BASED AND LESS FRAGILE)
+        # =====================================================================
+        # Use SQLAlchemy's URL parser to inspect the connection string instead
+        # of lowercasing the entire URL or relying on brittle substring tests.
+        # We still fail fast for obviously dangerous configurations (sqlite,
+        # non-postgres drivers) but treat missing credentials as a warning so
+        # uncommon-but-valid setups (unix sockets, managed auth) are not
+        # rejected outright.
+        # =====================================================================
+
+        if self.is_production():
+            warnings = []
+            raw_db_url = str(self.database.url).strip()
+
+            try:
+                from sqlalchemy.engine import make_url
+                parsed = make_url(raw_db_url)
+                drivername = getattr(parsed, 'drivername', None)
+                username = getattr(parsed, 'username', None)
+                host = getattr(parsed, 'host', None)
+            except Exception:
+                # If parsing fails, be conservative and report an error so ops
+                # can correct a malformed DATABASE_URL.
+                errors.append(
+                    "Malformed DATABASE_URL: could not parse the provided connection string."
+                )
+                drivername = None
+                username = None
+                host = None
+
+            # Fail for explicit sqlite usage
+            if drivername == 'sqlite':
+                errors.append(
+                    "DATABASE_URL must be a PostgreSQL URI in production; detected sqlite://"
+                )
+
+            # Fail for non-Postgres drivers
+            elif drivername and drivername not in ('postgresql', 'postgres'):
+                errors.append(
+                    f"Unsupported database driver in production: '{drivername}'. Use 'postgresql://'."
+                )
+
+            # For Postgres, check for credentials but treat missing username as a WARNING
+            elif drivername in ('postgresql', 'postgres'):
+                if not username:
+                    # If host is empty/None this is likely malformed or a socket-only
+                    # URL; provide a visible warning but do not abort startup.
+                    if not host:
+                        warnings.append(
+                            "Production DATABASE_URL appears to be missing credentials (username). "
+                            "Provide a username:password@host in the URL or ensure your deployment "
+                            "is intentionally using an alternative auth mechanism."
+                        )
+                    else:
+                        warnings.append(
+                            "Production DATABASE_URL does not include a username. "
+                            "If you intentionally rely on unix-socket or provider-managed auth, "
+                            "confirm this configuration. Otherwise, include credentials."
+                        )
+
+            # Emit warnings to stdout so operators see them during startup. We
+            # avoid raising for warnings so the service can still start in edge
+            # cases (e.g., some managed auth flows). Fatal errors remain in
+            # `errors` and will be raised by validate_required_env_vars().
+            if warnings:
+                for w in warnings:
+                    print("CONFIG WARNING:", w)
+
+        # =====================================================================
+        # END OF DATABASE CONFIGURATION VALIDATION BLOCK
+        # =====================================================================
+        
         # Validate server configuration
         if self.server.port < 1 or self.server.port > 65535:
             errors.append(f"Invalid port number: {self.server.port}")
@@ -192,6 +306,10 @@ class Config:
         if self.logging.level not in valid_levels:
             errors.append(f"Invalid log level: {self.logging.level}. Must be one of {valid_levels}")
         
+        # Validate Redis configuration
+        if not self.redis.url.startswith('redis://') and not self.redis.url.startswith('rediss://'):
+            errors.append(f"Invalid Redis URL: {self.redis.url}. Must start with redis:// or rediss://")
+            
         return len(errors) == 0, errors
     
     def is_production(self) -> bool:

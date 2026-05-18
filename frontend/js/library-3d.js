@@ -187,72 +187,111 @@ const SAMPLE_BOOKS = {
             ]
         },
         {
-    id: 'sample-12',
-    title: 'The Alchemist',
-    author: 'Paulo Coelho',
-    cover: 'https://covers.openlibrary.org/b/id/8225261-M.jpg',
-    rating: 4.3,
-    ratingCount: 5124,
-    description: 'Santiago, a young Andalusian shepherd, dreams of discovering a worldly treasure. His journey takes him across the deserts of Egypt, teaching him about destiny, love, and listening to his heart.',
-    categories: ['Fiction', 'Adventure', 'Inspirational'],
-    spineColor: '#DAA520',
-    textColor: '#1C1C1C',
-    reviews: [
-        { name: 'DreamChaser', rating: 5, text: 'A beautiful and inspiring tale about following your dreams.' },
-        { name: 'BookWorm99', rating: 4, text: 'Simple yet powerful storytelling with deep meaning.' }
-    ]
-},
-{
-    id: 'sample-13',
-    title: 'Atomic Habits',
-    author: 'James Clear',
-    cover: 'https://covers.openlibrary.org/b/id/9251996-M.jpg',
-    rating: 4.6,
-    ratingCount: 8432,
-    description: 'A practical guide to building good habits and breaking bad ones. James Clear explains how small daily improvements compound into remarkable long-term results.',
-    categories: ['Self-Help', 'Productivity', 'Personal Development'],
-    spineColor: '#2E8B57',
-    textColor: '#FFFFFF',
-    reviews: [
-        { name: 'GrowthMindset', rating: 5, text: 'Life-changing insights on building sustainable habits.' },
-        { name: 'FocusBuilder', rating: 4, text: 'Actionable advice backed by science and real examples.' }
-    ]
-},
-{
-    id: 'sample-14',
-    title: 'Deep Work',
-    author: 'Cal Newport',
-    cover: 'https://covers.openlibrary.org/b/id/8370226-M.jpg',
-    rating: 4.5,
-    ratingCount: 6921,
-    description: 'A powerful guide to mastering focused success in a distracted world. Cal Newport explains how cultivating deep, concentrated work can dramatically improve productivity and create meaningful results in professional and personal life.',
-    categories: ['Productivity', 'Self-Improvement', 'Career Development'],
-    spineColor: '#1E3A8A',
-    textColor: '#FFFFFF',
-    reviews: [
-        { name: 'CodeMaster', rating: 5, text: 'A must-read for anyone serious about improving focus and output.' },
-        { name: 'SilentAchiever', rating: 4, text: 'Great framework for eliminating distractions and building deep concentration.' }
-    ]
-},
-{
-    id: 'sample-15',
-    title: 'The Psychology of Money',
-    author: 'Morgan Housel',
-    cover: 'https://covers.openlibrary.org/b/id/10521270-M.jpg',
-    rating: 4.7,
-    ratingCount: 11234,
-    description: 'An insightful exploration of how people think about money and the behaviors that influence financial decisions. Morgan Housel shares timeless lessons on wealth, greed, and happiness through engaging real-world stories.',
-    categories: ['Finance', 'Self-Development', 'Investing'],
-    spineColor: '#8B4513',
-    textColor: '#FFFFFF',
-    reviews: [
-        { name: 'SmartInvestor', rating: 5, text: 'A refreshing perspective on wealth and financial behavior.' },
-        { name: 'WealthBuilder', rating: 4, text: 'Simple yet powerful lessons that change how you view money.' }
-    ]
-}
+            id: 'sample-12',
+            title: 'The Alchemist',
+            author: 'Paulo Coelho',
+            cover: 'https://covers.openlibrary.org/b/id/8225261-M.jpg',
+            rating: 4.3,
+            ratingCount: 5124,
+            description: 'Santiago, a young Andalusian shepherd, dreams of discovering a worldly treasure. His journey takes him across the deserts of Egypt, teaching him about destiny, love, and listening to his heart.',
+            categories: ['Fiction', 'Adventure', 'Inspirational'],
+            spineColor: '#DAA520',
+            textColor: '#1C1C1C',
+            reviews: [
+                { name: 'DreamChaser', rating: 5, text: 'A beautiful and inspiring tale about following your dreams.' },
+                { name: 'BookWorm99', rating: 4, text: 'Simple yet powerful storytelling with deep meaning.' }
+            ]
+        },
+        {
+            id: 'sample-13',
+            title: 'Atomic Habits',
+            author: 'James Clear',
+            cover: 'https://covers.openlibrary.org/b/id/9251996-M.jpg',
+            rating: 4.6,
+            ratingCount: 8432,
+            description: 'A practical guide to building good habits and breaking bad ones. James Clear explains how small daily improvements compound into remarkable long-term results.',
+            categories: ['Self-Help', 'Productivity', 'Personal Development'],
+            spineColor: '#2E8B57',
+            textColor: '#FFFFFF',
+            reviews: [
+                { name: 'GrowthMindset', rating: 5, text: 'Life-changing insights on building sustainable habits.' },
+                { name: 'FocusBuilder', rating: 4, text: 'Actionable advice backed by science and real examples.' }
+            ]
+        },
+        {
+            id: 'sample-14',
+            title: 'Deep Work',
+            author: 'Cal Newport',
+            cover: 'https://covers.openlibrary.org/b/id/8370226-M.jpg',
+            rating: 4.5,
+            ratingCount: 6921,
+            description: 'A powerful guide to mastering focused success in a distracted world. Cal Newport explains how cultivating deep, concentrated work can dramatically improve productivity and create meaningful results in professional and personal life.',
+            categories: ['Productivity', 'Self-Improvement', 'Career Development'],
+            spineColor: '#1E3A8A',
+            textColor: '#FFFFFF',
+            reviews: [
+                { name: 'CodeMaster', rating: 5, text: 'A must-read for anyone serious about improving focus and output.' },
+                { name: 'SilentAchiever', rating: 4, text: 'Great framework for eliminating distractions and building deep concentration.' }
+            ]
+        },
+        {
+            id: 'sample-15',
+            title: 'The Psychology of Money',
+            author: 'Morgan Housel',
+            cover: 'https://covers.openlibrary.org/b/id/10521270-M.jpg',
+            rating: 4.7,
+            ratingCount: 11234,
+            description: 'An insightful exploration of how people think about money and the behaviors that influence financial decisions. Morgan Housel shares timeless lessons on wealth, greed, and happiness through engaging real-world stories.',
+            categories: ['Finance', 'Self-Development', 'Investing'],
+            spineColor: '#8B4513',
+            textColor: '#FFFFFF',
+            reviews: [
+                { name: 'SmartInvestor', rating: 5, text: 'A refreshing perspective on wealth and financial behavior.' },
+                { name: 'WealthBuilder', rating: 4, text: 'Simple yet powerful lessons that change how you view money.' }
+            ]
+        }
     ]
 };
 
+const StorageHelper = {
+    get: function(key) {
+        return typeof SafeStorage !== 'undefined' ? SafeStorage.get(key) : localStorage.getItem(key);
+    },
+    set: function(key, value) {
+        if (typeof SafeStorage !== 'undefined') {
+            SafeStorage.set(key, value);
+        } else {
+            localStorage.setItem(key, value);
+        }
+    }
+};
+
+// Action to cache or remove book from local IndexedDB
+async function toggleOfflineBook(book, buttonElement) {
+    try {
+        // Use the global window object database reference
+        const existingBook = await window.db.books.get(book.id);
+
+        if (existingBook) {
+            await window.db.books.delete(book.id);
+            console.log(`"${book.title}" removed from offline shelf.`);
+            updateDownloadIcon(buttonElement, false);
+        } else {
+            await window.db.books.add({
+                id: book.id,
+                title: book.title,
+                author: book.author || 'Unknown Author',
+                content: book.content || book.description || 'No summary available.',
+                mood: book.mood || 'general',
+                coverUrl: book.coverUrl || ''
+            });
+            console.log(`"${book.title}" downloaded for offline reading!`);
+            updateDownloadIcon(buttonElement, true);
+        }
+    } catch (error) {
+        console.error("Failed to alter local shelf cache:", error);
+    }
+}
 class BookshelfRenderer3D {
     constructor() {
         this.tooltip = document.getElementById('book-tooltip');
@@ -261,6 +300,12 @@ class BookshelfRenderer3D {
         this.tooltipTimeout = null;
         this.sortCriteria = 'title'; // Default sort
         this.filterCriteria = 'all'; // Default filter
+        this.searchQuery = ''; // Default search query
+        this.currentView = 'shelves'; // 'shelves' or 'constellation'
+        this.constellationSimulation = null; // Store D3 simulation
+        this.cleanupCallbacks = [];
+        this.isDestroyed = false;
+        this._modalBackdropHandler = null;
 
         // Create live region for screen reader announcements
         this.liveRegion = document.createElement('div');
@@ -287,11 +332,48 @@ class BookshelfRenderer3D {
         this.init();
     }
 
+    getLibraryState() {
+        if (window.libManager && typeof window.libManager.getLibrarySnapshot === 'function') {
+            return window.libManager.getLibrarySnapshot();
+        }
+
+        const storageKey = 'bibliodrift_library';
+        return JSON.parse(StorageHelper.get(storageKey)) || {
+            current: [],
+            want: [],
+            finished: []
+        };
+    }
+
+    findBookShelf(bookId) {
+        if (window.libManager && typeof window.libManager.findBookShelf === 'function') {
+            return window.libManager.findBookShelf(bookId);
+        }
+
+        const library = this.getLibraryState();
+        for (const shelf of ['current', 'want', 'finished']) {
+            if ((library[shelf] || []).some(book => book.id === bookId)) {
+                return shelf;
+            }
+        }
+
+        return null;
+    }
+
+    addManagedListener(target, eventName, handler, options) {
+        if (!target || typeof target.addEventListener !== 'function') {
+            return;
+        }
+
+        target.addEventListener(eventName, handler, options);
+        this.cleanupCallbacks.push(() => target.removeEventListener(eventName, handler, options));
+    }
+
     init() {
         // Sort listener
         const sortSelect = document.getElementById('library-sort');
         if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => {
+            this.addManagedListener(sortSelect, 'change', (e) => {
                 this.sortCriteria = e.target.value;
                 this.refreshShelves();
             });
@@ -300,14 +382,73 @@ class BookshelfRenderer3D {
         // Filter listener
         const filterSelect = document.getElementById('library-filter');
         if (filterSelect) {
-            filterSelect.addEventListener('change', (e) => {
+            this.addManagedListener(filterSelect, 'change', (e) => {
                 this.filterCriteria = e.target.value;
                 this.refreshShelves();
             });
         }
 
+        // Search listener for "Search for a feeling..."
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            this.addManagedListener(searchInput, 'input', (e) => {
+                this.searchQuery = e.target.value.toLowerCase();
+                if (this.currentView === 'shelves') {
+                    this.refreshShelves();
+                } else {
+                    this.renderConstellation();
+                }
+            });
+        }
+
+        // View Toggles
+        const btnShelves = document.getElementById('view-shelves-btn');
+        const btnConstellation = document.getElementById('view-constellation-btn');
+        const containerShelves = document.getElementById('library-shelves');
+        const containerConstellation = document.getElementById('constellation-container');
+
+        if (btnShelves && btnConstellation) {
+            this.addManagedListener(btnShelves, 'click', () => {
+                this.currentView = 'shelves';
+                btnShelves.classList.add('active-view');
+                btnShelves.classList.replace('btn-secondary', 'btn-primary');
+                btnConstellation.classList.remove('active-view');
+                btnConstellation.classList.replace('btn-primary', 'btn-secondary');
+                
+                containerShelves.classList.remove('hidden');
+                containerConstellation.classList.add('hidden');
+                this.refreshShelves();
+            });
+
+            this.addManagedListener(btnConstellation, 'click', () => {
+                this.currentView = 'constellation';
+                btnConstellation.classList.add('active-view');
+                btnConstellation.classList.replace('btn-secondary', 'btn-primary');
+                btnShelves.classList.remove('active-view');
+                btnShelves.classList.replace('btn-primary', 'btn-secondary');
+                
+                containerShelves.classList.add('hidden');
+                containerConstellation.classList.remove('hidden');
+                this.renderConstellation();
+            });
+        }
+
         // Render all shelves with sample books
         this.refreshShelves();
+
+        this.addManagedListener(window, 'bibliodrift:library-manager-ready', () => {
+            this.refreshShelves();
+        });
+        this.addManagedListener(window, 'bibliodrift:library-manager-synced', () => {
+            this.refreshShelves();
+        });
+
+        // Attach global ESC listener for modal exactly once
+        this.addManagedListener(document, 'keydown', (e) => {
+            if (e.key === 'Escape' && this.modal && this.modal.classList.contains('active')) {
+                this.closeModal();
+            }
+        });
 
         // Setup modal close handlers
         this.setupModalHandlers();
@@ -318,10 +459,10 @@ class BookshelfRenderer3D {
         const showWant = this.filterCriteria === 'all' || this.filterCriteria === 'want';
         const showFinished = this.filterCriteria === 'all' || this.filterCriteria === 'finished';
 
-        // Count books first
-        const currentCount = this.getShelfBookCount('current');
-        const wantCount = this.getShelfBookCount('want');
-        const finishedCount = this.getShelfBookCount('finished');
+        // Count books first with search filter applied
+        const currentCount = this.getShelfBookCount('current', this.searchQuery);
+        const wantCount = this.getShelfBookCount('want', this.searchQuery);
+        const finishedCount = this.getShelfBookCount('finished', this.searchQuery);
 
         let totalVisibleBooks = 0;
         if (showCurrent) totalVisibleBooks += currentCount;
@@ -333,7 +474,7 @@ class BookshelfRenderer3D {
         // Update shelf visibility: Show shelf only if filter includes it AND (it has books OR we are specifically searching THIS shelf)
         // Actually, if we are in 'all' view, only show shelves that have books. 
         // If we are in specific shelf view, show it even if empty (but global empty state will override if total is 0)
-        
+
         const forceShowSpecific = this.filterCriteria !== 'all';
 
         this.updateShelfVisibility('shelf-current-3d', !isEmpty && showCurrent && (currentCount > 0 || forceShowSpecific));
@@ -349,18 +490,21 @@ class BookshelfRenderer3D {
         // Show/Hide Global Empty State
         const emptyState = document.getElementById('library-empty-state');
         if (emptyState) {
-            emptyState.style.display = isEmpty ? 'flex' : 'none';
+            emptyState.hidden = !isEmpty;
         }
     }
 
-    getShelfBookCount(shelfType) {
-        const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
-            current: [],
-            want: [],
-            finished: []
-        };
-        return (localLibrary[shelfType] || []).length;
+    getShelfBookCount(shelfType, query = "") {
+        const localLibrary = this.getLibraryState();
+        const books = localLibrary[shelfType] || [];
+        if (!query) return books.length;
+
+        return books.filter(b => {
+            const title = (b.title || b.volumeInfo?.title || "").toLowerCase();
+            const author = (b.author || (b.volumeInfo?.authors && b.volumeInfo.authors[0]) || "").toLowerCase();
+            const moods = (b.moods || []).join(" ").toLowerCase();
+            return title.includes(query) || author.includes(query) || moods.includes(query);
+        }).length;
     }
 
     updateShelfVisibility(containerId, isVisible) {
@@ -388,12 +532,7 @@ class BookshelfRenderer3D {
         container.setAttribute('aria-live', 'polite');
 
         // Fetch real library data
-        const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {
-            current: [],
-            want: [],
-            finished: []
-        };
+        const localLibrary = this.getLibraryState();
         let books = [...(localLibrary[shelfType] || [])];
 
         // Map to expected format if needed (local storage format usually matches)
@@ -407,29 +546,44 @@ class BookshelfRenderer3D {
                     author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
                     cover: b.volumeInfo.imageLinks?.thumbnail || '',
                     description: b.volumeInfo.description || '',
-                    rating: 4.0, // Default for now
-                    ratingCount: 0,
+                    rating: b.volumeInfo.averageRating || 4.0,
+                    ratingCount: b.volumeInfo.ratingsCount || 0,
                     categories: b.volumeInfo.categories || [],
-                    spineColor: b.spineColor, // Might be undefined, generator handles it
+                    spineColor: b.spineColor,
+                    moods: b.moods || [],
+                    progress: typeof b.progress === 'number' ? b.progress : 0,
+                    shelfType: shelfType,
                     reviews: []
                 };
             }
-            return b;
+            return { ...b, moods: b.moods || [], progress: typeof b.progress === 'number' ? b.progress : 0, shelfType };
         });
+
+        // Apply Search Filter
+        if (this.searchQuery) {
+            books = books.filter(b => {
+                const title = b.title.toLowerCase();
+                const author = b.author.toLowerCase();
+                const moods = b.moods.join(" ").toLowerCase();
+                return title.includes(this.searchQuery) || author.includes(this.searchQuery) || moods.includes(this.searchQuery);
+            });
+        }
 
         // Sort books
         books.sort((a, b) => {
             if (this.sortCriteria === 'title') return a.title.localeCompare(b.title);
             if (this.sortCriteria === 'author') return a.author.localeCompare(b.author);
             if (this.sortCriteria === 'rating') return b.rating - a.rating;
-            // Sort by 'pages'. Since SAMPLE_BOOKS doesn't have page count, we'll strip 'pages' option or just map it to something else
-            // But let's assume title for now or mock it? 
+            if (this.sortCriteria === 'mood') {
+                const moodA = (a.moods && a.moods[0]) || "zzz";
+                const moodB = (b.moods && b.moods[0]) || "zzz";
+                return moodA.localeCompare(moodB);
+            }
             return a.title.localeCompare(b.title);
         });
 
         if (!books || books.length === 0) {
-            container.innerHTML = '<div class="empty-shelf-3d">No books yet... Start your collection!</div>';
-            container.setAttribute('aria-label', `${shelfLabels[shelfType]} - empty`);
+            container.innerHTML = '<div class="empty-shelf-3d" style="text-align: center; padding: 150px;">No books yet... Start your collection!</div>';
             return;
         }
 
@@ -447,11 +601,12 @@ class BookshelfRenderer3D {
         // Remove old listeners? It's hard without named functions. 
         // But since we clear innerHTML, we just re-attach to the container? No, container is persistent.
         // We should be careful about duplicate listeners on the container.
-        
+
         // A simple way to avoid duplicates is to set a custom property or remove and re-add.
         // Or better, just attach these once in init() if possible, but we need shelfType reference.
         // Since renderShelf is called multiple times, we should check if listeners are attached.
-        
+        container.dataset.shelf = shelfType;
+
         if (!container.dataset.dropListenersAttached) {
             container.addEventListener('dragover', (e) => {
                 e.preventDefault(); // Essential for drop
@@ -460,16 +615,19 @@ class BookshelfRenderer3D {
 
             container.addEventListener('dragleave', (e) => {
                 container.style.backgroundColor = '';
+                
             });
 
             container.addEventListener('drop', (e) => {
                 e.preventDefault();
                 container.style.backgroundColor = '';
+
+                const targetShelf = e.currentTarget.dataset.shelf;
                 const bookId = e.dataTransfer.getData('bookId');
                 const sourceShelf = e.dataTransfer.getData('sourceShelf');
 
-                if (bookId && sourceShelf && sourceShelf !== shelfType) {
-                    this.moveBook(bookId, sourceShelf, shelfType);
+                if (bookId && sourceShelf && sourceShelf !== targetShelf) {
+                    this.moveBook(bookId, sourceShelf, targetShelf);
                 }
             });
             container.dataset.dropListenersAttached = 'true';
@@ -489,7 +647,7 @@ class BookshelfRenderer3D {
             // Announce to screen readers
             this.announceToScreenReader(`Started dragging ${book.title}`);
         });
-        
+
         spine.addEventListener('dragend', (e) => {
             spine.style.opacity = '1';
         });
@@ -520,48 +678,114 @@ class BookshelfRenderer3D {
         spine.classList.add(traits.fontClass);
         if (traits.titleModifier) spine.classList.add(traits.titleModifier);
 
-        // Accessibility attributes
-        spine.setAttribute('role', 'button');
-        spine.setAttribute('tabindex', '0');
-        spine.setAttribute('aria-label', `${book.title} by ${book.author}. Rating: ${book.rating} stars. Click to view details or drag to move to another shelf.`);
-        spine.setAttribute('aria-pressed', 'false');
+        const face = document.createElement('div');
+        face.className = 'spine-face';
+        face.style.backgroundColor = traits.spineColor;
+        face.style.color = traits.textColor;
 
-        spine.innerHTML = `
-            <div class="spine-face" style="background-color: ${traits.spineColor}; color: ${traits.textColor};">
-                <span class="spine-title" aria-hidden="true">${book.title}</span>
-                <span class="spine-author" aria-hidden="true">${book.author ? book.author.split(' ').pop() : ''}</span>
-                ${traits.pattern.includes('ornament') ? '<div class="spine-pattern-ornament" aria-hidden="true"></div>' : ''}
-                ${traits.pattern.includes('bands') ? '<div class="spine-pattern-bands" aria-hidden="true"></div>' : ''}
-                ${traits.pattern.includes('frame') ? '<div class="spine-pattern-frame" aria-hidden="true"></div>' : ''}
-            </div>
-            <div class="book-edge" aria-hidden="true"></div>
-            <div class="book-top" style="--spine-color: ${traits.spineColor};" aria-hidden="true"></div>
-        `;
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'spine-title';
+        titleSpan.textContent = book.title;
+        face.appendChild(titleSpan);
+
+        const authorSpan = document.createElement('span');
+        authorSpan.className = 'spine-author';
+        authorSpan.textContent = book.author ? book.author.split(' ').pop() : '';
+        face.appendChild(authorSpan);
+
+        if (traits.pattern.includes('ornament')) {
+            const ornament = document.createElement('div');
+            ornament.className = 'spine-pattern-ornament';
+            face.appendChild(ornament);
+        }
+        if (traits.pattern.includes('bands')) {
+            const bands = document.createElement('div');
+            bands.className = 'spine-pattern-bands';
+            face.appendChild(bands);
+        }
+        if (traits.pattern.includes('frame')) {
+            const frame = document.createElement('div');
+            frame.className = 'spine-pattern-frame';
+            face.appendChild(frame);
+        }
+
+        const edge = document.createElement('div');
+        edge.className = 'book-edge';
+
+        const top = document.createElement('div');
+        top.className = 'book-top';
+        top.style.setProperty('--spine-color', traits.spineColor);
+
+        spine.innerHTML = '';
+        spine.appendChild(face);
+        spine.appendChild(edge);
+        spine.appendChild(top);
 
         // Event listeners
         spine.addEventListener('mouseenter', (e) => this.showTooltip(e, book));
         spine.addEventListener('mousemove', (e) => this.moveTooltip(e));
         spine.addEventListener('mouseleave', () => this.hideTooltip());
         spine.addEventListener('click', () => this.openModal(book));
+       
+        // Keyboard Accessibility (Issue #534)
+spine.setAttribute('tabindex', '0');
+spine.setAttribute('role', 'button');
+spine.setAttribute('aria-label', `${book.title} by ${book.author}. Rating: ${book.rating}. Press Enter or Space to view details.`);
 
-        // Keyboard navigation
-        spine.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.openModal(book);
-                spine.setAttribute('aria-pressed', 'true');
-            }
-        });
+spine.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.openModal(book);
+    }
+});
 
-        // Focus management for keyboard navigation
-        spine.addEventListener('focus', () => {
-            this.showTooltip({ clientX: spine.getBoundingClientRect().left, clientY: spine.getBoundingClientRect().top }, book);
-        });
+spine.addEventListener('focus', () => {
+    const rect = spine.getBoundingClientRect();
+    this.showTooltip(
+        { clientX: rect.right, clientY: rect.top + rect.height / 2 },
+        book
+    );
+});
+spine.addEventListener('blur', () => this.hideTooltip());
 
-        spine.addEventListener('blur', () => {
-            this.hideTooltip();
-            spine.setAttribute('aria-pressed', 'false');
-        });
+        // Add mood icon if primary mood exists
+        if (book.moods && book.moods.length > 0) {
+            const moodIcon = document.createElement('div');
+            moodIcon.className = 'spine-mood-icon';
+            moodIcon.style.position = 'absolute';
+            moodIcon.style.top = '10px';
+            moodIcon.style.width = '100%';
+            moodIcon.style.textAlign = 'center';
+            moodIcon.style.fontSize = '12px';
+            moodIcon.style.opacity = '0.7';
+            moodIcon.innerHTML = `<i class="fa-solid ${this.getMoodIcon(book.moods[0])}"></i>`;
+            spine.appendChild(moodIcon);
+        }
+
+        // Add reading progress indicator on spine for currently-reading books
+        const progress = typeof book.progress === 'number' ? book.progress : 0;
+        if (shelfType === 'current') {
+            const progressIndicator = document.createElement('div');
+            progressIndicator.className = 'spine-progress-indicator';
+            progressIndicator.setAttribute('aria-label', `${progress}% read`);
+            progressIndicator.setAttribute('title', `${progress}% read`);
+
+            const progressFill = document.createElement('div');
+            progressFill.className = 'spine-progress-fill';
+            progressFill.style.height = `${progress}%`;
+
+            progressIndicator.appendChild(progressFill);
+            spine.appendChild(progressIndicator);
+        }
+
+        // Finished badge
+        if (shelfType === 'finished') {
+            const finishedBadge = document.createElement('div');
+            finishedBadge.className = 'spine-finished-badge';
+            finishedBadge.innerHTML = '<i class="fa-solid fa-check"></i>';
+            finishedBadge.setAttribute('title', 'Finished');
+            spine.appendChild(finishedBadge);
+        }
 
         return spine;
     }
@@ -644,6 +868,7 @@ class BookshelfRenderer3D {
         };
     }
 
+
     showTooltip(e, book) {
         this.currentBook = book;
 
@@ -658,9 +883,30 @@ class BookshelfRenderer3D {
         document.getElementById('tooltip-title').textContent = book.title;
         document.getElementById('tooltip-author').textContent = `by ${book.author}`;
         document.getElementById('tooltip-stars').textContent = this.getStarRating(book.rating);
-        document.getElementById('tooltip-stars').setAttribute('aria-label', `${book.rating} out of 5 stars`);
-        document.getElementById('tooltip-rating-text').textContent = book.rating.toFixed(1);
+        document.getElementById('tooltip-rating-text').textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         document.getElementById('tooltip-description').textContent = book.description.substring(0, 150) + '...';
+
+        // Show reading progress in tooltip for books in progress
+        const progressEl = document.getElementById('tooltip-progress');
+        const progressFill = document.getElementById('tooltip-progress-fill');
+        const progressLabel = document.getElementById('tooltip-progress-label');
+        const progress = typeof book.progress === 'number' ? book.progress : 0;
+
+        if (book.shelfType === 'current' && progress > 0) {
+            progressEl.style.display = 'block';
+            progressFill.style.width = `${progress}%`;
+            progressLabel.textContent = `${progress}% read`;
+        } else if (book.shelfType === 'current') {
+            progressEl.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressLabel.textContent = 'Not started';
+        } else if (book.shelfType === 'finished') {
+            progressEl.style.display = 'block';
+            progressFill.style.width = '100%';
+            progressLabel.textContent = 'Finished ✓';
+        } else {
+            progressEl.style.display = 'none';
+        }
 
         // Position tooltip
         this.moveTooltip(e);
@@ -773,85 +1019,370 @@ class BookshelfRenderer3D {
         const scoreEl = document.getElementById('modal-rating-score');
         const countEl = document.getElementById('modal-rating-count');
 
-        if (titleEl) {
-            titleEl.textContent = book.title;
-            titleEl.setAttribute('id', 'modal-title');
-        }
-        if (authorEl) {
-            authorEl.textContent = book.author; // Removed "by" prefix to match design
-            authorEl.setAttribute('aria-label', `Author: ${book.author}`);
-        }
-        if (starsEl) {
-            starsEl.textContent = this.getStarRating(book.rating);
-            starsEl.setAttribute('aria-label', `${book.rating} out of 5 stars`);
-        }
-        if (scoreEl) scoreEl.textContent = book.rating.toFixed(1);
+        if (titleEl) titleEl.textContent = book.title;
+        if (authorEl) authorEl.textContent = book.author; // Removed "by" prefix to match design
+        if (starsEl) starsEl.textContent = this.getStarRating(book.rating);
+        if (scoreEl) scoreEl.textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         if (countEl) countEl.textContent = `(${book.ratingCount} ratings)`;
 
+        // 5. Emotion Tagging Section
+        let taggingSection = document.getElementById('modal-mood-tagging');
+        if (!taggingSection) {
+            taggingSection = document.createElement('div');
+            taggingSection.id = 'modal-mood-tagging';
+            taggingSection.className = 'mood-tagging-section';
+            const infoPanel = document.querySelector('.book-info-panel');
+            if (infoPanel) {
+                // Insert before the action buttons
+                const actions = document.querySelector('.book-actions-section');
+                infoPanel.insertBefore(taggingSection, actions);
+            }
+        }
+
+        taggingSection.innerHTML = `
+            <h4 class="mood-tagging-title" style="margin-top: 10px; margin-bottom: 8px; color: var(--accent-gold); font-family: 'Playfair Display', serif;">How does this book make you feel?</h4>
+            <div class="emotion-tags-container">
+                ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
+                    const isActive = book.moods && book.moods.includes(mood);
+                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+                        <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
+                    </span>`;
+                }).join('')}
+            </div>
+        `;
         // Categories
         const categoriesContainer = document.getElementById('modal-categories');
         if (categoriesContainer && book.categories) {
-            categoriesContainer.innerHTML = book.categories.map(cat =>
-                `<span class="category-tag" aria-label="Category: ${cat}">${cat}</span>`
-            ).join('');
+            categoriesContainer.innerHTML = '';
+            book.categories.forEach(cat => {
+                const span = document.createElement('span');
+                span.className = 'category-tag';
+                span.textContent = cat;
+                categoriesContainer.appendChild(span);
+            });
         }
 
         // Reviews
         const reviewsContainer = document.getElementById('modal-reviews');
         if (reviewsContainer && book.reviews) {
-            reviewsContainer.innerHTML = book.reviews.map(review => `
-                <div class="review-item" aria-label="Review by ${review.name}, ${review.rating} stars">
-                    <div class="review-header">
-                        <span class="reviewer-name">${review.name}</span>
-                        <span class="review-rating" aria-label="Rating: ${review.rating} out of 5 stars">${this.getStarRating(review.rating)}</span>
-                    </div>
-                    <p class="review-text">"${review.text}"</p>
-                </div>
-            `).join('');
+            reviewsContainer.innerHTML = '';
+            book.reviews.forEach(review => {
+                const item = document.createElement('div');
+                item.className = 'review-item';
+                
+                const header = document.createElement('div');
+                header.className = 'review-header';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'reviewer-name';
+                nameSpan.textContent = review.name;
+                header.appendChild(nameSpan);
+                
+                const ratingSpan = document.createElement('span');
+                ratingSpan.className = 'review-rating';
+                ratingSpan.textContent = this.getStarRating(review.rating);
+                header.appendChild(ratingSpan);
+                
+                item.appendChild(header);
+                
+                const textP = document.createElement('p');
+                textP.className = 'review-text';
+                textP.textContent = `"${review.text}"`;
+                item.appendChild(textP);
+                
+                reviewsContainer.appendChild(item);
+            });
         }
 
-        // Handle Shelf Selection
+        taggingSection.querySelectorAll('.emotion-tag').forEach(tag => {
+            tag.onclick = async () => {
+                const mood = tag.dataset.mood;
+                if (!book.moods) book.moods = [];
+
+                const index = book.moods.indexOf(mood);
+                if (index > -1) {
+                    book.moods.splice(index, 1);
+                    tag.style.background = 'var(--glass-bg)';
+                    tag.style.color = 'inherit';
+                    tag.classList.remove('active');
+                } else {
+                    book.moods.push(mood);
+                    tag.style.background = 'var(--accent-gold)';
+                    tag.style.color = '#000';
+                    tag.classList.add('active');
+                }
+
+                // Update in LocalStorage
+                await this.updateBookMoods(book.id, book.moods);
+            };
+        });
+
+        // 6. Handle Shelf Selection
         const shelfSelect = document.getElementById('modal-shelf-select');
         // Issue #23: Element binding for the remove button
         const removeBtn = document.getElementById('modal-remove-btn');
-        
+        const actionsSection = document.querySelector('.book-actions-section');
+        const reviewsSection = document.querySelector('.book-reviews-section');
+
+        // 7. Reading Progress Tracker
+        const progressSection = document.getElementById('modal-progress-section');
+        const progressSlider = document.getElementById('modal-progress-slider');
+        const progressBar = document.getElementById('modal-progress-bar');
+        const progressValue = document.getElementById('modal-progress-value');
+        const progressBadge = document.getElementById('modal-progress-badge');
+        const progressSaveBtn = document.getElementById('modal-progress-save');
+        const modePctBtn = document.getElementById('progress-mode-pct');
+        const modePagesBtn = document.getElementById('progress-mode-pages');
+        const pctGroup = document.getElementById('progress-pct-group');
+        const pagesGroup = document.getElementById('progress-pages-group');
+        const pagesReadInput = document.getElementById('modal-pages-read');
+        const pagesTotalInput = document.getElementById('modal-pages-total');
+        const pagesBar = document.getElementById('modal-pages-bar');
+
+        // Find current shelf for this book
+        const storageKey = 'bibliodrift_library';
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {};
+        let currentShelfForProgress = 'want';
+        ['current', 'want', 'finished'].forEach(shelf => {
+            const found = (localLibrary[shelf] || []).find(b => b.id === book.id || (b.volumeInfo && b.id === book.id));
+            if (found) currentShelfForProgress = shelf;
+        });
+
+        // Show progress tracker only for 'current' shelf books
+        if (progressSection) {
+            if (currentShelfForProgress === 'current') {
+                progressSection.style.display = 'block';
+
+                // Load existing progress
+                const currentProgress = typeof book.progress === 'number' ? book.progress : 0;
+                const totalPages = book.pageCount || book.page_count || 300;
+
+                // Sync slider and bar
+                const syncProgressUI = (pct) => {
+                    const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+                    if (progressSlider) progressSlider.value = clamped;
+                    if (progressBar) progressBar.style.width = `${clamped}%`;
+                    if (progressValue) progressValue.textContent = `${clamped}%`;
+                    if (progressBadge) progressBadge.textContent = `${clamped}%`;
+                    // Sync pages input
+                    if (pagesReadInput && pagesTotalInput) {
+                        const pages = Math.round((clamped / 100) * parseInt(pagesTotalInput.value || totalPages));
+                        pagesReadInput.value = pages;
+                    }
+                    if (pagesBar) pagesBar.style.width = `${clamped}%`;
+                };
+
+                syncProgressUI(currentProgress);
+                if (pagesTotalInput) pagesTotalInput.value = totalPages;
+
+                // Mode toggle
+                const setMode = (mode) => {
+                    if (mode === 'percent') {
+                        pctGroup.style.display = 'block';
+                        pagesGroup.style.display = 'none';
+                        modePctBtn.classList.add('active');
+                        modePagesBtn.classList.remove('active');
+                    } else {
+                        pctGroup.style.display = 'none';
+                        pagesGroup.style.display = 'block';
+                        modePctBtn.classList.remove('active');
+                        modePagesBtn.classList.add('active');
+                    }
+                };
+
+                // Remove old listeners by cloning
+                if (modePctBtn) {
+                    const newPctBtn = modePctBtn.cloneNode(true);
+                    modePctBtn.parentNode.replaceChild(newPctBtn, modePctBtn);
+                    newPctBtn.addEventListener('click', () => setMode('percent'));
+                    newPctBtn.classList.add('active');
+                }
+                if (modePagesBtn) {
+                    const newPagesBtn = modePagesBtn.cloneNode(true);
+                    modePagesBtn.parentNode.replaceChild(newPagesBtn, modePagesBtn);
+                    newPagesBtn.addEventListener('click', () => setMode('pages'));
+                }
+
+                // Slider input
+                if (progressSlider) {
+                    const newSlider = progressSlider.cloneNode(true);
+                    progressSlider.parentNode.replaceChild(newSlider, progressSlider);
+                    newSlider.value = currentProgress;
+                    newSlider.addEventListener('input', () => {
+                        const pct = parseInt(newSlider.value);
+                        if (progressBar) progressBar.style.width = `${pct}%`;
+                        if (progressValue) progressValue.textContent = `${pct}%`;
+                        if (progressBadge) progressBadge.textContent = `${pct}%`;
+                        // Sync pages
+                        const total = parseInt(document.getElementById('modal-pages-total')?.value || totalPages);
+                        const pages = Math.round((pct / 100) * total);
+                        const pagesReadEl = document.getElementById('modal-pages-read');
+                        if (pagesReadEl) pagesReadEl.value = pages;
+                        if (pagesBar) pagesBar.style.width = `${pct}%`;
+                    });
+                }
+
+                // Pages inputs
+                const syncPagesInputs = () => {
+                    const pagesReadEl = document.getElementById('modal-pages-read');
+                    const pagesTotalEl = document.getElementById('modal-pages-total');
+                    const sliderEl = document.getElementById('modal-progress-slider');
+                    if (!pagesReadEl || !pagesTotalEl) return;
+                    const read = Math.max(0, parseInt(pagesReadEl.value) || 0);
+                    const total = Math.max(1, parseInt(pagesTotalEl.value) || 1);
+                    const pct = Math.min(100, Math.round((read / total) * 100));
+                    if (sliderEl) sliderEl.value = pct;
+                    if (progressBar) progressBar.style.width = `${pct}%`;
+                    if (progressValue) progressValue.textContent = `${pct}%`;
+                    if (progressBadge) progressBadge.textContent = `${pct}%`;
+                    if (pagesBar) pagesBar.style.width = `${pct}%`;
+                };
+
+                if (pagesReadInput) {
+                    const newPagesRead = pagesReadInput.cloneNode(true);
+                    pagesReadInput.parentNode.replaceChild(newPagesRead, pagesReadInput);
+                    newPagesRead.addEventListener('input', syncPagesInputs);
+                }
+                if (pagesTotalInput) {
+                    const newPagesTotal = pagesTotalInput.cloneNode(true);
+                    pagesTotalInput.parentNode.replaceChild(newPagesTotal, pagesTotalInput);
+                    newPagesTotal.value = totalPages;
+                    newPagesTotal.addEventListener('input', syncPagesInputs);
+                }
+
+                // Save button
+                if (progressSaveBtn) {
+                    const newSaveBtn = progressSaveBtn.cloneNode(true);
+                    progressSaveBtn.parentNode.replaceChild(newSaveBtn, progressSaveBtn);
+                    newSaveBtn.addEventListener('click', async () => {
+                        const sliderEl = document.getElementById('modal-progress-slider');
+                        const newProgress = sliderEl ? parseInt(sliderEl.value) : currentProgress;
+
+                        newSaveBtn.disabled = true;
+                        newSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+                        try {
+                            // Update via LibraryManager if available (handles backend sync)
+                            if (window.libManager && typeof window.libManager.updateBook === 'function') {
+                                await window.libManager.updateBook(book.id, { progress: newProgress });
+                            } else {
+                                // Fallback: update localStorage directly
+                                const lib = JSON.parse(StorageHelper.get('bibliodrift_library')) || {};
+                                ['current', 'want', 'finished'].forEach(shelf => {
+                                    const b = (lib[shelf] || []).find(x => x.id === book.id);
+                                    if (b) b.progress = newProgress;
+                                });
+                                StorageHelper.set('bibliodrift_library', JSON.stringify(lib));
+                            }
+
+                            // Update the book object in memory
+                            book.progress = newProgress;
+
+                            // Refresh the shelf display
+                            this.refreshShelves();
+
+                            newSaveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved!';
+                            newSaveBtn.style.background = '#4caf50';
+
+                            // If 100%, auto-close modal after brief delay (book moves to finished)
+                            if (newProgress === 100) {
+                                setTimeout(() => this.closeModal(), 1500);
+                            } else {
+                                setTimeout(() => {
+                                    newSaveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Progress';
+                                    newSaveBtn.style.background = '';
+                                    newSaveBtn.disabled = false;
+                                }, 2000);
+                            }
+                        } catch (err) {
+                            console.error('Failed to save progress', err);
+                            newSaveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Failed';
+                            newSaveBtn.style.background = '#e53935';
+                            setTimeout(() => {
+                                newSaveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Progress';
+                                newSaveBtn.style.background = '';
+                                newSaveBtn.disabled = false;
+                            }, 2000);
+                        }
+                    });
+                }
+            } else {
+                progressSection.style.display = 'none';
+            }
+        }
+
+        // 6. AI Insight Section
+        const aiNoteEl = document.getElementById('modal-ai-note');
+        if (aiNoteEl) {
+            // Reset to skeleton while fetching
+            aiNoteEl.innerHTML = `
+                <div class="text-skeleton skeleton"></div>
+                <div class="text-skeleton skeleton" style="width: 90%"></div>
+            `;
+            
+            // Fetch vibe note using the shared renderer method
+            if (window.renderer && typeof window.renderer.fetchAIVibe === 'function') {
+                window.renderer.fetchAIVibe(book.title, book.author, book.description || "").then(vibe => {
+                    if (vibe) {
+                        const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+                        aiNoteEl.innerHTML = `<p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); font-style: italic;">"${cleanVibe}"</p>`;
+                    } else {
+                        aiNoteEl.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">AI is contemplating the deep themes of this journey...</p>`;
+                    }
+                });
+            } else {
+                // Mock vibe for offline/fallback
+                setTimeout(() => {
+                    aiNoteEl.innerHTML = `<p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); font-style: italic;">"A journey that resonates with the soul, perfect for quiet introspection."</p>`;
+                }, 800);
+            }
+        }
+
+        // Ensure action controls are always visible in the modal.
+        if (actionsSection) {
+            actionsSection.style.display = 'flex';
+            actionsSection.style.visibility = 'visible';
+            actionsSection.style.opacity = '1';
+        }
+
+        // Keep actions above reviews so Remove is visible without scrolling.
+        if (actionsSection && reviewsSection && actionsSection.nextElementSibling !== reviewsSection) {
+            reviewsSection.parentNode.insertBefore(actionsSection, reviewsSection);
+        }
+
         if (shelfSelect) {
             shelfSelect.setAttribute('aria-label', 'Move book to shelf');
-            // Find current shelf
-            const storageKey = 'bibliodrift_library';
-            const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
-            let currentShelf = 'current'; // Default
-            
-            ['current', 'want', 'finished'].forEach(shelf => {
-                const found = (localLibrary[shelf] || []).find(b => b.id === book.id || (b.volumeInfo && b.id === book.id));
-                if (found) currentShelf = shelf;
-            });
-            
+            let currentShelf = this.findBookShelf(book.id) || 'current';
+
             shelfSelect.value = currentShelf;
-            
+
             // Remove old listeners to avoid duplicates by cloning
             const newSelect = shelfSelect.cloneNode(true);
             shelfSelect.parentNode.replaceChild(newSelect, shelfSelect);
-            
-            newSelect.addEventListener('change', (e) => {
+
+            newSelect.addEventListener('change', async (e) => {
                 const newShelf = e.target.value;
-                this.moveBook(book.id, currentShelf, newShelf);
+                await this.moveBook(book.id, currentShelf, newShelf);
                 currentShelf = newShelf; // Update local tracker
-                this.announceToScreenReader(`Book moved to ${newShelf} shelf`);
-                // Close modal after move? Optional. Let's keep it open but maybe show feedback.
-                // For now, shelf re-render happens in background.
+
+                // Show/hide progress tracker based on new shelf
+                const progressSectionEl = document.getElementById('modal-progress-section');
+                if (progressSectionEl) {
+                    progressSectionEl.style.display = newShelf === 'current' ? 'block' : 'none';
+                }
             });
         }
-        
+
         if (removeBtn) {
             removeBtn.setAttribute('aria-label', 'Remove book from library');
             // Remove old listeners
             const newRemoveBtn = removeBtn.cloneNode(true);
             removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
+            newRemoveBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Remove from Library';
 
-            newRemoveBtn.addEventListener('click', () => {
-                if(confirm('Are you sure you want to remove this book from your library?')) {
-                    this.removeBook(book.id);
+            newRemoveBtn.addEventListener('click', async () => {
+                if (confirm('Are you sure you want to remove this book from your library?')) {
+                    await this.removeBook(book.id);
                     this.closeModal();
                 }
             });
@@ -882,18 +1413,31 @@ class BookshelfRenderer3D {
             });
         }
 
+        // Preview Button — opens the Google Books Embedded Viewer
+        const previewBtnLib = document.getElementById('modal-preview-btn-lib');
+        if (previewBtnLib) {
+            const newPreviewBtn = previewBtnLib.cloneNode(true);
+            previewBtnLib.parentNode.replaceChild(newPreviewBtn, previewBtnLib);
+
+            newPreviewBtn.addEventListener('click', () => {
+                if (window.BookPreview && book.id) {
+                    window.BookPreview.open(book.id, book.title || 'Book Preview');
+                }
+            });
+        }
+
         // Show modal and manage focus
         if (this.modal) {
             this.modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             
-            // Focus on close button for better keyboard navigation
-            const closeBtn = document.getElementById('modal-close-btn');
-            if (closeBtn) {
-                setTimeout(() => closeBtn.focus(), 100);
-            }
+            // Hide fixed elements (ambient leaf, scroll-to-top) to avoid overlapping description
+            const fixedControls = document.querySelectorAll('.ambient-sanctuary, .back-to-top');
+            fixedControls.forEach(el => el.style.opacity = '0');
+            fixedControls.forEach(el => el.style.pointerEvents = 'none');
 
-            this.announceToScreenReader(`Opened book details for ${book.title} by ${book.author}`);
+            // Setup interactive handlers (flip, close) for the current book
+            this.setupModalHandlers();
         }
     }
 
@@ -906,6 +1450,11 @@ class BookshelfRenderer3D {
             setTimeout(() => {
                 const bookObject = document.getElementById('book-3d-object');
                 if (bookObject) bookObject.classList.remove('flipped');
+                
+                // Restore fixed elements
+                const fixedControls = document.querySelectorAll('.ambient-sanctuary, .back-to-top');
+                fixedControls.forEach(el => el.style.opacity = '1');
+                fixedControls.forEach(el => el.style.pointerEvents = 'auto');
             }, 500);
         }
     }
@@ -914,26 +1463,16 @@ class BookshelfRenderer3D {
         // Book flip interaction
         const bookObject = document.getElementById('book-3d-object');
         if (bookObject) {
-            bookObject.setAttribute('role', 'button');
-            bookObject.setAttribute('tabindex', '0');
-            bookObject.setAttribute('aria-label', 'Book 3D object. Press Enter or Space to flip the book. Press click to view back cover.');
+            // Remove old listener to avoid multi-flips
+            const newBook = bookObject.cloneNode(true);
+            bookObject.parentNode.replaceChild(newBook, bookObject);
             
-            bookObject.addEventListener('click', (e) => {
+            newBook.addEventListener('click', (e) => {
                 // If user is selecting text (e.g. description), don't flip
                 if (window.getSelection().toString().length > 0) {
                     return;
                 }
-                bookObject.classList.toggle('flipped');
-                const isFlipped = bookObject.classList.contains('flipped');
-                this.announceToScreenReader(isFlipped ? 'Book flipped to back cover' : 'Book flipped to front cover');
-            });
-
-            // Keyboard support for book flip
-            bookObject.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    bookObject.click();
-                }
+                newBook.classList.toggle('flipped');
             });
         }
 
@@ -960,22 +1499,15 @@ class BookshelfRenderer3D {
             });
         }
 
-        // Click outside to close (backdrop)
-        if (this.modal) {
-            this.modal.addEventListener('click', (e) => {
-                // If clicking the backdrop (modal container itself)
+        // Click outside to close (bind once to avoid listener leaks).
+        if (this.modal && !this._modalBackdropHandler) {
+            this._modalBackdropHandler = (e) => {
                 if (e.target === this.modal) {
                     this.closeModal();
                 }
-            });
+            };
+            this.addManagedListener(this.modal, 'click', this._modalBackdropHandler);
         }
-
-        // ESC key to close
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.modal && this.modal.classList.contains('active')) {
-                this.closeModal();
-            }
-        });
 
         // Add to library button logic
         const addBtn = document.getElementById('modal-add-btn');
@@ -984,7 +1516,7 @@ class BookshelfRenderer3D {
             const newAddBtn = addBtn.cloneNode(true);
             addBtn.parentNode.replaceChild(newAddBtn, addBtn);
 
-            newAddBtn.addEventListener('click', () => {
+            newAddBtn.addEventListener('click', async () => {
                 newAddBtn.innerHTML = '<i class="fa-solid fa-check"></i> Added!';
                 newAddBtn.style.background = '#4CAF50';
                 newAddBtn.style.color = '#fff';
@@ -992,8 +1524,7 @@ class BookshelfRenderer3D {
 
                 // Store in localStorage (integrate with existing library system)
                 if (this.currentBook) {
-                    this.addToLibrary(this.currentBook);
-                    this.announceToScreenReader(`${this.currentBook.title} added to your library`);
+                    await this.addToLibrary(this.currentBook);
                 }
 
                 setTimeout(() => {
@@ -1032,10 +1563,27 @@ class BookshelfRenderer3D {
         }
     }
 
-    addToLibrary(book) {
+    async addToLibrary(book) {
+        if (window.libManager && typeof window.libManager.addBook === 'function') {
+            const normalizedBook = {
+                id: book.id,
+                volumeInfo: {
+                    title: book.title,
+                    authors: [book.author],
+                    imageLinks: { thumbnail: book.cover },
+                    description: book.description,
+                    categories: book.categories
+                }
+            };
+
+            await window.libManager.addBook(normalizedBook, 'want');
+            this.refreshShelves();
+            return;
+        }
+
         // Get existing library from localStorage
         const storageKey = 'bibliodrift_library';
-        let library = JSON.parse(localStorage.getItem(storageKey)) || {
+        let library = JSON.parse(StorageHelper.get(storageKey)) || {
             current: [],
             want: [],
             finished: []
@@ -1060,47 +1608,63 @@ class BookshelfRenderer3D {
             }
         });
 
-        localStorage.setItem(storageKey, JSON.stringify(library));
+        StorageHelper.set(storageKey, JSON.stringify(library));
         console.log(`Added ${book.title} to library`);
     }
 
-    moveBook(bookId, fromShelf, toShelf) {
+    async moveBook(bookId, fromShelf, toShelf) {
         if (fromShelf === toShelf) return;
 
+        if (window.libManager && typeof window.libManager.moveBook === 'function') {
+            const moved = await window.libManager.moveBook(bookId, toShelf);
+            if (!moved) {
+                console.error("Book not found in source shelf");
+                return;
+            }
+            this.refreshShelves();
+            return;
+        }
+
         const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
-        
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {};
+
         // Find existing lists
         if (!localLibrary[fromShelf]) localLibrary[fromShelf] = [];
         if (!localLibrary[toShelf]) localLibrary[toShelf] = [];
 
         // Find the book index
         const bookIndex = localLibrary[fromShelf].findIndex(b => b.id === bookId || (b.volumeInfo && b.id === bookId));
-        
+
         if (bookIndex === -1) {
             console.error("Book not found in source shelf");
             return;
         }
 
         const book = localLibrary[fromShelf][bookIndex];
-        
+
         // Remove from old shelf
         localLibrary[fromShelf].splice(bookIndex, 1);
-        
+
         // Add to new shelf
         localLibrary[toShelf].push(book);
-        
+
         // Save and refresh
-        localStorage.setItem(storageKey, JSON.stringify(localLibrary));
+        StorageHelper.set(storageKey, JSON.stringify(localLibrary));
         this.refreshShelves();
-        
+
         // Visual Feedback (optional)
         console.log(`Moved book ${bookId} from ${fromShelf} to ${toShelf}`);
     }
 
-    removeBook(bookId) {
+    async removeBook(bookId) {
+        if (window.libManager && typeof window.libManager.removeBook === 'function') {
+            await window.libManager.removeBook(bookId);
+            this.refreshShelves();
+            return;
+        }
+
         const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(localStorage.getItem(storageKey)) || {};
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {};
 
         let removed = false;
         ['current', 'want', 'finished'].forEach(shelf => {
@@ -1112,25 +1676,328 @@ class BookshelfRenderer3D {
         });
 
         if (removed) {
-            localStorage.setItem(storageKey, JSON.stringify(localLibrary));
+            StorageHelper.set(storageKey, JSON.stringify(localLibrary));
             this.refreshShelves();
             this.announceToScreenReader(`Book removed from library`);
             console.log(`Removed book ${bookId}`);
         }
     }
 
-    announceToScreenReader(message) {
-        if (this.liveRegion) {
-            this.liveRegion.textContent = message;
+    getMoodIcon(mood) {
+        const icons = {
+            'Melancholic': 'fa-cloud-showers-heavy',
+            'Cozy': 'fa-mug-hot',
+            'Tense': 'fa-bolt',
+            'Inspiring': 'fa-lightbulb',
+            'Whimsical': 'fa-wand-magic-sparkles',
+            'Dark': 'fa-moon',
+            'Adventurous': 'fa-compass'
+        };
+        return icons[mood] || 'fa-tag';
+    }
+
+    async updateBookMoods(bookId, moods) {
+        if (window.libManager && window.libManager.updateBook) {
+            await window.libManager.updateBook(bookId, { moods });
+            this.refreshShelves();
+            return;
+        }
+
+        const storageKey = 'bibliodrift_library';
+        const localLibrary = this.getLibraryState();
+
+        let found = false;
+        ['current', 'want', 'finished'].forEach(shelf => {
+            const book = localLibrary[shelf].find(b => b.id === bookId);
+            if (book) {
+                book.moods = moods;
+                found = true;
+            }
+        });
+
+        if (found) {
+            StorageHelper.set(storageKey, JSON.stringify(localLibrary));
+            this.refreshShelves();
         }
     }
 
     getStarRating(rating) {
-        const fullStars = Math.floor(rating);
-        const hasHalf = rating % 1 >= 0.5;
+        const fullStars = Math.floor(rating || 0);
+        const hasHalf = (rating || 0) % 1 >= 0.5;
         const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
-        return '★'.repeat(fullStars) + (hasHalf ? '½' : '') + '☆'.repeat(emptyStars);
+        return '★'.repeat(Math.max(0, fullStars)) + (hasHalf ? '½' : '') + '☆'.repeat(Math.max(0, emptyStars));
+    }
+    // =========================================================
+    // VIBE CONSTELLATION (D3 FORCE GRAPH)
+    // =========================================================
+    
+    renderConstellation() {
+        const container = document.getElementById('constellation-container');
+        if (!container) return;
+        
+        // Stop previous simulation if exists
+        if (this.constellationSimulation) {
+            this.constellationSimulation.stop();
+        }
+        
+        container.innerHTML = ''; // Clear SVG
+        
+        // Gather all books
+        const storageKey = 'bibliodrift_library';
+        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {
+            current: [],
+            want: [],
+            finished: []
+        };
+        
+        let allBooks = [
+            ...(localLibrary.current || []),
+            ...(localLibrary.want || []),
+            ...(localLibrary.finished || [])
+        ];
+        
+        // Normalize book structure
+        allBooks = allBooks.map(b => {
+            if (b.volumeInfo) {
+                return {
+                    id: b.id,
+                    title: b.volumeInfo.title || 'Untitled',
+                    author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
+                    cover: b.volumeInfo.imageLinks?.thumbnail || '',
+                    description: b.volumeInfo.description || '',
+                    rating: b.volumeInfo.averageRating || null,
+                    moods: b.moods || [],
+                    spineColor: b.spineColor
+                };
+            }
+            return { ...b, moods: b.moods || [] };
+        });
+
+        // Apply Search Filter
+        if (this.searchQuery) {
+            allBooks = allBooks.filter(b => {
+                const title = b.title.toLowerCase();
+                const author = b.author.toLowerCase();
+                const moods = b.moods.join(" ").toLowerCase();
+                return title.includes(this.searchQuery) || author.includes(this.searchQuery) || moods.includes(this.searchQuery);
+            });
+        }
+        
+        // Empty state check
+        const emptyState = document.getElementById('library-empty-state');
+        if (allBooks.length === 0) {
+            if (emptyState) emptyState.hidden = false;
+            return;
+        } else {
+            if (emptyState) emptyState.hidden = true;
+        }
+
+        // Setup dimensions
+        const width = container.clientWidth || 1000;
+        const height = 600;
+
+        // Colors for moods
+        const moodColors = {
+            'cozy': '#8d6e63',
+            'dark': '#424242',
+            'mysterious': '#5e35b1',
+            'romantic': '#e91e63',
+            'adventurous': '#ff5722',
+            'melancholy': '#607d8b',
+            'uplifting': '#4caf50',
+            'default': '#d4af37' // accent-gold
+        };
+
+        const nodes = allBooks.map(b => {
+            const primaryMood = (b.moods && b.moods[0]) ? b.moods[0].toLowerCase() : 'default';
+            return {
+                ...b,
+                radius: 35, // Size of cover
+                color: moodColors[primaryMood] || moodColors['default'],
+                primaryMood: primaryMood
+            };
+        });
+
+        // Create links between books that share the same primary mood
+        const links = [];
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                if (nodes[i].primaryMood !== 'default' && nodes[i].primaryMood === nodes[j].primaryMood) {
+                    links.push({
+                        source: nodes[i].id,
+                        target: nodes[j].id,
+                        value: 1
+                    });
+                }
+            }
+        }
+
+        const svg = d3.select("#constellation-container").append("svg")
+            .attr("width", "100%")
+            .attr("height", height)
+            .style("background", "linear-gradient(to bottom, #111, #1a1a1a)")
+            .style("border-radius", "8px")
+            .style("box-shadow", "inset 0 0 50px rgba(0,0,0,0.5)");
+
+        // Add defs for cover images and glow filters
+        const defs = svg.append("defs");
+        
+        // Glow filter
+        const filter = defs.append("filter").attr("id", "glow");
+        filter.append("feGaussianBlur").attr("stdDeviation", "3.5").attr("result", "coloredBlur");
+        const feMerge = filter.append("feMerge");
+        feMerge.append("feMergeNode").attr("in", "coloredBlur");
+        feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+        // Patterns for covers
+        nodes.forEach(node => {
+            defs.append("pattern")
+                .attr("id", "cover-" + node.id)
+                .attr("patternUnits", "userSpaceOnUse")
+                .attr("width", node.radius * 2)
+                .attr("height", node.radius * 2)
+                .append("image")
+                .attr("href", node.cover || '../assets/images/biblioDrift_favicon.png')
+                .attr("width", node.radius * 2)
+                .attr("height", node.radius * 2)
+                .attr("preserveAspectRatio", "xMidYMid slice");
+        });
+
+        // Initialize forces
+        this.constellationSimulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(120).strength(0.3))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collide", d3.forceCollide().radius(d => d.radius + 10).iterations(2));
+
+        // Draw links
+        const link = svg.append("g")
+            .attr("stroke", "rgba(255, 255, 255, 0.15)")
+            .attr("stroke-width", 1.5)
+            .selectAll("line")
+            .data(links)
+            .join("line");
+
+        // Draw nodes
+        const node = svg.append("g")
+            .selectAll("circle")
+            .data(nodes)
+            .join("circle")
+            .attr("r", d => d.radius)
+            .attr("fill", d => `url(#cover-${d.id})`)
+            .attr("stroke", d => d.color)
+            .attr("stroke-width", 3)
+            .style("filter", "url(#glow)")
+            .style("cursor", "pointer")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        // Interaction
+        node.on("mouseover", (event, d) => {
+            d3.select(event.currentTarget)
+                .transition().duration(200)
+                .attr("r", d.radius * 1.2)
+                .attr("stroke-width", 4);
+            this.showTooltip(event, d);
+        })
+        .on("mousemove", (event) => {
+            this.moveTooltip(event);
+        })
+        .on("mouseout", (event, d) => {
+            d3.select(event.currentTarget)
+                .transition().duration(200)
+                .attr("r", d.radius)
+                .attr("stroke-width", 3);
+            this.hideTooltip();
+        })
+        .on("click", (event, d) => {
+            this.openModal(d);
+        });
+
+        this.constellationSimulation.on("tick", () => {
+            // Keep within bounds
+            nodes.forEach(d => {
+                d.x = Math.max(d.radius, Math.min(width - d.radius, d.x));
+                d.y = Math.max(d.radius, Math.min(height - d.radius, d.y));
+            });
+
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+        });
+
+        // Drag functions
+        const self = this;
+        function dragstarted(event) {
+            if (!event.active) self.constellationSimulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+            self.moveTooltip(event); // keep tooltip with it
+        }
+
+        function dragended(event) {
+            if (!event.active) self.constellationSimulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+    }
+
+    // Cleanup method for SPA unmount/navigation.
+    destroy() {
+        if (this.isDestroyed) {
+            return;
+        }
+
+        this.isDestroyed = true;
+
+        if (this.constellationSimulation) {
+            this.constellationSimulation.stop();
+            this.constellationSimulation = null;
+        }
+
+        if (this.tooltipTimeout) {
+            clearTimeout(this.tooltipTimeout);
+            this.tooltipTimeout = null;
+        }
+
+        while (this.cleanupCallbacks.length > 0) {
+            const cleanup = this.cleanupCallbacks.pop();
+            try {
+                cleanup();
+            } catch (err) {
+                console.warn('Cleanup listener failed', err);
+            }
+        }
+
+        const constellationContainer = document.getElementById('constellation-container');
+        if (constellationContainer) {
+            constellationContainer.innerHTML = '';
+        }
+
+        if (this.modal && this.modal.classList.contains('active')) {
+            this.closeModal();
+        }
+
+        if (this.liveRegion && this.liveRegion.parentNode) {
+            this.liveRegion.parentNode.removeChild(this.liveRegion);
+        }
+
+        this.liveRegion = null;
+        this.currentBook = null;
     }
 }
 
@@ -1138,6 +2005,18 @@ class BookshelfRenderer3D {
 document.addEventListener('DOMContentLoaded', () => {
     // Only initialize on library page
     if (document.getElementById('library-shelves')) {
-        window.bookshelfRenderer = new BookshelfRenderer3D();
+        if (window.bookshelf3D && typeof window.bookshelf3D.destroy === 'function') {
+            window.bookshelf3D.destroy();
+        }
+
+        const renderer = new BookshelfRenderer3D();
+        window.bookshelf3D = renderer;
+        window.bookshelfRenderer = renderer;
+
+        window.addEventListener('pagehide', () => {
+            if (window.bookshelf3D && typeof window.bookshelf3D.destroy === 'function') {
+                window.bookshelf3D.destroy();
+            }
+        }, { once: true });
     }
 });

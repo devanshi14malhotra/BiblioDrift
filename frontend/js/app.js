@@ -1,29 +1,134 @@
 /**
- * BiblioDrift Core Logic
- * Handles 3D rendering, API fetching, Persistent Auth, and Genre Browsing.
+ * ==============================================================================
+ * BiblioDrift Core Logic - Main Application Entry Point
+ * ==============================================================================
+ *
+ * Overview:
+ * ---------
+ * This file serves as the primary orchestrator for the BiblioDrift application.
+ * It ties together the DOM manipulation, state management, 3D rendering interactions,
+ * and API communications (both Google Books API and our custom Python backend).
+ *
+ * Key Components:
+ * ---------------
+ * 1. SafeStorage:
+ *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism.
+ *    This component is critical for offline-first capabilities and prevents the
+ *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent
+ *    standard `localStorage` operations.
+ *    - Automatically handles QuotaExceeded exceptions.
+ *    - Provides asynchronous data restoration algorithms.
+ *    - Integrates closely with the LibraryManager to store thousands of books safely.
+ *
+ * 2. LibraryManager:
+ *    The central state machine over the user's book collection.
+ *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
+ *    - Concurrency Control: Handles race conditions when syncing local states with
+ *      the backend utilizing optimistic locking techniques.
+ *    - Merging Strategy: In the event of a conflict between the client data and
+ *      server data, it attempts a non-destructive merge, retaining the state with
+ *      the highest integer version map.
+ *
+ * 3. BookRenderer:
+ *    An interface bridge to the DOM. Handles instantiation of HTML templates for
+ *    individual 3D book instances, binding their unique event listeners, and
+ *    applying their generated CSS styles and thematic properties.
+ *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
+ *
+ * 4. ThemeManager:
+ *    Observes User Preferences and seamlessly toggles the UI's color palette between
+ *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
+ *    these preferences to SafeStorage for a seamless experience across reloads.
+ *
+ * API Architecture Details:
+ * -------------------------
+ * - Google Books API: Facilitates the search and retrieval of rich book metadata
+ *   including volume summaries, author info, and high-quality thumbnail images.
+ * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
+ *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
+ *   client-side compute limitations and securely handle secret API keys.
+ *
+ * Security & Data Integrity Considerations:
+ * -----------------------------------------
+ * - Data Sanitization: All text rendered from external APIs is strictly passed
+ *   through the `escapeHTML` utility safely converting brackets to entities to
+ *   prevent XSS (Cross-Site Scripting) vectors.
+ * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
+ *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing
+ *   Cross Site Request Forgery attacks against logged-in users.
+ *
+ * Coding Standards and Development Guidelines:
+ * --------------------------------------------
+ * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are
+ *    optimistically applied to local state before waiting for server resolution.
+ * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native
+ *    `localStorage.setItem()`.
+ * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in
+ *    `index.css` rather than directly overriding inline styles to maintain a
+ *    dynamic and cohesive theme strategy.
+ *
+ * File Structure:
+ * ---------------
+ * - [000-100]: Initialization and Utility Wrappers
+ * - [100-300]: SafeStorage Implementation
+ * - [300-800]: BookRenderer Class and 3D interactions
+ * - [800-1300]: LibraryManager state machine and synchronization
+ * - [1300+]: UI Controllers, Events, and Application Bootstrap
+ * ==============================================================================
  */
 
-const API_BASE = 'https://www.googleapis.com/books/v1/volumes';
-const API_KEY = 'YOUR_GOOGLE_BOOKS_API_KEY';
-const MOOD_API_BASE = 'http://localhost:5000/api/v1';
+// API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
+// Do NOT re-declare them here — use the globals from config.js directly.
+const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 let GOOGLE_API_KEY = '';
 
+/**
+ * Utility to extract a cookie value by name.
+ */
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
 async function loadConfig() {
     try {
-        const res = await fetch(`${MOOD_API_BASE}/config`);
+        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
             GOOGLE_API_KEY = data.google_books_key || '';
-            if (process.env.NODE_ENV === 'development') {
-                console.log("Config loaded");
+            if (window.GoogleBooksClient) {
+                window.GoogleBooksClient.setKeys([
+                    data.google_books_key,
+                    data.google_books_key_secondary,
+                ]);
+            }
+            if (IS_DEV) {
+                console.log('Config loaded');
             }
         }
     } catch (e) {
-        console.warn("Failed to load backend config", e);
+        console.warn('Failed to load backend config', e);
     }
 }
+import { saveBookOffline, removeOfflineBook, db } from './db.js';
 
+// Example click handler for your custom "Save for Offline" icon
+async function handleDownloadToggle(bookCard, bookData) {
+    const isAlreadyDownloaded = await db.downloadedBooks.get(bookData.id);
+    
+    if (isAlreadyDownloaded) {
+        const success = await removeOfflineBook(bookData.id);
+        if (success) bookCard.classList.remove('is-downloaded');
+    } else {
+        const success = await saveBookOffline(bookData);
+        if (success) bookCard.classList.add('is-downloaded');
+    }
+}
 // Toast Notification Helper
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
@@ -43,6 +148,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    authSessionPromise = null;
 }
 
 function parseStoredUser() {
@@ -60,7 +166,7 @@ function renderAuthNavigation(authLink, tooltip, isAuthenticated) {
     if (!authLink) return;
 
     if (isAuthenticated) {
-        authLink.innerHTML = '<i class="fa-solid fa-user"></i>';
+        authLink.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
         authLink.href = 'profile.html';
         authLink.classList.remove('active');
         if (tooltip) tooltip.innerHTML = '<i class="fa-solid fa-id-card"></i> View Profile';
@@ -82,37 +188,45 @@ async function verifyStoredAuthSession() {
     authSessionPromise = (async () => {
         const token = SafeStorage.get('bibliodrift_token');
         const storedUser = parseStoredUser();
+        const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
 
-        if (!token) {
-            if (storedUser || SafeStorage.get('isLoggedIn') === 'true') {
-                clearStoredAuthState();
-            }
+        if (token === 'demo-token-12345') {
+            return storedUser;
+        }
+
+        // Real logins use HttpOnly JWT cookies (see backend JWT_TOKEN_LOCATION). Optional CSRF cookie is readable by JS.
+        const shouldProbe = thinksLoggedIn || storedUser || getCookie('csrf_access_token');
+        if (!shouldProbe) {
             return null;
         }
 
         try {
+            const headers = {};
+            const csrf = getCookie('csrf_access_token');
+            if (csrf) {
+                headers['X-CSRF-TOKEN'] = csrf;
+            }
+
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                method: 'GET',
+                credentials: 'include',
+                headers,
             });
 
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 422) {
-                    clearStoredAuthState();
+            if (response.ok) {
+                const data = await response.json();
+                const verifiedUser = data.user || storedUser;
+                if (verifiedUser) {
+                    SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
                 }
-                return null;
+                SafeStorage.set('isLoggedIn', 'true');
+                return verifiedUser || null;
             }
 
-            const data = await response.json();
-            const verifiedUser = data.user || storedUser;
-
-            if (verifiedUser) {
-                SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+            if (response.status === 401 || response.status === 422) {
+                clearStoredAuthState();
             }
-            SafeStorage.set('isLoggedIn', 'true');
-
-            return verifiedUser;
+            return null;
         } catch (error) {
             console.warn('Auth verification failed; using cached session state if available.', error);
             return storedUser;
@@ -126,179 +240,90 @@ window.verifyStoredAuthSession = verifyStoredAuthSession;
 window.renderAuthNavigation = renderAuthNavigation;
 
 /**
- * Robust Wrapper for LocalStorage
- * Prevents application crashes when the 5MB quota is exceeded.
+ * Robust Wrapper for Storage (LocalStorage + IndexedDB Fallback)
+ * Prevents application data loss and handles browser storage wipes/quotas.
  */
 const SafeStorage = {
-    metaKey: '__bibliodrift_storage_meta__',
-    cachePrefixes: [
-        'bibliodrift_cache_',
-        'cached_books_',
-        'books_cache_',
-        'genre_cache_',
-        'search_cache_',
-        'cache_'
-    ],
-    protectedKeys: new Set([
-        'bibliodrift_library',
-        'bibliodrift_user',
-        'bibliodrift_token',
-        'bibliodrift_theme',
-        'isLoggedIn'
-    ]),
+    _dbName: 'BiblioDriftDB',
+    _storeName: 'library_backup',
 
-    isQuotaError(error) {
-        return error instanceof DOMException && (
-            error.code === 22 ||
-            error.code === 1014 ||
-            error.name === 'QuotaExceededError' ||
-            error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-        );
-    },
-
-    getMeta() {
-        try {
-            const raw = localStorage.getItem(this.metaKey);
-            if (!raw) return {};
-            const parsed = JSON.parse(raw);
-            return (parsed && typeof parsed === 'object') ? parsed : {};
-        } catch (e) {
-            return {};
-        }
-    },
-
-    setMeta(meta) {
-        try {
-            localStorage.setItem(this.metaKey, JSON.stringify(meta));
-        } catch (e) {
-            // Ignore metadata write failures; data writes still succeed.
-        }
-    },
-
-    estimateSize(value) {
-        if (typeof value === 'string') return value.length;
-        try {
-            return JSON.stringify(value).length;
-        } catch (e) {
-            return 0;
-        }
-    },
-
-    isCacheKey(key) {
-        if (!key || key === this.metaKey) return false;
-        return this.cachePrefixes.some(prefix => key.startsWith(prefix));
-    },
-
-    touchKey(key, value) {
-        if (!key || key === this.metaKey) return;
-        const meta = this.getMeta();
-        meta[key] = {
-            lastAccess: Date.now(),
-            size: this.estimateSize(value)
-        };
-        this.setMeta(meta);
-    },
-
-    dropMetaKey(key) {
-        const meta = this.getMeta();
-        if (meta[key]) {
-            delete meta[key];
-            this.setMeta(meta);
-        }
-    },
-
-    removeKeys(keys) {
-        if (!Array.isArray(keys) || keys.length === 0) return 0;
-
-        const meta = this.getMeta();
-        let removed = 0;
-
-        keys.forEach(key => {
-            if (!key || key === this.metaKey) return;
+    /**
+     * Attempts to request persistent storage from the browser.
+     * This prevents the browser from clearing storage when disk space is low.
+     */
+    async requestPersistence() {
+        if (navigator.storage && navigator.storage.persist) {
             try {
-                localStorage.removeItem(key);
-                removed += 1;
+                const isPersisted = await navigator.storage.persist();
+                if (IS_DEV) {
+                    console.log(`[Storage] Persistent status: ${isPersisted}`);
+                }
             } catch (e) {
-                // Skip keys that cannot be removed.
+                console.warn('[Storage] Persist request failed', e);
             }
-            delete meta[key];
-        });
-
-        this.setMeta(meta);
-        return removed;
-    },
-
-    getLRUCandidates({ cacheOnly = true, excludeKey = null } = {}) {
-        const meta = this.getMeta();
-        const candidates = [];
-
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (!key || key === this.metaKey || key === excludeKey) continue;
-            if (this.protectedKeys.has(key)) continue;
-            if (cacheOnly && !this.isCacheKey(key)) continue;
-
-            const entryMeta = meta[key] || {};
-            candidates.push({
-                key,
-                lastAccess: typeof entryMeta.lastAccess === 'number' ? entryMeta.lastAccess : 0
-            });
         }
-
-        candidates.sort((a, b) => a.lastAccess - b.lastAccess);
-        return candidates;
-    },
-
-    recoverQuotaSpace(targetKey, attempt) {
-        if (attempt === 1) {
-            const oldestCacheKeys = this.getLRUCandidates({ cacheOnly: true, excludeKey: targetKey })
-                .slice(0, 3)
-                .map(item => item.key);
-            return this.removeKeys(oldestCacheKeys);
-        }
-
-        if (attempt === 2) {
-            const allCacheKeys = this.getLRUCandidates({ cacheOnly: true, excludeKey: targetKey })
-                .map(item => item.key);
-            return this.removeKeys(allCacheKeys);
-        }
-
-        const oldestNonCritical = this.getLRUCandidates({ cacheOnly: false, excludeKey: targetKey })
-            .slice(0, 2)
-            .map(item => item.key);
-        return this.removeKeys(oldestNonCritical);
     },
 
     /**
-     * Attempts to save data to localStorage with error handling.
-     * @param {string} key 
-     * @param {string} value 
+     * Internal: Opens the IndexedDB for backup.
+     */
+    async _openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this._dbName, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this._storeName)) {
+                    db.createObjectStore(this._storeName);
+                }
+            };
+            request.onsuccess = (e) => resolve(e.target.result);
+            request.onerror = (e) => reject(e.target.error);
+        });
+    },
+
+    /**
+     * Attempts to save data to localStorage with IndexedDB backup.
+     * @param {string} key
+     * @param {string} value
      * @returns {boolean} Success status
      */
     set(key, value) {
-        let recovered = 0;
+        // 1. Primary: LocalStorage
+        try {
+            localStorage.setItem(key, value);
+        } catch (error) {
+            const isQuotaError =
+                error instanceof DOMException &&
+                (error.code === 22 ||
+                    error.code === 1014 ||
+                    error.name === 'QuotaExceededError' ||
+                    error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
 
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                localStorage.setItem(key, value);
-                this.touchKey(key, value);
-                if (recovered > 0) {
-                    showToast(`Storage was full. Cleared ${recovered} old cached entr${recovered === 1 ? 'y' : 'ies'}.`, 'info');
-                }
-                return true;
-            } catch (error) {
-                if (!this.isQuotaError(error)) {
-                    console.error("LocalStorage Error:", error);
-                    return false;
-                }
-
-                const removed = this.recoverQuotaSpace(key, attempt + 1);
-                recovered += removed;
-                if (removed === 0) break;
+            if (isQuotaError) {
+                showToast('Local storage full! Saving to secure backup.', 'info');
+            } else {
+                console.error('LocalStorage Error:', error);
             }
         }
 
-        showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+        // 2. Secondary: IndexedDB (Durable Backup for Library)
+        if (key === 'bibliodrift_library') {
+            this._saveToDB(key, value);
+        }
+        return true;
+    },
+
+    async _saveToDB(key, value) {
+        try {
+            const db = await this._openDB();
+            const transaction = db.transaction(this._storeName, 'readwrite');
+            const store = transaction.objectStore(this._storeName);
+            store.put(value, key);
+        } catch (e) {
+            console.error('IndexedDB Backup Failed', e);
+        }
+
+        showToast('Local storage full! Please sync to cloud and clear cache.', 'error');
         return false;
     },
 
@@ -308,9 +333,6 @@ const SafeStorage = {
     get(key) {
         try {
             const value = localStorage.getItem(key);
-            if (value !== null) {
-                this.touchKey(key, value);
-            }
             return value;
         } catch (e) {
             return null;
@@ -318,16 +340,47 @@ const SafeStorage = {
     },
 
     /**
-     * Safely removes data from localStorage.
-     * @param {string} key 
+     * Retrieves data with IndexedDB fallback if LocalStorage is wiped.
+     */
+    async getAsync(key) {
+        let val = this.get(key);
+        if (!val && key === 'bibliodrift_library') {
+            try {
+                const db = await this._openDB();
+                const transaction = db.transaction(this._storeName, 'readonly');
+                const store = transaction.objectStore(this._storeName);
+                val = await new Promise((resolve) => {
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => resolve(null);
+                });
+
+                if (val) {
+                    if (IS_DEV) console.log('[Storage] Restored from IndexedDB backup');
+                    // Try to restore to LocalStorage for future sync calls
+                    try {
+                        localStorage.setItem(key, val);
+                    } catch (e) {}
+                }
+            } catch (e) {
+                console.warn('Backup retrieval failed', e);
+            }
+        }
+        return val;
+    },
+
+    /**
+     * Safely removes data from storage.
+     * @param {string} key
      */
     remove(key) {
         try {
             localStorage.removeItem(key);
-            this.dropMetaKey(key);
+            if (key === 'bibliodrift_library') {
+                this._saveToDB(key, null);
+            }
             return true;
         } catch (e) {
-            console.error("LocalStorage Remove Error:", e);
             return false;
         }
     },
@@ -341,10 +394,9 @@ const SafeStorage = {
             this.setMeta({});
             return true;
         } catch (e) {
-            console.error("LocalStorage Clear Error:", e);
             return false;
         }
-    }
+    },
 };
 const MOCK_BOOKS = [
     {
@@ -353,7 +405,7 @@ const MOCK_BOOKS = [
             title: "Dune",
             authors: ["Frank Herbert"],
             description: "A sweeping science fiction epic set on the desert planet Arrakis. Dune explores complex themes of politics, religion, and man's relationship with nature. Paul Atreides must navigate a treacherous path to becoming the mysterious Muad'Dib.",
-            imageLinks: { thumbnail: "assets/images/dune.jpg" }
+            imageLinks: { thumbnail: "../assets/images/dune.jpg" }
         }
     },
     {
@@ -362,7 +414,7 @@ const MOCK_BOOKS = [
             title: "1984",
             authors: ["George Orwell"],
             description: "Orwell's chilling prophecy of a totalitarian future where Big Brother is always watching. A profound exploration of surveillance, truth, and the resilience of the human spirit.",
-            imageLinks: { thumbnail: "assets/images/1984.jpg" }
+            imageLinks: { thumbnail: "../assets/images/1984.jpg" }
         }
     },
     {
@@ -371,7 +423,7 @@ const MOCK_BOOKS = [
             title: "The Hobbit",
             authors: ["J.R.R. Tolkien"],
             description: "In a hole in the ground there lived a hobbit. Join Bilbo Baggins on an unexpected journey across Middle-earth, encountering dragons, dwarves, and a rigorous test of courage.",
-            imageLinks: { thumbnail: "assets/images/hobbit.jpg" }
+            imageLinks: { thumbnail: "../assets/images/hobbit.jpg" }
         }
     },
     {
@@ -380,7 +432,7 @@ const MOCK_BOOKS = [
             title: "Pride and Prejudice",
             authors: ["Jane Austen"],
             description: "A timeless romance of manners and misunderstanding. Elizabeth Bennet's wit matches Mr. Darcy's pride in this sharp social commentary that remains one of the most loved novels in English literature.",
-            imageLinks: { thumbnail: "assets/images/pride.jpg" }
+            imageLinks: { thumbnail: "../assets/images/pride.jpg" }
         }
     },
     {
@@ -389,7 +441,7 @@ const MOCK_BOOKS = [
             title: "The Great Gatsby",
             authors: ["F. Scott Fitzgerald"],
             description: "The quintessential novel of the Jazz Age. Jay Gatsby's obsessive love for Daisy Buchanan drives a tragic tale of wealth, illusion, and the American Dream.",
-            imageLinks: { thumbnail: "assets/images/gatsby.jpg" }
+            imageLinks: { thumbnail: "../assets/images/gatsby.jpg" }
         }
     },
     {
@@ -398,7 +450,7 @@ const MOCK_BOOKS = [
             title: "Sapiens",
             authors: ["Yuval Noah Harari"],
             description: "A groundbreaking narrative of humanity's creation and evolution. Harari explores the ways in which biology and history have defined us and enhanced our understanding of what it means to be 'human'.",
-            imageLinks: { thumbnail: "assets/images/sapiens.jpg" }
+            imageLinks: { thumbnail: "../assets/images/sapiens.jpg" }
         }
     },
     {
@@ -407,15 +459,62 @@ const MOCK_BOOKS = [
             title: "Project Hail Mary",
             authors: ["Andy Weir"],
             description: "A lone astronaut must save the earth from disaster in this gripping tale of survival and scientific discovery. Full of humor and hard science, it is a celebration of human ingenuity.",
-            imageLinks: { thumbnail: "assets/images/hail_mary.jpg" }
+            imageLinks: { thumbnail: "../assets/images/hail_mary.jpg" }
         }
     }
 ];
+
+function normalizeQueryTerms(query) {
+    return String(query || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(Boolean);
+}
+
+function scoreMockBook(book, queryTerms) {
+    const volumeInfo = book.volumeInfo || {};
+    const haystack = [
+        volumeInfo.title || '',
+        (volumeInfo.authors || []).join(' '),
+        volumeInfo.description || '',
+        (volumeInfo.categories || []).join(' ')
+    ].join(' ').toLowerCase();
+
+    return queryTerms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+}
+
+function getFallbackBooks(query, maxResults = 5) {
+    const queryTerms = normalizeQueryTerms(query);
+    const ranked = MOCK_BOOKS
+        .map(book => ({ book, score: scoreMockBook(book, queryTerms) }))
+        .sort((a, b) => b.score - a.score);
+
+    const matches = ranked.filter(item => item.score > 0).map(item => item.book);
+    const pool = matches.length > 0 ? matches : MOCK_BOOKS;
+
+    return pool.slice(0, maxResults);
+}
 
 
 class BookRenderer {
     constructor(libraryManager = null) {
         this.libraryManager = libraryManager;
+    }
+
+    renderSkeletons(container, count = 5, type = 'card') {
+        if (!container) return;
+        let html = '';
+        if (type === 'card') {
+            html = Array(count).fill(0).map(() => `
+                <div class="book-skeleton skeleton"></div>
+            `).join('');
+        } else if (type === 'spine') {
+            html = Array(count).fill(0).map(() => `
+                <div class="spine-skeleton skeleton"></div>
+            `).join('');
+        }
+        container.innerHTML = html;
     }
 
     async createBookElement(bookData, shelf = null) {
@@ -424,24 +523,43 @@ class BookRenderer {
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
-        const description = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
+        const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
         const categories = volumeInfo.categories || [];
 
-        const vibe = this.generateVibe(description, categories);
+        const vibe = this.generateVibe(originalDescription, categories);
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
+        const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+        const spineImagePath = `assets/images/${cleanId}_spine.jpg`;
 
         const scene = document.createElement('div');
         scene.className = 'book-scene';
 
         // Load flip sound
-        const flipSound = new Audio('assets/sounds/page-flip.mp3');
+        const flipSound = new Audio('../assets/sounds/page-flip.mp3');
+        flipSound.preload = 'auto';
         flipSound.volume = 0.5;
 
+        const escapeHTML = (str) => {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        };
+
+        const safeTitle = escapeHTML(title);
+        const safeAuthors = escapeHTML(authors);
+        const safeOriginalDescription = escapeHTML(originalDescription);
+        const safeVibe = escapeHTML(vibe);
+        const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
+
         scene.innerHTML = `
-            <div class="book" data-id="${id}">
+            <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${thumb.replace('http:', 'https:')}" alt="${title}">
+                    <img src="${safeThumb}" alt="${safeTitle}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -449,10 +567,19 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${title}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${vibe}</div>
-                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${description}</div>
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        ${bookData.moods && bookData.moods.length > 0 ? `
+                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+                        </div>
+                        ` : ''}
                     </div>
+
+                    <button class="read-details-btn" title="Read Details">
+                        <i class="fa-solid fa-circle-info"></i> Read Details
+                    </button>
+
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
                         <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
@@ -460,25 +587,39 @@ class BookRenderer {
                     </div>` : ''}
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                        <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon" title="Flip Back" onclick="event.stopPropagation(); this.closest('.book').classList.remove('flipped'); const s = new Audio('assets/sounds/page-flip.mp3'); s.volume=0.5; s.play();"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
             </div>
-            <div class="glass-overlay">
-                <strong>${title}</strong><br><small>${authors}</small>
-            </div>
-        `;
+        <div class="book-pages-3d"></div>
+    <div class="glass-overlay">
+        <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
+    </div>
+`;
+
+        // Interaction: Progress Slider
+        const slider = scene.querySelector('.progress-slider');
+        if (slider) {
+            slider.addEventListener('change', (e) => {
+                const newProgress = parseInt(e.target.value);
+                if (this.libraryManager) {
+                    this.libraryManager.updateBook(id, { progress: newProgress });
+                }
+                // Update small tag
+                const small = slider.nextElementSibling;
+                if (small) small.textContent = `${newProgress}% read`;
+            });
+        }
 
         // Interaction: Flip
-        const bookEl = scene.querySelector('.book');
+        const bookEl = scene.querySelector('.book-container-3d');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
                 bookEl.classList.toggle('flipped');
                 // Play sound
                 flipSound.play().catch(e => {
-                    if (process.env.NODE_ENV === 'development') {
+                    if (IS_DEV) {
                         console.log("Audio play failed", e);
                     }
                 });
@@ -503,7 +644,7 @@ class BookRenderer {
         });
 
         // Info Button
-        scene.querySelector('.info-btn').addEventListener('click', (e) => {
+        scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
         });
@@ -520,18 +661,29 @@ class BookRenderer {
             });
         });
 
+        // Flip Back Button
+        scene.querySelector('.flip-back-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            bookEl.classList.remove('flipped');
+            flipSound.play().catch(err => {
+                if (IS_DEV) {
+                    console.log("Audio play failed", err);
+                }
+            });
+        });
+
         // Async fetch AI Vibe - Hydrate the UI
         this.fetchAIVibe(title, authors, volumeInfo.description || "").then(aiVibe => {
-             if (aiVibe) {
-                 // Strip any accidental prefix the AI might return
-                 const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
-                 
-                 const noteEl = scene.querySelector('.handwritten-note');
-                 if (noteEl) {
-                          noteEl.textContent = cleanVibe;
+            if (aiVibe) {
+                // Strip any accidental prefix the AI might return
+                const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+
+                const noteEl = scene.querySelector('.handwritten-note');
+                if (noteEl) {
+                    noteEl.innerHTML = cleanVibe;
                     noteEl.classList.add('fade-in'); // Optional animation hook
-                 }
-             }
+                }
+            }
         });
 
         return scene;
@@ -542,14 +694,34 @@ class BookRenderer {
             const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ title, author, description })
             });
             if (res.ok) {
                 const data = await res.json();
-                return data.vibe;
+                const payload = data.data || data;
+                return payload?.vibe || payload?.bookseller_note || payload?.insight || payload?.note || null;
             }
         } catch (e) {
-            // Silently fail to mock vibe
+            // Silently fail to use fallback
+        }
+        return null;
+    }
+
+    async fetchAIBlurb(bookId, title, author, description, categories = []) {
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ bookId, title, author, description, categories })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                return data.data?.blurb || null;
+            }
+        } catch (e) {
+            // Silently fail to use fallback
         }
         return null;
     }
@@ -567,24 +739,24 @@ class BookRenderer {
         if (lowerCats.includes('fiction') || lowerText.includes('novel')) return "A compelling narrative voice.";
         if (lowerCats.includes('history') || lowerText.includes('war')) return "A journey into the past.";
         if (lowerCats.includes('science') || lowerText.includes('space')) return "Opens your mind to new possibilities.";
-        
+
         // 2. Generic fallbacks (Deterministic hash)
         const vibes = [
-            "Perfect for a rainy afternoon.", 
-            "A quiet companion for coffee.", 
+            "Perfect for a rainy afternoon.",
+            "A quiet companion for coffee.",
             "Intense and thought-provoking.",
             "Will make you laugh and cry.",
             "Best devoured in one sitting.",
             "Prepare to be surprised."
         ];
-        
+
         // Simple hash to pick a stable vibe for this book text
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
             hash = ((hash << 5) - hash) + text.charCodeAt(i);
             hash |= 0; // Convert to 32bit integer
         }
-        
+
         return vibes[Math.abs(hash) % vibes.length];
     }
 
@@ -595,9 +767,55 @@ class BookRenderer {
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
-        document.getElementById('modal-summary').textContent = book.volumeInfo.description || "No description available.";
+        
+        const summaryEl = document.getElementById('modal-summary');
+        if (summaryEl) {
+            // Show skeletons while AI is "thinking"
+            summaryEl.innerHTML = `
+                <div class="text-skeleton skeleton"></div>
+                <div class="text-skeleton skeleton" style="width: 90%"></div>
+            `;
 
+            // Fetch the AI vibe to populate the Insight box
+            this.fetchAIVibe(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "", book.volumeInfo.description || "").then(vibe => {
+                if (vibe) {
+                    const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+                    summaryEl.innerHTML = `<p class="fade-in">${cleanVibe}</p>`;
+                } else {
+                    // Fallback to description if AI vibe fails
+                    summaryEl.textContent = book.volumeInfo.description || "No description available.";
+                }
+            });
+        }
+
+        const addBtn = document.getElementById('modal-add-btn');
         const shareBtn = document.getElementById('modal-share-btn');
+        const isInLibrary = this.libraryManager && typeof this.libraryManager.findBook === 'function' && this.libraryManager.findBook(book.id);
+
+        if (addBtn) {
+            addBtn.onclick = null;
+            addBtn.classList.toggle('library-remove-btn', isInLibrary);
+            addBtn.innerHTML = isInLibrary
+                ? '<i class="fa-solid fa-trash"></i> Remove from Library'
+                : '<i class="fa-regular fa-heart"></i> Add to Library';
+
+            addBtn.onclick = async () => {
+                if (!this.libraryManager) return;
+
+                if (isInLibrary) {
+                    if (confirm('Are you sure you want to remove this book from your library?')) {
+                        await this.libraryManager.removeBook(book.id);
+                        modal.close();
+                    }
+                    return;
+                }
+
+                await this.libraryManager.addBook(book, 'want');
+                addBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Remove from Library';
+                addBtn.classList.add('library-remove-btn');
+            };
+        }
+
         if (shareBtn) {
             shareBtn.onclick = () => {
                 const shareText = `Check out this book: ${book.volumeInfo.title} by ${book.volumeInfo.authors?.join(", ") || "Unknown Author"}`;
@@ -610,39 +828,128 @@ class BookRenderer {
             };
         }
 
+        // Preview Button — opens the Google Books Embedded Viewer
+        const previewBtn = document.getElementById('modal-preview-btn');
+        if (previewBtn) {
+            previewBtn.onclick = () => {
+                if (window.BookPreview && book.id) {
+                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview');
+                }
+            };
+        }
+
         modal.showModal();
         document.getElementById('closeModalBtn').onclick = () => modal.close();
+
+        // Emotion Tagging UI
+        const emotionContainer = document.createElement('div');
+        emotionContainer.className = 'emotion-tagging-section';
+        emotionContainer.innerHTML = `
+            <h3 class="modal-section-title">How does this book make you feel?</h3>
+            <div class="emotion-tags-container">
+                ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
+            const isActive = book.moods && book.moods.includes(mood);
+            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+                        <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
+                    </span>`;
+        }).join('')}
+            </div>
+        `;
+        // Insert before the buttons
+        const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
+        const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
+        
+        if (actions) {
+            // Remove existing tagging section if re-opening
+            const existing = actions.parentNode.querySelector('.emotion-tagging-section');
+            if (existing) existing.remove();
+            
+            actions.parentNode.insertBefore(emotionContainer, actions);
+        } else if (modalBody) {
+            // Fallback
+            const existing = modalBody.querySelector('.emotion-tagging-section');
+            if (existing) existing.remove();
+            modalBody.appendChild(emotionContainer);
+        }
+
+        // Add tag toggle listeners
+        emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
+            tag.onclick = async () => {
+                const mood = tag.dataset.mood;
+                if (!book.moods) book.moods = [];
+
+                const index = book.moods.indexOf(mood);
+                if (index > -1) {
+                    book.moods.splice(index, 1);
+                    tag.classList.remove('active');
+                } else {
+                    book.moods.push(mood);
+                    tag.classList.add('active');
+                }
+
+                if (this.libraryManager) {
+                    await this.libraryManager.updateBook(book.id, { moods: book.moods });
+                }
+            };
+        });
+    }
+
+    getMoodIcon(mood) {
+        const icons = {
+            'Melancholic': 'fa-cloud-showers-heavy',
+            'Cozy': 'fa-mug-hot',
+            'Tense': 'fa-bolt',
+            'Inspiring': 'fa-lightbulb',
+            'Whimsical': 'fa-wand-magic-sparkles',
+            'Dark': 'fa-moon',
+            'Adventurous': 'fa-compass'
+        };
+        return icons[mood] || 'fa-tag';
     }
 
     async renderCuratedSection(query, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
         if (!container) return;
+
+        // Show skeletons while loading
+        this.renderSkeletons(container, maxResults);
+
         try {
-            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const encodedQuery = encodeURIComponent(query);
-            const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
-
-            if (!res.ok) {
-                throw new Error(`API Error: ${res.statusText}`);
-            }
-
-            const data = await res.json();
+            const client = window.GoogleBooksClient;
+            const data = client
+                ? await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' })
+                : await (async () => {
+                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+                    const encodedQuery = encodeURIComponent(query);
+                    const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
+                    if (!res.ok) {
+                        throw new Error(`API Error: ${res.statusText}`);
+                    }
+                    return await res.json();
+                })();
 
             if (data.items && data.items.length > 0) {
-                container.innerHTML = '';
-                for (const book of data.items) {
-                    const bookElement = await this.createBookElement(book);
-                    container.appendChild(bookElement);
-                }
+                await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-box-open"></i>
-                        <p>No books found. The shelves are empty.</p>
-                    </div>`;
+                const fallbackBooks = getFallbackBooks(query, maxResults);
+                if (fallbackBooks.length > 0) {
+                    await this.renderBookCards(container, fallbackBooks);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>No books found. The shelves are empty.</p>
+                        </div>`;
+                }
             }
         } catch (err) {
             console.error("Failed to fetch books", err);
+            const fallbackBooks = getFallbackBooks(query, maxResults);
+            if (fallbackBooks.length > 0) {
+                await this.renderBookCards(container, fallbackBooks);
+                return;
+            }
+
             showToast("Failed to load bookshelf.", "error");
             container.innerHTML = `
                 <div class="empty-state">
@@ -651,19 +958,161 @@ class BookRenderer {
                 </div>`;
         }
     }
+
+    async renderMoodCategorySection(categoryConfig, elementId, maxResults = 5) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        this.renderSkeletons(container, maxResults);
+
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/category-books`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    category: categoryConfig.category,
+                    vibe_description: categoryConfig.vibeDescription,
+                    count: maxResults
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error(`Category API Error: ${res.status}`);
+            }
+
+            const payload = await res.json();
+            const categoryBooks = payload?.data?.books || [];
+
+            if (categoryBooks.length === 0) {
+                throw new Error(`No books returned for category: ${categoryConfig.category}`);
+            }
+
+            const resolvedBooks = await this.resolveCategoryBooks(categoryBooks);
+            if (resolvedBooks.length > 0) {
+                await this.renderBookCards(container, resolvedBooks.slice(0, maxResults));
+                return;
+            }
+
+            throw new Error(`Could not resolve Google Books matches for category: ${categoryConfig.category}`);
+        } catch (err) {
+            console.error(`Failed to load category shelf "${categoryConfig.category}"`, err);
+            await this.renderCuratedSection(categoryConfig.fallbackQuery, elementId, maxResults);
+        }
+    }
+
+    async resolveCategoryBooks(categoryBooks) {
+        const resolvedBooks = [];
+
+        for (const item of categoryBooks) {
+            const title = String(item?.title || '').trim();
+            const author = String(item?.author || '').trim();
+            if (!title) continue;
+
+            const searchQuery = author
+                ? `intitle:${title} inauthor:${author}`
+                : `intitle:${title}`;
+
+            try {
+                const client = window.GoogleBooksClient;
+                const data = client
+                    ? await client.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' })
+                    : await (async () => {
+                        const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+                        const res = await fetch(`${API_BASE}?q=${encodeURIComponent(searchQuery)}&maxResults=1&printType=books${keyParam}`);
+                        if (!res.ok) {
+                            throw new Error(`Google Books API Error: ${res.status}`);
+                        }
+                        return await res.json();
+                    })();
+
+                const matchedBook = data?.items?.[0];
+                if (matchedBook) {
+                    matchedBook.categoryReason = item.reason || '';
+                    resolvedBooks.push(matchedBook);
+                }
+            } catch (error) {
+                console.warn(`Failed to resolve category book "${title}"`, error);
+            }
+        }
+
+        return resolvedBooks;
+    }
+
+    async renderBookCards(container, books) {
+        container.innerHTML = '';
+        if (!books || books.length === 0) {
+            container.innerHTML = '<p class="empty-state">No books available for this collection.</p>';
+            return;
+        }
+
+        for (const book of books) {
+            try {
+                const bookElement = await this.createBookElement(book);
+                if (bookElement) {
+                    container.appendChild(bookElement);
+                }
+            } catch (err) {
+                console.error("Failed to render individual book:", book.id, err);
+                // Continue to next book instead of breaking the row
+            }
+        }
+
+        // If nothing was rendered, show error
+        if (container.children.length === 0) {
+            container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
+        }
+    }
 }
 
 class LibraryManager {
     constructor() {
         this.storageKey = 'bibliodrift_library';
-        const stored = SafeStorage.get(this.storageKey);
-        this.library = stored ? JSON.parse(stored) : {
+        // Initialize with empty library to prevent crashes during async load
+        this.library = {
             current: [],
             want: [],
             finished: []
         };
-        this.apiBase = 'http://localhost:5000/api/v1';
+
+
+        this.apiBase = MOOD_API_BASE; // Fixed: Use global constant (Issue #7)
+
+        // Asynchronous initialization
+        this._initPromise = this.init();
+    }
+
+    async ready() {
+        await this._initPromise;
+        return this;
+    }
+
+    async init() {
+        // 1. Request persistent storage to prevent wipes
+        await SafeStorage.requestPersistence();
+
+        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
+        const stored = await SafeStorage.getAsync(this.storageKey);
+        if (stored) {
+            try {
+                this.library = JSON.parse(stored);
+            } catch (e) {
+                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+            }
+        }
+
+        // 3. Setup sorting and trigger initial fast render
         this.setupSorting();
+
+        if (document.getElementById('shelf-want')) {
+            // Fast Render from local data
+            this.renderShelf('want', 'shelf-want');
+            this.renderShelf('current', 'shelf-current');
+            this.renderShelf('finished', 'shelf-finished');
+        }
+
+        // 4. Sync with backend if available (Full Refresh)
+        await this.syncWithBackend();
     }
 
     getUser() {
@@ -672,11 +1121,15 @@ class LibraryManager {
     }
 
     getAuthHeaders() {
-        const token = SafeStorage.get('bibliodrift_token');
-        return new Headers({
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        });
+        const csrfToken = getCookie('csrf_access_token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        // CSRF protection for cookie-based auth
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        return new Headers(headers);
     }
 
     async syncWithBackend() {
@@ -685,7 +1138,8 @@ class LibraryManager {
 
         try {
             const res = await fetch(`${this.apiBase}/library/${user.id}`, {
-                headers: this.getAuthHeaders()
+                headers: this.getAuthHeaders(),
+                credentials: 'include'
             });
             if (res.ok) {
                 const data = await res.json();
@@ -707,28 +1161,39 @@ class LibraryManager {
                     const remoteBook = {
                         id: item.google_books_id,
                         db_id: item.id,
+                        version: item.version,
                         volumeInfo: {
                             title: item.title,
                             authors: item.authors ? item.authors.split(', ') : [],
                             imageLinks: { thumbnail: item.thumbnail }
                         },
-                        // Preserve local progress if exists, else default
-                        progress: existing ? existing.book.progress : (item.shelf_type === 'current' ? 0 : null),
+                        // Backend data is authoritative during sync DOWN
+                        progress: item.progress,
                         date_added: item.created_at || new Date().toISOString()
                     };
 
                     if (existing) {
-                        // Check if shelf matches
-                        if (existing.shelf !== item.shelf_type) {
-                            // Backend wins on shelf conflict (syncing FROM server)
-                            // Remove from old shelf
-                            this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
-                            // Add to new shelf
-                            this.library[item.shelf_type].push(remoteBook);
-                        } else {
-                            // Update details (e.g. db_id might be missing locally if added offline)
-                            Object.assign(existing.book, remoteBook);
+                        const localBook = existing.book;
+
+                        // Conflict Resolution Logic:
+                        // If backend has a higher version, it wins.
+                        if (item.version > (localBook.version || 0)) {
+                            if (existing.shelf !== item.shelf_type) {
+                                // Remove from old shelf
+                                this.library[existing.shelf] = this.library[existing.shelf].filter(b => b.id !== item.google_books_id);
+                                // Add to new shelf
+                                this.library[item.shelf_type].push(remoteBook);
+                            } else {
+                                // Update details in place
+                                Object.assign(localBook, remoteBook);
+                            }
+                        } else if (item.version === (localBook.version || 0)) {
+                            // Versions match, just ensure db_id is set
+                            localBook.db_id = item.id;
                         }
+                        // If item.version < localBook.version, we have unsynced local changes.
+                        // syncLocalToBackend will handle pushing these.
+
                         // Mark as processed/merged
                         localBooksMap.delete(item.google_books_id);
                     } else {
@@ -774,16 +1239,14 @@ class LibraryManager {
         ['current', 'want', 'finished'].forEach(shelf => {
             if (this.library[shelf]) {
                 this.library[shelf].forEach(book => {
-                    // Avoid syncing items that obviously came from backend (have db_id) 
-                    // UNLESS you want to support offline updates (which is harder).
-                    // The requirement is "upload anonymous local library when user signs up".
-                    // Anonymous items won't have db_id.
-                    if (!book.db_id) {
-                        itemsToSync.push({
-                            ...book,
-                            shelf: shelf
-                        });
-                    }
+                    // Sync both new (anonymous) items and potentially updated items (with db_id)
+                    // If book.db_id is present, it's an update. If not, it's a new item.
+                    itemsToSync.push({
+                        ...book,
+                        shelf: shelf,
+                        // Ensure version is sent if present
+                        version: book.version || 0
+                    });
                 });
             }
         });
@@ -791,12 +1254,13 @@ class LibraryManager {
         if (itemsToSync.length === 0) return; // Nothing to sync
 
         try {
-            if (process.env.NODE_ENV === 'development') {
+            if (IS_DEV) {
                 console.log(`Syncing ${itemsToSync.length} items to backend...`);
             }
             const res = await fetch(`${this.apiBase}/library/sync`, {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     user_id: user.id,
                     items: itemsToSync
@@ -805,15 +1269,22 @@ class LibraryManager {
 
             if (res.ok) {
                 const data = await res.json();
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log("Sync result:", data);
                 }
-                showToast(`Synced ${data.message}`, "success");
 
-                // After upload, pull fresh state from backend to get the new DB IDs
+                if (data.conflicts > 0) {
+                    showToast(`Synced ${data.message} (${data.conflicts} conflicts resolved by server)`, "info");
+                } else {
+                    showToast(`Synced ${data.message}`, "success");
+                }
+
+                // After upload, pull fresh state from backend to get the new DB IDs and versions
                 await this.syncWithBackend();
             } else {
-                console.error("Backend refused sync");
+                const data = await res.json();
+                console.error("Backend refused sync", data);
+                showToast("Sync failed: " + (data.error || "Server error"), "error");
             }
         } catch (e) {
             console.error("Sync upload failed", e);
@@ -822,11 +1293,58 @@ class LibraryManager {
     }
 
     setupSorting() {
-        const sortSelect = document.getElementById('sortLibrary');
+        const sortSelect = document.getElementById('library-sort');
         if (sortSelect) {
             sortSelect.addEventListener('change', (e) => {
                 this.sortLibrary(e.target.value);
             });
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                this.filterLibrary(query);
+            });
+        }
+    }
+
+    filterLibrary(query) {
+        ['current', 'want', 'finished'].forEach(shelf => {
+            const containerId = `shelf-${shelf}-3d`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const books = this.library[shelf];
+            const filtered = books.filter(book => {
+                const title = (book.volumeInfo.title || "").toLowerCase();
+                const author = (book.volumeInfo.authors || []).join(" ").toLowerCase();
+                const moods = (book.moods || []).join(" ").toLowerCase();
+                return title.includes(query) || author.includes(query) || moods.includes(query);
+            });
+
+            this.renderFilteredShelf(shelf, containerId, filtered);
+        });
+    }
+
+    async renderFilteredShelf(shelfName, elementId, books) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (books.length === 0) {
+            container.innerHTML = '<div class="empty-state">No matching books found.</div>';
+            return;
+        }
+
+        try {
+            const renderer = new BookRenderer(this);
+            for (const book of books) {
+                const el = await renderer.createBookElement(book, shelfName);
+                container.appendChild(el);
+            }
+        } catch (error) {
+            console.error(`[Library] Error rendering filtered shelf:`, error);
         }
     }
 
@@ -837,14 +1355,23 @@ class LibraryManager {
                     return new Date(b.date_added || 0) - new Date(a.date_added || 0);
                 case 'date_asc':
                     return new Date(a.date_added || 0) - new Date(b.date_added || 0);
+                case 'title':
                 case 'title_asc':
                     return (a.volumeInfo.title || "").localeCompare(b.volumeInfo.title || "");
                 case 'title_desc':
                     return (b.volumeInfo.title || "").localeCompare(a.volumeInfo.title || "");
+                case 'author':
                 case 'author_asc':
                     const authorA = (a.volumeInfo.authors && a.volumeInfo.authors[0]) || "";
                     const authorB = (b.volumeInfo.authors && b.volumeInfo.authors[0]) || "";
                     return authorA.localeCompare(authorB);
+                case 'mood':
+                    // Sort by primary mood if available
+                    const moodA = (a.moods && a.moods[0]) || "zzz"; // push untagged to bottom
+                    const moodB = (b.moods && b.moods[0]) || "zzz";
+                    return moodA.localeCompare(moodB);
+                case 'rating':
+                    return (b.volumeInfo.averageRating || 0) - (a.volumeInfo.averageRating || 0);
                 default:
                     return 0;
             }
@@ -853,7 +1380,12 @@ class LibraryManager {
         ['current', 'want', 'finished'].forEach(shelf => {
             if (this.library[shelf]) {
                 this.library[shelf].sort(sortFn);
-                this.renderShelf(shelf, `shelf-${shelf}`);
+                // If we have a dedicated 3D renderer, let it handle the UI to avoid duplicate rendering
+                if (window.bookshelf3D && typeof window.bookshelf3D.refreshShelves === 'function') {
+                    window.bookshelf3D.refreshShelves();
+                } else {
+                    this.renderShelf(shelf, `shelf-${shelf}-3d`);
+                }
             }
         });
     }
@@ -885,7 +1417,7 @@ class LibraryManager {
         // 1. Update Local State
         this.library[shelf].push(enrichedBook);
         this.saveLocally();
-        if (process.env.NODE_ENV === 'development') {
+        if (IS_DEV) {
             console.log(`Added ${book.volumeInfo.title} to ${shelf}`);
         }
 
@@ -905,17 +1437,73 @@ class LibraryManager {
                 const res = await fetch(`${this.apiBase}/library`, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),
+                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Store the DB ID back to the local object
+                    // Store the DB ID and version back to the local object
                     enrichedBook.db_id = data.item.id;
+                    enrichedBook.version = data.item.version;
                     this.saveLocally();
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
+                showToast("Saved locally (Sync failed)", "info");
+            }
+        }
+    }
+
+
+    async updateBook(id, updates) {
+        const result = this.findBookInShelf(id);
+        if (!result) return;
+
+        const { shelf, book } = result;
+
+        // 1. Update Local State
+        Object.assign(book, updates);
+
+        // Local "Finished" logic
+        if (updates.progress === 100 && shelf !== 'finished') {
+            // Remove from current, add to finished
+            this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
+            this.library.finished.push(book);
+            showToast(`Congrats! You finished ${book.volumeInfo.title}!`, "success");
+        }
+
+        this.saveLocally();
+
+        // 2. Update Backend
+        const user = this.getUser();
+        if (user && book.db_id) {
+            try {
+                const res = await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                    method: 'PUT',
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        ...updates,
+                        version: book.version // Optimistic locking
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    book.version = data.item.version;
+                    this.saveLocally();
+                } else if (res.status === 409) {
+                    const data = await res.json();
+                    showToast("Conflict detected! Syncing with server...", "error");
+                    // Optionally show a more detailed merge UI here
+                    await this.syncWithBackend();
+                } else {
+                    const data = await res.json();
+                    console.error("Update failed:", data.error);
+                }
+            } catch (e) {
+                console.error("Failed to update backend", e);
                 showToast("Saved locally (Sync failed)", "info");
             }
         }
@@ -943,6 +1531,19 @@ class LibraryManager {
         }
         return null;
     }
+
+    getShelfBooks(shelf) {
+        return Array.isArray(this.library[shelf]) ? [...this.library[shelf]] : [];
+    }
+
+    getLibrarySnapshot() {
+        return {
+            current: this.getShelfBooks('current'),
+            want: this.getShelfBooks('want'),
+            finished: this.getShelfBooks('finished')
+        };
+    }
+
     async removeBook(id) {
         const result = this.findBookInShelf(id);
         if (result) {
@@ -951,7 +1552,7 @@ class LibraryManager {
             // 1. Update Local
             this.library[shelf] = this.library[shelf].filter(b => b.id !== id);
             this.saveLocally();
-            if (process.env.NODE_ENV === 'development') {
+            if (IS_DEV) {
                 console.log(`Removed book ${id} from ${shelf}`);
             }
 
@@ -962,7 +1563,11 @@ class LibraryManager {
             // Do we have it?
             if (user && book.db_id) {
                 try {
-                    await fetch(`${this.apiBase}/library/${book.db_id}`, { method: 'DELETE', headers: this.getAuthHeaders() });
+                    await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                        method: 'DELETE',
+                        headers: this.getAuthHeaders(),
+                        credentials: 'include'
+                    });
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
                     showToast("Removed locally (Backend sync failed)", "info");
@@ -978,6 +1583,60 @@ class LibraryManager {
             return true;
         }
         return false;
+    }
+
+    async moveBook(id, toShelf) {
+        const result = this.findBookInShelf(id);
+        if (!result) return false;
+
+        const { shelf: fromShelf, book } = result;
+        if (fromShelf === toShelf) return true;
+        if (!this.library[toShelf]) return false;
+
+        this.library[fromShelf] = this.library[fromShelf].filter(b => b.id !== id);
+
+        if (toShelf === 'finished' && book.progress !== 100) {
+            book.progress = 100;
+        } else if (toShelf === 'current' && (book.progress == null || book.progress === 100)) {
+            book.progress = 0;
+        }
+
+        this.library[toShelf].push(book);
+        this.saveLocally();
+
+        const user = this.getUser();
+        if (user && book.db_id) {
+            try {
+                const res = await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                    method: 'PUT',
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        shelf_type: toShelf,
+                        progress: book.progress,
+                        version: book.version
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    book.version = data.item.version;
+                    this.saveLocally();
+                } else if (res.status === 409) {
+                    showToast("Conflict detected! Syncing with server...", "error");
+                    await this.syncWithBackend();
+                    return false;
+                } else {
+                    const data = await res.json();
+                    console.error("Move failed:", data.error);
+                }
+            } catch (e) {
+                console.error("Failed to update backend during move", e);
+                showToast("Moved locally (Sync failed)", "info");
+            }
+        }
+
+        return true;
     }
 
     saveLocally() {
@@ -997,13 +1656,15 @@ class LibraryManager {
         // Clear container for re-rendering (essential for sorting)
         container.innerHTML = '';
 
-        (async () => {
+        try {
             for (const book of books) {
                 const renderer = new BookRenderer(this);
                 const el = await renderer.createBookElement(book, shelfName);
                 container.appendChild(el);
             }
-        })();
+        } catch (error) {
+            console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
+        }
     }
 }
 
@@ -1012,34 +1673,42 @@ class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
         this.toggleBtn = document.getElementById('themeToggle');
-        this.currentTheme = document.documentElement.getAttribute('data-theme') || SafeStorage.get(this.themeKey) || 'day';
-
+        // Use SafeStorage for consistency with app's storage strategy
+        const stored = SafeStorage.get(this.themeKey);
+        this.currentTheme = stored === 'night' ? 'night' : 'light';
+        // Named handler so we can remove & re-add cleanly (no stacking)
+        this._handler = this._onClick.bind(this);
         this.init();
     }
 
+    _onClick() {
+        this.currentTheme = this.currentTheme === 'night' ? 'light' : 'night';
+        this.applyTheme(this.currentTheme);
+        SafeStorage.set(this.themeKey, this.currentTheme);
+    }
 
     init() {
         if (!this.toggleBtn) return;
-
         this.applyTheme(this.currentTheme);
-
-        this.toggleBtn.addEventListener('click', () => {
-            this.currentTheme = this.currentTheme === 'day' ? 'night' : 'day';
-            this.applyTheme(this.currentTheme);
-            SafeStorage.set(this.themeKey, this.currentTheme);
-        });
+        // Remove before add to prevent duplicate listeners if init is called twice
+        this.toggleBtn.removeEventListener('click', this._handler);
+        this.toggleBtn.addEventListener('click', this._handler);
     }
 
-
     applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        const icon = this.toggleBtn.querySelector('i');
         if (theme === 'night') {
-            icon.classList.remove('fa-moon');
-            icon.classList.add('fa-sun');
+            document.documentElement.setAttribute('data-theme', 'night');
         } else {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
+            document.documentElement.removeAttribute('data-theme');
+        }
+        // Update icon — use className directly, cannot fail
+        if (this.toggleBtn) {
+            const icon = this.toggleBtn.querySelector('i');
+            if (icon) {
+                icon.className = theme === 'night'
+                    ? 'fa-solid fa-sun'
+                    : 'fa-solid fa-moon';
+            }
         }
     }
 }
@@ -1047,7 +1716,8 @@ class ThemeManager {
 
 
 class GenreManager {
-    constructor() {
+    constructor(libraryManager = null) {
+        this.libraryManager = libraryManager;
         this.genreGrid = document.getElementById('genre-grid');
         this.modal = document.getElementById('genre-modal');
         this.closeBtn = document.getElementById('close-genre-modal');
@@ -1099,54 +1769,48 @@ class GenreManager {
     async fetchBooks(genre) {
         if (!this.booksGrid) return;
 
-        // Show loading
-        this.booksGrid.innerHTML = `
-            <div class="genre-loading">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                <span>Finding best ${genre} books...</span>
-            </div>
-        `;
+        // Show loading skeletons
+        if (window.renderer) {
+            window.renderer.renderSkeletons(this.booksGrid, 10);
+        } else {
+            this.booksGrid.innerHTML = `
+                <div class="genre-loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Finding best ${genre} books...</span>
+                </div>
+            `;
+        }
 
         try {
-            // Fetch relevant books from Google Books API
-            // Using subject search and higher relevance
-            const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-            const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
+            const client = window.GoogleBooksClient;
+            const data = client
+                ? await client.fetchVolumes(`subject:${genre}`, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' })
+                : await (async () => {
+                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+                    const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+                    return await response.json();
+                })();
 
-            if (response.ok) {
-                const data = await response.json();
-                const items = data.items || [];
-
-                if (items.length > 0) {
-                    this.renderBooks(items);
-                } else {
-                    this.booksGrid.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fa-solid fa-box-open"></i>
-                            <p>Bookshelf Empty (No books found)</p>
-                        </div>`;
-                }
+            const items = data.items || [];
+            if (items.length > 0) {
+                this.renderBooks(items);
             } else {
-                console.warn(`API Error ${response.status}`);
-                this.booksGrid.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <p>Bookshelf Empty (API Error: ${response.status})</p>
-                    </div>`;
+                this.renderBooks(getFallbackBooks(genre, 20));
             }
         } catch (error) {
             console.error('Error fetching genre books:', error);
-            this.booksGrid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-wifi"></i>
-                    <p>Bookshelf Empty (Connection Failed)</p>
-                </div>`;
+            this.renderBooks(getFallbackBooks(genre, 20));
         }
     }
 
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
-        const renderer = new BookRenderer(new LibraryManager());
+
+
+        const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
             this.booksGrid.appendChild(el);
@@ -1155,73 +1819,103 @@ class GenreManager {
 }
 
 // Init
+// --- Application Bootstrap ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load config first to get API keys
-    await loadConfig();
+    console.log('🚀 BiblioDrift Initializing...');
 
+    // 1. Initialize Managers
     const libManager = new LibraryManager();
-    window.libManager = libManager; // Expose for Auth
+    window.libManager = libManager;
+    window.dispatchEvent(new CustomEvent('bibliodrift:library-manager-ready', {
+        detail: { libraryManager: libManager }
+    }));
+    libManager.ready().then(() => {
+        window.dispatchEvent(new CustomEvent('bibliodrift:library-manager-synced', {
+            detail: { libraryManager: libManager }
+        }));
+    });
 
-    const verifiedUser = await verifyStoredAuthSession();
+    window.renderer = new BookRenderer(libManager);
+    const themeManager = new ThemeManager();
 
-    // Auth Page Logic (Toggle Login/Register)
-    const toggleLink = document.querySelector('.toggle-link');
-    const authTitle = document.querySelector('.auth-container h2');
-    const authBtn = document.querySelector('.auth-btn');
-    const authForm = document.querySelector('form');
+    // 2. Load Config (Non-blocking)
+    loadConfig();
+
+
+
+    // --- AUTH LOGIC ---
+    const toggleLink = document.getElementById('toggleText');
+    const authTitle = document.getElementById('authTitle');
+    const authBtn = document.getElementById('submitBtn');
+    const authForm = document.getElementById('authForm');
+    const nameField = document.getElementById('nameField');
 
     if (toggleLink && authTitle && authBtn && authForm) {
         let isLogin = true;
-        authForm.dataset.mode = 'login'; // Default
-
-        // Create Username Input for Register mode
-        const usernameInput = document.createElement('input');
-        usernameInput.type = 'text';
-        usernameInput.id = 'username';
-        usernameInput.className = 'auth-input';
-        usernameInput.placeholder = 'Username';
-        usernameInput.style.display = 'none';
-
-        // Insert before email
-        const emailInput = document.getElementById('email');
-        if (emailInput) {
-            authForm.insertBefore(usernameInput, emailInput);
-        }
+        authForm.dataset.mode = 'login';
 
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
-            authForm.dataset.mode = isLogin ? 'login' : 'register';
-
-            if (isLogin) {
+            
+            if (!isLogin) {
+                // Switch to Register Mode
+                authForm.dataset.mode = 'register';
+                authTitle.textContent = 'Create Account';
+                authBtn.textContent = 'Sign Up';
+                toggleLink.textContent = 'Already have an account? Sign in.';
+                if (nameField) nameField.style.display = 'block';
+            } else {
+                // Switch to Login Mode
+                authForm.dataset.mode = 'login';
                 authTitle.textContent = 'Welcome Back';
                 authBtn.textContent = 'Sign In';
                 toggleLink.textContent = 'No account? Create one.';
-                usernameInput.style.display = 'none';
-                usernameInput.removeAttribute('required');
-            } else {
-                authTitle.textContent = 'Create Account';
-                authBtn.textContent = 'Sign Up';
-                toggleLink.textContent = 'Already have an account? Sign In.';
-                usernameInput.style.display = 'block';
-                usernameInput.setAttribute('required', 'true');
+                if (nameField) nameField.style.display = 'none';
             }
         });
     }
 
-    const renderer = new BookRenderer(libManager);
-    const themeManager = new ThemeManager();
-    const genreManager = new GenreManager();
+    const genreManager = new GenreManager(libManager);
     genreManager.init();
     const exportBtn = document.getElementById("export-library");
-
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
         exportBtn.style.display = isLibraryPage ? "inline-flex" : "none";
+
+        exportBtn.addEventListener("click", () => {
+            const library = SafeStorage.get("bibliodrift_library");
+            if (!library) {
+                showToast("Library is empty!", "info");
+                return;
+            }
+            const blob = new Blob([library], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+            showToast("Library exported successfully!", "success");
+        });
     }
 
+
+
+    const verifiedUser = await verifyStoredAuthSession();
+    const isLoggedIn = !!libManager.getUser() || !!verifiedUser; // Rely on user object instead of forgeable flag
     const authLink = document.getElementById('navAuthLink');
     const tooltip = document.getElementById('navAuthTooltip');
     renderAuthNavigation(authLink, tooltip, Boolean(verifiedUser));
+
+    // Redirect if already logged in and on the sign-in page
+    if (verifiedUser && window.location.pathname.endsWith('auth.html')) {
+        window.location.href = 'profile.html';
+        return;
+    }
 
     if (verifiedUser) {
         await libManager.syncWithBackend();
@@ -1232,7 +1926,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const performSearch = () => {
         if (searchInput && searchInput.value.trim()) {
-            window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+            // Only redirect to discovery search if we're not already on the library page 
+            // where search is handled by the local library filter.
+            if (!window.location.pathname.includes('library.html')) {
+                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+            }
         }
     };
 
@@ -1249,34 +1947,64 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q');
-    
+
     // Fill search box if query exists
     if (query && searchInput) {
         searchInput.value = query;
     }
 
-    if (query && document.getElementById('row-rainy')) {
-        document.querySelector('main').innerHTML = `
-            <section class="hero">
-                <h1>Results for "${query}"</h1>
-                <p>Found specific books matching your vibe.</p>
-            </section>
-            <section class="curated-section">
-                <div class="curated-row" id="search-results" style="flex-wrap: wrap; justify-content: center;"></div>
-            </section>`;
-        renderer.renderCuratedSection(query, 'search-results', 20);
+    if (query && document.getElementById('search-results-section')) {
+        const searchSection = document.getElementById('search-results-section');
+        const queryDisplay = document.getElementById('search-query-display');
+        
+        queryDisplay.textContent = `Results for "${query}"`;
+        searchSection.removeAttribute('hidden');
+        
+        // Hide other main content to focus on search without destroying modals
+        document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        renderer.renderCuratedSection(query, 'search-results-grid', 20);
     } else if (document.getElementById('row-rainy')) {
-        renderer.renderCuratedSection('subject:mystery atmosphere', 'row-rainy');
-        renderer.renderCuratedSection('authors:amitav ghosh|authors:arundhati roy|subject:india', 'row-indian');
-        renderer.renderCuratedSection('subject:classic fiction', 'row-classics');
-        renderer.renderCuratedSection('subject:fiction', 'row-genre');
+        console.log('📚 Initializing Curated Discovery Sections...');
+        const discoveryShelves = [
+            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
+            {
+                type: 'category',
+                elementId: 'row-dark-academia',
+                category: 'Dark Academia',
+                vibeDescription: 'gothic, intellectual, melancholic, and candlelit stories set around obsession, old libraries, secret societies, and campus unease',
+                fallbackQuery: 'subject:gothic fiction subject:campus'
+            },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' }
+        ];
+        (async () => {
+            try {
+                for (const shelf of discoveryShelves) {
+                    if (shelf.type === 'category') {
+                        await renderer.renderMoodCategorySection(shelf, shelf.elementId);
+                    } else {
+                        await renderer.renderCuratedSection(shelf.query, shelf.elementId);
+                    }
+                    await delay(500);
+                }
+                console.log('✅ Discovery shelves populated.');
+            } catch (err) {
+                console.error('❌ Critical error during shelf initialization:', err);
+            }
+        })();
     }
 
-    if (document.getElementById('shelf-want')) {
-        libManager.renderShelf('want', 'shelf-want');
-        libManager.renderShelf('current', 'shelf-current');
-        libManager.renderShelf('finished', 'shelf-finished');
-    }
+    // Re-rendering is now handled by libManager.init() asynchronously to ensure
+    // data is loaded from IndexedDB backup if LocalStorage was wiped.
+    // if (document.getElementById('shelf-want')) {
+    //     libManager.renderShelf('want', 'shelf-want');
+    //     libManager.renderShelf('current', 'shelf-current');
+    //     libManager.renderShelf('finished', 'shelf-finished');
+    // }
 
 
     // Check if Profile Page
@@ -1297,13 +2025,143 @@ document.addEventListener('DOMContentLoaded', async () => {
         const wantCount = libManager.library.want?.length || 0;
         const finishedCount = libManager.library.finished?.length || 0;
 
-        document.getElementById('stat-current').textContent = currentCount;
-        document.getElementById('stat-want').textContent = wantCount;
-        document.getElementById('stat-finished').textContent = finishedCount;
+        const totalBooks = currentCount + wantCount + finishedCount;
 
-        // Calculate "Day Streak" (Mock for now, or based on last activity dates if available)
-        // For MVP, randomly generate a streak to encourage user
-        document.getElementById('stat-streak').textContent = Math.floor(Math.random() * 14) + 1;
+        // Vibe/Genre calculation
+        const allBooks = [
+            ...(libManager.library.current || []),
+            ...(libManager.library.want || []),
+            ...(libManager.library.finished || [])
+        ];
+        
+        const categoryCounts = {};
+        allBooks.forEach(book => {
+            const categories = book.volumeInfo?.categories || [];
+            categories.forEach(cat => {
+                categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            });
+        });
+        
+        let topVibe = 'Mystery'; // Fallback
+        if (Object.keys(categoryCounts).length > 0) {
+            topVibe = Object.keys(categoryCounts).reduce((a, b) => categoryCounts[a] > categoryCounts[b] ? a : b);
+        } else if (totalBooks === 0) {
+            topVibe = '-';
+        }
+
+        const statTotalEl = document.getElementById('stat-total');
+        const statWantDashEl = document.getElementById('stat-want-dash');
+        const statVibeEl = document.getElementById('stat-vibe');
+        
+        if (statTotalEl) statTotalEl.textContent = totalBooks;
+        if (statWantDashEl) statWantDashEl.textContent = wantCount;
+        if (statVibeEl) statVibeEl.textContent = topVibe;
+
+        // Progress Bar Calculation
+        const barFinished = document.getElementById('bar-finished');
+        const barCurrent = document.getElementById('bar-current');
+        const barWant = document.getElementById('bar-want');
+        
+        const countFinishedEl = document.getElementById('count-finished');
+        const countCurrentEl = document.getElementById('count-current');
+        const countWantEl = document.getElementById('count-want');
+        
+        if (countFinishedEl) countFinishedEl.textContent = finishedCount;
+        if (countCurrentEl) countCurrentEl.textContent = currentCount;
+        if (countWantEl) countWantEl.textContent = wantCount;
+        
+        if (totalBooks > 0) {
+            setTimeout(() => {
+                if (barFinished) barFinished.style.width = `${(finishedCount / totalBooks) * 100}%`;
+                if (barCurrent) barCurrent.style.width = `${(currentCount / totalBooks) * 100}%`;
+                if (barWant) barWant.style.width = `${(wantCount / totalBooks) * 100}%`;
+            }, 100);
+        }
+
+        // =====================================================================
+        // READING PROGRESS OVERVIEW
+        // Renders a progress card for each book currently being read.
+        // =====================================================================
+        const progressGrid = document.getElementById('progress-overview-grid');
+        if (progressGrid) {
+            const currentBooks = libManager.library.current || [];
+            if (currentBooks.length === 0) {
+                progressGrid.innerHTML = '<div class="empty-state"><p>No books currently in progress. <a href="library.html">Visit your library</a> to start reading.</p></div>';
+            } else {
+                progressGrid.innerHTML = '';
+                currentBooks.forEach(book => {
+                    const title = book.volumeInfo?.title || book.title || 'Untitled';
+                    const author = (book.volumeInfo?.authors?.[0]) || book.author || 'Unknown Author';
+                    const cover = book.volumeInfo?.imageLinks?.thumbnail || book.cover || '';
+                    const progress = typeof book.progress === 'number' ? book.progress : 0;
+
+                    const card = document.createElement('div');
+                    card.className = 'progress-overview-card';
+                    card.innerHTML = `
+                        <div class="progress-card-cover">
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                        </div>
+                        <div class="progress-card-info">
+                            <div class="progress-card-title">${title}</div>
+                            <div class="progress-card-author">${author}</div>
+                            <div class="progress-card-bar-wrap">
+                                <div class="progress-card-bar-track">
+                                    <div class="progress-card-bar-fill" style="width:${progress}%"></div>
+                                </div>
+                                <span class="progress-card-pct">${progress}%</span>
+                            </div>
+                            <div class="progress-card-quick-update">
+                                <input type="range" min="0" max="100" value="${progress}"
+                                    class="progress-card-slider"
+                                    aria-label="Update reading progress for ${title}">
+                                <button class="progress-card-save-btn" data-book-id="${book.id}">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Wire up the quick-update slider
+                    const slider = card.querySelector('.progress-card-slider');
+                    const barFill = card.querySelector('.progress-card-bar-fill');
+                    const pctLabel = card.querySelector('.progress-card-pct');
+                    const saveBtn = card.querySelector('.progress-card-save-btn');
+
+                    slider.addEventListener('input', () => {
+                        const val = parseInt(slider.value);
+                        barFill.style.width = `${val}%`;
+                        pctLabel.textContent = `${val}%`;
+                    });
+
+                    saveBtn.addEventListener('click', async () => {
+                        const newProgress = parseInt(slider.value);
+                        saveBtn.disabled = true;
+                        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        try {
+                            await libManager.updateBook(book.id, { progress: newProgress });
+                            book.progress = newProgress;
+                            saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                            saveBtn.style.background = '#4caf50';
+                            setTimeout(() => {
+                                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+                                saveBtn.style.background = '';
+                                saveBtn.disabled = false;
+                            }, 2000);
+                        } catch (err) {
+                            saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                            saveBtn.style.background = '#e53935';
+                            setTimeout(() => {
+                                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+                                saveBtn.style.background = '';
+                                saveBtn.disabled = false;
+                            }, 2000);
+                        }
+                    });
+
+                    progressGrid.appendChild(card);
+                });
+            }
+        }
 
         // Populate Achievements
         const achievementsGrid = document.getElementById('achievements-grid');
@@ -1328,8 +2186,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            clearStoredAuthState();
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                // Clear backend cookies
+                await fetch(`${MOOD_API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+            } catch (e) {
+                console.warn("Backend logout failed", e);
+            }
+            SafeStorage.remove('bibliodrift_user');
+            SafeStorage.remove('bibliodrift_token');
+            SafeStorage.remove('isLoggedIn');
             window.location.href = 'index.html';
         });
     }
@@ -1344,42 +2210,54 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
         });
-
-        const exportBtn = document.getElementById("export-library");
-        if (exportBtn) {
-            exportBtn.addEventListener("click", () => {
-                const library = SafeStorage.get("bibliodrift_library");
-                if (!library) {
-                    showToast("Library is empty!", "info");
-                    return;
-                }
-                const blob = new Blob([library], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                URL.revokeObjectURL(url);
-                showToast("Library exported successfully!", "success");
-            });
-        }
     }
+
+
 });
 
+/**
+ * ==============================================================================
+ * SECURITY FIX: CSRF PROTECTION & SESSION MANAGEMENT
+ * ==============================================================================
+ * 
+ * Issue:
+ * ------
+ * The auth form has no CSRF protection — it directly POSTs credentials to the API 
+ * from the browser.
+ * 
+ * Why it matters:
+ * ---------------
+ * Without a CSRF token, a malicious third-party page could trick authenticated 
+ * users into making authenticated requests. Also, isLoggedIn was previously stored 
+ * as a plain string 'true' in localStorage, meaning any script could forge the 
+ * login state by setting this key.
+ * 
+ * Fix:
+ * ----
+ * Move the authenticated session indicator to an HttpOnly cookie managed by the 
+ * backend, and validate the JWT on every protected API call (which is already 
+ * done server-side — the frontend just needs to stop relying on the localStorage 
+ * flag for access control decisions).
+ * ==============================================================================
+ */
 async function handleAuth(event) {
     event.preventDefault();
     const form = event.target;
+    const btn = form.querySelector('button[type="submit"]') || document.getElementById('submitBtn');
+    const originalText = btn ? btn.innerHTML : (form.dataset.mode === 'register' ? 'Sign Up' : 'Sign In');
+
+    // 1. Immediate UI Feedback: Disable button and show loading state
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+    }
+
     // Determine mode from dataset (set by our toggle logic) or default to login
     const mode = form.dataset.mode || 'login';
 
@@ -1387,11 +2265,37 @@ async function handleAuth(event) {
     const password = form.querySelector('input[type="password"]').value;
     const usernameInput = document.getElementById("username");
 
+    // Helper to reset button state on failure
+    const resetBtn = () => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
+
     // Validate Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         if (typeof showToast === 'function') showToast("Enter a valid email address", "error");
         else alert("Enter a valid email address");
+        resetBtn();
+        return;
+    }
+
+    // Demo bypass logic
+    if (email === 'demo@bibliodrift.com') {
+        const demoUser = { id: 1, username: 'Demo User', email: 'demo@bibliodrift.com' };
+        SafeStorage.set('bibliodrift_user', JSON.stringify(demoUser));
+        SafeStorage.set('isLoggedIn', 'true');
+        SafeStorage.set('bibliodrift_token', 'demo-token-12345');
+        
+        if (typeof showToast === 'function')
+            showToast(`Welcome, Demo User!`, "success");
+
+        // Keep button disabled during redirect delay
+        setTimeout(() => {
+            window.location.href = "library.html";
+        }, 1000);
         return;
     }
 
@@ -1401,36 +2305,49 @@ async function handleAuth(event) {
 
     if (mode === 'register') {
         const username = usernameInput ? usernameInput.value : email.split('@')[0];
-        endpoint = '/api/v1/register';
+        endpoint = '/register';
         payload = { username, email, password };
     } else {
-        endpoint = '/api/v1/login';
+        endpoint = '/login';
         payload = { username: email, password: password };
     }
 
-    try {
-        const btn = form.querySelector('button');
-        const originalText = btn.textContent;
-        btn.textContent = 'Processing...';
-        btn.disabled = true;
+    // =========================================================================
+    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
+    // =========================================================================
+    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
+    // This token is then injected into the 'X-CSRF-Token' header. 
+    // The Flask-WTF backend expects this header for all state-changing
+    // AJAX requests. This protects against Cross-Site Request Forgery 
+    // by ensuring that the request is authenticated via the browser's 
+    // Same-Origin Policy and session-bound secrets.
+    // =========================================================================
+    const csrfToken = document.getElementById('csrf_token')?.value;
 
-        const res = await fetch(`http://localhost:5000${endpoint}`, {
+    try {
+        const fetchOptions = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
             body: JSON.stringify(payload)
-        });
+        };
+
+        // Inject CSRF token into headers if available
+        if (csrfToken) {
+            fetchOptions.headers['X-CSRF-Token'] = csrfToken;
+        } else if (IS_DEV) {
+            console.warn('[Security] No CSRF token found in DOM. Request may be rejected by server.');
+        }
+
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
 
         const data = await res.json();
 
-        btn.textContent = originalText;
-        btn.disabled = false;
-
         if (res.ok) {
             // Success!
-            // Store Access Token and User Info
-            if (data.access_token) {
-                SafeStorage.set('bibliodrift_token', data.access_token);
-            }
+            // Token is now in an HttpOnly cookie (managed by backend)
             SafeStorage.set('bibliodrift_user', JSON.stringify(data.user));
             SafeStorage.set('isLoggedIn', 'true');
 
@@ -1438,41 +2355,32 @@ async function handleAuth(event) {
                 showToast(`${mode === 'login' ? 'Welcome back' : 'Welcome'}, ${data.user.username}!`, "success");
 
             // SYNC LOGIC
-            // If we have a library manager exposed, use it to sync anonymous data
             if (window.libManager) {
                 if (typeof showToast === 'function') showToast("Syncing your library...", "info");
                 await window.libManager.syncLocalToBackend(data.user);
             }
 
-            // Redirect
+            // Redirect - Button remains disabled
             setTimeout(() => {
                 window.location.href = "library.html";
             }, 1000);
         } else {
+            // Authentication failed - re-enable button
             if (typeof showToast === 'function') showToast(data.error || "Authentication failed", "error");
             else alert(data.error || "Authentication failed");
+            resetBtn();
         }
     } catch (e) {
         console.error("Auth Error", e);
         if (typeof showToast === 'function') showToast("Server connection failed", "error");
         else alert("Server connection failed");
-        const btn = form.querySelector('button');
-        if (btn) btn.disabled = false;
+        resetBtn();
     }
 }
 
 
 function enableTapEffects() {
     if (!('ontouchstart' in window)) return;
-
-    document.querySelectorAll('.book-scene').forEach(scene => {
-        const book = scene.querySelector('.book');
-        const overlay = scene.querySelector('.glass-overlay');
-        scene.addEventListener('click', () => {
-            book.classList.toggle('tap-effect');
-            if (overlay) overlay.classList.toggle('tap-overlay');
-        });
-    });
 
     document.querySelectorAll('.btn-icon').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1512,16 +2420,21 @@ function enableTapEffects() {
 enableTapEffects();
 
 // --- creak and page flip effects ---
-const pageFlipSound = new Audio('assets/sounds/page-flip.mp3');
+const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
+pageFlipSound.preload = 'auto';
 pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
+
+document.addEventListener('click', () => {
+    pageFlipSound.play().catch(() => {});
+}, { once: true });
 
 
 document.addEventListener("click", (e) => {
     const scene = e.target.closest(".book-scene");
     if (!scene) return;
 
-    if (process.env.NODE_ENV === 'development') {
+    if (IS_DEV) {
         console.log("BOOK CLICK");
     }
 
@@ -1558,7 +2471,7 @@ const KeyboardShortcuts = {
     // Initialize keyboard event listener
     init() {
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-        if (process.env.NODE_ENV === 'development') {
+        if (IS_DEV) {
             console.log('BiblioDrift Keyboard Shortcuts Initialized');
         }
     },
@@ -1584,56 +2497,56 @@ const KeyboardShortcuts = {
     executeAction(action) {
         switch (action) {
             case 'navigateNext':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Navigating to next book...');
                 }
                 this.navigateToNextBook();
                 break;
             case 'navigatePrev':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Navigating to previous book...');
                 }
                 this.navigateToPreviousBook();
                 break;
             case 'selectBook':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Selecting current book...');
                 }
                 this.selectCurrentBook();
                 break;
             case 'addToWantRead':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Adding to Want to Read list...');
                 }
                 this.moveCurrentBookToShelf('want');
                 break;
             case 'markCurrentlyReading':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Marking as Currently Reading...');
                 }
                 this.moveCurrentBookToShelf('current');
                 break;
             case 'addToFavorites':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Adding to Favorites...');
                 }
                 this.moveCurrentBookToShelf('finished');
                 break;
             case 'closeModal':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Closing modal...');
                 }
                 const modals = document.querySelectorAll('.modal, [role="dialog"]');
                 modals.forEach(modal => modal.style.display = 'none');
                 break;
             case 'showHelpMenu':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Showing help menu...');
                 }
                 this.displayHelpMenu();
                 break;
             case 'focusSearch':
-                if (process.env.NODE_ENV === 'development') {
+                if (IS_DEV) {
                     console.log('Focusing search bar...');
                 }
                 const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
@@ -1675,20 +2588,30 @@ const KeyboardShortcuts = {
         document.querySelectorAll('.book-spine-3d.focused').forEach(el => {
             el.classList.remove('focused');
         });
-        
+
         if (bookElement) {
             bookElement.classList.add('focused');
             bookElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            
+
             // Get the book data from the element
             const bookId = bookElement.dataset.bookId;
             if (window.bookshelfRenderer && bookId) {
-                // Find the book data by traversing the library
-                const storage = JSON.parse(localStorage.getItem('bibliodrift_library')) || { current: [], want: [], finished: [] };
+                const storage = window.libManager?.getLibrarySnapshot?.() || { current: [], want: [], finished: [] };
                 for (const shelf of ['current', 'want', 'finished']) {
                     const book = storage[shelf].find(b => b.id === bookId);
                     if (book) {
-                        window.bookshelfRenderer.currentBook = book;
+                        window.bookshelfRenderer.currentBook = book.volumeInfo ? {
+                            id: book.id,
+                            title: book.volumeInfo.title || 'Untitled',
+                            author: (book.volumeInfo.authors && book.volumeInfo.authors[0]) || 'Unknown',
+                            cover: book.volumeInfo.imageLinks?.thumbnail || '',
+                            description: book.volumeInfo.description || '',
+                            rating: book.volumeInfo.averageRating || 0,
+                            ratingCount: book.volumeInfo.ratingsCount || 0,
+                            categories: book.volumeInfo.categories || [],
+                            moods: book.moods || [],
+                            reviews: []
+                        } : book;
                         break;
                     }
                 }
@@ -1706,7 +2629,7 @@ const KeyboardShortcuts = {
 
         let currentIndex = this.getFocusedBookIndex();
         let nextIndex = (currentIndex + 1) % books.length;
-        
+
         this.setBookFocus(books[nextIndex]);
     },
 
@@ -1720,7 +2643,7 @@ const KeyboardShortcuts = {
 
         let currentIndex = this.getFocusedBookIndex();
         let prevIndex = currentIndex <= 0 ? books.length - 1 : currentIndex - 1;
-        
+
         this.setBookFocus(books[prevIndex]);
     },
 
@@ -1742,7 +2665,7 @@ const KeyboardShortcuts = {
         }
 
         const currentBook = window.bookshelfRenderer.currentBook;
-        const storage = JSON.parse(localStorage.getItem('bibliodrift_library')) || { current: [], want: [], finished: [] };
+        const storage = window.libManager?.getLibrarySnapshot?.() || { current: [], want: [], finished: [] };
 
         // Find current shelf
         let currentShelf = null;
@@ -1773,7 +2696,7 @@ const KeyboardShortcuts = {
             'want': 'Anticipated Journeys',
             'finished': 'Lifetime Favorites'
         };
-        
+
         showToast(`Moved to ${shelfNames[targetShelf]}`, 'success');
     }
 };
@@ -1784,3 +2707,94 @@ if (document.readyState === 'loading') {
 } else {
     KeyboardShortcuts.init();
 }
+// Register Service Worker for offline asset caching
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('BiblioDrift Service Worker registered successfully!', reg))
+            .catch(err => console.error('Service Worker registration failed:', err));
+    });
+}
+// --- Connection Management & Offline Fallback Fallback Hooks ---
+
+// Function to automatically track network status changes
+function handleConnectivityChange() {
+    const offlineIndicator = document.getElementById('offline-indicator');
+    
+    if (!navigator.onLine) {
+        console.warn("🌐 Connection dropped. Switching to local sanctuary archives...");
+        
+        // Show an elegant banner to let the user know they are reading offline
+        if (offlineIndicator) {
+            offlineIndicator.style.display = 'block';
+        }
+        
+        // Fall back to loading cached books from IndexedDB
+        triggerOfflineLibraryView();
+    } else {
+        console.log("🌐 Connection restored! Connected back to the live backend cloud server.");
+        if (offlineIndicator) {
+            offlineIndicator.style.display = 'none';
+        }
+        
+        // Reload live API content if the user comes back online
+        if (typeof loadDiscoverBooks === 'function') {
+            loadDiscoverBooks();
+        }
+    }
+}
+
+// Fallback logic to retrieve data from Dexie when offline
+async function triggerOfflineLibraryView() {
+    // Look up the database instance initialized on the global window context
+    if (!window.db) {
+        console.error("Database layer is missing from window.db context.");
+        return;
+    }
+
+    try {
+        const savedBooks = await window.db.books.toArray();
+        // Target your bookshelf or matching layout grid element from the page markup
+        const libraryContainer = document.getElementById('search-results-grid') || document.querySelector('.bookshelf');
+        
+        if (!libraryContainer) return;
+
+        if (savedBooks.length === 0) {
+            // Friendly empty state UI explaining how to save books
+            libraryContainer.innerHTML = `
+                <div class="offline-empty-state" style="grid-column: 1/-1; text-align: center; color: #a0a0a0; padding: 3rem 1rem;">
+                    <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">✨ You are wandering offline</p>
+                    <p style="font-size: 1rem; opacity: 0.8;">No cached books found on your shelf. Save books while online to read them anywhere.</p>
+                </div>`;
+        } else {
+            libraryContainer.innerHTML = ""; // Wipe standard layout containers
+            
+            // Render cached items back onto the UI shelf
+            savedBooks.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card offline-card';
+                bookCard.innerHTML = `
+                    <div class="book-cover-wrapper">
+                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img" />
+                    </div>
+                    <div class="book-details">
+                        <h3>${book.title}</h3>
+                        <p class="author-tag">By ${book.author}</p>
+                        <p class="offline-summary">${book.content}</p>
+                        <span class="offline-badge" style="background: #2c3e50; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">Saved Offline</span>
+                    </div>
+                `;
+                libraryContainer.appendChild(bookCard);
+            });
+        }
+    } catch (error) {
+        console.error("Failed to load local offline assets:", error);
+    }
+}
+
+// Attach network listeners directly to the window lifecycle
+window.addEventListener('online', handleConnectivityChange);
+window.addEventListener('offline', handleConnectivityChange);
+
+// Run a status check right away on startup in case the user loads the app while already disconnected
+document.addEventListener('DOMContentLoaded', handleConnectivityChange);

@@ -89,7 +89,8 @@ class BookMoodAnalyzer:
                 'sadness', 'anger', 'fear', 'disgust', 'anxiety', 'depression',
                 'frustration', 'disappointment', 'grief', 'despair', 'rage',
                 'heartbreak', 'anguish', 'sorrow', 'melancholy', 'dread', 'terror',
-                'horror', 'haunting', 'disturbing', 'unsettling', 'troubling', 'tragic'
+                'horror', 'haunting', 'disturbing', 'unsettling', 'troubling', 'tragic',
+                'bittersweet'
             ],
             'intensity_modifiers': [
                 'very', 'extremely', 'incredibly', 'absolutely', 'completely',
@@ -582,8 +583,8 @@ class BookMoodAnalyzer:
     
     def _get_timestamp(self) -> str:
         """Get current timestamp for metadata"""
-        from datetime import datetime
-        return datetime.utcnow().isoformat() + 'Z'
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc).isoformat() + 'Z'
     
     def _generate_mood_description(self, overall_sentiment: Dict, dynamic_moods: Dict) -> str:
         """Generate a human-readable mood description."""

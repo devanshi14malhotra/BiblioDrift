@@ -11,7 +11,7 @@ class MoodQuery:
     """Parsed mood query with normalized components."""
     original_query: str
     primary_moods: List[str]  # e.g., ['cozy', 'mysterious']
-    intensity: float  # 0-1, where 1 is very intense
+    intensity: float  # 0-2, where values >1 indicate intensified mood
     negations: List[str]  # Moods to exclude, e.g., ['violent', 'sad']
     themes: List[str]  # Literary themes, e.g., ['romance', 'adventure', 'mystery']
     confidence: float  # 0-1, how well we understood the query
@@ -172,7 +172,7 @@ class MoodQueryParser:
         return MoodQuery(
             original_query=query,
             primary_moods=primary_moods or ['atmospheric'],  # Fallback mood
-            intensity=min(intensity, 1.0),
+            intensity=min(intensity, 2.0),  # Allow intensity up to 2.0 to reflect modifiers
             negations=negations,
             themes=themes,
             confidence=confidence

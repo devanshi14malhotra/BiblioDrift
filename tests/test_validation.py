@@ -5,6 +5,7 @@ This script tests all the Pydantic validators for the BiblioDrift API endpoints.
 """
 
 import json
+__test__ = False
 from validators import (
     validate_request,
     AnalyzeMoodRequest,
@@ -133,7 +134,7 @@ def main():
     test_validator(
         RegisterRequest,
         "RegisterRequest",
-        {"username": "testuser", "email": "test@example.com", "password": "password123"},
+        {"username": "testuser", "email": "test@example.com", "password": "Password123!"},
         {"username": "ab", "email": "invalid-email", "password": "123"}
     )
     

@@ -1,0 +1,55 @@
+{
+  "name": "BiblioDrift",
+  "short_name": "BiblioDrift",
+  "description": "Discover books by mood, track your reading journey, and get AI-powered recommendations.",
+  "start_url": "/frontend/pages/index.html",
+  "scope": "/frontend/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f9f7f2",
+  "theme_color": "#2c2420",
+  "lang": "en",
+  "categories": ["books", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/images/biblioDrift_favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "frontend/assets/images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "frontend/assets/images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/frontend/pages/index.html",
+  "background_color": "#1a1a1a",
+  "theme_color": "#2c3e50",
+  "display": "standalone",
+  "orientation": "portrait",
+
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "My Library",
+      "short_name": "Library",
+      "description": "Open your personal book library",
+      "url": "/frontend/pages/library.html",
+      "icons": [{ "src": "assets/images/biblioDrift_favicon.png", "sizes": "any" }]
+    },
+    {
+      "name": "Chat with Elara",
+      "short_name": "Chat",
+      "description": "Chat with the AI bookseller",
+      "url": "/frontend/pages/chat.html",
+      "icons": [{ "src": "assets/images/biblioDrift_favicon.png", "sizes": "any" }]
+    }
+  ]
+
+}
