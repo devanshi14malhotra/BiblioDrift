@@ -301,11 +301,16 @@ class BookshelfRenderer3D {
         this.sortCriteria = 'title'; // Default sort
         this.filterCriteria = 'all'; // Default filter
         this.searchQuery = ''; // Default search query
-        this.currentView = 'shelves'; // 'shelves' or 'constellation'
+        this.currentView = 'shelves'; // 'shelves', 'constellation', or 'collections'
+        this.collections = [];
+        this.selectedCollection = null;
         this.constellationSimulation = null; // Store D3 simulation
         this.cleanupCallbacks = [];
         this.isDestroyed = false;
         this._modalBackdropHandler = null;
+        this._escHandler = null;
+        this._escListenerAttached = false;
+        this.assetsLoaded = false;
 
         // Create live region for screen reader announcements
         this.liveRegion = document.createElement('div');
@@ -330,6 +335,197 @@ class BookshelfRenderer3D {
         }
 
         this.init();
+    }
+
+    async load3DAssets() {
+        return new Promise((resolve) => {
+            this.showLoadingSpinner();
+            
+            const workerCode = `
+                self.onmessage = function(e) {
+                    const { models } = e.data;
+                    let parsedData = [];
+                    
+                    for (let i = 0; i < models.length; i++) {
+                        const model = models[i];
+                        // Simulate heavy synchronous parsing of 3D models to show worker offloading
+                        let vertices = 0;
+                        for (let j = 0; j < 1500000; j++) {
+                            vertices += Math.sqrt(j) * Math.sin(j);
+                        }
+                        
+                        parsedData.push({
+                            id: model.id,
+                            verticesCount: Math.abs(Math.floor(vertices)),
+                            status: 'parsed',
+                            timestamp: Date.now()
+                        });
+                        
+                        self.postMessage({ 
+                            type: 'progress', 
+                            progress: Math.round(((i + 1) / models.length) * 100),
+                            currentModel: model.id
+                        });
+                    }
+                    
+                    self.postMessage({ type: 'complete', data: parsedData });
+                };
+            `;
+            
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl);
+            
+            const mockModels = [
+                { id: 'shelf-wood-texture-high-res' },
+                { id: 'book-cover-geometry-base' },
+                { id: 'ambient-lighting-map' },
+                { id: 'dust-particles-mesh' },
+                { id: 'page-edges-displacement' },
+                { id: 'leather-normal-map' },
+                { id: 'gold-foil-reflection-probe' },
+                { id: 'room-environment-hdri' }
+            ];
+            
+            worker.onmessage = (e) => {
+                const { type, progress, data } = e.data;
+                if (type === 'progress') {
+                    this.updateLoadingSpinner(progress);
+                } else if (type === 'complete') {
+                    console.log('3D Assets loaded asynchronously via Web Worker:', data);
+                    worker.terminate();
+                    URL.revokeObjectURL(workerUrl);
+                    this.hideLoadingSpinner();
+                    this.assetsLoaded = true;
+                    resolve();
+                }
+            };
+            
+            worker.onerror = (error) => {
+                console.error('Web Worker error:', error);
+                this.hideLoadingSpinner();
+                this.assetsLoaded = true;
+                resolve();
+            };
+            
+            worker.postMessage({ models: mockModels });
+        });
+    }
+
+    showLoadingSpinner() {
+        let spinnerContainer = document.getElementById('bookshelf-3d-loader');
+        if (!spinnerContainer) {
+            spinnerContainer = document.createElement('div');
+            spinnerContainer.id = 'bookshelf-3d-loader';
+            spinnerContainer.style.cssText = \`
+                position: absolute;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(18, 18, 18, 0.85);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                z-index: 1000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #e0e0e0;
+                font-family: 'Inter', sans-serif;
+                transition: opacity 0.5s ease;
+                border-radius: 12px;
+            \`;
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'loader-spinner';
+            spinner.style.cssText = \`
+                width: 60px;
+                height: 60px;
+                border: 4px solid rgba(212, 175, 55, 0.2);
+                border-top: 4px solid #d4af37;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 20px;
+            \`;
+            
+            if (!document.getElementById('loader-keyframes')) {
+                const style = document.createElement('style');
+                style.id = 'loader-keyframes';
+                style.textContent = \`
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                \`;
+                document.head.appendChild(style);
+            }
+            
+            const textContainer = document.createElement('div');
+            textContainer.style.textAlign = 'center';
+            
+            const title = document.createElement('h3');
+            title.textContent = 'Preparing 3D Environment';
+            title.style.margin = '0 0 10px 0';
+            title.style.color = '#d4af37';
+            title.style.fontWeight = '500';
+            
+            const progressContainer = document.createElement('div');
+            progressContainer.style.cssText = \`
+                width: 250px;
+                height: 6px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 3px;
+                overflow: hidden;
+                margin: 0 auto;
+            \`;
+            
+            const progressBar = document.createElement('div');
+            progressBar.id = 'bookshelf-3d-progress-bar';
+            progressBar.style.cssText = \`
+                height: 100%;
+                width: 0%;
+                background: linear-gradient(90deg, #d4af37, #f3e5ab);
+                transition: width 0.3s ease;
+            \`;
+            
+            const progressText = document.createElement('div');
+            progressText.id = 'bookshelf-3d-progress-text';
+            progressText.textContent = 'Loading models... 0%';
+            progressText.style.fontSize = '14px';
+            progressText.style.marginTop = '10px';
+            progressText.style.color = '#a0a0a0';
+            
+            progressContainer.appendChild(progressBar);
+            textContainer.appendChild(title);
+            textContainer.appendChild(progressContainer);
+            textContainer.appendChild(progressText);
+            
+            spinnerContainer.appendChild(spinner);
+            spinnerContainer.appendChild(textContainer);
+            
+            const libContainer = document.getElementById('library-container') || document.querySelector('.main-content') || document.body;
+            if (libContainer !== document.body && window.getComputedStyle(libContainer).position === 'static') {
+                libContainer.style.position = 'relative';
+            }
+            libContainer.appendChild(spinnerContainer);
+        }
+        spinnerContainer.style.opacity = '1';
+        spinnerContainer.style.pointerEvents = 'all';
+    }
+
+    updateLoadingSpinner(progress) {
+        const progressBar = document.getElementById('bookshelf-3d-progress-bar');
+        const progressText = document.getElementById('bookshelf-3d-progress-text');
+        if (progressBar) progressBar.style.width = \`\${progress}%\`;
+        if (progressText) progressText.textContent = \`Loading high-res models... \${progress}%\`;
+    }
+
+    hideLoadingSpinner() {
+        const spinnerContainer = document.getElementById('bookshelf-3d-loader');
+        if (spinnerContainer) {
+            spinnerContainer.style.opacity = '0';
+            spinnerContainer.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (spinnerContainer.parentNode) {
+                    spinnerContainer.parentNode.removeChild(spinnerContainer);
+                }
+            }, 500);
+        }
     }
 
     getLibraryState() {
@@ -369,7 +565,10 @@ class BookshelfRenderer3D {
         this.cleanupCallbacks.push(() => target.removeEventListener(eventName, handler, options));
     }
 
-    init() {
+    async init() {
+        // Wait for 3D assets to load via Web Worker to prevent main thread blocking
+        await this.load3DAssets();
+
         // Sort listener
         const sortSelect = document.getElementById('library-sort');
         if (sortSelect) {
@@ -404,32 +603,69 @@ class BookshelfRenderer3D {
         // View Toggles
         const btnShelves = document.getElementById('view-shelves-btn');
         const btnConstellation = document.getElementById('view-constellation-btn');
+        const btnCollections = document.getElementById('view-collections-btn');
         const containerShelves = document.getElementById('library-shelves');
         const containerConstellation = document.getElementById('constellation-container');
+        const containerCollections = document.getElementById('collections-container');
 
-        if (btnShelves && btnConstellation) {
+        const switchView = (targetView) => {
+            this.currentView = targetView;
+            
+            // Update button styles
+            const btns = [
+                { el: btnShelves, view: 'shelves' },
+                { el: btnConstellation, view: 'constellation' },
+                { el: btnCollections, view: 'collections' }
+            ];
+            
+            btns.forEach(btn => {
+                if (btn.el) {
+                    if (btn.view === targetView) {
+                        btn.el.classList.add('active-view');
+                        btn.el.classList.replace('btn-secondary', 'btn-primary');
+                    } else {
+                        btn.el.classList.remove('active-view');
+                        btn.el.classList.replace('btn-primary', 'btn-secondary');
+                    }
+                }
+            });
+            
+            // Show/hide containers
+            const containers = [
+                { el: containerShelves, view: 'shelves' },
+                { el: containerConstellation, view: 'constellation' },
+                { el: containerCollections, view: 'collections' }
+            ];
+            
+            containers.forEach(c => {
+                if (c.el) {
+                    if (c.view === targetView) {
+                        c.el.classList.remove('hidden');
+                    } else {
+                        c.el.classList.add('hidden');
+                    }
+                }
+            });
+        };
+
+        if (btnShelves) {
             this.addManagedListener(btnShelves, 'click', () => {
-                this.currentView = 'shelves';
-                btnShelves.classList.add('active-view');
-                btnShelves.classList.replace('btn-secondary', 'btn-primary');
-                btnConstellation.classList.remove('active-view');
-                btnConstellation.classList.replace('btn-primary', 'btn-secondary');
-                
-                containerShelves.classList.remove('hidden');
-                containerConstellation.classList.add('hidden');
+                switchView('shelves');
                 this.refreshShelves();
             });
+        }
 
+        if (btnConstellation) {
             this.addManagedListener(btnConstellation, 'click', () => {
-                this.currentView = 'constellation';
-                btnConstellation.classList.add('active-view');
-                btnConstellation.classList.replace('btn-secondary', 'btn-primary');
-                btnShelves.classList.remove('active-view');
-                btnShelves.classList.replace('btn-primary', 'btn-secondary');
-                
-                containerShelves.classList.add('hidden');
-                containerConstellation.classList.remove('hidden');
+                switchView('constellation');
                 this.renderConstellation();
+            });
+        }
+
+        if (btnCollections) {
+            this.addManagedListener(btnCollections, 'click', () => {
+                switchView('collections');
+                this.loadAndRenderCollections();
             });
         }
 
@@ -455,6 +691,8 @@ class BookshelfRenderer3D {
     }
 
     refreshShelves() {
+        if (!this.assetsLoaded) return;
+
         const showCurrent = this.filterCriteria === 'all' || this.filterCriteria === 'current';
         const showWant = this.filterCriteria === 'all' || this.filterCriteria === 'want';
         const showFinished = this.filterCriteria === 'all' || this.filterCriteria === 'finished';
@@ -950,6 +1188,9 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
     openModal(book) {
         this.currentBook = book;
+        if (typeof window.logReadingActivity === 'function') {
+            window.logReadingActivity('view', `Interacted with "${book.title}" in 3D Library`);
+        }
 
         // Hide tooltip
         this.hideTooltip();
@@ -1349,6 +1590,153 @@ spine.addEventListener('blur', () => this.hideTooltip());
         if (actionsSection && reviewsSection && actionsSection.nextElementSibling !== reviewsSection) {
             reviewsSection.parentNode.insertBefore(actionsSection, reviewsSection);
         }
+        
+        // 8. Price Tracker Setup
+        const priceTrackerSection = document.getElementById('modal-price-tracker-section');
+        if (priceTrackerSection) {
+            // Reset state
+            priceTrackerSection.style.display = 'none';
+            const priceLatest = document.getElementById('modal-price-latest');
+            const authPrompt = document.getElementById('modal-price-auth-prompt');
+            const priceControls = document.getElementById('modal-price-controls');
+            const targetInput = document.getElementById('modal-price-target');
+            const setBtn = document.getElementById('modal-price-set-btn');
+            const activeAlert = document.getElementById('modal-price-active-alert');
+            const activeTarget = document.getElementById('modal-price-active-target');
+            const removeBtn = document.getElementById('modal-price-remove-btn');
+            
+            priceLatest.textContent = '';
+            authPrompt.style.display = 'none';
+            priceControls.style.display = 'none';
+            activeAlert.style.display = 'none';
+            
+            // Only show price tracker for books on the wishlist ("want" shelf)
+            const currentShelf = this.findBookShelf(book.id);
+            const localBook = window.libManager && typeof window.libManager.findBook === 'function' ? window.libManager.findBook(book.id) : null;
+            const shelfItemId = localBook ? localBook.db_id : null;
+
+            if (currentShelf === 'want' && shelfItemId) {
+                priceTrackerSection.style.display = 'block';
+                
+                const isLoggedIn = window.SafeStorage ? window.SafeStorage.get('isLoggedIn') === 'true' : false;
+                if (!isLoggedIn) {
+                    authPrompt.style.display = 'block';
+                } else {
+                    priceControls.style.display = 'block';
+                    
+                    const fetchPriceData = async () => {
+                        try {
+                            const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
+                            const priceRes = await fetch(`${MOOD_API_BASE}/books/${book.id}/prices`, {
+                                headers, credentials: 'include'
+                            });
+                            if (priceRes.ok) {
+                                const data = await priceRes.json();
+                                if (data.latest_prices && data.latest_prices.length > 0) {
+                                    const latest = data.latest_prices[0];
+                                    priceLatest.textContent = `Current: $${latest.price}`;
+                                } else {
+                                    priceLatest.textContent = 'Price: N/A';
+                                }
+                            }
+                            
+                            const alertsRes = await fetch(`${MOOD_API_BASE}/alerts`, {
+                                headers, credentials: 'include'
+                            });
+                            if (alertsRes.ok) {
+                                const alertsData = await alertsRes.json();
+                                const bookAlert = alertsData.alerts ? alertsData.alerts.find(a => a.shelf_item_id === shelfItemId && a.is_active) : null;
+                                if (bookAlert) {
+                                    activeAlert.style.display = 'flex';
+                                    activeTarget.textContent = `$${bookAlert.target_price}`;
+                                    activeAlert.dataset.alertId = bookAlert.id;
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Failed to fetch price data', err);
+                        }
+                    };
+                    
+                    fetchPriceData();
+                    
+                    const newSetBtn = setBtn.cloneNode(true);
+                    setBtn.parentNode.replaceChild(newSetBtn, setBtn);
+                    newSetBtn.addEventListener('click', async () => {
+                        const targetPrice = parseFloat(targetInput.value);
+                        if (!targetPrice || isNaN(targetPrice)) {
+                            alert("Please enter a valid target price.");
+                            return;
+                        }
+                        
+                        const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
+                        const user = window.libManager ? window.libManager.getUser() : null;
+                        if (!user) return;
+                        
+                        const originalHTML = newSetBtn.innerHTML;
+                        newSetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Setting...';
+                        newSetBtn.disabled = true;
+                        
+                        try {
+                            const res = await fetch(`${MOOD_API_BASE}/books/${book.id}/alert`, {
+                                method: 'POST',
+                                headers,
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    user_id: user.id,
+                                    shelf_item_id: shelfItemId,
+                                    target_price: targetPrice
+                                })
+                            });
+                            
+                            if (res.ok) {
+                                const data = await res.json();
+                                targetInput.value = '';
+                                activeAlert.style.display = 'flex';
+                                activeTarget.textContent = `$${targetPrice}`;
+                                activeAlert.dataset.alertId = data.alert.id;
+                            } else {
+                                const err = await res.json();
+                                alert(err.error || "Failed to set alert.");
+                            }
+                        } catch (error) {
+                            console.error("Alert setting failed", error);
+                            alert("Network error.");
+                        } finally {
+                            newSetBtn.innerHTML = originalHTML;
+                            newSetBtn.disabled = false;
+                        }
+                    });
+                    
+                    const newRemoveBtn = removeBtn.cloneNode(true);
+                    removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
+                    newRemoveBtn.addEventListener('click', async () => {
+                        const alertId = activeAlert.dataset.alertId;
+                        if (!alertId) return;
+                        
+                        const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
+                        
+                        try {
+                            const res = await fetch(`${MOOD_API_BASE}/alerts/${alertId}`, {
+                                method: 'DELETE',
+                                headers,
+                                credentials: 'include'
+                            });
+                            
+                            if (res.ok) {
+                                activeAlert.style.display = 'none';
+                                activeAlert.dataset.alertId = '';
+                            } else {
+                                alert("Failed to remove alert.");
+                            }
+                        } catch (error) {
+                            console.error("Alert removal failed", error);
+                            alert("Network error.");
+                        }
+                    });
+                }
+            }
+        }
+
 
         if (shelfSelect) {
             shelfSelect.setAttribute('aria-label', 'Move book to shelf');
@@ -1424,6 +1812,124 @@ spine.addEventListener('blur', () => this.hideTooltip());
                     window.BookPreview.open(book.id, book.title || 'Book Preview');
                 }
             });
+        }
+
+        // Custom Collections Section
+        let collectionsSection = document.getElementById('modal-collections-tagging');
+        if (!collectionsSection) {
+            collectionsSection = document.createElement('div');
+            collectionsSection.id = 'modal-collections-tagging';
+            collectionsSection.className = 'collections-tagging-section';
+            collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+            const infoPanel = document.querySelector('.book-info-panel');
+            if (infoPanel) {
+                const actions = document.querySelector('.book-actions-section');
+                infoPanel.insertBefore(collectionsSection, actions);
+            }
+        }
+
+        const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+        if (!userObj) {
+            collectionsSection.innerHTML = `
+                <h4 style="margin: 0 0 5px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem;">Save in Custom Collections</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;"><a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to save this book in custom shelves.</p>
+            `;
+        } else {
+            collectionsSection.innerHTML = `
+                <h4 style="margin: 0 0 8px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
+                </h4>
+                <div id="modal-collections-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
+                </div>
+            `;
+            
+            (async () => {
+                try {
+                    const cols = await window.CollectionAPI.getCollections(userObj.id);
+                    const listEl = document.getElementById('modal-collections-list');
+                    if (!listEl) return;
+                    
+                    if (cols.length === 0) {
+                        listEl.innerHTML = `
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">No custom collections created yet. Go to Custom Collections view to create one!</span>
+                        `;
+                        return;
+                    }
+                    
+                    const colsWithItems = await Promise.all(
+                        cols.map(async (c) => {
+                            try {
+                                return await window.CollectionAPI.getCollection(c.id);
+                            } catch (e) {
+                                return { id: c.id, name: c.name, items: [] };
+                            }
+                        })
+                    );
+                    
+                    listEl.innerHTML = '';
+                    colsWithItems.forEach(col => {
+                        const existingItem = col.items.find(item => item.google_books_id === book.id);
+                        const isChecked = !!existingItem;
+                        const label = document.createElement('label');
+                        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = isChecked;
+                        checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
+                        
+                        if (isChecked) {
+                            checkbox.dataset.bookId = existingItem.book_id;
+                        }
+                        
+                        checkbox.onchange = async () => {
+                            checkbox.disabled = true;
+                            try {
+                                if (checkbox.checked) {
+                                    const authorStr = Array.isArray(book.authors || book.author) ? (book.authors || book.author).join(', ') : (book.authors || book.author || 'Unknown Author');
+                                    const res = await window.CollectionAPI.addBookToCollection(
+                                        col.id,
+                                        userObj.id,
+                                        book.id,
+                                        book.title,
+                                        authorStr,
+                                        book.cover || book.thumbnail || ''
+                                    );
+                                    checkbox.dataset.bookId = res.item.book_id;
+                                    showToast(`Added to "${col.name}"`, 'success');
+                                } else {
+                                    const bookId = checkbox.dataset.bookId;
+                                    if (bookId) {
+                                        await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
+                                        delete checkbox.dataset.bookId;
+                                        showToast(`Removed from "${col.name}"`, 'success');
+                                    }
+                                }
+                            } catch (err) {
+                                checkbox.checked = !checkbox.checked; // Revert
+                                showToast(err.message, 'error');
+                            } finally {
+                                checkbox.disabled = false;
+                            }
+                        };
+                        
+                        label.appendChild(checkbox);
+                        
+                        const textSpan = document.createElement('span');
+                        textSpan.textContent = col.name;
+                        label.appendChild(textSpan);
+                        
+                        listEl.appendChild(label);
+                    });
+                } catch (e) {
+                    console.error('Modal collections load failed', e);
+                    const listEl = document.getElementById('modal-collections-list');
+                    if (listEl) {
+                        listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+                    }
+                }
+            })();
         }
 
         // Show modal and manage focus
@@ -1733,6 +2239,8 @@ spine.addEventListener('blur', () => this.hideTooltip());
     // =========================================================
     
     renderConstellation() {
+        if (!this.assetsLoaded) return;
+        
         const container = document.getElementById('constellation-container');
         if (!container) return;
         
@@ -1953,6 +2461,325 @@ spine.addEventListener('blur', () => this.hideTooltip());
             if (!event.active) self.constellationSimulation.alphaTarget(0);
             event.subject.fx = null;
             event.subject.fy = null;
+        }
+    }
+
+    async loadAndRenderCollections() {
+        const gridContainer = document.getElementById('collections-grid');
+        if (!gridContainer) return;
+
+        const user = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+        if (!user) {
+            gridContainer.innerHTML = `
+                <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 4rem 1rem;">
+                    <i class="fa-solid fa-user-lock" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                    <p style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 1.5rem;">Join us to organize your books in custom collections.</p>
+                    <a href="auth.html" class="btn-primary" style="text-decoration: none; padding: 0.6rem 1.5rem; border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-key"></i> Sign In to Account
+                    </a>
+                </div>
+            `;
+            const detailView = document.getElementById('collection-detail-view');
+            const gridView = document.getElementById('collections-grid-view');
+            if (detailView) detailView.classList.add('hidden');
+            if (gridView) gridView.classList.remove('hidden');
+            return;
+        }
+
+        gridContainer.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold);"></i>
+                <p style="margin-top: 1rem; color: var(--text-muted);">Unfolding your collections...</p>
+            </div>
+        `;
+
+        try {
+            const collections = await window.CollectionAPI.getCollections(user.id);
+            this.collections = collections;
+            this.renderCollectionsGrid();
+        } catch (err) {
+            console.error('Failed to load collections', err);
+            gridContainer.innerHTML = `
+                <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.5rem; color: #e53935; margin-bottom: 1rem;"></i>
+                    <p style="color: var(--text-main);">Failed to retrieve custom collections.</p>
+                    <button class="btn-secondary" onclick="window.bookshelfRenderer.loadAndRenderCollections()" style="margin-top: 1rem; border-radius: 20px;">
+                        <i class="fa-solid fa-rotate-right"></i> Try Again
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    renderCollectionsGrid() {
+        const gridContainer = document.getElementById('collections-grid');
+        if (!gridContainer) return;
+
+        gridContainer.innerHTML = '';
+
+        // Dash-bordered "Create New" card
+        const createCard = document.createElement('div');
+        createCard.className = 'collection-folder-card';
+        createCard.style.cssText = 'border: 2px dashed var(--glass-border); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; cursor: pointer; border-radius: 16px; padding: 1.5rem; transition: all 0.3s ease; text-align: center; background: none; box-sizing: border-box;';
+        createCard.innerHTML = `
+            <i class="fa-solid fa-folder-plus" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 1rem; transition: transform 0.3s ease;"></i>
+            <span style="font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--text-main); font-weight: bold;">New Collection</span>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; margin-bottom: 0;">Organize a new theme shelf</p>
+        `;
+        createCard.onmouseover = () => {
+            createCard.style.borderColor = 'var(--accent-gold)';
+            createCard.style.background = 'var(--glass-bg)';
+            createCard.querySelector('i').style.transform = 'scale(1.1)';
+        };
+        createCard.onmouseout = () => {
+            createCard.style.borderColor = 'var(--glass-border)';
+            createCard.style.background = 'none';
+            createCard.querySelector('i').style.transform = 'scale(1)';
+        };
+        createCard.onclick = () => this.openCollectionModal();
+        gridContainer.appendChild(createCard);
+
+        if (this.collections.length === 0) {
+            return;
+        }
+
+        this.collections.forEach(col => {
+            const card = document.createElement('div');
+            card.className = 'collection-folder-card';
+            card.style.cssText = 'background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; justify-content: space-between; min-height: 180px; box-sizing: border-box; position: relative; overflow: hidden;';
+            
+            const badgeBg = col.is_public ? 'var(--accent-gold)' : 'var(--text-muted)';
+            const badgeColor = col.is_public ? '#000' : '#fff';
+            
+            card.innerHTML = `
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                        <i class="fa-solid fa-folder" class="collection-icon-large" style="font-size: 2.5rem; color: var(--accent-gold); transition: transform 0.3s ease;"></i>
+                        <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 1px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">${col.is_public ? 'Public' : 'Private'}</span>
+                    </div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0 0 0.5rem 0; color: var(--text-main); font-weight: bold;">${col.name}</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${col.description || 'No description provided.'}</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;"><i class="fa-solid fa-book" style="margin-right: 4px;"></i> ${col.item_count} book${col.item_count !== 1 ? 's' : ''}</span>
+                    <span style="font-size: 0.8rem; color: var(--accent-gold); font-weight: bold; display: flex; align-items: center; gap: 4px;">Open <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i></span>
+                </div>
+            `;
+
+            card.onmouseover = () => {
+                card.style.transform = 'translateY(-5px) scale(1.02)';
+                card.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.3)';
+                card.style.borderColor = 'var(--accent-gold)';
+                card.querySelector('.fa-folder').style.transform = 'rotate(-10deg) scale(1.1)';
+            };
+            card.onmouseout = () => {
+                card.style.transform = 'none';
+                card.style.boxShadow = 'none';
+                card.style.borderColor = 'var(--glass-border)';
+                card.querySelector('.fa-folder').style.transform = 'none';
+            };
+
+            card.onclick = () => this.openCollectionDetail(col.id);
+
+            gridContainer.appendChild(card);
+        });
+    }
+
+    async openCollectionDetail(collectionId) {
+        const detailView = document.getElementById('collection-detail-view');
+        const gridView = document.getElementById('collections-grid-view');
+        const booksRow = document.getElementById('collection-books-row-3d');
+
+        if (!detailView || !gridView || !booksRow) return;
+
+        gridView.classList.add('hidden');
+        detailView.classList.remove('hidden');
+
+        booksRow.innerHTML = `
+            <div style="text-align: center; width: 100%; padding: 4rem;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold);"></i>
+                <p style="margin-top: 1rem; color: var(--text-muted);">Browsing collection items...</p>
+            </div>
+        `;
+
+        try {
+            const collection = await window.CollectionAPI.getCollection(collectionId);
+            this.selectedCollection = collection;
+
+            // Populate header
+            document.getElementById('selected-collection-name').textContent = collection.name;
+            document.getElementById('selected-collection-desc').textContent = collection.description || 'No description provided.';
+            
+            const statusBadge = document.getElementById('selected-collection-status');
+            if (statusBadge) {
+                statusBadge.textContent = collection.is_public ? 'Public' : 'Private';
+                statusBadge.style.background = collection.is_public ? 'var(--accent-gold)' : 'var(--text-muted)';
+                statusBadge.style.color = collection.is_public ? '#000' : '#fff';
+            }
+
+            // Bind actions
+            document.getElementById('back-to-collections-btn').onclick = () => this.closeCollectionDetail();
+            document.getElementById('edit-collection-btn').onclick = () => this.openCollectionModal(collection);
+            document.getElementById('delete-collection-btn').onclick = () => this.deleteCollection(collection.id);
+
+            // Render books as 3D book spines
+            booksRow.innerHTML = '';
+            const items = collection.items || [];
+            if (items.length === 0) {
+                booksRow.innerHTML = `
+                    <div style="text-align: center; width: 100%; padding: 5rem 1rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-book-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p style="font-size: 1.1rem; margin: 0;">This collection is completely empty.</p>
+                        <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">Explore books and add them to this collection!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            items.forEach((item, index) => {
+                // Map CollectionItem schema back to 3D Spine-friendly schema
+                const bookData = {
+                    id: item.google_books_id,
+                    title: item.title,
+                    author: item.authors || 'Unknown Author',
+                    cover: item.thumbnail || '',
+                    description: 'Added on ' + new Date(item.added_at).toLocaleDateString(),
+                    rating: 4.5,
+                    ratingCount: 1,
+                    categories: ['Collection Book'],
+                    spineColor: '#3e2723',
+                    textColor: '#fff',
+                    progress: 0,
+                    shelfType: 'collection',
+                    reviews: []
+                };
+
+                const spine = this.createBookSpine(bookData, index, 'collection');
+                
+                // Add a hover option or delete handler specifically for collections
+                const deleteIcon = document.createElement('div');
+                deleteIcon.className = 'spine-finished-badge';
+                deleteIcon.style.cssText = 'background: #e53935; color: white; top: auto; bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;';
+                deleteIcon.innerHTML = '<i class="fa-solid fa-trash-can" style="color: white; font-size: 0.8rem;"></i>';
+                deleteIcon.title = 'Remove from Collection';
+                deleteIcon.onclick = async (e) => {
+                    e.stopPropagation(); // Prevent opening modal
+                    if (confirm(`Remove "${bookData.title}" from this collection?`)) {
+                        try {
+                            await window.CollectionAPI.removeBookFromCollection(collectionId, item.book_id);
+                            showToast(`Removed "${bookData.title}" successfully`, 'success');
+                            this.openCollectionDetail(collectionId); // Reload
+                        } catch (err) {
+                            showToast(err.message, 'error');
+                        }
+                    }
+                };
+                spine.appendChild(deleteIcon);
+
+                booksRow.appendChild(spine);
+            });
+
+        } catch (err) {
+            console.error('Failed to load collection details', err);
+            booksRow.innerHTML = `
+                <div style="text-align: center; width: 100%; padding: 4rem;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.5rem; color: #e53935;"></i>
+                    <p style="margin-top: 1rem; color: var(--text-main);">Failed to load collection books.</p>
+                </div>
+            `;
+        }
+    }
+
+    closeCollectionDetail() {
+        const detailView = document.getElementById('collection-detail-view');
+        const gridView = document.getElementById('collections-grid-view');
+        if (detailView && gridView) {
+            detailView.classList.add('hidden');
+            gridView.classList.remove('hidden');
+            this.loadAndRenderCollections(); // Refresh counts
+        }
+    }
+
+    openCollectionModal(collection = null) {
+        const modal = document.getElementById('collection-modal');
+        const titleEl = document.getElementById('collection-modal-title');
+        const form = document.getElementById('collection-form');
+        const nameInput = document.getElementById('collection-name-input');
+        const descInput = document.getElementById('collection-desc-input');
+        const publicInput = document.getElementById('collection-public-input');
+
+        if (!modal || !form || !nameInput) return;
+
+        if (collection) {
+            titleEl.textContent = 'Edit Collection';
+            nameInput.value = collection.name;
+            descInput.value = collection.description || '';
+            publicInput.checked = collection.is_public;
+            form.dataset.collectionId = collection.id;
+        } else {
+            titleEl.textContent = 'Create Collection';
+            nameInput.value = '';
+            descInput.value = '';
+            publicInput.checked = false;
+            delete form.dataset.collectionId;
+        }
+
+        modal.showModal();
+
+        // Close handlers
+        document.getElementById('closeCollectionModalBtn').onclick = () => modal.close();
+        
+        // Save handler
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const user = parseStoredUser();
+            if (!user) {
+                showToast('Please sign in to perform this action', 'error');
+                modal.close();
+                return;
+            }
+
+            const name = nameInput.value.trim();
+            const desc = descInput.value.trim();
+            const isPublic = publicInput.checked;
+            const collectionId = form.dataset.collectionId;
+
+            const submitBtn = document.getElementById('collection-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                if (collectionId) {
+                    await window.CollectionAPI.updateCollection(collectionId, name, desc, isPublic);
+                    showToast('Collection updated successfully', 'success');
+                } else {
+                    await window.CollectionAPI.createCollection(user.id, name, desc, isPublic);
+                    showToast('Collection created successfully', 'success');
+                }
+                modal.close();
+                if (collectionId) {
+                    this.openCollectionDetail(collectionId);
+                } else {
+                    this.loadAndRenderCollections();
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Collection';
+            }
+        };
+    }
+
+    async deleteCollection(collectionId) {
+        if (confirm('Are you sure you want to delete this collection? This action cannot be undone.')) {
+            try {
+                await window.CollectionAPI.deleteCollection(collectionId);
+                showToast('Collection deleted successfully', 'success');
+                this.closeCollectionDetail();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
         }
     }
 

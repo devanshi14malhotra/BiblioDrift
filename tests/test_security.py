@@ -88,6 +88,62 @@ class TestJSONParsing:
         assert error is None
         assert data == [{"id": 1}]
 
+    def test_safe_get_json_validates_required_fields(self):
+        """safe_get_json should enforce required fields when a schema is provided."""
+        payload = json.dumps({"user_id": 123, "message": "hello"})
+
+        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+            success, data, error = safe_get_json(
+                force=True,
+                fields={"user_id": int, "message": str},
+            )
+
+        assert success
+        assert error is None
+        assert data == {"user_id": 123, "message": "hello"}
+
+    def test_safe_get_json_rejects_missing_required_fields(self):
+        """safe_get_json should fail fast when a required field is absent."""
+        payload = json.dumps({"user_id": 123})
+
+        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+            success, data, error = safe_get_json(
+                force=True,
+                fields={"user_id": int, "message": str},
+            )
+
+        assert not success
+        assert data is None
+        assert error == "Missing required field: message"
+
+    def test_safe_get_json_rejects_extra_fields_by_default(self):
+        """safe_get_json should reject unexpected keys unless explicitly allowed."""
+        payload = json.dumps({"user_id": 123, "message": "hello", "extra": True})
+
+        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+            success, data, error = safe_get_json(
+                force=True,
+                fields={"user_id": int, "message": str},
+            )
+
+        assert not success
+        assert data is None
+        assert error == "Unexpected field(s): extra"
+
+    def test_safe_get_json_rejects_oversized_arrays(self):
+        """safe_get_json should reject shallow payloads with huge arrays."""
+        payload = json.dumps({"data": [1, 2, 3, 4, 5]})
+
+        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+            success, data, error = safe_get_json(
+                force=True,
+                max_array_len=3,
+            )
+
+        assert not success
+        assert data is None
+        assert error == "JSON array has too many elements (max: 3)"
+
     def test_validate_depth_handles_deep_payload_without_recursion_error(self):
         """Iterative traversal should reject deep payloads without recursion overhead."""
         nested = {}
@@ -437,38 +493,61 @@ class TestContentTypeValidation:
         assert is_valid
         assert error is None
 
+    def test_allows_only_configured_content_types(self):
+        """Explicit allowlists should reject content types that are not listed."""
+        with patch(
+            "backend.security_parsers.request",
+            SimpleNamespace(content_type="application/x-www-form-urlencoded; charset=utf-8")
+        ):
+            is_valid, error = validate_content_type(allowed_types=["application/json"])
+
+        assert not is_valid
+        assert "application/x-www-form-urlencoded" in error
+
 
 class TestMiddlewareContentTypeValidation:
     """Test middleware Content-Type validation paths."""
 
-    def test_parameterized_form_content_type_is_accepted_consistently(self):
-        """Middleware and safe_request_handler should treat parameterized form headers the same way."""
+    def test_parameterized_content_type_follows_the_configured_allowlist(self):
+        """Middleware and safe_request_handler should accept and reject exactly what the allowlist permits."""
         app = Flask(__name__)
 
         @app.post("/middleware")
-        @validate_content_type_middleware
+        @validate_content_type_middleware(allowed_types=["application/json"])
         def middleware_endpoint():
             return jsonify({"ok": True})
 
         @app.post("/safe")
-        @safe_request_handler(require_json=False)
+        @safe_request_handler(require_json=False, allowed_types=["application/json"])
         def safe_endpoint():
             return jsonify({"ok": True})
 
         with app.test_client() as client:
-            middleware_response = client.post(
+            middleware_json_response = client.post(
+                "/middleware",
+                data='{"name":"value"}',
+                headers={"Content-Type": "application/json; charset=utf-8"},
+            )
+            middleware_form_response = client.post(
                 "/middleware",
                 data="name=value",
                 headers={"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
             )
-            safe_response = client.post(
+            safe_json_response = client.post(
+                "/safe",
+                data='{"name":"value"}',
+                headers={"Content-Type": "application/json; charset=utf-8"},
+            )
+            safe_form_response = client.post(
                 "/safe",
                 data="name=value",
                 headers={"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"},
             )
 
-        assert middleware_response.status_code == 200
-        assert safe_response.status_code == 200
+        assert middleware_json_response.status_code == 200
+        assert middleware_form_response.status_code == 400
+        assert safe_json_response.status_code == 200
+        assert safe_form_response.status_code == 400
 
 
 class TestHTMLContentProtection:
