@@ -10,10 +10,21 @@
     --glass-bg: rgba(255, 255, 255, 0.1);
     --glass-border: rgba(255, 255, 255, 0.2);
     --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --shadow-panel: 0 18px 45px rgba(44, 36, 32, 0.12);
     --input-bg: rgba(255, 255, 255, 0.5);
     --input-border: rgba(0, 0, 0, 0.1);
     --book-bg: #fff;
     --paper-color: #fffdf9;
+    --nav-active-color: #3a241c;
+    --nav-active-ring: rgba(58, 36, 28, 0.18);
+    --surface-panel: rgba(255, 255, 255, 0.72);
+    --surface-elevated: rgba(255, 255, 255, 0.92);
+    --surface-soft: rgba(255, 255, 255, 0.58);
+    --control-border: rgba(93, 64, 55, 0.14);
+    --control-focus-ring: rgba(212, 175, 55, 0.24);
+    --control-hover: rgba(255, 255, 255, 0.96);
+    --radius-panel: 24px;
+    --radius-control: 18px;
 
     /* Vibe Colors */
     --vibe-mystery: #78909c;
@@ -23,7 +34,18 @@
     /* Dimensions */
     --book-width: 160px;
     --book-height: 240px;
+
     --book-thick: 40px;
+}
+
+/* Fix: WCAG AA Contrast Floor - Issue #534 */
+.glass-panel,
+.book-tooltip,
+.book-detail-modal,
+[class*="glass"] {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 [data-theme="night"] {
@@ -38,10 +60,19 @@
     --glass-bg: rgba(0, 0, 0, 0.3);
     --glass-border: rgba(255, 255, 255, 0.05);
     --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.4);
+    --shadow-panel: 0 18px 45px rgba(0, 0, 0, 0.45);
     --input-bg: rgba(0, 0, 0, 0.2);
     --input-border: rgba(255, 255, 255, 0.1);
     --book-bg: #2c2420;
     --paper-color: #e0d5cb;
+    --nav-active-color: #fff2df;
+    --nav-active-ring: rgba(255, 242, 223, 0.22);
+    --surface-panel: rgba(19, 16, 14, 0.74);
+    --surface-elevated: rgba(34, 28, 25, 0.92);
+    --surface-soft: rgba(255, 255, 255, 0.06);
+    --control-border: rgba(255, 255, 255, 0.1);
+    --control-focus-ring: rgba(252, 203, 78, 0.24);
+    --control-hover: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -62,7 +93,13 @@ body {
     /* Classic serif for books */
     overflow-x: hidden;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+main {
+    flex: 1;
 }
 
 /* Explicit night-mode overrides — bulletproof fallback */
@@ -179,16 +216,52 @@ header {
     gap: 0.5rem;
 }
 
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
 .nav-links a {
     text-decoration: none;
     color: var(--text-muted);
-    margin-left: 2rem;
-    transition: color 0.3s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding-bottom: 10px;
+    transition: color 0.25s ease;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
-    color: var(--text-main);
+    color: var(--nav-active-color);
+}
+
+.nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--nav-active-color);
+    box-shadow: 0 0 0 3px var(--nav-active-ring);
+    opacity: 0;
+    transform: translateX(-50%) scale(0.35);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.nav-links a:hover::after {
+    opacity: 0.45;
+    transform: translateX(-50%) scale(0.75);
+}
+
+.nav-links a.active::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
 }
 
 /* === ANIMATED HOVER TOOLTIPS FOR NAVIGATION (NEW) === */
@@ -198,54 +271,27 @@ header {
 }
 
 .tooltip-text {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 8px);
-    transform: translateX(-50%) scale(0.95) translateY(6px);
-    padding: 10px 14px;
-    background: #fffaf3;
-    color: #2b2b2b;
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: all 0.25s ease;
-    z-index: 9999;
+    display: none;
 }
 
 .tooltip-text::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-    width: 12px;
-    height: 12px;
-    background: #fffaf3;
-    border-left: 1px solid rgba(0, 0, 0, 0.08);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    display: none;
 }
 
 .tooltip:hover .tooltip-text {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-40%) scale(1) translateY(0);
+    display: none;
 }
 
 .tooltip-text i {
-    margin-right: 5px;
-    color: var(--accent-gold);
+    display: none;
 }
 
 main {
     padding: 2rem 4rem;
     max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 /* --- Hero --- */
@@ -288,24 +334,30 @@ main {
 /* --- Curated Tables (Horizontal Scroll) --- */
 .curated-section {
     margin-bottom: 6rem;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 .section-header {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding-bottom: 0.5rem;
+    margin: 0 1rem 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .curated-row {
     display: flex;
     gap: 3rem;
     padding: 2rem 1rem;
-    overflow-x: visible;
-    /* Allow 3D overflow */
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Allow horizontal scrolling on mobile */
     perspective: 1000px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    flex-wrap: nowrap;
 }
 
 /* --- 3D Book Component --- */
@@ -314,7 +366,8 @@ main {
     height: var(--book-height);
     perspective: 1000px;
     cursor: pointer;
-    /* Random slight rotation for organic feel - handled in JS usually, but default here */
+    flex-shrink: 0;
+    min-width: var(--book-width);
 }
 
 .book {
@@ -472,27 +525,65 @@ main {
     margin-bottom: 1rem;
 }
 
+/* Read details Button */
+.read-details-btn {
+    background-color: #3e2723; 
+    color: #fffdf9;
+    border: 1px solid var(--accent-gold);
+    padding: 6px 16px; 
+    border-radius: 6px;
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px; 
+    margin: 8px auto 14px auto;
+    width: 96%; 
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.2s ease-in-out;
+    white-space: nowrap; 
+}
+
+.read-details-btn:hover {
+    background-color: #5d4037;
+}
+
+.book__face--back .book-actions {
+    justify-content: space-around;
+    padding: 0 10px;
+    width: 100%;
+    margin-bottom: -6px;
+}
+
 .book-actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 
 .btn-icon {
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    padding: 0.15rem 0.25rem;
     opacity: 0.6;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, transform 0.12s;
 }
 
 .btn-icon:hover {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 /* --- Virtual Shelves --- */
 .shelves-container {
+    width: 100%;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 4rem;
@@ -521,6 +612,9 @@ main {
     gap: 1.5rem;
     /* More spacing for expanded books */
     min-height: 280px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .shelf-row::after {
@@ -674,6 +768,8 @@ main {
     overflow-y: auto;
     box-shadow: var(--shadow-soft);
     border: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
 }
 
 .mood-modal-header {
@@ -905,6 +1001,7 @@ main {
     border: none;
     padding: 0;
     overflow: visible;
+    max-height: 95vh;
 }
 
 .glass-modal::backdrop {
@@ -922,7 +1019,9 @@ main {
     padding: 2.5rem;
     position: relative;
     overflow: hidden;
+    overflow-y: auto;
     animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-height: 90vh;
 }
 
 [data-theme="night"] .modal-content {
@@ -1111,6 +1210,29 @@ main {
 
     .modal-content {
         padding: 1.5rem;
+    }
+
+    .modal-info h2 {
+        font-size: 1.8rem;
+    }
+
+    .ai-insight-box {
+        padding: 1rem 1.2rem;
+    }
+
+    #modal-ai-note {
+        font-size: 0.95rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-preview {
+        width: 100%;
     }
 }
 
@@ -1478,6 +1600,7 @@ main {
     justify-content: center;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
 }
 
 .book-rec-cover img {
@@ -1723,13 +1846,12 @@ main {
 }
 
 /* ===== GENRE SECTION STYLES ===== */
-
-/* Genre Grid Layout */
 .genre-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-    padding: 1rem 0;
+display: grid;
+   
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.25rem;
+    padding: 2rem 0.5rem
 }
 
 /* Genre Card - Vintage Book Spine Look */
@@ -1740,20 +1862,20 @@ main {
     /* Horizontal layout */
     align-items: center;
     justify-content: flex-start;
-    padding: 1rem 1.5rem;
+    gap: 1rem;
+    padding: 1.35rem 1.6rem;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 
     /* Rectangular Shape */
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 
-    height: 80px;
-    /* Much smaller height */
+    min-height: 112px;
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    gap: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
 }
 
 /* Remove gold lines for cleaner small look */
@@ -1763,7 +1885,7 @@ main {
 }
 
 .genre-card i {
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     margin-bottom: 0;
     margin-right: 0;
     color: rgba(255, 255, 255, 0.95);
@@ -1786,11 +1908,12 @@ main {
     writing-mode: horizontal-tb;
     /* Horizontal Text */
     transform: none;
+    line-height: 1.2;
 }
 
 .genre-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
     z-index: 10;
 }
 
@@ -1927,12 +2050,14 @@ main {
 
 /* Genre Books Grid */
 .genre-books-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1.5rem;
     padding: 2rem;
     perspective: 1000px;
+    justify-items: center;
+    width: 100%;
+    max-width: 100%;
 }
 
 .genre-book-card {
@@ -1997,18 +2122,20 @@ main {
 /* Genre Responsive */
 @media (max-width: 900px) {
     .genre-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
 }
 
 @media (max-width: 600px) {
     .genre-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.9rem;
     }
 
     .genre-card {
-        padding: 1.25rem 0.75rem;
+        min-height: 96px;
+        padding: 1rem 1rem;
+        gap: 0.85rem;
     }
 
     .genre-card i {
@@ -2339,6 +2466,14 @@ main {
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* Fix: Ensure light text in day theme for contrast with dark background override */
+.book-tooltip .tooltip-title,
+.book-tooltip .tooltip-author,
+.book-tooltip .tooltip-rating-text,
+.book-tooltip .tooltip-description {
+    color: #f5f5f5 !important;
+}
+
 [data-theme="night"] .book-tooltip {
     background: rgba(44, 36, 32, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2434,9 +2569,11 @@ main {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background:
+        radial-gradient(circle at top, rgba(212, 175, 55, 0.12), transparent 38%),
+        rgba(0, 0, 0, 0.62);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -2453,13 +2590,14 @@ main {
 }
 
 .book-detail-content {
-    background: var(--bg-color);
-    border-radius: 24px;
+    background: linear-gradient(180deg, var(--surface-elevated), var(--surface-panel));
+    border-radius: var(--radius-panel);
     max-width: 900px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-panel);
+    border: 1px solid var(--glass-border);
     transform: translateY(30px) scale(0.95);
     transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     position: relative;
@@ -2500,6 +2638,14 @@ main {
     grid-template-columns: 280px 1fr;
     gap: 3rem;
     padding: 2.5rem;
+}
+
+.book-expanded-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+    padding: 1.25rem;
 }
 
 .book-cover-section {
@@ -2811,6 +2957,97 @@ main {
     }
 
     .spine-author {
+    .ai-insight-box,
+    .purchase-links-box,
+    .price-tracker-section,
+    .reading-progress-tracker,
+    .book-reviews-section,
+    .shelf-selection-row {
+        background: var(--surface-soft);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+    }
+    .ai-insight-box {
+        position: relative;
+        overflow: hidden;
+        margin-top: 0.25rem;
+    }
+    .ai-insight-box::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), transparent 45%);
+        pointer-events: none;
+    }
+    .ai-header,
+    .purchase-header,
+    .price-tracker-header,
+    .progress-tracker-header {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.85rem;
+        padding: 0.35rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(212, 175, 55, 0.12);
+        color: var(--accent-gold);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+    .purchase-links-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .purchase-links-container a,
+    .purchase-link-btn {
+        border-radius: 999px !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .purchase-links-container a:hover,
+    .purchase-link-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+    .price-tracker-section {
+        padding-top: 1rem;
+    }
+    .price-tracker-section input[type="number"] {
+        width: 100%;
+        padding: 0.75rem 0.95rem 0.75rem 2rem;
+        border-radius: 14px;
+        border: 1px solid var(--control-border);
+        background: var(--control-hover);
+        color: var(--text-main);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .price-tracker-section input[type="number"]:focus {
+        outline: none;
+        border-color: var(--accent-gold);
+        box-shadow: 0 0 0 4px var(--control-focus-ring);
+    }
+    .price-tracker-section button,
+    .progress-save-btn,
+    .progress-mode-btn {
+        border-radius: 999px;
+    }
+    .shelf-selection-row {
+        gap: 0.65rem;
+        align-items: stretch;
+        position: relative;
+    }
+    .library-select-label {
+        font-family: "Georgia", serif;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
         display: none;
     }
 
@@ -3761,59 +3998,52 @@ main {
 .book-info-panel {
     flex: 1;
     max-width: 550px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 2rem;
-    border-radius: 4px;
-    /* Paper-like corner */
-    box-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.15),
-        0 8px 0 -4px #f5f5f5,
-        0 8px 2px -3px rgba(0, 0, 0, 0.15),
-        0 16px 0 -8px #ebebeb,
-        0 16px 2px -7px rgba(0, 0, 0, 0.1);
-    /* Paper stack effect */
+    background: var(--surface-elevated);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    padding: 1.75rem;
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
     height: auto;
     max-height: 90vh;
     overflow-y: auto;
-    /* Allow scrolling for long content */
     position: relative;
     pointer-events: auto;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--glass-border);
 }
 
 .book-header {
-    border-bottom: 2px solid var(--accent-gold);
-    padding: 1rem 0 1.5rem 0;
-    margin-top: 1rem;
-    /* Space for close button */
+    border-bottom: 1px solid rgba(212, 175, 55, 0.28);
+    padding: 0.25rem 0 1rem 0;
+    margin-top: 0.5rem;
 }
 
 .book-info-panel .book-title-large {
     font-family: 'Playfair Display', serif;
-    font-size: 2.8rem;
-    color: #2c2420;
-    line-height: 1.1;
-    margin-bottom: 0.8rem;
+    font-size: clamp(2.15rem, 4vw, 2.8rem);
+    color: var(--text-main);
+    line-height: 1.08;
+    margin-bottom: 0.5rem;
 }
 
 .book-info-panel .book-author-large {
-    font-size: 1.4rem;
-    color: #6b5e55;
+    font-size: 1.15rem;
+    color: var(--text-muted);
     font-style: italic;
     font-family: 'Georgia', serif;
 }
 
 .book-stats-row {
-    display: flex;
-    justify-content: space-between;
-    background: #f9f7f2;
-    padding: 1.2rem;
-    border-radius: 8px;
-    border: 1px solid #e0dfdc;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    background: var(--surface-soft);
+    padding: 1rem 1.1rem;
+    border-radius: 18px;
+    border: 1px solid var(--glass-border);
 }
 
 .stat-item {
@@ -3856,22 +4086,29 @@ main {
 
 .book-actions-section {
     margin-top: auto;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e0dfdc;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--glass-border);
     display: flex;
     flex-wrap: wrap;
-    /* Prevent crowding */
-    gap: 0.8rem;
+    gap: 1rem;
     align-items: center;
+}
+
+.library-actions-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
 }
 
 .action-btn-primary {
     flex: 1;
-    padding: 0.6rem 1.2rem;
+    min-height: 42px;
+    padding: 0.7rem 1.05rem;
     font-size: 0.85rem;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: none;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.2px;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
@@ -3879,6 +4116,7 @@ main {
     gap: 0.5rem;
     cursor: pointer;
     border: none;
+    border-radius: 999px;
 }
 
 .add-to-library {
@@ -3892,6 +4130,26 @@ main {
     background-color: #3e2b25;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(93, 64, 55, 0.3);
+}
+
+.book-actions-section .action-btn-secondary,
+.book-actions-section .btn-preview,
+.book-actions-section .library-share-btn {
+    min-height: 42px;
+    padding: 0.7rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    background: var(--surface-soft);
+    color: var(--text-main);
+    box-shadow: none;
+}
+
+.book-actions-section .action-btn-secondary:hover,
+.book-actions-section .btn-preview:hover,
+.book-actions-section .library-share-btn:hover {
+    background: var(--control-hover);
+    transform: translateY(-1px);
+    border-color: var(--accent-gold);
 }
 
 .mark-read {
@@ -4225,6 +4483,11 @@ main {
     justify-content: center;
     gap: 1.2rem;
     flex-wrap: wrap;
+    padding: 1rem;
+    background: var(--surface-panel);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--shadow-panel);
 }
 
 /* Glass dropdown cards */
@@ -4232,14 +4495,17 @@ main {
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    position: relative;
+    min-width: 220px;
 
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
+    background: var(--surface-soft);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
 
-    border: 1px solid var(--glass-border);
-    border-radius: 14px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-control);
 
-    padding: 10px 16px;
+    padding: 0.85rem 1rem;
 
     box-shadow: var(--shadow-soft);
     transition: all 0.3s ease;
@@ -4247,9 +4513,14 @@ main {
 
 /* Hover = premium lift */
 .filter-group:hover {
-    transform: translateY(-3px) scale(1.02);
+    transform: translateY(-2px);
     border-color: var(--accent-gold);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+}
+
+.filter-group:focus-within {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 4px var(--control-focus-ring), var(--shadow-soft);
 }
 
 /* Icons glow */
@@ -4265,6 +4536,8 @@ main {
 
 /* Select styling */
 .sort-select {
+    -webkit-appearance: none;
+    appearance: none;
     background: transparent;
     border: none;
     outline: none;
@@ -4274,11 +4547,23 @@ main {
     color: var(--text-main);
 
     cursor: pointer;
+    width: 100%;
+    padding-right: 1.5rem;
 }
 
 /* Fancy focus */
 .sort-select:focus {
     color: var(--accent-gold);
+}
+
+.filter-group::after {
+    content: "\f078";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: var(--accent-gold);
+    font-size: 0.75rem;
+    pointer-events: none;
+    margin-left: auto;
 }
 
 .logo img {
@@ -4326,28 +4611,44 @@ main {
 
 .library-select-label {
     font-family: "Georgia", serif;
-    font-size: 1rem;
-    color: var(--wood-dark);
+    font-size: 0.9rem;
+    color: var(--text-muted);
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .library-shelf-select {
-    padding: 0 12px;
-    border-radius: 17px;
-    font-size: 0.9rem;
-    height: 40px;
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0 2.2rem 0 1rem;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    height: 44px;
     width: 100%;
-    max-width: 300px;
-    border: 1px solid var(--wood-light);
-    background: #fff;
+    max-width: none;
+    border: 1px solid var(--control-border);
+    background: linear-gradient(180deg, var(--control-hover), var(--surface-panel));
     color: var(--text-main);
     cursor: pointer;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+}
+
+.library-shelf-select:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 4px var(--control-focus-ring);
+}
+
+.library-shelf-select:hover {
+    border-color: var(--accent-gold);
+    transform: translateY(-1px);
 }
 
 .library-remove-btn {
-    background: linear-gradient(135deg, #ff4d4d, #e60000);
-    color: white;
+    background: linear-gradient(135deg, rgba(93, 64, 55, 0.98), rgba(122, 90, 77, 0.98));
+    color: #fff8f1;
     padding: 0 20px;
     font-size: 0.8rem;
     font-weight: 600;
@@ -4360,19 +4661,19 @@ main {
     border: none;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+    box-shadow: 0 8px 20px rgba(93, 64, 55, 0.22);
 }
 
 .library-remove-btn:hover {
-    background-color: #ff3333;
+    background: linear-gradient(135deg, rgba(77, 54, 47, 0.98), rgba(109, 80, 69, 0.98));
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+    box-shadow: 0 10px 22px rgba(93, 64, 55, 0.28);
 }
 
 .library-share-btn {
     margin-left: 10px;
     border: 1px solid var(--glass-border);
-    background-color: transparent;
+    background: var(--surface-soft);
     color: var(--text-main);
     padding: 0.3rem 0.6rem;
     border-radius: 20px;
@@ -4481,6 +4782,20 @@ main {
     transform: scale(1.05);
 }
 
+/* Animated active state for the sanctuary toggle button */
+#ambientToggle {
+    will-change: transform;
+}
+
+#ambientToggle.active {
+    transform: scale(1.08) rotate(-8deg) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32) !important;
+}
+
+#ambientToggle:active {
+    transform: scale(0.96) rotate(-2deg) !important;
+}
+
 .ambient-panel {
     position: absolute;
     bottom: 60px;
@@ -4496,11 +4811,17 @@ main {
     display: none;
     flex-direction: column;
     gap: 1rem;
+    /* Prepare for animated entrance */
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+    transition: opacity 260ms cubic-bezier(.2,.9,.3,1), transform 260ms cubic-bezier(.2,.9,.3,1);
     z-index: 10002;
 }
 
 .ambient-panel.active {
     display: flex !important;
+    opacity: 1 !important;
+    transform: translateY(0) scale(1) !important;
 }
 
 .ambient-option {
@@ -4515,6 +4836,450 @@ main {
     align-items: center;
     gap: 10px;
     font-size: 0.95rem;
+}
+
+/* Improved alignment: use a two-column grid so labels line up and controls align consistently */
+.ambient-panel .ambient-option,
+.ambient-panel .volume-control {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.ambient-panel .volume-control {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.ambient-panel .volume-control .range-wrap {
+    grid-column: 2 / 3;
+    position: relative;
+    width: 100%;
+}
+
+/* Library-specific alignment fixes */
+.library-page .ambient-panel .volume-control .range-wrap {
+    height: 18px;
+}
+
+.library-page .ambient-panel .volume-control .range-wrap .range-track,
+.library-page .ambient-panel .volume-control .range-wrap .range-fill {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"] {
+    height: 18px !important;
+    padding: 0 !important;
+}
+
+/* Final alignment nudge: move the thumb slightly down to perfectly center on the track across pages */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    transform: translateY(2px) !important;
+}
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
+    transform: translateY(2px) !important;
+}
+
+/* Library/profile specific small adjustments if needed */
+.library-page .ambient-panel .volume-control .range-wrap .range-track,
+.library-page .ambient-panel .volume-control .range-wrap .range-fill,
+#profile-page .ambient-panel .volume-control .range-wrap .range-track,
+#profile-page .ambient-panel .volume-control .range-wrap .range-fill {
+    /* keep track centered */
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+}
+
+.ambient-panel .volume-control .range-wrap .range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(0,0,0,0.12);
+    border-radius: 999px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.ambient-panel .volume-control .range-wrap .range-fill {
+    position: absolute;
+    left: 0;
+    height: 6px;
+    background: var(--accent-gold);
+    border-radius: 999px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 50%;
+    transition: width 240ms cubic-bezier(.2,1,.22,1);
+}
+
+.ambient-panel .volume-control .range-wrap input[type="range"] {
+    background: transparent !important;
+    position: relative;
+    z-index: 3;
+    width: 100%;
+}
+
+/* Profile-specific nudge: align the track/fill and thumb better on profile layout */
+.profile-page .ambient-panel .volume-control .range-wrap {
+    padding-top: 2px; /* small spacing to shift input area down slightly */
+}
+
+.profile-page .ambient-panel .volume-control .range-wrap .range-track,
+.profile-page .ambient-panel .volume-control .range-wrap .range-fill {
+    top: 54%;
+}
+
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"] {
+    height: 20px !important;
+}
+
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    margin-top: 0 !important;
+}
+
+/* Make the input tall enough so the thumb can be vertically centered; remove negative margins */
+.ambient-panel .volume-control .range-wrap input[type="range"] {
+    height: 18px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 18px !important;
+}
+
+/* Ensure the WebKit thumb is not shifted upward */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    margin-top: 0 !important;
+    position: relative !important;
+    top: 0 !important;
+}
+
+/* Ensure the Firefox thumb is vertically centered */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
+    margin: 0 !important;
+}
+
+.ambient-panel .ambient-option span,
+.ambient-panel .volume-control label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+}
+
+/* Make switches slightly larger and center their internal toggle */
+.switch {
+    width: 44px;
+    height: 26px;
+}
+
+.slider {
+    border-radius: 999px;
+    background-color: rgba(68,68,68,0.9);
+}
+
+.slider:before {
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+}
+
+/* Smooth transitions for switches */
+.slider {
+    transition: background-color 200ms cubic-bezier(.2,.9,.3,1);
+}
+
+.slider:before {
+    transition: transform 200ms cubic-bezier(.2,.9,.3,1), box-shadow 200ms;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-gold);
+}
+
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+/* Quick pop when a toggle is enabled */
+input:checked + .slider {
+    animation: togglePop 220ms cubic-bezier(.2,.9,.3,1);
+}
+
+@keyframes togglePop {
+    0% { transform: scale(0.96); }
+    60% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+}
+
+/* Staggered fade-in for options when panel opens */
+.ambient-panel.active .ambient-option,
+.ambient-panel.active .volume-control {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: optionFade 360ms cubic-bezier(.2,.9,.3,1) forwards;
+}
+.ambient-panel.active .ambient-option:nth-child(1) { animation-delay: 0.06s; }
+.ambient-panel.active .ambient-option:nth-child(2) { animation-delay: 0.12s; }
+.ambient-panel.active .ambient-option:nth-child(3) { animation-delay: 0.18s; }
+.ambient-panel.active .ambient-option:nth-child(4) { animation-delay: 0.24s; }
+.ambient-panel.active .volume-control { animation-delay: 0.3s; }
+
+@keyframes optionFade {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Button press micro-interaction */
+#ambientToggle {
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+#ambientToggle:active {
+    transform: scale(0.96) rotate(-6deg);
+}
+
+/* Accessible focus for switches */
+.switch input:focus-visible + .slider {
+    box-shadow: 0 0 0 4px rgba(212,175,55,0.16);
+}
+
+/* Volume slider styling */
+.ambient-panel input[type="range"] {
+    -webkit-appearance: none;
+    width: 130px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.12);
+    /* Use a solid gold background-image and size it with --ambient-fill for reliable Chrome rendering */
+    background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold));
+    background-size: calc(var(--ambient-fill,50) * 1%) 100%;
+    background-repeat: no-repeat;
+    border-radius: 999px;
+    outline: none;
+}
+
+.ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor: pointer;
+}
+
+/* Ensure base thumb has a transition so scaling animates smoothly on all pages */
+.ambient-panel input[type="range"]::-webkit-slider-thumb {
+    transition: transform 260ms cubic-bezier(.2,1,.22,1), box-shadow 260ms ease !important;
+    transform-origin: center center;
+    transform: scale(1) !important;
+}
+
+/* Animated track fill and thumb pop when volume changes */
+.ambient-panel input[type="range"] {
+    background: linear-gradient(90deg, var(--accent-gold) var(--ambient-fill,50%), rgba(0,0,0,0.12) var(--ambient-fill,50%));
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    transition: background 360ms cubic-bezier(.2,1,.22,1);
+}
+
+.ambient-panel input.volume-animate::-webkit-slider-thumb {
+    transform: scale(1.12) !important;
+    transition: transform 360ms cubic-bezier(.2,1,.22,1) !important;
+}
+
+/* Also ensure the base Firefox thumb transitions */
+.ambient-panel input[type="range"]::-moz-range-thumb {
+    transition: transform 260ms cubic-bezier(.2,1,.22,1), box-shadow 260ms ease;
+    transform-origin: center center;
+}
+
+.ambient-panel input.volume-animate::-moz-range-thumb {
+    transform: scale(1.12);
+    transition: transform 360ms cubic-bezier(.2,1,.22,1);
+}
+
+/* Fallback for Firefox: smooth track color via background */
+.ambient-panel input[type="range"]::-moz-range-track {
+    background: transparent;
+}
+
+/* Responsive ambient panel: full width on very small screens */
+@media (max-width: 420px) {
+    .ambient-panel {
+        right: 1rem;
+        bottom: 70px;
+        width: min(92vw, 320px);
+        padding: 0.9rem;
+    }
+
+    .ambient-panel input[type="range"] {
+        width: 100%;
+    }
+}
+
+/* Library page: make ambient volume control smaller for compact layout */
+.library-page .ambient-panel input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.12) !important;
+    background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold)) !important;
+    background-size: calc(var(--ambient-fill,50) * 1%) 100% !important;
+    background-repeat: no-repeat !important;
+    border-radius: 999px;
+    outline: none;
+}
+
+.library-page .ambient-panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+}
+
+.library-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px; /* center the larger thumb */
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+.library-page .ambient-panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    background: transparent;
+}
+
+.library-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+.library-page .ambient-panel .volume-control label {
+    font-size: 0.95rem;
+}
+
+/* Override responsive minimums that enlarge inputs (loaded in style-responsive.css) */
+.library-page .ambient-panel input[type="range"] {
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 6px !important;
+}
+.library-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    width: 18px !important;
+    height: 18px !important;
+}
+.library-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+/* Profile page: same compact ambient volume styling as library */
+#profile-page .ambient-panel input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.12) !important;
+    background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold)) !important;
+    background-size: calc(var(--ambient-fill,50) * 1%) 100% !important;
+    background-repeat: no-repeat !important;
+    border-radius: 999px;
+    outline: none;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+
+#profile-page .ambient-panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+}
+
+#profile-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px;
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+#profile-page .ambient-panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    background: transparent;
+}
+
+#profile-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+#profile-page .ambient-panel .volume-control label {
+    font-size: 0.95rem;
+}
+
+/* Strong overrides to ensure page-scoped slider sizing is applied last */
+.library-page .ambient-panel input[type="range"],
+.profile-page .ambient-panel input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 120px !important;
+    height: 6px !important;
+    background: linear-gradient(90deg, var(--accent-gold) 50%, rgba(0,0,0,0.12) 50%) !important;
+    border-radius: 999px !important;
+    outline: none !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+
+.library-page .ambient-panel input[type="range"]::-webkit-slider-thumb,
+.profile-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    margin-top: 0 !important;
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--accent-gold) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25) !important;
+    border: 3px solid rgba(255,255,255,0.8) !important;
+    cursor: pointer !important;
+}
+
+.library-page .ambient-panel input[type="range"]::-moz-range-thumb,
+.profile-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--accent-gold) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25) !important;
+    border: 3px solid rgba(255,255,255,0.8) !important;
+    cursor: pointer !important;
 }
 
 .switch {
@@ -4561,65 +5326,331 @@ input:checked+.slider {
 input:checked+.slider:before {
     transform: translateX(14px);
 }
-html[data-theme="night"] .glass-overlay,
-body.night-mode .glass-overlay,
-[data-theme="night"] .glass-overlay {
-    background-color: #1e140c !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+html, body {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23cca43b' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23cca43b' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, auto !important;
+}
+*:hover {
+  cursor: pointer !important; 
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23ffca3a' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23ffca3a' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, pointer !important;
 }
 
-html[data-theme="night"] .tooltip-title,
-body.night-mode .tooltip-title {
-    color: #ffffff !important;
+/* ============================================================
+   AMBIENT VOLUME SLIDER — SINGLE SOURCE OF TRUTH
+   Replace ALL existing slider/range rules in style.css with this block.
+   Remove every other rule targeting:
+     - .ambient-panel input[type="range"]
+     - .library-page .ambient-panel input[type="range"]
+     - #profile-page .ambient-panel input[type="range"]
+     - .ambient-panel .volume-control .range-wrap ...
+     - Any block with margin-top on ::-webkit-slider-thumb inside ambient-panel
+   ============================================================ */
+
+/* 1. Volume control layout */
+.ambient-panel .volume-control {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
 }
 
-html[data-theme="night"] .tooltip-author,
-body.night-mode .tooltip-author {
-    color: #cccccc !important;
+.ambient-panel .volume-control label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    white-space: nowrap;
 }
 
-
-.footer-logo {
-  height: 40px;
-  width: auto;
+/* 2. The wrapper that stacks track, fill, and input */
+.ambient-panel .volume-control .range-wrap {
+    position: relative;
+    width: 100%;
+    height: 18px;          /* fixed height — track and thumb share this axis */
+    display: flex;
+    align-items: center;   /* vertically centers the <input> */
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.3rem;
-  font-weight: bold;
+/* 3. Track and fill — absolutely positioned, vertically centred */
+.ambient-panel .volume-control .range-wrap .range-track,
+.ambient-panel .volume-control .range-wrap .range-fill {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 6px;
+    border-radius: 999px;
+    pointer-events: none;
 }
 
-.main-footer {
- 
-  padding: 4rem 2rem 1rem;
+.ambient-panel .volume-control .range-wrap .range-track {
+    right: 0;
+    background: rgba(0, 0, 0, 0.15);
+    z-index: 1;
 }
 
-.footer-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2rem;
+.ambient-panel .volume-control .range-wrap .range-fill {
+    background: var(--accent-gold);
+    width: 50%;            /* JS will update this dynamically */
+    transition: width 240ms cubic-bezier(.2, 1, .22, 1);
+    z-index: 2;
 }
 
-.footer-container a {
- 
-  text-decoration: none;
-  transition: color 0.3s ease;
+/* 4. The actual <input> — transparent, sits on top */
+.ambient-panel .volume-control .range-wrap input[type="range"],
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"],
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"],
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    position: relative;
+    z-index: 3;
+    width: 100% !important;
+    height: 18px !important;   /* matches .range-wrap height */
+    min-height: 0 !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-
-
-.social-icons {
-  display: flex;
-  gap: 1rem;
+/* 5. WebKit track — transparent (fill handled by .range-fill div) */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px !important;
+    background: transparent !important;
+    border-radius: 999px;
 }
 
-.footer-bottom {
-  text-align: center;
-  margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: 1px solid #374151;
+/* 6. WebKit thumb — THE KEY FIX: margin-top centers it on the 6px track */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: var(--accent-gold) !important;
+    border: 3px solid rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    cursor: pointer !important;
+    margin-top: -6px !important;   /* (18px thumb - 6px track) / 2 = 6px */
+    transform: none !important;    /* kill any conflicting translateY */
+    transition: transform 260ms cubic-bezier(.2, 1, .22, 1),
+                box-shadow 260ms ease !important;
 }
 
+/* Thumb hover */
+.ambient-panel .volume-control .range-wrap input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.15) !important;
+    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.5) !important;
+}
+
+/* Thumb pop animation (JS adds .volume-animate class) */
+.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-webkit-slider-thumb {
+    transform: scale(1.2) !important;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.6) !important;
+}
+
+/* 7. Firefox track */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track {
+    height: 6px !important;
+    background: transparent !important;
+    border-radius: 999px;
+}
+
+/* 8. Firefox thumb */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: var(--accent-gold) !important;
+    border: 3px solid rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    cursor: pointer !important;
+    /* Firefox auto-centers the thumb — no margin-top needed */
+}
+
+.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-moz-range-thumb {
+    transform: scale(1.2);
+    transition: transform 360ms cubic-bezier(.2, 1, .22, 1);
+}
+
+/* ============================================================
+   AMBIENT VOLUME SLIDER — SINGLE SOURCE OF TRUTH
+   Replace ALL existing slider/range rules in style.css with this block.
+   Remove every other rule targeting:
+     - .ambient-panel input[type="range"]
+     - .library-page .ambient-panel input[type="range"]
+     - #profile-page .ambient-panel input[type="range"]
+     - .ambient-panel .volume-control .range-wrap ...
+     - Any block with margin-top on ::-webkit-slider-thumb inside ambient-panel
+   ============================================================ */
+
+/* 1. Volume control layout */
+.ambient-panel .volume-control {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.ambient-panel .volume-control label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+/* 2. The wrapper that stacks track, fill, and input */
+.ambient-panel .volume-control .range-wrap {
+    position: relative;
+    width: 100%;
+    height: 18px;          /* fixed height — track and thumb share this axis */
+    display: flex;
+    align-items: center;   /* vertically centers the <input> */
+}
+
+/* 3. Track and fill — absolutely positioned, vertically centred */
+.ambient-panel .volume-control .range-wrap .range-track,
+.ambient-panel .volume-control .range-wrap .range-fill {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 6px;
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+.ambient-panel .volume-control .range-wrap .range-track {
+    right: 0;
+    background: rgba(0, 0, 0, 0.15);
+    z-index: 1;
+}
+
+.ambient-panel .volume-control .range-wrap .range-fill {
+    background: var(--accent-gold);
+    width: 50%;            /* JS will update this dynamically */
+    transition: width 240ms cubic-bezier(.2, 1, .22, 1);
+    z-index: 2;
+}
+
+/* 4. The actual <input> — transparent, sits on top */
+.ambient-panel .volume-control .range-wrap input[type="range"],
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"],
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"],
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    position: relative;
+    z-index: 3;
+    width: 100% !important;
+    height: 18px !important;   /* matches .range-wrap height */
+    min-height: 0 !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 5. WebKit track — transparent (fill handled by .range-fill div) */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px !important;
+    background: transparent !important;
+    border-radius: 999px;
+}
+
+/* 6. WebKit thumb — THE KEY FIX: margin-top centers it on the 6px track */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: var(--accent-gold) !important;
+    border: 3px solid rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    cursor: pointer !important;
+    margin-top: -6px !important;   /* (18px thumb - 6px track) / 2 = 6px */
+    transform: none !important;    /* kill any conflicting translateY */
+    transition: transform 260ms cubic-bezier(.2, 1, .22, 1),
+                box-shadow 260ms ease !important;
+}
+
+/* Thumb hover */
+.ambient-panel .volume-control .range-wrap input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.15) !important;
+    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.5) !important;
+}
+
+/* Thumb pop animation (JS adds .volume-animate class) */
+.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-webkit-slider-thumb {
+    transform: scale(1.2) !important;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.6) !important;
+}
+
+/* 7. Firefox track */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track {
+    height: 6px !important;
+    background: transparent !important;
+    border-radius: 999px;
+}
+
+/* 8. Firefox thumb */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
+#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: var(--accent-gold) !important;
+    border: 3px solid rgba(255, 255, 255, 0.85) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    cursor: pointer !important;
+    /* Firefox auto-centers the thumb — no margin-top needed */
+}
+
+.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-moz-range-thumb {
+    transform: scale(1.2);
+    transition: transform 360ms cubic-bezier(.2, 1, .22, 1);
+}
+
+/* --- Mood Sync Theme System Overrides --- */
+[data-mood] {
+    --bg-color: var(--theme-bg) !important;
+    --text-main: var(--theme-text) !important;
+    --text-muted: var(--theme-text-muted) !important;
+    --input-border: var(--theme-border) !important;
+    --book-bg: var(--theme-surface) !important;
+    --header-bg: var(--theme-bg) !important;
+    --accent-gold: var(--theme-accent) !important;
+}
