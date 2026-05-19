@@ -24,6 +24,7 @@
         content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
@@ -42,43 +43,43 @@
 
 <body class="library-page">
 
-    <header>
-        <a href="index.html" class="logo">
-            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-        </a>
-        <div class="header-controls">
-            <div class="search-bar">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-                <i class="fa-solid fa-search search-icon"></i>
-            </div>
-            <nav class="nav-links">
-                <div class="tooltip">
-                    <a href="index.html">Discovery</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
-                </div>
-                <div class="tooltip">
-                    <a href="vault.html">My Vault</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
-                </div>
-                <div class="tooltip">
-                    <a href="library.html" class="active">My Library</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-                </div>
-                <div class="tooltip">
-                    <a href="chat.html">Chat</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-                </div>
-                <!-- DYNAMIC AUTH LINK -->
-                <div class="tooltip">
-                    <a href="auth.html" id="navAuthLink">Sign In</a>
-                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
-                </div>
-            </nav>
-            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-                <i class="fa-solid fa-moon"></i>
-            </button>
+      <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html" >Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
-    </header>
+        <div class="tooltip">
+          <a href="vault.html" >My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" class="active">My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html" >Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
 
     <main>
         <section class="hero library-hero">
@@ -88,6 +89,9 @@
             <button id="export-library" class="btn-icon library-export-btn" title="Export Library">
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
+            <div id="library-sync-status" hidden aria-live="polite" style="margin: 0.75rem auto 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: rgba(44, 36, 32, 0.08); color: var(--text-secondary);">
+                Synced
+            </div>
             <div class="view-toggles" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
                 <button id="view-shelves-btn" class="btn-primary active-view"
                     style="border-radius: 20px; padding: 0.5rem 1.5rem;">
@@ -576,7 +580,8 @@
       </div>
     </dialog>
 
-    <script src="../js/ambient.js"></script>
+    <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
 </body>
 

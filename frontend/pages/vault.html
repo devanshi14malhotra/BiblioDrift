@@ -54,62 +54,27 @@
   <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
 
   <style>
-    /* Global CSS Variable System for Perfect Contrast Synchronization */
-    :root[data-theme="dark"] {
-      --bg-global: #120c0a;
-      --bg-surface: #1c1512;
-      --bg-card: linear-gradient(145deg, #231b18, #1a1311);
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-focus: #c9a0dc;
-      --text-main: #f5ebe6;
-      --text-muted: #a69288;
-      --field-bg: rgba(255, 255, 255, 0.04);
-      --shelf-bg: #231a16;
+    /* Map vault-specific variables to app-wide variables for uniformity */
+    :root {
+      --bg-surface: var(--bg-color);
+      --bg-card: var(--input-bg);
+      --border-color: var(--glass-border);
+      --border-focus: var(--accent-gold);
+      --field-bg: var(--input-bg);
+      --shelf-bg: var(--wood-dark);
+      --shelf-shadow: rgba(0, 0, 0, 0.4);
+      --reader-bg: rgba(0, 0, 0, 0.9);
+      --page-bg: var(--paper-color);
+      --page-text: var(--text-main);
+    }
+
+    [data-theme="night"] {
       --shelf-shadow: rgba(0, 0, 0, 0.8);
-      --header-bg: #1a121000;
-      --footer-bg: #1a1210;
-      --reader-bg: rgba(15, 10, 8, 0.98);
-      --page-bg: #fbf6f0;
-      --page-text: #2c2421;
     }
 
-    :root[data-theme="light"] {
-      --bg-global: #fcfaf7;
-      --bg-surface: #f3ede6;
-      --bg-card: linear-gradient(145deg, #ffffff, #f7f1ea);
-      --border-color: rgba(0, 0, 0, 0);
-      --border-focus: #9b59b6;
-      --text-main: #1c1412;
-      --text-muted: #705e55;
-      --field-bg: rgba(0, 0, 0, 0.03);
-      --shelf-bg: #e5dacb;
-      --shelf-shadow: rgba(0, 0, 0, 0.15);
-      --header-bg: #ffffff00;
-      --footer-bg: #eae0d5;
-      --reader-bg: rgba(245, 240, 235, 0.99);
-      --page-bg: #ffffff;
-      --page-text: #1c1412;
-    }
-
-    body {
-      background-color: var(--bg-global) !important;
-      color: var(--text-main) !important;
-      font-family: 'Georgia', serif;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
+    /* Remove body, header, footer overrides so style.css takes over */
     header, .main-footer, .hero, section, div, input, textarea, select {
-      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
-    }
-
-    header {
-      background-color: var(--header-bg) !important;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .main-footer {
-      background-color: var(--footer-bg) !important;
-      border-top: 1px solid var(--border-color);
+      transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
     }
 
     /* Form Fields */
@@ -536,42 +501,43 @@
 </head>
 
 <body>
-   <header>
-        <a href="index.html" class="logo">
-            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-        </a>
-        <div class="header-controls">
-            <div class="search-bar">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling..." />
-                <i class="fa-solid fa-search search-icon"></i>
-            </div>
-            <nav class="nav-links">
-                <div class="tooltip">
-                    <a href="index.html">Discovery</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
-                </div>
-                <div class="tooltip">
-                    <a href="vault.html">My Vault</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
-                </div>
-                <div class="tooltip">
-                    <a href="library.html">My Library</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-                </div>
-                <div class="tooltip">
-                    <a href="chat.html" class="active">Chat</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-                </div>
-                <div class="tooltip">
-                    <a href="auth.html">Sign In</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
-                </div>
-            </nav>
-            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-                <i class="fa-solid fa-moon"></i>
-            </button>
+     <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html" >Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
-    </header>
+        <div class="tooltip">
+          <a href="vault.html" class="active">My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" >My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html" >Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
 
   <main style="padding: 40px 20px; max-width: 1200px; margin: 0 auto;">
     <section class="hero" style="text-align: center; margin-bottom: 40px;">
@@ -662,57 +628,14 @@
     </div>
   </main>
 
-  <div id="immersiveBookReader" class="realistic-book-overlay">
-    <button class="close-reader-trigger" id="closeReaderBtn" title="Close Book Workspace Layout Layer"><i class="fa-solid fa-xmark"></i></button>
-    <div class="book-spread-container" id="bookSpreadTarget"></div>
-  </div>
-
-  <footer class="main-footer">
-    <div class="footer-container">
-      <div class="footer-brand">
-        <a href="/" class="logo">
-          <img style="height: 40px" src="/assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-        </a>
-        <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
-        <p class="footer-subtext">&mdash; Emily Dickinson</p>
-      </div>
-      <div class="footer-nav">
-        <h3>Explore</h3>
-        <ul>
-          <li><a href="/">Discovery</a></li>
-          <li><a href="/vault">My Vault</a></li>
-          <li><a href="/library">My Library</a></li>
-          <li><a href="/chat">Literary Chat</a></li>
-        </ul>
-      </div>
-      <div class="footer-legal">
-        <h3>Legal</h3>
-        <ul>
-          <li><a href="privacy-policy.html">Privacy Policy</a></li>
-          <li><a href="terms-and-conditions.html">Terms & Conditions</a></li>
-        </ul>
-      </div>
-      <div class="footer-social">
-        <h3>Connect</h3>
-        <div class="social-icons">
-          <a href="https://www.linkedin.com/in/devanshi5malhotra/" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-          <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" rel="noopener noreferrer" title="GitHub"><i class="fa-brands fa-github"></i></a>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 BiblioDrift. Curated with <i class="fa-solid fa-heart"></i> for book lovers.</p>
-    </div>
-  </footer>
-
+  <!-- Back to Top Button -->
   <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
     <i class="fa-solid fa-arrow-up"></i>
   </button>
 
   <!-- Ambient Sanctuary UI -->
   <div class="ambient-sanctuary">
-    <button id="ambientToggle" title="Ambient Sanctuary">
+    <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
       <i class="fa-solid fa-leaf"></i>
     </button>
     <div id="ambientPanel" class="ambient-panel">
@@ -747,16 +670,28 @@
       </div>
       <div class="volume-control">
         <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
-        <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+        <div class="range-wrap">
+          <div class="range-track" aria-hidden="true"></div>
+          <div class="range-fill" aria-hidden="true"></div>
+          <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="/js/config.js"></script>
-  <script src="/js/security.js"></script>
-  <script src="/script/header-scroll.js"></script>
-  <script src="/js/ambient.js"></script>
-  <script src="/js/pwa.js"></script>
+
+  <div id="immersiveBookReader" class="realistic-book-overlay">
+    <button class="close-reader-trigger" id="closeReaderBtn" title="Close Book Workspace Layout Layer"><i class="fa-solid fa-xmark"></i></button>
+    <div class="book-spread-container" id="bookSpreadTarget"></div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/security.js"></script>
+  <script src="../script/header-scroll.js"></script>
+  <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
+  <script src="../js/footer.js"></script>
+  <script src="../js/pwa.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -781,6 +716,7 @@
         
         document.documentElement.setAttribute('data-theme', nextTheme);
         localStorage.setItem('bibliodrift_theme', nextTheme);
+        if (typeof restoreTheme === 'function') restoreTheme();
         updateThemeToggleButton(nextTheme);
       });
 

@@ -109,6 +109,8 @@ When proposing an enhancement, describe:
 4. Include screenshots for visible UI changes.
 5. Reference the related issue if one exists.
 
+If label automation is enabled in the repository, `gssoc:approved` is added when the PR has an approval on its current head commit and is removed again if that approval becomes stale after new commits.
+
 ## Code Style
 
 - Keep the frontend vanilla unless a change explicitly needs otherwise.
