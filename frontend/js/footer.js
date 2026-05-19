@@ -17,11 +17,16 @@ const createFooter = () => {
         <nav class="footer-nav" aria-label="Footer Navigation">
           <h3>Explore</h3>
           <ul>
-            <li><a href="../index.html">Discovery</a></li>
-            <li><a href="../library.html">My Library</a></li>
-            <li><a href="../chat.html">Literary Chat</a></li>
-            <li><a href="../auth.html">Account</a></li>
-          </ul>
+            <li><a href="index.html">Discovery</a></li>
+            <li><a href="vault.html">My Vault</a></li>
+            <li><a href="library.html">My Library</a></li>
+            <li><a href="chat.html">Literary Chat</a></li>
+            <li><a href="auth.html">Account</a></li>
+            <li>
+          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank">
+           Repository
+          </a> 
+        </ul>
         </nav>
 
         <div class="footer-legal">
@@ -37,9 +42,10 @@ const createFooter = () => {
           <h3>Connect</h3>
           <div class="social-icons">
             <a href="https://www.linkedin.com/in/devanshi5malhotra/" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-            <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-            <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <a href="https://discord.com/users/868410133703696394" target="_blank" rel="noopener noreferrer" aria-label="Discord">
+              <i class="fab fa-discord"></i>
+            </a>
+            <a href="https://github.com/devanshi14malhotra" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <i class="fa-brands fa-github"></i>
             </a>
           </div>

@@ -15,7 +15,7 @@
 
   <script src="../js/db.js"></script>
 
-  <script src="../js/app.js"></script>
+  <!-- <script src="../js/app.js"></script> -->
   <script src="../js/library-3d.js"></script>
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,7 +24,8 @@
   <title>BiblioDrift | Find yourself in the pages</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
-  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="../css/pwa.css">
+  <link rel="manifest" href="../manifest.json">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -37,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
   <!-- PWA -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#2c2420">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -46,7 +47,7 @@
 </head>
 
 <body>
-  <header>
+    <header>
     <a href="index.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
@@ -61,16 +62,20 @@
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
-          <a href="library.html">My Library</a>
+          <a href="vault.html" >My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" >My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
         <div class="tooltip">
-          <a href="chat.html">Chat</a>
+          <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
         <!-- DYNAMIC AUTH LINK -->
         <div class="tooltip">
-          <a href="auth.html" id="navAuthLink">Sign In</a>
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
           <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
         </div>
       </nav>
@@ -91,6 +96,13 @@
       <div class="section-header">
         <h2 id="search-query-display">Search Results</h2>
         <span><i class="fa-solid fa-magnifying-glass"></i> Exploring your query</span>
+      </div>
+      <!-- Mood-Tag Filter Bar -->
+      <div id="mood-filter-bar" class="mood-filter-bar" hidden>
+        <div class="filter-label">Filter by mood:</div>
+        <div class="filter-chips" id="filter-chips">
+          <!-- Dynamically populated chips -->
+        </div>
       </div>
       <div class="curated-row" id="search-results-grid">
         <!-- Dynamically Appended Books -->
@@ -190,6 +202,13 @@
                 <div class="text-skeleton skeleton" style="width: 70%"></div>
               </div>
             </div>
+            <!-- Added "Where to Buy" section -->
+            <div class="purchase-links-box" style="margin-top: 15px;">
+              <div class="purchase-header"><i class="fa-solid fa-cart-shopping"></i><span> Where to Buy</span></div>
+              <div id="modal-purchase-links" class="purchase-links-container">
+                <div class="text-skeleton skeleton"></div>
+              </div>
+            </div>
             <div class="modal-actions">
               <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
               <button id="modal-preview-btn" class="btn-preview"><i class="fa-solid fa-book-open"></i> Preview</button>
@@ -206,10 +225,14 @@
 
 <!--The footer is being called usingt footer.js.-->
   <script src="../js/config.js"></script>
+  <script src="../js/security.js"></script>
   <script src="../js/app.js"></script>
   <script src="../js/book-preview.js"></script>
+  <script src="../js/pwa.js"></script>
   <script src="../js/footer.js"></script>
   <script src="../script/header-scroll.js"></script>
+  <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
 
 
   <!-- Back to Top Button -->
@@ -219,7 +242,7 @@
 
   <!-- Ambient Sanctuary UI -->
   <div class="ambient-sanctuary">
-    <button id="ambientToggle" title="Ambient Sanctuary">
+    <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
       <i class="fa-solid fa-leaf"></i>
     </button>
     <div id="ambientPanel" class="ambient-panel">
@@ -254,15 +277,61 @@
       </div>
       <div class="volume-control">
         <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
-        <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+        <div class="range-wrap">
+          <div class="range-track" aria-hidden="true"></div>
+          <div class="range-fill" aria-hidden="true"></div>
+          <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
   <script src="../js/security.js"></script>
-  <script src="../js/pwa.js"></script>
 
 </body>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) {
+        console.error('themeToggle button not found');
+        return;
+    }
+
+    const icon = btn.querySelector('i');
+    const STORAGE_KEY = 'bibliodrift_theme';
+
+    function applyTheme(theme) {
+        if (theme === 'night') {
+            document.documentElement.setAttribute('data-theme', 'night');
+            if (icon) icon.className = 'fa-solid fa-sun';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (icon) icon.className = 'fa-solid fa-moon';
+        }
+
+        localStorage.setItem(STORAGE_KEY, theme);
+        if (typeof restoreTheme === 'function') restoreTheme();
+        console.log('Theme applied:', theme);
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+    applyTheme(savedTheme);
+
+    // Toggle on click
+    btn.addEventListener('click', function () {
+        const current =
+            document.documentElement.getAttribute('data-theme') === 'night'
+                ? 'night'
+                : 'light';
+
+        const next = current === 'night' ? 'light' : 'night';
+        applyTheme(next);
+    });
+});
+</script>
 
 </html>

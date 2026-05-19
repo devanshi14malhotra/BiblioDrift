@@ -21,7 +21,7 @@ where stories are explored through <b>mood, atmosphere, and feeling</b> instead 
 </p>
 
 
-[🚀 Live Demo](https://bibliodrift-dm.netlify.app/) •
+[🚀 Live Demo](https://bibliodrift-dm.netlify.app/) (static frontend; AI/auth need a deployed backend — see [docs/contributing.md](docs/contributing.md)) •
 [📚 Documentation](docs/) •
 [🤝 Contributing](docs/contributing.md)
 
