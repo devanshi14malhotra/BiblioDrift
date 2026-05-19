@@ -149,6 +149,24 @@ class AIServiceConfig:
 
 
 @dataclass
+class GoogleOAuthConfig:
+    """Google OAuth configuration."""
+    client_id: Optional[str]
+    client_secret: Optional[str]
+    redirect_uri: Optional[str]
+    frontend_redirect_url: str
+    scope: str
+
+    @classmethod
+    def from_env(cls) -> 'GoogleOAuthConfig':
+        """Create Google OAuth config from environment variables."""
+        return cls(
+            client_id=os.getenv('GOOGLE_CLIENT_ID') or os.getenv('GOOGLE_OAUTH_CLIENT_ID'),
+            client_secret=os.getenv('GOOGLE_CLIENT_SECRET') or os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),
+            redirect_uri=os.getenv('GOOGLE_OAUTH_REDIRECT_URI'),
+            frontend_redirect_url=os.getenv('FRONTEND_URL', 'http://127.0.0.1:5500/frontend/pages/library.html'),
+            scope=os.getenv('GOOGLE_OAUTH_SCOPE', 'openid email profile')
+          
 class EmailConfig:
     """Email service configuration (e.g., SendGrid, Mailgun)."""
     api_key: Optional[str]
@@ -215,6 +233,7 @@ class Config:
         self.server = ServerConfig.from_env()
         self.logging = LoggingConfig.from_env()
         self.ai_service = AIServiceConfig.from_env()
+        self.google_oauth = GoogleOAuthConfig.from_env()
         self.redis = RedisConfig.from_env()
         self.email = EmailConfig.from_env()
         self.storage = StorageConfig.from_env()
@@ -236,6 +255,11 @@ class Config:
             'JWT_COOKIE_SAMESITE': 'Lax',
             'SQLALCHEMY_DATABASE_URI': self.database.url,
             'SQLALCHEMY_TRACK_MODIFICATIONS': self.database.track_modifications,
+            'GOOGLE_CLIENT_ID': self.google_oauth.client_id,
+            'GOOGLE_CLIENT_SECRET': self.google_oauth.client_secret,
+            'GOOGLE_OAUTH_REDIRECT_URI': self.google_oauth.redirect_uri,
+            'GOOGLE_OAUTH_FRONTEND_REDIRECT_URL': self.google_oauth.frontend_redirect_url,
+            'GOOGLE_OAUTH_SCOPE': self.google_oauth.scope,
             
             # =========================================================================
             # SECURITY: CSRF CONFIGURATION (FLASK-WTF)
@@ -385,8 +409,7 @@ class Config:
         
         return (
             flask_env == 'production' or 
-            app_env == 'production' or 
-            not self.server.debug
+            app_env == 'production' 
         )
     
     def is_development(self) -> bool:

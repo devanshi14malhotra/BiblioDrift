@@ -7,6 +7,14 @@
   <meta name="description" content="Your Vault — A cozy, AI-powered reading sanctuary to upload books, mix ambient loops, and enjoy distraction-free reading." />
   <title>Your Vault | BiblioDrift</title>
   
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c2420">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BiblioDrift Vault">
+  <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+
   <script>
       (function () {
           try {
@@ -37,7 +45,6 @@
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/style-responsive.css">
   <link rel="stylesheet" href="../css/vault.css">
-  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
 </head>
 
 <body>
@@ -47,14 +54,509 @@
 
   <!-- Header Navigation -->
   <header>
+
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/library-3d.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
+  <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations." />
+  <title>BiblioDrift | Find yourself in the pages</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+  <link rel="manifest" href="/manifest.json">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Security: DOMPurify for XSS prevention -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c2420">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BiblioDrift">
+  <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+
+  <style>
+    /* Map vault-specific variables to app-wide variables for uniformity */
+    :root {
+      --bg-surface: var(--bg-color);
+      --bg-card: var(--input-bg);
+      --border-color: var(--glass-border);
+      --border-focus: var(--accent-gold);
+      --field-bg: var(--input-bg);
+      --shelf-bg: var(--wood-dark);
+      --shelf-shadow: rgba(0, 0, 0, 0.4);
+      --reader-bg: rgba(0, 0, 0, 0.9);
+      --page-bg: var(--paper-color);
+      --page-text: var(--text-main);
+    }
+
+    [data-theme="night"] {
+      --shelf-shadow: rgba(0, 0, 0, 0.8);
+    }
+
+    /* Remove body, header, footer overrides so style.css takes over */
+    header, .main-footer, .hero, section, div, input, textarea, select {
+      transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    /* Form Fields */
+    .vault-field {
+      background: var(--field-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text-main) !important;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+    }
+
+    .vault-field:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(201, 160, 220, 0.2);
+    }
+
+    .vault-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      text-align: left;
+    }
+    .vault-input-group { display: flex; flex-direction: column; }
+    .vault-input-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+    .vault-input-group label span.requirement-hint {
+      font-weight: 400;
+      font-size: 0.78rem;
+      color: #c9a0dc;
+      margin-left: 4px;
+    }
+    html[data-theme="light"] .vault-input-group label span.requirement-hint {
+      color: #8e44ad;
+    }
+    .full-width-field { grid-column: span 2; }
+
+    .details-revealer-card {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .details-revealer-card.active {
+      max-height: 900px;
+      opacity: 1;
+      transform: translateY(0);
+      margin-top: 25px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* Shelf Engine Visuals */
+    .shelf-container {
+      background: var(--shelf-bg);
+      border-radius: 8px;
+      padding: 50px 30px 0px 30px;
+      margin-top: 30px;
+      position: relative;
+      box-shadow: inset 0 20px 40px var(--shelf-shadow), 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .shelf-plank-ledge {
+      height: 20px;
+      background: linear-gradient(180deg, #3d2b24 0%, #1a120f 100%);
+      margin: 0 -30px;
+      border-top: 2px solid #523b32;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      border-radius: 0 0 8px 8px;
+      position: relative;
+      z-index: 4;
+    }
+    html[data-theme="light"] .shelf-plank-ledge {
+      background: linear-gradient(180deg, #b59f8f 0%, #8c7362 100%);
+      border-top: 2px solid #cfbbae;
+    }
+
+    .shelf-row-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-end;
+      position: relative;
+      z-index: 2;
+      padding-bottom: 2px;
+    }
+
+    /* Hardbound Spine Precision Styling */
+    .spine-spine-node {
+      width: 52px;
+      height: 240px;
+      position: relative;
+      border-radius: 5px 2px 2px 5px;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.2, 1, 0.3, 1), box-shadow 0.25s ease;
+      overflow: hidden;
+      display: flex;
+      padding: 22px 0;
+      justify-content: center;
+      /* Distinct Hardbound Join Crease and Depth Extrusion */
+      box-shadow: 
+        inset 5px 0 7px rgba(255,255,255,0.08),
+        inset -3px 0 5px rgba(0,0,0,0.4),
+        inset 1px 0 0px rgba(255,255,255,0.2),
+        -6px 0 12px rgba(0,0,0,0.5), 
+        3px 0 5px rgba(0,0,0,0.3);
+      z-index: 2;
+      transform-origin: bottom center;
+    }
+    .spine-spine-node:hover {
+      transform: translateY(-12px) scale(1.04);
+      z-index: 99 !important;
+      box-shadow: 
+        inset 5px 0 7px rgba(255,255,255,0.12),
+        inset -3px 0 5px rgba(0,0,0,0.4),
+        -12px 14px 28px rgba(0,0,0,0.7), 
+        5px 4px 14px rgba(0,0,0,0.4);
+    }
+    .spine-spine-node.active-open {
+      transform: translateY(-6px);
+      z-index: 5;
+      box-shadow: 0 0 20px var(--border-focus), inset -3px 0 5px rgba(0,0,0,0.4);
+    }
+
+    .spine-vertical-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-family: 'Georgia', serif;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      letter-spacing: 0.8px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+      max-height: 195px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: right;
+      padding-right: 2px;
+    }
+
+    /* Traditional Bookbinding Vertical Shoulder Joint Bump Indicator */
+    .spine-spine-node::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 8px; bottom: 0;
+      width: 2px;
+      background: rgba(0,0,0,0.35);
+      box-shadow: 1px 0 1px rgba(255,255,255,0.1);
+      z-index: 3;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 8px;
+    }
+    .native-picker-accent {
+      width: 45px;
+      height: 45px;
+      border: none;
+      padding: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+    }
+    .native-picker-accent::-webkit-color-swatch-wrapper { padding: 0; }
+    .native-picker-accent::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; }
+
+    /* Metadata Shelf Drawer Layout */
+    .shelf-isolated-meta-drawer {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 25px;
+      display: none;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.05);
+      animation: slideDownMeta 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideDownMeta {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Expanded Split Card Transformation Layout System */
+    .vault-split-card {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 30px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 768px) {
+      .vault-split-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Premium Heavy Hardbound Board Design Configuration */
+    .vault-cover-preview-canvas {
+      border-radius: 6px 12px 12px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 24px;
+      position: relative;
+      min-height: 375px;
+      overflow: hidden;
+      /* Heavy structural hardback border and shadow framing layers */
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      border-left: 12px solid rgba(0, 0, 0, 0.35);
+      box-shadow: 
+        0 18px 40px rgba(0, 0, 0, 0.45), 
+        5px 0 15px rgba(0, 0, 0, 0.2),
+        inset 1px 1px 3px rgba(255,255,255,0.15),
+        inset -2px -2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* Hardcover Intent Spine Groove Indentation (French Groove Line) */
+    .vault-cover-preview-canvas::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 4px; bottom: 0;
+      width: 3px;
+      background: rgba(0, 0, 0, 0.25);
+      box-shadow: 1px 0 1px rgba(255,255,255,0.08);
+    }
+
+    .cover-title-display {
+      font-family: 'Georgia', serif;
+      font-size: 1.65rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.35;
+      text-shadow: 1px 2px 5px rgba(0,0,0,0.65), 0px 0px 10px rgba(0,0,0,0.2);
+      word-wrap: break-word;
+    }
+
+    .vault-essential-details-pane {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .editable-input-node {
+      background: transparent;
+      border: 1px dashed transparent;
+      color: var(--text-main);
+      width: 100%;
+      padding: 8px;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .editable-input-node:focus {
+      background: var(--field-bg);
+      border-color: var(--border-focus);
+      outline: none;
+    }
+
+    .tag-container-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .tag-bubble {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(201, 160, 220, 0.15);
+      color: #c9a0dc;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid rgba(201, 160, 220, 0.2);
+    }
+    html[data-theme="light"] .tag-bubble {
+      background: rgba(155, 89, 182, 0.1);
+      color: #8e44ad;
+      border-color: rgba(155, 89, 182, 0.2);
+    }
+
+    .ai-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .ai-status-passed { background: rgba(40, 167, 69, 0.12); color: #2eb85c; border: 1px solid rgba(40, 167, 69, 0.2); }
+    .ai-status-failed { background: rgba(220, 53, 69, 0.12); color: #e55353; border: 1px solid rgba(220, 53, 69, 0.2); }
+
+    .vault-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .privacy-toggle-btn, .btn-delete-vault, .btn-read-book {
+      background: var(--field-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .privacy-toggle-btn:hover { border-color: var(--border-focus); }
+    
+    .btn-read-book {
+      background: var(--border-focus);
+      color: #fff !important;
+      border: none;
+    }
+    .btn-read-book:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    
+    .btn-delete-vault { background: rgba(220, 53, 69, 0.05); border-color: rgba(220, 53, 69, 0.15); color: #f26868; }
+    .btn-delete-vault:hover { background: rgba(220, 53, 69, 0.15); color: #fff; }
+
+    /* Immersive Genuine Full Screen PDF Viewport Layer Architecture */
+    .realistic-book-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--reader-bg);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .close-reader-trigger {
+      position: absolute;
+      top: 20px; right: 25px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 1.2rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 10000;
+    }
+    .close-reader-trigger:hover {
+      background: rgba(220, 53, 69, 0.8);
+      transform: scale(1.05);
+    }
+
+    .book-spread-container {
+      width: 100%;
+      max-width: 1100px;
+      height: 88vh;
+      display: flex;
+      background-color: var(--page-bg);
+      box-shadow: 0 30px 70px rgba(0,0,0,0.6);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    .pdf-render-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: #fff;
+    }
+
+    .book-spread-container::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 40px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.28) 50%, rgba(0,0,0,0.12) 100%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .auth-barrier-message {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px dashed var(--border-color);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
     <a href="index.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
       <nav class="nav-links">
         <div class="tooltip">
           <a href="index.html">Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="vault.html" class="active">My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> Reading Sanctuary</span>
         </div>
         <div class="tooltip">
           <a href="library.html">My Library</a>
@@ -63,10 +565,6 @@
         <div class="tooltip">
           <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-        </div>
-        <div class="tooltip">
-          <a href="vault.html" class="active">Your Vault</a>
-          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> Reading Sanctuary</span>
         </div>
         <!-- DYNAMIC AUTH LINK -->
         <div class="tooltip">

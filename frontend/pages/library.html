@@ -16,15 +16,14 @@
         })();
     </script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-
-<script src="../js/db.js"></script>
-
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="../js/db.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
-    <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
+    <meta name="description"
+        content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
@@ -41,8 +40,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 
-<body>
-
+<body class="library-page">
     <header>
         <a href="index.html" class="logo">
             <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
@@ -50,7 +48,7 @@
         <div class="header-controls">
             <div class="search-bar">
                 <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-                <i class="fa-solid fa-search search-icon"></i>
+                <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
             </div>
             <nav class="nav-links">
                 <div class="tooltip">
@@ -89,18 +87,22 @@
             <button id="export-library" class="btn-icon library-export-btn" title="Export Library">
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
+            <div id="library-sync-status" hidden aria-live="polite" style="margin: 0.75rem auto 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: rgba(44, 36, 32, 0.08); color: var(--text-secondary);">
+                Synced
+            </div>
             <div class="view-toggles" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
-                <button id="view-shelves-btn" class="btn-primary active-view" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                <button id="view-shelves-btn" class="btn-primary active-view"
+                    style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-server"></i> Shelves
                 </button>
-                <button id="view-constellation-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                <button id="view-constellation-btn" class="btn-secondary"
+                    style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-chart-nodes"></i> Constellation
                 </button>
                 <button id="view-collections-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-folder-open"></i> Custom Collections
                 </button>
             </div>
-            <div class="sort-controls">
             <div class="sort-controls" role="region" aria-label="Library filter and sort controls">
                 <div class="filter-group">
                     <i class="fa-solid fa-filter"></i>
@@ -291,7 +293,8 @@
                     <div class="book-stage">
                         <div class="book-3d-scene">
                             <!-- Click on the book to flip it -->
-                            <div class="book-object" id="book-3d-object" role="button" tabindex="0" aria-label="Book 3D object. Press Enter or Space to flip the book.">
+                            <div class="book-object" id="book-3d-object" role="button" tabindex="0"
+                                aria-label="Book 3D object. Press Enter or Space to flip the book.">
                                 <!-- Front Face -->
                                 <div class="book-face face-front" aria-hidden="true">
                                     <img id="modal-cover" src="" alt="Book Cover">
@@ -358,6 +361,18 @@
                             </div>
                         </div>
 
+                        <!-- Where to Buy section -->
+                        <div class="purchase-links-box" style="margin-bottom: 1.5rem;">
+                            <div class="purchase-header"
+                                style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--accent-gold); font-size: 0.9rem; font-weight: 600;">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                                <span>Where to Buy</span>
+                            </div>
+                            <div id="modal-purchase-links-lib" class="purchase-links-container" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>
+                            </div>
+                        </div>
+
                         <div class="book-actions-section">
                             <div class="library-actions-group">
                                 <!-- Issue #23: Remove from Library button UI -->
@@ -370,8 +385,7 @@
                                     title="Share book">
                                     <i class="fa-solid fa-share-nodes"></i> Share
                                 </button>
-                                <button class="btn-preview" id="modal-preview-btn-lib"
-                                    title="Preview this book">
+                                <button class="btn-preview" id="modal-preview-btn-lib" title="Preview this book">
                                     <i class="fa-solid fa-book-open"></i> Preview
                                 </button>
                             </div>
@@ -386,15 +400,16 @@
 
                                 <!-- Mode toggle: percentage vs pages -->
                                 <div class="progress-mode-toggle">
-                                    <button class="progress-mode-btn active" id="progress-mode-pct" data-mode="percent">% Done</button>
-                                    <button class="progress-mode-btn" id="progress-mode-pages" data-mode="pages">Pages</button>
+                                    <button class="progress-mode-btn active" id="progress-mode-pct"
+                                        data-mode="percent">% Done</button>
+                                    <button class="progress-mode-btn" id="progress-mode-pages"
+                                        data-mode="pages">Pages</button>
                                 </div>
 
                                 <!-- Percentage mode -->
                                 <div class="progress-input-group" id="progress-pct-group">
-                                    <input type="range" min="0" max="100" value="0"
-                                        class="progress-range-slider" id="modal-progress-slider"
-                                        aria-label="Reading progress percentage">
+                                    <input type="range" min="0" max="100" value="0" class="progress-range-slider"
+                                        id="modal-progress-slider" aria-label="Reading progress percentage">
                                     <div class="progress-bar-track">
                                         <div class="progress-bar-fill" id="modal-progress-bar"></div>
                                     </div>
@@ -491,42 +506,49 @@
 
     <!-- Ambient Sanctuary UI -->
     <div class="ambient-sanctuary">
-        <button id="ambientToggle" title="Ambient Sanctuary">
+        <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
             <i class="fa-solid fa-leaf"></i>
         </button>
         <div id="ambientPanel" class="ambient-panel">
-            <h3>Ambient Sanctuary</h3>
+            <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
             <div class="ambient-option">
-                <span><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy
+                    Evening</span>
                 <label class="switch">
                     <input type="checkbox" id="rainToggle">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="ambient-option">
-                <span><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
                 <label class="switch">
                     <input type="checkbox" id="fireToggle">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="ambient-option">
-                <span><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean
+                    Waves</span>
                 <label class="switch">
                     <input type="checkbox" id="oceanToggle">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="ambient-option">
-                <span><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
                 <label class="switch">
                     <input type="checkbox" id="stormToggle">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="volume-control">
-                <label for="ambientVolume"><i class="fa-solid fa-volume-high"></i> Volume</label>
-                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+                <label for="ambientVolume" style="color: var(--text-main) !important;"><i
+                        class="fa-solid fa-volume-high"></i> Volume</label>
+                <div class="range-wrap">
+                    <div class="range-track" aria-hidden="true"></div>
+                    <div class="range-fill" aria-hidden="true"></div>
+                    <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+                </div>
             </div>
         </div>
     </div>
@@ -556,7 +578,8 @@
       </div>
     </dialog>
 
-    <script src="../js/ambient.js"></script>
+    <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
 </body>
 

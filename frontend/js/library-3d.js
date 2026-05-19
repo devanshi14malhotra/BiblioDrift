@@ -565,7 +565,405 @@ class BookshelfRenderer3D {
         this.cleanupCallbacks.push(() => target.removeEventListener(eventName, handler, options));
     }
 
+    checkWebGLSupport() {
+        try {
+            const canvas = document.createElement('canvas');
+            return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+        } catch (e) {
+            return false;
+        }
+    }
+
+    showWebGLErrorMessage() {
+        const container = document.getElementById('library-container') || document.querySelector('.main-content') || document.body;
+        const errorBanner = document.createElement('div');
+        errorBanner.id = 'webgl-error-banner';
+        errorBanner.style.cssText = `
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid #dc3545;
+            color: #dc3545;
+            padding: 15px 20px;
+            margin: 20px auto;
+            max-width: 800px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 100;
+        `;
+        
+        const message = document.createElement('div');
+        message.innerHTML = `
+            <strong style="display: block; margin-bottom: 5px; font-size: 1.1em;"><i class="fa-solid fa-triangle-exclamation"></i> WebGL Not Supported</strong>
+            <span style="font-size: 0.9em; opacity: 0.9;">Your browser or device does not support WebGL, which is required for the 3D interactive bookshelf. We have enabled a graceful 2D fallback mode so you can continue managing your library.</span>
+        `;
+        
+        const dismissBtn = document.createElement('button');
+        dismissBtn.innerHTML = '<i class="fa-solid fa-times"></i>';
+        dismissBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        `;
+        dismissBtn.onmouseover = () => dismissBtn.style.opacity = '1';
+        dismissBtn.onmouseout = () => dismissBtn.style.opacity = '0.7';
+        dismissBtn.onclick = () => {
+            errorBanner.style.opacity = '0';
+            setTimeout(() => {
+                if (errorBanner.parentNode) errorBanner.parentNode.removeChild(errorBanner);
+            }, 300);
+        };
+        
+        errorBanner.appendChild(message);
+        errorBanner.appendChild(dismissBtn);
+        
+        if (container === document.body) {
+            document.body.insertBefore(errorBanner, document.body.firstChild);
+        } else {
+            container.insertBefore(errorBanner, container.firstChild);
+        }
+    }
+
+    init2DFallback() {
+        this.assetsLoaded = true; // No 3D assets needed
+        
+        // Hide the view toggle buttons since 3D and constellation are not available
+        const viewControls = document.querySelector('.view-controls');
+        if (viewControls) {
+            viewControls.style.display = 'none';
+        }
+
+        const containerShelves = document.getElementById('library-shelves');
+        const containerConstellation = document.getElementById('constellation-container');
+        
+        if (containerConstellation) containerConstellation.classList.add('hidden');
+        if (containerShelves) containerShelves.classList.remove('hidden');
+
+        // Apply a 2D layout class to shelves
+        const shelves = document.querySelectorAll('.shelf-container-3d, .shelf-current-3d, .shelf-want-3d, .shelf-finished-3d');
+        shelves.forEach(shelf => {
+            shelf.classList.add('fallback-2d');
+            shelf.style.display = 'flex';
+            shelf.style.flexWrap = 'wrap';
+            shelf.style.gap = '20px';
+            shelf.style.justifyContent = 'center';
+            shelf.style.padding = '20px';
+            shelf.style.perspective = 'none';
+            shelf.style.transformStyle = 'flat';
+            shelf.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+            shelf.style.background = 'transparent';
+            shelf.style.boxShadow = 'none';
+        });
+
+        // Setup common listeners for 2D mode
+        const sortSelect = document.getElementById('library-sort');
+        if (sortSelect) {
+            this.addManagedListener(sortSelect, 'change', (e) => {
+                this.sortCriteria = e.target.value;
+                this.refreshShelves2D();
+            });
+        }
+
+        const filterSelect = document.getElementById('library-filter');
+        if (filterSelect) {
+            this.addManagedListener(filterSelect, 'change', (e) => {
+                this.filterCriteria = e.target.value;
+                this.refreshShelves2D();
+            });
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            this.addManagedListener(searchInput, 'input', (e) => {
+                this.searchQuery = e.target.value.toLowerCase();
+                this.refreshShelves2D();
+            });
+        }
+
+        this.refreshShelves2D();
+
+        this.addManagedListener(window, 'bibliodrift:library-manager-ready', () => {
+            this.refreshShelves2D();
+        });
+        this.addManagedListener(window, 'bibliodrift:library-manager-synced', () => {
+            this.refreshShelves2D();
+        });
+
+        this.setupModalHandlers();
+    }
+
+    refreshShelves2D() {
+        const showCurrent = this.filterCriteria === 'all' || this.filterCriteria === 'current';
+        const showWant = this.filterCriteria === 'all' || this.filterCriteria === 'want';
+        const showFinished = this.filterCriteria === 'all' || this.filterCriteria === 'finished';
+
+        const currentCount = this.getShelfBookCount('current', this.searchQuery);
+        const wantCount = this.getShelfBookCount('want', this.searchQuery);
+        const finishedCount = this.getShelfBookCount('finished', this.searchQuery);
+
+        let totalVisibleBooks = 0;
+        if (showCurrent) totalVisibleBooks += currentCount;
+        if (showWant) totalVisibleBooks += wantCount;
+        if (showFinished) totalVisibleBooks += finishedCount;
+
+        const isEmpty = totalVisibleBooks === 0;
+        const forceShowSpecific = this.filterCriteria !== 'all';
+
+        this.updateShelfVisibility('shelf-current-3d', !isEmpty && showCurrent && (currentCount > 0 || forceShowSpecific));
+        this.updateShelfVisibility('shelf-want-3d', !isEmpty && showWant && (wantCount > 0 || forceShowSpecific));
+        this.updateShelfVisibility('shelf-finished-3d', !isEmpty && showFinished && (finishedCount > 0 || forceShowSpecific));
+
+        if (!isEmpty) {
+            if (showCurrent && (currentCount > 0 || forceShowSpecific)) this.renderShelf2D('current', 'shelf-current-3d');
+            if (showWant && (wantCount > 0 || forceShowSpecific)) this.renderShelf2D('want', 'shelf-want-3d');
+            if (showFinished && (finishedCount > 0 || forceShowSpecific)) this.renderShelf2D('finished', 'shelf-finished-3d');
+        }
+
+        const emptyState = document.getElementById('library-empty-state');
+        if (emptyState) {
+            emptyState.hidden = !isEmpty;
+        }
+    }
+
+    renderShelf2D(shelfType, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const shelfLabels = {
+            'current': 'Currently Immersed',
+            'want': 'Anticipated Journeys',
+            'finished': 'Lifetime Favorites'
+        };
+        container.setAttribute('aria-label', shelfLabels[shelfType] || `${shelfType} books shelf`);
+
+        const localLibrary = this.getLibraryState();
+        let books = [...(localLibrary[shelfType] || [])];
+
+        books = books.map(b => {
+            if (b.volumeInfo) {
+                return {
+                    id: b.id,
+                    title: b.volumeInfo.title || 'Untitled',
+                    author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
+                    cover: b.volumeInfo.imageLinks?.thumbnail || '',
+                    description: b.volumeInfo.description || '',
+                    rating: b.volumeInfo.averageRating || 4.0,
+                    ratingCount: b.volumeInfo.ratingsCount || 0,
+                    categories: b.volumeInfo.categories || [],
+                    spineColor: b.spineColor,
+                    moods: b.moods || [],
+                    progress: typeof b.progress === 'number' ? b.progress : 0,
+                    shelfType: shelfType,
+                    reviews: []
+                };
+            }
+            return { ...b, moods: b.moods || [], progress: typeof b.progress === 'number' ? b.progress : 0, shelfType };
+        });
+
+        if (this.searchQuery) {
+            books = books.filter(b => {
+                const title = b.title.toLowerCase();
+                const author = b.author.toLowerCase();
+                const moods = b.moods.join(" ").toLowerCase();
+                return title.includes(this.searchQuery) || author.includes(this.searchQuery) || moods.includes(this.searchQuery);
+            });
+        }
+
+        books.sort((a, b) => {
+            if (this.sortCriteria === 'title') return a.title.localeCompare(b.title);
+            if (this.sortCriteria === 'author') return a.author.localeCompare(b.author);
+            if (this.sortCriteria === 'rating') return b.rating - a.rating;
+            if (this.sortCriteria === 'mood') {
+                const moodA = (a.moods && a.moods[0]) || "zzz";
+                const moodB = (b.moods && b.moods[0]) || "zzz";
+                return moodA.localeCompare(moodB);
+            }
+            return a.title.localeCompare(b.title);
+        });
+
+        if (!books || books.length === 0) {
+            container.innerHTML = '<div class="empty-shelf-2d" style="text-align: center; padding: 40px; color: #888;">No books match your criteria.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(160px, 1fr))';
+        container.style.gap = '25px';
+        container.style.width = '100%';
+
+        books.forEach((book) => {
+            const bookCard = this.createBookCard2D(book, shelfType);
+            container.appendChild(bookCard);
+        });
+
+        container.setAttribute('aria-label', `${shelfLabels[shelfType]} - ${books.length} book${books.length !== 1 ? 's' : ''}`);
+    }
+
+    createBookCard2D(book, shelfType) {
+        const card = document.createElement('div');
+        card.className = 'book-card-2d';
+        card.style.cssText = `
+            background: rgba(30, 30, 30, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        `;
+        
+        card.onmouseover = () => {
+            card.style.transform = 'translateY(-5px)';
+            card.style.boxShadow = '0 8px 15px rgba(0,0,0,0.3)';
+            card.style.border = '1px solid rgba(212, 175, 55, 0.3)';
+        };
+        card.onmouseout = () => {
+            card.style.transform = 'translateY(0)';
+            card.style.boxShadow = '0 4px 6px rgba(0,0,0,0.2)';
+            card.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+        };
+
+        const coverContainer = document.createElement('div');
+        coverContainer.style.cssText = `
+            width: 100%;
+            padding-top: 150%; /* 2:3 aspect ratio */
+            position: relative;
+            background: #2a2a2a;
+        `;
+        
+        if (book.cover) {
+            const img = document.createElement('img');
+            img.src = book.cover;
+            img.alt = book.title;
+            img.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            `;
+            coverContainer.appendChild(img);
+        } else {
+            const noCover = document.createElement('div');
+            noCover.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #666;
+                text-align: center;
+                padding: 10px;
+                font-size: 0.9em;
+                background: linear-gradient(135deg, ${book.spineColor || '#444'}, #222);
+            `;
+            noCover.textContent = book.title;
+            coverContainer.appendChild(noCover);
+        }
+
+        const infoContainer = document.createElement('div');
+        infoContainer.style.cssText = `
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            background: rgba(20, 20, 20, 0.8);
+        `;
+        
+        const title = document.createElement('h4');
+        title.textContent = book.title;
+        title.style.cssText = `
+            margin: 0 0 5px 0;
+            font-size: 1rem;
+            color: #f0f0f0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-family: 'Playfair Display', serif;
+        `;
+        
+        const author = document.createElement('p');
+        author.textContent = book.author;
+        author.style.cssText = `
+            margin: 0 0 8px 0;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+
+        const metaRow = document.createElement('div');
+        metaRow.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            font-size: 0.8rem;
+        `;
+
+        const rating = document.createElement('span');
+        rating.innerHTML = \`<i class="fa-solid fa-star" style="color: #d4af37;"></i> \${book.rating ? book.rating.toFixed(1) : 'N/A'}\`;
+        rating.style.color = '#ccc';
+
+        metaRow.appendChild(rating);
+
+        if (shelfType === 'current' && book.progress > 0) {
+            const progress = document.createElement('span');
+            progress.textContent = \`\${book.progress}%\`;
+            progress.style.color = '#4caf50';
+            progress.style.fontWeight = 'bold';
+            metaRow.appendChild(progress);
+        }
+
+        infoContainer.appendChild(title);
+        infoContainer.appendChild(author);
+        infoContainer.appendChild(metaRow);
+        
+        card.appendChild(coverContainer);
+        card.appendChild(infoContainer);
+
+        card.addEventListener('click', () => this.openModal(book));
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', \`\${book.title} by \${book.author}\`);
+
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.openModal(book);
+            }
+        });
+
+        return card;
+    }
+
     async init() {
+        if (!this.checkWebGLSupport()) {
+            this.webGLSupported = false;
+            this.showWebGLErrorMessage();
+            this.init2DFallback();
+            return;
+        }
+        this.webGLSupported = true;
+
         // Wait for 3D assets to load via Web Worker to prevent main thread blocking
         await this.load3DAssets();
 
@@ -778,10 +1176,16 @@ class BookshelfRenderer3D {
         books = books.map(b => {
             // If it's already flat (like sample), keep it. If it's Google Books style (volumeInfo), flatten it.
             if (b.volumeInfo) {
+                let isbnVal = '';
+                if (b.volumeInfo.industryIdentifiers) {
+                    const identifier = b.volumeInfo.industryIdentifiers.find(i => i.type === 'ISBN_13' || i.type === 'ISBN_10');
+                    if (identifier) isbnVal = identifier.identifier;
+                }
                 return {
                     id: b.id,
                     title: b.volumeInfo.title || 'Untitled',
                     author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
+                    isbn: isbnVal,
                     cover: b.volumeInfo.imageLinks?.thumbnail || '',
                     description: b.volumeInfo.description || '',
                     rating: b.volumeInfo.averageRating || 4.0,
@@ -1814,6 +2218,33 @@ spine.addEventListener('blur', () => this.hideTooltip());
             });
         }
 
+        // Fetch and render purchase links
+        const purchaseLinksEl = document.getElementById('modal-purchase-links-lib');
+        if (purchaseLinksEl) {
+            purchaseLinksEl.innerHTML = '<div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>';
+            
+            const title = encodeURIComponent(book.title || '');
+            const author = encodeURIComponent(book.author || '');
+            const isbn = encodeURIComponent(book.isbn || '');
+            
+            fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.links && data.links.length > 0) {
+                        const linksHtml = data.links.map(link => {
+                            return `<a href="${link.url}" target="_blank" class="purchase-link-btn" style="background-color: ${link.color || 'var(--wood-dark)'}; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; margin-right: 5px; margin-bottom: 5px; font-size: 0.85rem;">
+                                <i class="${link.icon || 'fa-solid fa-book'}"></i> ${link.name}
+                            </a>`;
+                        }).join('');
+                        purchaseLinksEl.innerHTML = linksHtml;
+                    } else {
+                        purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">No purchase links available.</p>';
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load purchase links', err);
+                    purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
+                });
         // Custom Collections Section
         let collectionsSection = document.getElementById('modal-collections-tagging');
         if (!collectionsSection) {

@@ -94,8 +94,23 @@ class User(db.Model, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    # password_hash = db.Column(db.String(255), nullable=False)
+
+    # Nullable because OAuth users may not have passwords
+    password_hash = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # OAuth fields
+    google_id = db.Column(db.String(255), unique=True, nullable=True)
+
+    auth_provider = db.Column(
+        db.String(50),
+        default="local"
+    )
+
+    profile_picture = db.Column(db.String(500), nullable=True)
+
+    email_verified = db.Column(db.Boolean, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -108,7 +123,11 @@ class User(db.Model, SoftDeleteMixin):
             "id": self.id,
             "username": self.username,
             "email": self.email,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "auth_provider": self.auth_provider,
+            "profile_picture": self.profile_picture,
+            "email_verified": self.email_verified,
+            "created_at": self.created_at.isoformat()
+                if self.created_at else None,
             "is_deleted": self.is_deleted
         }
 
@@ -344,6 +363,20 @@ class BookNote(db.Model, SoftDeleteMixin):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "is_deleted": self.is_deleted
         }
+
+
+class MoodCache(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cache_key = db.Column(db.String(512), nullable=False, index=True)
+    book_title = db.Column(db.String(255), nullable=False)
+    book_author = db.Column(db.String(255), nullable=False, default="")
+    analysis_json = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.UniqueConstraint('cache_key', name='uq_mood_cache_key'),
+    )
 
 
 class ReadingGoal(db.Model, SoftDeleteMixin):
