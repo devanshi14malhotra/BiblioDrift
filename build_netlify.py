@@ -71,6 +71,17 @@ def inject_api_base_override() -> None:
     config_path.write_text(snippet + content, encoding="utf-8")
 
 
+def build_sw() -> None:
+    sw_src = SOURCE / "sw.js"
+    if sw_src.exists():
+        content = sw_src.read_text(encoding="utf-8")
+        # Rewrite frontend paths to root-level paths for Netlify dist output
+        content = content.replace("/frontend/pages/", "/")
+        content = content.replace("/frontend/", "/")
+        target_file = DIST / "sw.js"
+        target_file.write_text(content, encoding="utf-8")
+
+
 def main() -> None:
     reset_dist()
     for folder in ("css", "js", "assets", "script"):
@@ -81,6 +92,7 @@ def main() -> None:
         shutil.copy2(manifest_src, DIST / "manifest.json")
         
     build_html()
+    build_sw()
     inject_api_base_override()
 
 

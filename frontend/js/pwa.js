@@ -23,10 +23,11 @@
     if (!('serviceWorker' in navigator)) return; // Browser doesn't support SW
 
     // The SW must be registered from a path at or above the pages it controls.
-    // All pages live in /frontend/pages/, so registering from /frontend/sw.js
-    // with scope /frontend/ covers all of them.
-    const SW_URL   = '/frontend/sw.js';
-    const SW_SCOPE = '/frontend/';
+    // Dynamically detect whether we are running with /frontend/ subpath (e.g. local file/dev structure)
+    // or from root / (e.g. built production deployment).
+    const isFrontendScoped = window.location.pathname.startsWith('/frontend/');
+    const SW_URL   = isFrontendScoped ? '/frontend/sw.js' : '/sw.js';
+    const SW_SCOPE = isFrontendScoped ? '/frontend/' : '/';
 
     let _swRegistration = null;
     let _syncRequestInFlight = false;
