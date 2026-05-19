@@ -18,12 +18,12 @@
       "purpose": "any maskable"
     },
     {
-      "src": "frontend/assets/images/icon-192.png",
+      "src": "assets/images/biblioDrift_favicon 192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "frontend/assets/images/icon-512.png",
+      "src": "assets/images/biblioDrift_favicon 512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

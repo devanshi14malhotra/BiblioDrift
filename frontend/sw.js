@@ -33,7 +33,7 @@
  * ==============================================================================
  */
 
-const CACHE_VERSION   = 'v1';
+const CACHE_VERSION   = 'v2';
 const STATIC_CACHE    = `bibliodrift-static-${CACHE_VERSION}`;
 const API_CACHE       = `bibliodrift-api-${CACHE_VERSION}`;
 const FONT_CACHE      = `bibliodrift-fonts-${CACHE_VERSION}`;
@@ -140,6 +140,11 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/api/v1/') ||
     url.pathname.startsWith('/api/')
   ) {
+    if (url.pathname.startsWith('/api/v1/auth/')) {
+      event.respondWith(fetch(request));
+      return;
+    }
+
     event.respondWith(_networkFirst(request, API_CACHE));
     return;
   }

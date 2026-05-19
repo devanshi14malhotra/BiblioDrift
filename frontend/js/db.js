@@ -1,30 +1,80 @@
-// Initialize Dexie Database globally
-window.db = new Dexie("BiblioDriftDB");
+(function () {
+    const DB_NAME = 'BiblioDriftDB';
+    const BOOKS_SCHEMA = 'id, title, author, content, mood, coverUrl';
+    const DOWNLOADED_BOOKS_SCHEMA = 'id, title, author, content, mood, coverUrl, downloadedAt';
+    const SYNC_QUEUE_SCHEMA = '++id, userId, action, bookId, db_id, shelf, createdAt';
 
-// Define schema
-window.db.version(1).stores({
-    books: 'id, title, author, content, mood, coverUrl'
-});
-
-console.log("IndexedDB configuration loaded onto window.db!");
-// A safe initialization wrapper
-function initDatabase() {
-    if (typeof Dexie === 'undefined') {
-        console.error("Dexie CDN is still loading... Retrying in 50ms.");
-        setTimeout(initDatabase, 50);
-        return;
+    function dispatchSyncQueueEvent(userId) {
+        window.dispatchEvent(new CustomEvent('bibliodrift:library-sync-queued', {
+            detail: { userId }
+        }));
     }
 
-    // Initialize Dexie Database globally on the window object
-    window.db = new Dexie("BiblioDriftDB");
+    async function getPendingLibrarySyncCount(userId) {
+        if (!window.db?.syncQueue) return 0;
+        if (userId == null) {
+            return await window.db.syncQueue.count();
+        }
+        return await window.db.syncQueue.where('userId').equals(userId).count();
+    }
 
-    // Define schema: Store books by 'id'
-    window.db.version(1).stores({
-        books: 'id, title, author, content, mood, coverUrl'
-    });
+    function initDatabase() {
+        if (typeof Dexie === 'undefined') {
+            console.error('Dexie CDN is still loading... Retrying in 50ms.');
+            setTimeout(initDatabase, 50);
+            return;
+        }
 
-    console.log("IndexedDB configuration loaded onto window.db successfully!");
-}
+        if (window.db?.name === DB_NAME) {
+            return;
+        }
 
-// Execute the safe initializer
-initDatabase();
+        window.db = new Dexie(DB_NAME);
+        window.db.version(1).stores({
+            books: BOOKS_SCHEMA,
+            downloadedBooks: DOWNLOADED_BOOKS_SCHEMA
+        });
+        window.db.version(2).stores({
+            books: BOOKS_SCHEMA,
+            downloadedBooks: DOWNLOADED_BOOKS_SCHEMA,
+            syncQueue: SYNC_QUEUE_SCHEMA
+        });
+
+        window.db.open().catch((error) => {
+            console.error('Failed to open BiblioDrift IndexedDB', error);
+        });
+
+        window.saveBookOffline = async function (book) {
+            if (!window.db?.downloadedBooks || !book?.id) return false;
+            await window.db.downloadedBooks.put({
+                ...book,
+                downloadedAt: new Date().toISOString()
+            });
+            return true;
+        };
+
+        window.removeOfflineBook = async function (bookId) {
+            if (!window.db?.downloadedBooks || !bookId) return false;
+            await window.db.downloadedBooks.delete(bookId);
+            return true;
+        };
+
+        window.enqueueLibraryMutation = async function (mutation) {
+            if (!window.db?.syncQueue) return null;
+
+            const entry = {
+                ...mutation,
+                createdAt: mutation.createdAt || new Date().toISOString()
+            };
+            const id = await window.db.syncQueue.add(entry);
+            dispatchSyncQueueEvent(entry.userId ?? null);
+            return id;
+        };
+
+        window.getPendingLibrarySyncCount = getPendingLibrarySyncCount;
+
+        console.log('IndexedDB configuration loaded onto window.db successfully!');
+    }
+
+    initDatabase();
+})();
