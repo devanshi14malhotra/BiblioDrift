@@ -229,21 +229,15 @@ const CollectionAPI = {
 };
 window.CollectionAPI = CollectionAPI;
 
-// db.js functions are accessed via window globals (loaded separately in index.html)
-const saveBookOffline = window.saveBookOffline || (() => Promise.resolve(false));
-const removeOfflineBook = window.removeOfflineBook || (() => Promise.resolve(false));
-
 // Example click handler for your custom "Save for Offline" icon
 async function handleDownloadToggle(bookCard, bookData) {
-    const db = window.db;
-    if (!db) return;
-    const isAlreadyDownloaded = await db.downloadedBooks.get(bookData.id);
+    const isAlreadyDownloaded = await window.db.downloadedBooks.get(bookData.id);
     
     if (isAlreadyDownloaded) {
-        const success = await removeOfflineBook(bookData.id);
+        const success = await window.removeOfflineBook(bookData.id);
         if (success) bookCard.classList.remove('is-downloaded');
     } else {
-        const success = await saveBookOffline(bookData);
+        const success = await window.saveBookOffline(bookData);
         if (success) bookCard.classList.add('is-downloaded');
     }
 }
@@ -266,6 +260,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    authSessionPromise = null;
 }
 
 function parseStoredUser() {
@@ -306,16 +301,16 @@ async function verifyStoredAuthSession() {
     authSessionPromise = (async () => {
         const token = SafeStorage.get('bibliodrift_token');
         const storedUser = parseStoredUser();
-
-        if (!token) {
-            if (storedUser || SafeStorage.get('isLoggedIn') === 'true') {
-                clearStoredAuthState();
-            }
-            return null;
-        }
+        const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
 
         if (token === 'demo-token-12345') {
             return storedUser;
+        }
+
+        // Real logins use HttpOnly JWT cookies (see backend JWT_TOKEN_LOCATION). Optional CSRF cookie is readable by JS.
+        const shouldProbe = thinksLoggedIn || storedUser || getCookie('csrf_access_token');
+        if (!shouldProbe) {
+            return null;
         }
 
         try {
@@ -333,22 +328,20 @@ async function verifyStoredAuthSession() {
                 headers,
             });
 
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 422) {
-                    clearStoredAuthState();
+            if (response.ok) {
+                const data = await response.json();
+                const verifiedUser = data.user || storedUser;
+                if (verifiedUser) {
+                    SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
                 }
-                return null;
+                SafeStorage.set('isLoggedIn', 'true');
+                return verifiedUser || null;
             }
 
-            const data = await response.json();
-            const verifiedUser = data.user || storedUser;
-
-            if (verifiedUser) {
-                SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+            if (response.status === 401 || response.status === 422) {
+                clearStoredAuthState();
             }
-            SafeStorage.set('isLoggedIn', 'true');
-
-            return verifiedUser;
+            return null;
         } catch (error) {
             console.warn('Auth verification failed; using cached session state if available.', error);
             return storedUser;
@@ -678,55 +671,48 @@ class BookRenderer {
         const safeVibe = escapeHTML(vibe);
         const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
 
-scene.innerHTML = `
-    <div class="book-container-3d" data-id="${escapeHTML(id)}">
-        <div class="book-spine-3d" style="background-image: url('${spineImagePath}'); background-size: cover; background-position: center;"></div>
-        
-        <div class="book-cover-3d" style="background-image: url('${safeThumb}'); background-size: cover; background-position: center;"></div>
-        
-        <div class="book-back-3d">
-            <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
-                <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
-                ${bookData.moods && bookData.moods.length > 0 ? `
-                <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
-                    ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+        scene.innerHTML = `
+            <div class="book" data-id="${escapeHTML(id)}">
+                <div class="book__face book__face--front">
+                    <img src="${safeThumb}" alt="${safeTitle}">
                 </div>
-                ` : ''}
-                <div class="book-blurb" data-book-id="${escapeHTML(id)}" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify; min-height: 60px;">${safeOriginalDescription}</div>
+                <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
+                <div class="book__face book__face--right"></div>
+                <div class="book__face book__face--top"></div>
+                <div class="book__face book__face--bottom"></div>
+                <div class="book__face book__face--back">
+                    <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        ${bookData.moods && bookData.moods.length > 0 ? `
+                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <button class="read-details-btn" title="Read Details">
+                        <i class="fa-solid fa-circle-info"></i> Read Details
+                    </button>
+
+                    ${shelf === 'current' ? `
+                    <div class="reading-progress">
+                        <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
+                        <small>${progress}% read</small>
+                    </div>` : ''}
+                    <div class="book-actions">
+                        <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
+                        <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button class="btn-icon mood-btn" title="Explore Mood"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                </div>
             </div>
-            ${shelf === 'current' ? `
-            <div class="reading-progress">
-                <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
-                <small>${progress}% read</small>
-            </div>` : ''}
-            <div class="book-actions">
-                <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
-                <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-            </div>
-        </div>
-        
         <div class="book-pages-3d"></div>
-    </div>
     <div class="glass-overlay">
         <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
     </div>
 `;
-
-        // Fetch AI-generated blurb asynchronously
-        const blurbElement = scene.querySelector('.book-blurb');
-        if (blurbElement) {
-            this.fetchAIBlurb(id, title, authors, volumeInfo.description || "", categories)
-                .then(aiBlurb => {
-                    if (aiBlurb && blurbElement) {
-                        blurbElement.textContent = aiBlurb;
-                    }
-                })
-                .catch(err => {
-                    // Silently keep fallback description
-                });
-        }
 
         // Interaction: Progress Slider
         const slider = scene.querySelector('.progress-slider');
@@ -774,7 +760,7 @@ scene.innerHTML = `
         });
 
         // Info Button
-        scene.querySelector('.info-btn').addEventListener('click', (e) => {
+        scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
         });
@@ -835,7 +821,8 @@ scene.innerHTML = `
             });
             if (res.ok) {
                 const data = await res.json();
-                return data.data?.vibe || null;
+                const payload = data.data || data;
+                return payload?.vibe || payload?.bookseller_note || payload?.insight || payload?.note || null;
             }
         } catch (e) {
             // Silently fail to use fallback
@@ -1878,6 +1865,10 @@ class LibraryManager {
 
         // 4. Sync with backend if available (Full Refresh)
         await this.syncWithBackend();
+        if (navigator.onLine) {
+            await this.flushPendingLibraryMutations();
+        }
+        await this.updateSyncStatus();
     }
 
     getUser() {
@@ -1895,6 +1886,194 @@ class LibraryManager {
             headers['X-CSRF-TOKEN'] = csrfToken;
         }
         return new Headers(headers);
+    }
+
+    async _getPendingSyncCount() {
+        const user = this.getUser();
+        if (!user || !window.db?.syncQueue) return 0;
+        return await window.db.syncQueue.where('userId').equals(user.id).count();
+    }
+
+    async updateSyncStatus() {
+        const statusEl = document.getElementById('library-sync-status');
+        if (!statusEl) return;
+
+        const pendingCount = await this._getPendingSyncCount();
+        statusEl.hidden = false;
+        statusEl.textContent = pendingCount > 0
+            ? `${pendingCount} pending sync${pendingCount === 1 ? '' : 's'}`
+            : 'Synced';
+        statusEl.dataset.state = pendingCount > 0 ? 'pending' : 'synced';
+    }
+
+    async _queueMutation(action, book, extra = {}) {
+        if (typeof window.enqueueLibraryMutation !== 'function') return;
+
+        const user = this.getUser();
+        if (!user || !window.db?.syncQueue) return;
+
+        const snapshot = JSON.parse(JSON.stringify(book));
+
+        const existingMutations = (await window.db.syncQueue.where('userId').equals(user.id).toArray())
+            .filter((mutation) => mutation.bookId === snapshot.id);
+
+        if (action === 'remove') {
+            await Promise.all(existingMutations.map((mutation) => window.db.syncQueue.delete(mutation.id)));
+            await this.updateSyncStatus();
+            return;
+        }
+
+        const shelf = extra.shelf || this.findBookShelf(snapshot.id) || null;
+        const mergedMutation = {
+            userId: user.id,
+            action,
+            bookId: snapshot.id,
+            db_id: snapshot.db_id || null,
+            shelf,
+            payload: extra,
+            book: snapshot
+        };
+
+        const pendingAdd = existingMutations.find((mutation) => mutation.action === 'add');
+        if (pendingAdd && (action === 'move' || action === 'update')) {
+            await window.db.syncQueue.put({
+                ...pendingAdd,
+                db_id: mergedMutation.db_id || pendingAdd.db_id || null,
+                shelf: action === 'move' ? extra.toShelf || pendingAdd.shelf : pendingAdd.shelf,
+                payload: {
+                    ...(pendingAdd.payload || {}),
+                    ...extra
+                },
+                book: snapshot,
+                createdAt: pendingAdd.createdAt || new Date().toISOString()
+            });
+            await this.updateSyncStatus();
+            return;
+        }
+
+        if (action === 'add') {
+            await Promise.all(existingMutations.map((mutation) => window.db.syncQueue.delete(mutation.id)));
+        }
+
+        await window.enqueueLibraryMutation(mergedMutation);
+        await this.updateSyncStatus();
+    }
+
+    async _applyQueuedMutation(mutation) {
+        const user = this.getUser();
+        if (!user) return;
+
+        const localBookResult = this.findBookInShelf(mutation.bookId);
+        const localBook = localBookResult?.book || mutation.book;
+        const dbId = localBook?.db_id || mutation.db_id;
+
+        if (mutation.action === 'add') {
+            if (!localBook) return;
+
+            const payload = {
+                user_id: user.id,
+                google_books_id: localBook.id,
+                title: localBook.volumeInfo?.title || localBook.title || '',
+                authors: localBook.volumeInfo?.authors ? localBook.volumeInfo.authors.join(', ') : '',
+                thumbnail: localBook.volumeInfo?.imageLinks?.thumbnail || '',
+                shelf_type: mutation.shelf || mutation.payload?.shelf || 'want'
+            };
+
+            const res = await fetch(`${this.apiBase}/library`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            if (localBook) {
+                localBook.db_id = data.item.id;
+                localBook.version = data.item.version;
+                this.saveLocally();
+            }
+            return;
+        }
+
+        if (mutation.action === 'remove') {
+            if (!dbId) return;
+
+            const res = await fetch(`${this.apiBase}/library/${dbId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+            return;
+        }
+
+        if (mutation.action === 'move' || mutation.action === 'update') {
+            if (!dbId || !localBook) return;
+
+            const body = mutation.action === 'move'
+                ? {
+                    shelf_type: mutation.payload?.toShelf,
+                    progress: localBook.progress,
+                    version: localBook.version
+                }
+                : {
+                    ...mutation.payload?.updates,
+                    version: localBook.version
+                };
+
+            const res = await fetch(`${this.apiBase}/library/${dbId}`, {
+                method: 'PUT',
+                headers: this.getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            localBook.version = data.item.version;
+            this.saveLocally();
+        }
+    }
+
+    async flushPendingLibraryMutations() {
+        const user = this.getUser();
+        if (!user || !window.db?.syncQueue) {
+            await this.updateSyncStatus();
+            return 0;
+        }
+
+        const pendingMutations = await window.db.syncQueue.where('userId').equals(user.id).sortBy('createdAt');
+        if (pendingMutations.length === 0) {
+            await this.updateSyncStatus();
+            return 0;
+        }
+
+        let processed = 0;
+        for (const mutation of pendingMutations) {
+            await this._applyQueuedMutation(mutation);
+            await window.db.syncQueue.delete(mutation.id);
+            processed += 1;
+        }
+
+        if (processed > 0) {
+            await this.syncWithBackend();
+        }
+
+        await this.updateSyncStatus();
+        return processed;
     }
 
     async syncWithBackend() {
@@ -1989,6 +2168,7 @@ class LibraryManager {
                         this.renderShelf('finished', 'shelf-finished');
                     }
                 }
+                await this.updateSyncStatus();
             }
         } catch (e) {
             console.error("Sync failed", e);
@@ -2046,6 +2226,7 @@ class LibraryManager {
 
                 // After upload, pull fresh state from backend to get the new DB IDs and versions
                 await this.syncWithBackend();
+                await this.updateSyncStatus();
             } else {
                 const data = await res.json();
                 console.error("Backend refused sync", data);
@@ -2215,10 +2396,12 @@ class LibraryManager {
                     enrichedBook.db_id = data.item.id;
                     enrichedBook.version = data.item.version;
                     this.saveLocally();
+                    await this.updateSyncStatus();
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
-                showToast("Saved locally (Sync failed)", "info");
+                await this._queueMutation('add', enrichedBook, { shelf });
+                showToast("Saved locally; sync queued", "info");
             }
         }
     }
@@ -2264,6 +2447,7 @@ class LibraryManager {
                     const data = await res.json();
                     book.version = data.item.version;
                     this.saveLocally();
+                    await this.updateSyncStatus();
                 } else if (res.status === 409) {
                     const data = await res.json();
                     showToast("Conflict detected! Syncing with server...", "error");
@@ -2275,7 +2459,8 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to update backend", e);
-                showToast("Saved locally (Sync failed)", "info");
+                await this._queueMutation('update', book, { updates });
+                showToast("Saved locally; sync queued", "info");
             }
         }
     }
@@ -2339,9 +2524,11 @@ class LibraryManager {
                         headers: this.getAuthHeaders(),
                         credentials: 'include'
                     });
+                    await this.updateSyncStatus();
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
-                    showToast("Removed locally (Backend sync failed)", "info");
+                    await this._queueMutation('remove', book, { shelf });
+                    showToast("Removed locally; sync queued", "info");
                 }
             } else if (user) {
                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
@@ -2393,6 +2580,7 @@ class LibraryManager {
                     const data = await res.json();
                     book.version = data.item.version;
                     this.saveLocally();
+                    await this.updateSyncStatus();
                 } else if (res.status === 409) {
                     showToast("Conflict detected! Syncing with server...", "error");
                     await this.syncWithBackend();
@@ -2403,10 +2591,12 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to update backend during move", e);
-                showToast("Moved locally (Sync failed)", "info");
+                await this._queueMutation('move', book, { fromShelf, toShelf });
+                showToast("Moved locally; sync queued", "info");
             }
         }
 
+        await this.updateSyncStatus();
         return true;
     }
 
@@ -2826,16 +3016,19 @@ if (bgThemeBtn && bgThemePanel) {
         searchInput.value = query;
     }
 
-    if (query && document.getElementById('row-rainy')) {
-        document.querySelector('main').innerHTML = `
-            <section class="hero">
-                <h1>Results for "${query}"</h1>
-                <p>Found specific books matching your vibe.</p>
-            </section>
-            <section class="curated-section">
-                <div class="curated-row" id="search-results" style="flex-wrap: wrap; justify-content: center;"></div>
-            </section>`;
-        renderer.renderCuratedSection(query, 'search-results', 20);
+    if (query && document.getElementById('search-results-section')) {
+        const searchSection = document.getElementById('search-results-section');
+        const queryDisplay = document.getElementById('search-query-display');
+        
+        queryDisplay.textContent = `Results for "${query}"`;
+        searchSection.removeAttribute('hidden');
+        
+        // Hide other main content to focus on search without destroying modals
+        document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        renderer.renderCuratedSection(query, 'search-results-grid', 20);
     } else if (document.getElementById('row-rainy')) {
         console.log('📚 Initializing Curated Discovery Sections...');
         const discoveryShelves = [
@@ -3304,13 +3497,36 @@ async function handleAuth(event) {
         payload = { username: email, password: password };
     }
 
+    // =========================================================================
+    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
+    // =========================================================================
+    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
+    // This token is then injected into the 'X-CSRF-Token' header. 
+    // The Flask-WTF backend expects this header for all state-changing
+    // AJAX requests. This protects against Cross-Site Request Forgery 
+    // by ensuring that the request is authenticated via the browser's 
+    // Same-Origin Policy and session-bound secrets.
+    // =========================================================================
+    const csrfToken = document.getElementById('csrf_token')?.value;
+
     try {
-        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
+        const fetchOptions = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             credentials: 'include',
             body: JSON.stringify(payload)
-        });
+        };
+
+        // Inject CSRF token into headers if available
+        if (csrfToken) {
+            fetchOptions.headers['X-CSRF-Token'] = csrfToken;
+        } else if (IS_DEV) {
+            console.warn('[Security] No CSRF token found in DOM. Request may be rejected by server.');
+        }
+
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
 
         const data = await res.json();
 

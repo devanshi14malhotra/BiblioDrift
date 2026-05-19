@@ -40,6 +40,8 @@ def rewrite_html(content: str) -> str:
         'src="script/header-scroll.js"': 'src="script/header-scroll.js"',
         'src="js/header-scroll.js"': 'src="script/header-scroll.js"',
         '../assets/biblioDrift_favicon.png': 'assets/images/biblioDrift_favicon.png',
+        'href="../manifest.json"': 'href="manifest.json"',
+        'href="/manifest.json"': 'href="manifest.json"',
     }
 
     for pattern, replacement in replacements.items():
@@ -71,6 +73,11 @@ def main() -> None:
     reset_dist()
     for folder in ("css", "js", "assets", "script"):
         copy_tree(folder)
+        
+    manifest_src = SOURCE / "manifest.json"
+    if manifest_src.exists():
+        shutil.copy2(manifest_src, DIST / "manifest.json")
+        
     build_html()
     inject_api_base_override()
 

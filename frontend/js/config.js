@@ -22,12 +22,6 @@ function resolveMoodApiBase() {
 
 const MOOD_API_BASE = resolveMoodApiBase();
 
-// Vault API Base - temp_app.py runs on port 5001 and serves
-// both the HTML pages and the vault /api/v1/library endpoints.
-// If you're using VS Code Live Server (port 5500), vault.js
-// will fall back to MOOD_API_BASE (port 5000) for API calls.
-window.VAULT_API_BASE = 'http://127.0.0.1:5001/api/v1';
-
 const CONFIG = {
     // Google Books API - loaded from backend config endpoint
     // Leave empty - it will be populated by loadConfig() in app.js
