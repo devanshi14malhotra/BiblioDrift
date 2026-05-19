@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BiblioDrift-upload your books</title>
+  
+  <meta name="description" content="BiblioDrift Vault - Upload and manage your personal book collection" />
+  
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c2420">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BiblioDrift Vault">
+  <link rel="apple-touch-icon" href="/assets/images/biblioDrift_favicon.png">
+  <link rel="icon" href="/assets/images/biblioDrift_favicon.png" type="image/png">
+
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+  <script src="../js/db.js"></script>
+  <script src="../js/library-3d.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
+  <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations." />
+  <title>BiblioDrift | Find yourself in the pages</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+  <link rel="manifest" href="/manifest.json">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Security: DOMPurify for XSS prevention -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c2420">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BiblioDrift">
+  <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+
+  <style>
+    /* Map vault-specific variables to app-wide variables for uniformity */
+    :root {
+      --bg-surface: var(--bg-color);
+      --bg-card: var(--input-bg);
+      --border-color: var(--glass-border);
+      --border-focus: var(--accent-gold);
+      --field-bg: var(--input-bg);
+      --shelf-bg: var(--wood-dark);
+      --shelf-shadow: rgba(0, 0, 0, 0.4);
+      --reader-bg: rgba(0, 0, 0, 0.9);
+      --page-bg: var(--paper-color);
+      --page-text: var(--text-main);
+    }
+
+    [data-theme="night"] {
+      --shelf-shadow: rgba(0, 0, 0, 0.8);
+    }
+
+    /* Remove body, header, footer overrides so style.css takes over */
+    header, .main-footer, .hero, section, div, input, textarea, select {
+      transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    /* Form Fields */
+    .vault-field {
+      background: var(--field-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text-main) !important;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+    }
+
+    .vault-field:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(201, 160, 220, 0.2);
+    }
+
+    .vault-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      text-align: left;
+    }
+    .vault-input-group { display: flex; flex-direction: column; }
+    .vault-input-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+    .vault-input-group label span.requirement-hint {
+      font-weight: 400;
+      font-size: 0.78rem;
+      color: #c9a0dc;
+      margin-left: 4px;
+    }
+    html[data-theme="light"] .vault-input-group label span.requirement-hint {
+      color: #8e44ad;
+    }
+    .full-width-field { grid-column: span 2; }
+
+    .details-revealer-card {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .details-revealer-card.active {
+      max-height: 900px;
+      opacity: 1;
+      transform: translateY(0);
+      margin-top: 25px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* Shelf Engine Visuals */
+    .shelf-container {
+      background: var(--shelf-bg);
+      border-radius: 8px;
+      padding: 50px 30px 0px 30px;
+      margin-top: 30px;
+      position: relative;
+      box-shadow: inset 0 20px 40px var(--shelf-shadow), 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .shelf-plank-ledge {
+      height: 20px;
+      background: linear-gradient(180deg, #3d2b24 0%, #1a120f 100%);
+      margin: 0 -30px;
+      border-top: 2px solid #523b32;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      border-radius: 0 0 8px 8px;
+      position: relative;
+      z-index: 4;
+    }
+    html[data-theme="light"] .shelf-plank-ledge {
+      background: linear-gradient(180deg, #b59f8f 0%, #8c7362 100%);
+      border-top: 2px solid #cfbbae;
+    }
+
+    .shelf-row-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-end;
+      position: relative;
+      z-index: 2;
+      padding-bottom: 2px;
+    }
+
+    /* Hardbound Spine Precision Styling */
+    .spine-spine-node {
+      width: 52px;
+      height: 240px;
+      position: relative;
+      border-radius: 5px 2px 2px 5px;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.2, 1, 0.3, 1), box-shadow 0.25s ease;
+      overflow: hidden;
+      display: flex;
+      padding: 22px 0;
+      justify-content: center;
+      /* Distinct Hardbound Join Crease and Depth Extrusion */
+      box-shadow: 
+        inset 5px 0 7px rgba(255,255,255,0.08),
+        inset -3px 0 5px rgba(0,0,0,0.4),
+        inset 1px 0 0px rgba(255,255,255,0.2),
+        -6px 0 12px rgba(0,0,0,0.5), 
+        3px 0 5px rgba(0,0,0,0.3);
+      z-index: 2;
+      transform-origin: bottom center;
+    }
+    .spine-spine-node:hover {
+      transform: translateY(-12px) scale(1.04);
+      z-index: 99 !important;
+      box-shadow: 
+        inset 5px 0 7px rgba(255,255,255,0.12),
+        inset -3px 0 5px rgba(0,0,0,0.4),
+        -12px 14px 28px rgba(0,0,0,0.7), 
+        5px 4px 14px rgba(0,0,0,0.4);
+    }
+    .spine-spine-node.active-open {
+      transform: translateY(-6px);
+      z-index: 5;
+      box-shadow: 0 0 20px var(--border-focus), inset -3px 0 5px rgba(0,0,0,0.4);
+    }
+
+    .spine-vertical-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      font-family: 'Georgia', serif;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      letter-spacing: 0.8px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+      max-height: 195px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: right;
+      padding-right: 2px;
+    }
+
+    /* Traditional Bookbinding Vertical Shoulder Joint Bump Indicator */
+    .spine-spine-node::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 8px; bottom: 0;
+      width: 2px;
+      background: rgba(0,0,0,0.35);
+      box-shadow: 1px 0 1px rgba(255,255,255,0.1);
+      z-index: 3;
+    }
+
+    .color-picker-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 8px;
+    }
+    .native-picker-accent {
+      width: 45px;
+      height: 45px;
+      border: none;
+      padding: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+    }
+    .native-picker-accent::-webkit-color-swatch-wrapper { padding: 0; }
+    .native-picker-accent::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; }
+
+    /* Metadata Shelf Drawer Layout */
+    .shelf-isolated-meta-drawer {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 25px;
+      display: none;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.05);
+      animation: slideDownMeta 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideDownMeta {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Expanded Split Card Transformation Layout System */
+    .vault-split-card {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 30px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 768px) {
+      .vault-split-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Premium Heavy Hardbound Board Design Configuration */
+    .vault-cover-preview-canvas {
+      border-radius: 6px 12px 12px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 24px;
+      position: relative;
+      min-height: 375px;
+      overflow: hidden;
+      /* Heavy structural hardback border and shadow framing layers */
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      border-left: 12px solid rgba(0, 0, 0, 0.35);
+      box-shadow: 
+        0 18px 40px rgba(0, 0, 0, 0.45), 
+        5px 0 15px rgba(0, 0, 0, 0.2),
+        inset 1px 1px 3px rgba(255,255,255,0.15),
+        inset -2px -2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* Hardcover Intent Spine Groove Indentation (French Groove Line) */
+    .vault-cover-preview-canvas::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 4px; bottom: 0;
+      width: 3px;
+      background: rgba(0, 0, 0, 0.25);
+      box-shadow: 1px 0 1px rgba(255,255,255,0.08);
+    }
+
+    .cover-title-display {
+      font-family: 'Georgia', serif;
+      font-size: 1.65rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.35;
+      text-shadow: 1px 2px 5px rgba(0,0,0,0.65), 0px 0px 10px rgba(0,0,0,0.2);
+      word-wrap: break-word;
+    }
+
+    .vault-essential-details-pane {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .editable-input-node {
+      background: transparent;
+      border: 1px dashed transparent;
+      color: var(--text-main);
+      width: 100%;
+      padding: 8px;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .editable-input-node:focus {
+      background: var(--field-bg);
+      border-color: var(--border-focus);
+      outline: none;
+    }
+
+    .tag-container-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .tag-bubble {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(201, 160, 220, 0.15);
+      color: #c9a0dc;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid rgba(201, 160, 220, 0.2);
+    }
+    html[data-theme="light"] .tag-bubble {
+      background: rgba(155, 89, 182, 0.1);
+      color: #8e44ad;
+      border-color: rgba(155, 89, 182, 0.2);
+    }
+
+    .ai-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .ai-status-passed { background: rgba(40, 167, 69, 0.12); color: #2eb85c; border: 1px solid rgba(40, 167, 69, 0.2); }
+    .ai-status-failed { background: rgba(220, 53, 69, 0.12); color: #e55353; border: 1px solid rgba(220, 53, 69, 0.2); }
+
+    .vault-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .privacy-toggle-btn, .btn-delete-vault, .btn-read-book {
+      background: var(--field-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .privacy-toggle-btn:hover { border-color: var(--border-focus); }
+    
+    .btn-read-book {
+      background: var(--border-focus);
+      color: #fff !important;
+      border: none;
+    }
+    .btn-read-book:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    
+    .btn-delete-vault { background: rgba(220, 53, 69, 0.05); border-color: rgba(220, 53, 69, 0.15); color: #f26868; }
+    .btn-delete-vault:hover { background: rgba(220, 53, 69, 0.15); color: #fff; }
+
+    /* Immersive Genuine Full Screen PDF Viewport Layer Architecture */
+    .realistic-book-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--reader-bg);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .close-reader-trigger {
+      position: absolute;
+      top: 20px; right: 25px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 1.2rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 10000;
+    }
+    .close-reader-trigger:hover {
+      background: rgba(220, 53, 69, 0.8);
+      transform: scale(1.05);
+    }
+
+    .book-spread-container {
+      width: 100%;
+      max-width: 1100px;
+      height: 88vh;
+      display: flex;
+      background-color: var(--page-bg);
+      box-shadow: 0 30px 70px rgba(0,0,0,0.6);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    .pdf-render-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: #fff;
+    }
+
+    .book-spread-container::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 40px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.28) 50%, rgba(0,0,0,0.12) 100%);
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .auth-barrier-message {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px dashed var(--border-color);
+    }
+  </style>
+</head>
+
+<body>
+     <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html" >Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="vault.html" class="active">My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" >My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html" >Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main style="padding: 40px 20px; max-width: 1200px; margin: 0 auto;">
+    <section class="hero" style="text-align: center; margin-bottom: 40px;">
+      <h1 style="font-family: 'Georgia', serif; font-size: 2.8rem; margin-bottom: 12px;">Your Own Literary Vault.</h1>
+      <p style="color: var(--text-muted); font-size: 1.1rem;">Here you can upload your books, with your choice to keep it private or share with others publically.</p>
+    </section>
+
+    <div id="vaultContentContainer">
+      <div id="authBarrier" class="auth-barrier-message">
+        <i class="fa-solid fa-user-lock" style="font-size: 3rem; margin-bottom: 15px; color: var(--text-muted);"></i>
+        <h2>Authentication Required</h2>
+        <p>Please sign up or log in to mount your sandboxed local document repository crypt.</p>
+        <a href="auth.html" class="btn-primary" style="display: inline-block; margin-top: 15px; text-decoration: none; padding: 10px 24px;">Go to Authentication</a>
+      </div>
+
+      <div id="secureDeck" style="display: none;">
+        <section class="curated-section">
+          <div id="dropZone" class="upload-container" style="padding: 40px; background: var(--bg-card); border: 2px dashed var(--border-color); border-radius: 12px; margin-bottom: 30px; transition: all 0.3s ease;">
+            <label for="vaultFileInput" style="cursor: pointer; display: block; margin-bottom: 15px; text-align: center;">
+              <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; margin-bottom: 10px; color: var(--text-main);"></i>
+              <span style="display: block; font-size: 1.1rem; color: var(--text-main); font-weight: 500;">Drag & Drop book PDF here or click to browse</span>
+            </label>
+            <input type="file" id="vaultFileInput" accept=".pdf" style="display: none;" />
+            <div id="fileSelectedFeedback" style="margin-bottom: 0; font-weight: 500; color: var(--text-main); text-align: center; font-size: 0.95rem;"></div>
+            
+            <div id="detailsRevealer" class="details-revealer-card">
+              <div class="vault-form-grid">
+                <div class="vault-input-group">
+                  <label for="vaultBookTitle">Book Title</label>
+                  <input type="text" id="vaultBookTitle" class="vault-field" placeholder="Book Title">
+                </div>
+                <div class="vault-input-group">
+                  <label for="vaultBookGenre">Genres <span class="requirement-hint">(Separated by commas)</span></label>
+                  <input type="text" id="vaultBookGenre" class="vault-field" placeholder="e.g. Fiction, Cyberpunk, Drama">
+                </div>
+                <div class="vault-input-group">
+                  <label for="vaultBookPrivacy">Privacy Policy Config</label>
+                  <select id="vaultBookPrivacy" class="vault-field">
+                    <option value="private">Private (Local Sandboxed Crypt Only)</option>
+                    <option value="public">Public (Synchronized to Cloud Matrix)</option>
+                  </select>
+                </div>
+                <div class="vault-input-group">
+                  <label for="vaultBookAuthor">Author</label>
+                  <input type="text" id="vaultBookAuthor" class="vault-field" placeholder="Author Name">
+                </div>
+                
+                <div class="vault-input-group">
+                  <label>Custom Cover Spine Theme Tint</label>
+                  <div class="color-picker-wrapper">
+                    <input type="color" id="vaultSpineColorPicker" class="native-picker-accent" value="#4a2810">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Click circle to open dynamic spectrum palette</span>
+                  </div>
+                </div>
+                <div class="vault-input-group">
+                  <label for="vaultBookCoverUrl">Custom Cover Background Image URL (Optional)</label>
+                  <input type="url" id="vaultBookCoverUrl" class="vault-field" placeholder="https://images.unsplash.com/photo-example">
+                </div>
+
+                <div class="vault-input-group full-width-field">
+                  <label for="vaultBookDesc">Description & Personal Annotation Notes</label>
+                  <textarea id="vaultBookDesc" class="vault-field" rows="3" placeholder="Add custom context notes or literary descriptions..."></textarea>
+                </div>
+              </div>
+
+              <div style="text-align: center; margin-top: 25px;">
+                <button id="uploadBtn" class="btn-primary" style="padding: 12px 30px; font-weight: 600; font-size: 0.95rem;"><i class="fa-solid fa-lock" style="margin-right: 6px;"></i> Secure File to Vault & Run Elara Scan</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="curated-section">
+          <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.8rem;">Your Uploads</h2>
+            <span style="color: var(--text-muted); font-size: 0.9rem;"><i class="fa-solid fa-book-bookmark"></i> Private Virtual Shelf</span>
+          </div>
+          
+          <div class="shelf-container">
+            <div class="shelf-row-display" id="vault-shelf-row"></div>
+            <div class="shelf-plank-ledge"></div>
+          </div>
+
+          <div id="drawer-meta-target"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Back to Top Button -->
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- Ambient Sanctuary UI -->
+  <div class="ambient-sanctuary">
+    <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
+      <i class="fa-solid fa-leaf"></i>
+    </button>
+    <div id="ambientPanel" class="ambient-panel">
+      <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
+        <label class="switch">
+          <input type="checkbox" id="rainToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
+        <label class="switch">
+          <input type="checkbox" id="fireToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
+        <label class="switch">
+          <input type="checkbox" id="oceanToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+        <label class="switch">
+          <input type="checkbox" id="stormToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="volume-control">
+        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
+        <div class="range-wrap">
+          <div class="range-track" aria-hidden="true"></div>
+          <div class="range-fill" aria-hidden="true"></div>
+          <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="immersiveBookReader" class="realistic-book-overlay">
+    <button class="close-reader-trigger" id="closeReaderBtn" title="Close Book Workspace Layout Layer"><i class="fa-solid fa-xmark"></i></button>
+    <div class="book-spread-container" id="bookSpreadTarget"></div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/security.js"></script>
+  <script src="../script/header-scroll.js"></script>
+  <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
+  <script src="../js/footer.js"></script>
+  <script src="../js/pwa.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const themeToggle = document.getElementById("themeToggle");
+      
+      function updateThemeToggleButton(currentTheme) {
+        const icon = themeToggle.querySelector("i");
+        if (currentTheme === "night" || currentTheme === "dark") {
+          icon.className = "fa-solid fa-sun";
+          themeToggle.setAttribute("title", "Switch to Light Mode");
+        } else {
+          icon.className = "fa-solid fa-moon";
+          themeToggle.setAttribute("title", "Switch to Dark Mode");
+        }
+      }
+
+      updateThemeToggleButton(document.documentElement.getAttribute('data-theme'));
+
+      themeToggle.addEventListener("click", () => {
+        const activeTheme = document.documentElement.getAttribute('data-theme');
+        const nextTheme = (activeTheme === "dark" || activeTheme === "night") ? "light" : "dark";
+        
+        document.documentElement.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('bibliodrift_theme', nextTheme);
+        if (typeof restoreTheme === 'function') restoreTheme();
+        updateThemeToggleButton(nextTheme);
+      });
+
+      // Dexie Storage Sandbox setup
+      const db = new Dexie("BiblioDriftPrivateVault");
+      db.version(6).stores({
+        vaultBooks: "++id, title, author, genre, desc, privacy, elaraScanStatus, filename, timestamp, coverColor, coverUrl, fileBlob"
+      });
+
+      const authBarrier = document.getElementById("authBarrier");
+      const secureDeck = document.getElementById("secureDeck");
+      const vaultFileInput = document.getElementById("vaultFileInput");
+      const fileSelectedFeedback = document.getElementById("fileSelectedFeedback");
+      const detailsRevealer = document.getElementById("detailsRevealer");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const shelfRow = document.getElementById("vault-shelf-row");
+      const drawerMetaTarget = document.getElementById("drawer-meta-target");
+
+      const immersiveBookReader = document.getElementById("immersiveBookReader");
+      const closeReaderBtn = document.getElementById("closeReaderBtn");
+      const bookSpreadTarget = document.getElementById("bookSpreadTarget");
+      let activePdfObjectUrl = null;
+
+      const userSessionToken = localStorage.getItem("bibliodrift_session") || "authenticated_mock_user"; 
+      
+      if (!userSessionToken) {
+        authBarrier.style.display = "block";
+        secureDeck.style.display = "none";
+        return;
+      } else {
+        authBarrier.style.display = "none";
+        secureDeck.style.display = "block";
+      }
+
+      // Drag and Drop Interfaces
+      const dropZone = document.getElementById("dropZone");
+      dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--border-focus)"; });
+      dropZone.addEventListener("dragleave", () => { dropZone.style.borderColor = "var(--border-color)"; });
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "var(--border-color)";
+        if(e.dataTransfer.files.length) {
+          vaultFileInput.files = e.dataTransfer.files;
+          handleFileSelection();
+        }
+      });
+
+      vaultFileInput.addEventListener("change", handleFileSelection);
+
+      function handleFileSelection() {
+        if(vaultFileInput.files.length) {
+          const file = vaultFileInput.files[0];
+          fileSelectedFeedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2eb85c; margin-right: 5px;"></i> Loaded: <strong style="color: var(--text-main);">${file.name}</strong> (${(file.size/(1024*1024)).toFixed(2)} MB)`;
+          document.getElementById("vaultBookTitle").value = file.name.replace(/\.[^/.]+$/, "");
+          detailsRevealer.classList.add("active");
+        }
+      }
+
+      // Storage Pipeline Execution
+      uploadBtn.addEventListener("click", async () => {
+        if (!vaultFileInput.files.length) return;
+
+        const file = vaultFileInput.files[0];
+        const title = DOMPurify.sanitize(document.getElementById("vaultBookTitle").value.trim());
+        const rawGenre = DOMPurify.sanitize(document.getElementById("vaultBookGenre").value.trim()) || "Literature";
+        const privacy = document.getElementById("vaultBookPrivacy").value;
+        const author = DOMPurify.sanitize(document.getElementById("vaultBookAuthor").value.trim()) || "Unknown Author";
+        const desc = DOMPurify.sanitize(document.getElementById("vaultBookDesc").value.trim());
+        const coverUrl = DOMPurify.sanitize(document.getElementById("vaultBookCoverUrl").value.trim());
+        const selectedColor = document.getElementById("vaultSpineColorPicker").value;
+
+        if(!title) { alert("Please provide a book title."); return; }
+
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Committing file storage array...`;
+
+        try {
+          const elaraAssessment = await simulateElaraMetadataScanner(file);
+
+          await db.vaultBooks.add({
+            title: title,
+            author: author,
+            genre: rawGenre, 
+            desc: desc,
+            privacy: privacy,
+            elaraScanStatus: elaraAssessment,
+            filename: file.name,
+            timestamp: Date.now(),
+            coverColor: selectedColor,
+            coverUrl: coverUrl,
+            fileBlob: file 
+          });
+
+          // Reset inputs cleanly
+          document.getElementById("vaultBookTitle").value = "";
+          document.getElementById("vaultBookAuthor").value = "";
+          document.getElementById("vaultBookGenre").value = "";
+          document.getElementById("vaultBookDesc").value = "";
+          document.getElementById("vaultBookCoverUrl").value = "";
+          fileSelectedFeedback.textContent = "";
+          vaultFileInput.value = "";
+          detailsRevealer.classList.remove("active");
+
+          await renderVaultShelf();
+        } catch (err) {
+          console.error("Storage Entry Error: ", err);
+        } finally {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = `<i class="fa-solid fa-lock" style="margin-right: 6px;"></i> Secure File to Vault & Run Elara Scan`;
+        }
+      });
+
+      async function simulateElaraMetadataScanner(file) {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const suspiciousTerms = ["malware", "exploit", "hack", ".exe", "virus"];
+            const isSuspicious = suspiciousTerms.some(term => file.name.toLowerCase().includes(term));
+            resolve(isSuspicious ? "FAILED" : "PASSED");
+          }, 600);
+        });
+      }
+
+      // Render Virtual Display Shelf UI Engine (With Split-Card Cover Expansion Layout)
+      async function renderVaultShelf() {
+        shelfRow.innerHTML = "";
+        drawerMetaTarget.innerHTML = ""; 
+        
+        const localBooks = await db.vaultBooks.orderBy('timestamp').reverse().toArray();
+
+        if (localBooks.length === 0) {
+          shelfRow.innerHTML = `<p style="padding: 30px; text-align: center; color: var(--text-muted); width: 100%;">Your virtual shelf is empty. Drop PDFs to stack your shelf space.</p>`;
+          return;
+        }
+
+        localBooks.forEach((book, idx) => {
+          // Build the book cover spine node - STRICTLY hardbound color fill
+          const spineNode = document.createElement("div");
+          spineNode.className = "spine-spine-node";
+          spineNode.setAttribute("data-id", book.id);
+          spineNode.style.zIndex = idx + 5;
+          spineNode.style.backgroundColor = book.coverColor || '#4a2810';
+
+          spineNode.innerHTML = `<div class="spine-vertical-text">${DOMPurify.sanitize(book.title)}</div>`;
+
+          // Manage metadata tags mapping
+          const tagsArray = book.genre ? book.genre.split(',').map(t => t.trim()).filter(t => t !== "") : ["Literature"];
+          let tagPillsHtml = tagsArray.map(tag => `<span class="tag-bubble"><i class="fa-solid fa-tag" style="font-size:0.65rem; margin-right:4px;"></i>${tag}</span>`).join('');
+
+          const metaDrawer = document.createElement("div");
+          metaDrawer.className = "shelf-isolated-meta-drawer";
+          metaDrawer.id = `drawer-sheet-${book.id}`;
+
+          let aiBadge = book.elaraScanStatus === "PASSED" 
+            ? `<span class="ai-status-badge ai-status-passed"><i class="fa-solid fa-shield-halved"></i> Elara Checked</span>`
+            : `<span class="ai-status-badge ai-status-failed"><i class="fa-solid fa-triangle-exclamation"></i> Flagged Asset</span>`;
+
+          // Background Cover Logic Configuration
+          const hasCoverImage = book.coverUrl && book.coverUrl.trim() !== "";
+          const dynamicCoverStyle = hasCoverImage 
+            ? `background-image: url('${encodeURI(book.coverUrl)}'); background-size: cover; background-position: center;` 
+            : `background-color: ${book.coverColor || '#4a2810'}; display: flex; flex-direction: column; justify-content: space-between; padding: 25px 20px; box-sizing: border-box; text-align: left;`;
+
+          // Typographic Fallback Block Builder
+          const titleRenderBlock = hasCoverImage 
+            ? `<div class="cover-title-display" id="cover-title-render-${book.id}" style="display: none;">${DOMPurify.sanitize(book.title)}</div>`
+            : `
+              <div style="width: 100%;" class="fallback-meta-wrapper-${book.id}">
+                <div class="cover-title-display" id="cover-title-render-${book.id}" style="font-family: 'Playfair Display', serif; font-size: 1.35rem; color: #ffffff; margin-bottom: 6px; font-weight: 700; line-height: 1.3; word-break: break-word;">
+                  ${DOMPurify.sanitize(book.title)}
+                </div>
+                <div class="cover-author-display" id="cover-author-render-${book.id}" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); font-style: italic; word-break: break-word;">
+                  by ${DOMPurify.sanitize(book.author)}
+                </div>
+              </div>
+              <div style="font-size: 0.65rem; color: rgba(255, 255, 255, 0.4); font-family: sans-serif; letter-spacing: 1.5px; font-weight: bold; text-transform: uppercase; margin-top: auto;">
+                BiblioDrift Vault
+              </div>
+            `;
+
+          // Clean Integrated Front-Cover Split-Form Component Architecture
+          metaDrawer.innerHTML = `
+            <div class="vault-split-card">
+              
+              <div class="vault-cover-preview-canvas" style="${dynamicCoverStyle}">
+                ${titleRenderBlock}
+              </div>
+
+              <div class="vault-essential-details-pane">
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding-bottom:10px; border-bottom:1px solid var(--border-color);">
+                    <div class="tag-container-row" id="tag-row-target-${book.id}">
+                      ${tagPillsHtml}
+                    </div>
+                    <div>${aiBadge}</div>
+                  </div>
+
+                  <div class="vault-form-grid" style="gap:14px;">
+                    <div class="vault-input-group">
+                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Asset Title Label</label>
+                      <input type="text" class="editable-input-node inline-edit-title" value="${book.title}" style="font-family:'Playfair Display', serif; font-size:1.25rem; font-weight:600; border-bottom:1px solid var(--border-color);" placeholder="Book Title">
+                    </div>
+                    <div class="vault-input-group">
+                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Author Signature</label>
+                      <input type="text" class="editable-input-node inline-edit-author" value="${book.author}" style="font-size:1.02rem; font-style:italic; color:var(--text-muted);" placeholder="Author Name">
+                    </div>
+                    <div class="vault-input-group full-width-field">
+                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Genre Field Config <span class="requirement-hint">(Commas)</span></label>
+                      <input type="text" class="editable-input-node inline-edit-genre" value="${book.genre || ''}" style="border-bottom:1px solid var(--border-color); font-size:0.9rem;" placeholder="e.g. Fiction, Cyberpunk">
+                    </div>
+                    <div class="vault-input-group full-width-field">
+                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Annotations & Context Notes</label>
+                      <textarea class="editable-input-node inline-edit-desc" rows="2" style="line-height:1.5; font-size:0.9rem;" placeholder="Add private contextual details...">${book.desc || ''}</textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:15px; display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-paperclip"></i> <span>Sandbox Block: <strong>${book.filename}</strong></span>
+                  </div>
+
+                  <div class="vault-action-row" style="margin-top:12px; padding-top:12px;">
+                    <div style="display:flex; gap:8px;">
+                      <button class="privacy-toggle-btn action-privacy-node" style="padding: 8px 14px; font-size:0.8rem;">
+                        <i class="fa-solid ${book.privacy === 'private' ? 'fa-lock' : 'fa-globe'}"></i> ${book.privacy.toUpperCase()}
+                      </button>
+                      <button class="btn-delete-vault action-delete-node" style="padding: 8px 14px; font-size:0.8rem;">
+                        <i class="fa-solid fa-trash-can"></i> Delete
+                      </button>
+                    </div>
+                    <button class="btn-read-book action-open-reader-node" style="padding: 8px 16px; font-size:0.82rem;">
+                      <i class="fa-solid fa-book-open"></i> Open Interactive Reader
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          `;
+
+          // Handle Drawer Display State Toggles
+          spineNode.addEventListener("click", () => {
+            const allDrawers = document.querySelectorAll(".shelf-isolated-meta-drawer");
+            const allSpines = document.querySelectorAll(".spine-spine-node");
+            const targetDrawer = document.getElementById(`drawer-sheet-${book.id}`);
+
+            if(spineNode.classList.contains("active-open")) {
+              spineNode.classList.remove("active-open");
+              targetDrawer.style.display = "none";
+            } else {
+              allSpines.forEach(s => s.classList.remove("active-open"));
+              allDrawers.forEach(d => d.style.display = "none");
+              
+              spineNode.classList.add("active-open");
+              targetDrawer.style.display = "block";
+              targetDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          });
+
+          // Metadata Sync Listeners
+          const titleIn = metaDrawer.querySelector(".inline-edit-title");
+          const authorIn = metaDrawer.querySelector(".inline-edit-author");
+          const genreIn = metaDrawer.querySelector(".inline-edit-genre");
+          const descIn = metaDrawer.querySelector(".inline-edit-desc");
+
+          const fireSyncToDB = async () => {
+            const t = DOMPurify.sanitize(titleIn.value.trim());
+            const a = DOMPurify.sanitize(authorIn.value.trim());
+            const g = DOMPurify.sanitize(genreIn.value.trim());
+            const d = DOMPurify.sanitize(descIn.value.trim());
+
+            if(t) {
+              await db.vaultBooks.update(book.id, { title: t, author: a, genre: g, desc: d });
+              
+              // Synchronize text live across Spine text node
+              spineNode.querySelector(".spine-vertical-text").textContent = t;
+              
+              // Synchronize text live inside the typographic canvas container
+              const coverTitleNode = document.getElementById(`cover-title-render-${book.id}`);
+              if (coverTitleNode) {
+                coverTitleNode.textContent = t;
+              }
+              const coverAuthorNode = document.getElementById(`cover-author-render-${book.id}`);
+              if (coverAuthorNode && a) {
+                coverAuthorNode.textContent = `by ${a}`;
+              }
+
+              const updatedTags = g ? g.split(',').map(x => x.trim()).filter(x => x !== "") : ["Literature"];
+              document.getElementById(`tag-row-target-${book.id}`).innerHTML = updatedTags.map(tag => `<span class="tag-bubble"><i class="fa-solid fa-tag" style="font-size:0.65rem; margin-right:4px;"></i>${tag}</span>`).join('');
+            }
+          };
+
+          titleIn.addEventListener("blur", fireSyncToDB);
+          authorIn.addEventListener("blur", fireSyncToDB);
+          genreIn.addEventListener("blur", fireSyncToDB);
+          descIn.addEventListener("blur", fireSyncToDB);
+
+          // Privacy Toggle Layer
+          metaDrawer.querySelector(".action-privacy-node").addEventListener("click", async () => {
+            const nextPrivacy = book.privacy === "private" ? "public" : "private";
+            await db.vaultBooks.update(book.id, { privacy: nextPrivacy });
+            await renderVaultShelf();
+            document.querySelector(`.spine-spine-node[data-id="${book.id}"]`).click();
+          });
+
+          // Delete Layer
+          metaDrawer.querySelector(".action-delete-node").addEventListener("click", async () => {
+            if(confirm(`Purge "${book.title}" from local encrypted sector loops entirely?`)) {
+              await db.vaultBooks.delete(book.id);
+              await renderVaultShelf();
+            }
+          });
+
+          // Interactive Reader Launch Configuration
+          metaDrawer.querySelector(".action-open-reader-node").addEventListener("click", () => {
+            launchRealisticReader(book);
+          });
+
+          shelfRow.appendChild(spineNode);
+          drawerMetaTarget.appendChild(metaDrawer);
+        });
+      }
+
+      // Read Actual Binary Document Stream from Database & Output to Viewer Workspace
+      function launchRealisticReader(book) {
+        if (!book.fileBlob) {
+          alert("No source binary file was found allocated for this item index inside the IndexedDB sandbox crypt.");
+          return;
+        }
+
+        if (activePdfObjectUrl) {
+          URL.revokeObjectURL(activePdfObjectUrl);
+        }
+
+        activePdfObjectUrl = URL.createObjectURL(book.fileBlob);
+
+        bookSpreadTarget.innerHTML = `
+          <iframe src="${activePdfObjectUrl}#toolbar=1&navpanes=0" class="pdf-render-frame"></iframe>
+        `;
+
+        immersiveBookReader.style.display = "flex";
+        document.body.style.overflow = "hidden";
+      }
+
+      closeReaderBtn.addEventListener("click", () => {
+        immersiveBookReader.style.display = "none";
+        document.body.style.overflow = "auto";
+        bookSpreadTarget.innerHTML = "";
+        if (activePdfObjectUrl) {
+          URL.revokeObjectURL(activePdfObjectUrl);
+          activePdfObjectUrl = null;
+        }
+      });
+
+      // Launch Initial View Render Configuration
+      await renderVaultShelf();
+    });
+</script>
+</body>
+</html>

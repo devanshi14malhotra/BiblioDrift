@@ -12,6 +12,7 @@ from typing import Optional, Any, Dict, Callable, List, Union
 from functools import wraps
 from datetime import datetime, timedelta
 from enum import Enum
+from backend.config import app_config
 
 try:
     import redis
@@ -69,12 +70,17 @@ class CacheConfig:
     
     # Cache configuration
     CACHE_TYPE = os.getenv('CACHE_TYPE', 'simple')  # 'redis', 'simple', or 'null'
-    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_URL = app_config.redis.url
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', 3600))
     
     # Redis Connection Timeouts
-    REDIS_SOCKET_TIMEOUT = float(os.getenv('REDIS_SOCKET_TIMEOUT', 2.0))
-    REDIS_CONNECT_TIMEOUT = float(os.getenv('REDIS_CONNECT_TIMEOUT', 2.0))
+    REDIS_SOCKET_TIMEOUT = app_config.redis.socket_timeout
+    REDIS_CONNECT_TIMEOUT = app_config.redis.connect_timeout
+    
+    # Redis Memory Management & Eviction
+    # Prevents OOM by defining how Redis should behave when it reaches memory limits
+    REDIS_MAXMEMORY = app_config.redis.max_memory
+    REDIS_EVICTION_POLICY = app_config.redis.eviction_policy
 
 
 class CacheKey:
@@ -188,6 +194,21 @@ class CacheService:
                         socket_connect_timeout=CacheConfig.REDIS_CONNECT_TIMEOUT
                     )
                     self.redis_client.ping()  # Verify connection with a ping
+                    
+                    # Apply eviction policy and memory limits to prevent OOM
+                    # This ensures the cache doesn't consume all system RAM
+                    try:
+                        self.redis_client.config_set('maxmemory', CacheConfig.REDIS_MAXMEMORY)
+                        self.redis_client.config_set('maxmemory-policy', CacheConfig.REDIS_EVICTION_POLICY)
+                        logger.info(
+                            f"Redis performance policy applied: "
+                            f"maxmemory={CacheConfig.REDIS_MAXMEMORY}, "
+                            f"policy={CacheConfig.REDIS_EVICTION_POLICY}"
+                        )
+                    except redis.exceptions.ResponseError as re:
+                        # Some Redis environments (like managed services) may restrict CONFIG SET
+                        logger.warning(f"Could not set Redis runtime config: {re}. Ensure these are set in redis.conf")
+                        
                     logger.info("Direct Redis client connection verified")
                 except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError) as e:
                     logger.error(f"Redis connection failed: {e}. Falling back to standard cache operations.")
@@ -312,7 +333,79 @@ class CacheService:
             'global_prefix': CacheConfig.GLOBAL_PREFIX,
             'version': CacheConfig.CACHE_VERSION
         }
+        
+        # Add Redis-specific info if available
+        if self.redis_client:
+            try:
+                memory_info = self.get_memory_usage()
+                stats['redis_memory'] = memory_info
+                stats['key_count'] = self.get_key_count()
+            except Exception as e:
+                logger.warning(f"Could not retrieve extended Redis stats: {e}")
+                
         return stats
+
+    def get_memory_usage(self) -> Dict[str, Any]:
+        """
+        Query Redis for current memory usage statistics.
+        Returns a dictionary with used_memory, peak_memory, and fragmentation ratio.
+        """
+        if not self.redis_client:
+            return {"error": "Redis client not available"}
+        
+        try:
+            info = self.redis_client.info(section='memory')
+            return {
+                'used_memory_human': info.get('used_memory_human'),
+                'used_memory_rss_human': info.get('used_memory_rss_human'),
+                'peak_memory_human': info.get('used_peak_human'),
+                'mem_fragmentation_ratio': info.get('mem_fragmentation_ratio'),
+                'maxmemory_human': info.get('maxmemory_human'),
+                'maxmemory_policy': info.get('maxmemory_policy')
+            }
+        except Exception as e:
+            logger.error(f"Failed to get Redis memory info: {e}")
+            return {"error": str(e)}
+
+    def get_key_count(self) -> int:
+        """Return the total number of keys currently in the Redis database."""
+        if not self.redis_client:
+            return 0
+        try:
+            return self.redis_client.dbsize()
+        except Exception as e:
+            logger.error(f"Failed to get Redis key count: {e}")
+            return 0
+
+    def check_health(self) -> Dict[str, Any]:
+        """
+        Perform a comprehensive health check of the caching system.
+        Verifies connectivity and configuration.
+        """
+        health = {
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'type': CacheConfig.CACHE_TYPE,
+            'issues': []
+        }
+        
+        if not self.cache:
+            health['status'] = 'unhealthy'
+            health['issues'].append("Flask-Caching not initialized")
+            return health
+
+        if CacheConfig.CACHE_TYPE == 'redis':
+            if not self.redis_client:
+                health['status'] = 'degraded'
+                health['issues'].append("Direct Redis client connection failed")
+            else:
+                try:
+                    self.redis_client.ping()
+                except Exception as e:
+                    health['status'] = 'unhealthy'
+                    health['issues'].append(f"Redis ping failed: {str(e)}")
+                    
+        return health
 
 
 # Singleton instance for application-wide use

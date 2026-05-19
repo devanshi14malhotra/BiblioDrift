@@ -11,13 +11,6 @@ class ChatInterface {
         this.conversationHistory = [];
         this.isProcessing = false;
 
-        // Ensure backend connection is initialized with proper fallback
-        if (typeof window !== 'undefined') {
-            if (!window.MOOD_API_BASE || window.MOOD_API_BASE.includes(':5001')) {
-                window.MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
-            }
-        }
-
         this.init();
     }
 
@@ -211,7 +204,7 @@ Tell me: what is stirring in you today?`,
     async getBooksellerResponse(userMessage) {
         // First, try to use the dedicated chat endpoint
         try {
-            const moodApiBase = window.MOOD_API_BASE || 'http://127.0.0.1:5000/api/v1';
+            const moodApiBase = window.MOOD_API_BASE || '/api/v1';
             const chatResponse = await fetch(`${moodApiBase}/chat`, {
                 method: 'POST',
                 headers: {
@@ -243,7 +236,7 @@ Tell me: what is stirring in you today?`,
 
         // Fallback to mood search
         try {
-            const moodApiBase = window.MOOD_API_BASE || 'http://127.0.0.1:5000/api/v1';
+            const moodApiBase = window.MOOD_API_BASE || '/api/v1';
             const moodResponse = await fetch(`${moodApiBase}/mood-search`, {
                 method: 'POST',
                 headers: {

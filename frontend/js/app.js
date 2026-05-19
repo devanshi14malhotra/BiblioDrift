@@ -11,6 +11,7 @@
 
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const moodAnalysisCache = new Map();
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 

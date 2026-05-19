@@ -109,10 +109,14 @@ When proposing an enhancement, describe:
 4. Include screenshots for visible UI changes.
 5. Reference the related issue if one exists.
 
+If label automation is enabled in the repository, `gssoc:approved` is added when the PR has an approval on its current head commit and is removed again if that approval becomes stale after new commits.
+
 ## Code Style
 
 - Keep the frontend vanilla unless a change explicitly needs otherwise.
 - Preserve the calm, tactile visual style.
+- For frontend UI changes, edit the source files under `frontend/`. Do not edit generated `dist/` files unless a maintainer explicitly asks for a built output update.
+- When changing navigation or shared UI states, verify the active, hover, and keyboard-focus states on each affected page.
 - Follow existing Python style and naming patterns.
 
 ## Notes on Documentation

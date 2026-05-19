@@ -24,6 +24,8 @@
     --input-border: rgba(0, 0, 0, 0.1);
     --book-bg: #fff;
     --paper-color: #fffdf9;
+    --nav-active-color: #3a241c;
+    --nav-active-ring: rgba(58, 36, 28, 0.18);
 
     /* Vibe Colors */
     --vibe-mystery: #78909c;
@@ -33,7 +35,18 @@
     /* Dimensions */
     --book-width: 160px;
     --book-height: 240px;
+
     --book-thick: 40px;
+}
+
+/* Fix: WCAG AA Contrast Floor - Issue #534 */
+.glass-panel,
+.book-tooltip,
+.book-detail-modal,
+[class*="glass"] {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 [data-theme="night"] {
@@ -52,6 +65,8 @@
     --input-border: rgba(255, 255, 255, 0.1);
     --book-bg: #2c2420;
     --paper-color: #e0d5cb;
+    --nav-active-color: #fff2df;
+    --nav-active-ring: rgba(255, 242, 223, 0.22);
 }
 
 * {
@@ -72,7 +87,13 @@ body {
     /* Classic serif for books */
     overflow-x: hidden;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+main {
+    flex: 1;
 }
 
 /* Explicit night-mode overrides — bulletproof fallback */
@@ -189,16 +210,52 @@ header {
     gap: 0.5rem;
 }
 
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
 .nav-links a {
     text-decoration: none;
     color: var(--text-muted);
-    margin-left: 2rem;
-    transition: color 0.3s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding-bottom: 10px;
+    transition: color 0.25s ease;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
-    color: var(--text-main);
+    color: var(--nav-active-color);
+}
+
+.nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--nav-active-color);
+    box-shadow: 0 0 0 3px var(--nav-active-ring);
+    opacity: 0;
+    transform: translateX(-50%) scale(0.35);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.nav-links a:hover::after {
+    opacity: 0.45;
+    transform: translateX(-50%) scale(0.75);
+}
+
+.nav-links a.active::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
 }
 
 /* === ANIMATED HOVER TOOLTIPS FOR NAVIGATION (NEW) === */
@@ -208,48 +265,19 @@ header {
 }
 
 .tooltip-text {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 8px);
-    transform: translateX(-50%) scale(0.95) translateY(6px);
-    padding: 10px 14px;
-    background: #fffaf3;
-    color: #2b2b2b;
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-    border-radius: 10px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: all 0.25s ease;
-    z-index: 9999;
+    display: none;
 }
 
 .tooltip-text::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-    width: 12px;
-    height: 12px;
-    background: #fffaf3;
-    border-left: 1px solid rgba(0, 0, 0, 0.08);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    display: none;
 }
 
 .tooltip:hover .tooltip-text {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-40%) scale(1) translateY(0);
+    display: none;
 }
 
 .tooltip-text i {
-    margin-right: 5px;
-    color: var(--accent-gold);
+    display: none;
 }
 
 main {
@@ -4582,6 +4610,20 @@ display: grid;
     transform: scale(1.05);
 }
 
+/* Animated active state for the sanctuary toggle button */
+#ambientToggle {
+    will-change: transform;
+}
+
+#ambientToggle.active {
+    transform: scale(1.08) rotate(-8deg) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32) !important;
+}
+
+#ambientToggle:active {
+    transform: scale(0.96) rotate(-2deg) !important;
+}
+
 .ambient-panel {
     position: absolute;
     bottom: 60px;
@@ -4597,11 +4639,17 @@ display: grid;
     display: none;
     flex-direction: column;
     gap: 1rem;
+    /* Prepare for animated entrance */
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+    transition: opacity 260ms cubic-bezier(.2,.9,.3,1), transform 260ms cubic-bezier(.2,.9,.3,1);
     z-index: 10002;
 }
 
 .ambient-panel.active {
     display: flex !important;
+    opacity: 1 !important;
+    transform: translateY(0) scale(1) !important;
 }
 
 .ambient-option {
@@ -4616,6 +4664,450 @@ display: grid;
     align-items: center;
     gap: 10px;
     font-size: 0.95rem;
+}
+
+/* Improved alignment: use a two-column grid so labels line up and controls align consistently */
+.ambient-panel .ambient-option,
+.ambient-panel .volume-control {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.ambient-panel .volume-control {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.ambient-panel .volume-control .range-wrap {
+    grid-column: 2 / 3;
+    position: relative;
+    width: 100%;
+}
+
+/* Library-specific alignment fixes */
+.library-page .ambient-panel .volume-control .range-wrap {
+    height: 18px;
+}
+
+.library-page .ambient-panel .volume-control .range-wrap .range-track,
+.library-page .ambient-panel .volume-control .range-wrap .range-fill {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.library-page .ambient-panel .volume-control .range-wrap input[type="range"] {
+    height: 18px !important;
+    padding: 0 !important;
+}
+
+/* Final alignment nudge: move the thumb slightly down to perfectly center on the track across pages */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    transform: translateY(2px) !important;
+}
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
+    transform: translateY(2px) !important;
+}
+
+/* Library/profile specific small adjustments if needed */
+.library-page .ambient-panel .volume-control .range-wrap .range-track,
+.library-page .ambient-panel .volume-control .range-wrap .range-fill,
+#profile-page .ambient-panel .volume-control .range-wrap .range-track,
+#profile-page .ambient-panel .volume-control .range-wrap .range-fill {
+    /* keep track centered */
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+}
+
+.ambient-panel .volume-control .range-wrap .range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(0,0,0,0.12);
+    border-radius: 999px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.ambient-panel .volume-control .range-wrap .range-fill {
+    position: absolute;
+    left: 0;
+    height: 6px;
+    background: var(--accent-gold);
+    border-radius: 999px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 50%;
+    transition: width 240ms cubic-bezier(.2,1,.22,1);
+}
+
+.ambient-panel .volume-control .range-wrap input[type="range"] {
+    background: transparent !important;
+    position: relative;
+    z-index: 3;
+    width: 100%;
+}
+
+/* Profile-specific nudge: align the track/fill and thumb better on profile layout */
+.profile-page .ambient-panel .volume-control .range-wrap {
+    padding-top: 2px; /* small spacing to shift input area down slightly */
+}
+
+.profile-page .ambient-panel .volume-control .range-wrap .range-track,
+.profile-page .ambient-panel .volume-control .range-wrap .range-fill {
+    top: 54%;
+}
+
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"] {
+    height: 20px !important;
+}
+
+.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    margin-top: 0 !important;
+}
+
+/* Make the input tall enough so the thumb can be vertically centered; remove negative margins */
+.ambient-panel .volume-control .range-wrap input[type="range"] {
+    height: 18px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 18px !important;
+}
+
+/* Ensure the WebKit thumb is not shifted upward */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
+    margin-top: 0 !important;
+    position: relative !important;
+    top: 0 !important;
+}
+
+/* Ensure the Firefox thumb is vertically centered */
+.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
+    margin: 0 !important;
+}
+
+.ambient-panel .ambient-option span,
+.ambient-panel .volume-control label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+}
+
+/* Make switches slightly larger and center their internal toggle */
+.switch {
+    width: 44px;
+    height: 26px;
+}
+
+.slider {
+    border-radius: 999px;
+    background-color: rgba(68,68,68,0.9);
+}
+
+.slider:before {
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+}
+
+/* Smooth transitions for switches */
+.slider {
+    transition: background-color 200ms cubic-bezier(.2,.9,.3,1);
+}
+
+.slider:before {
+    transition: transform 200ms cubic-bezier(.2,.9,.3,1), box-shadow 200ms;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-gold);
+}
+
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+/* Quick pop when a toggle is enabled */
+input:checked + .slider {
+    animation: togglePop 220ms cubic-bezier(.2,.9,.3,1);
+}
+
+@keyframes togglePop {
+    0% { transform: scale(0.96); }
+    60% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+}
+
+/* Staggered fade-in for options when panel opens */
+.ambient-panel.active .ambient-option,
+.ambient-panel.active .volume-control {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: optionFade 360ms cubic-bezier(.2,.9,.3,1) forwards;
+}
+.ambient-panel.active .ambient-option:nth-child(1) { animation-delay: 0.06s; }
+.ambient-panel.active .ambient-option:nth-child(2) { animation-delay: 0.12s; }
+.ambient-panel.active .ambient-option:nth-child(3) { animation-delay: 0.18s; }
+.ambient-panel.active .ambient-option:nth-child(4) { animation-delay: 0.24s; }
+.ambient-panel.active .volume-control { animation-delay: 0.3s; }
+
+@keyframes optionFade {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Button press micro-interaction */
+#ambientToggle {
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+#ambientToggle:active {
+    transform: scale(0.96) rotate(-6deg);
+}
+
+/* Accessible focus for switches */
+.switch input:focus-visible + .slider {
+    box-shadow: 0 0 0 4px rgba(212,175,55,0.16);
+}
+
+/* Volume slider styling */
+.ambient-panel input[type="range"] {
+    -webkit-appearance: none;
+    width: 130px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.12);
+    /* Use a solid gold background-image and size it with --ambient-fill for reliable Chrome rendering */
+    background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold));
+    background-size: calc(var(--ambient-fill,50) * 1%) 100%;
+    background-repeat: no-repeat;
+    border-radius: 999px;
+    outline: none;
+}
+
+.ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor: pointer;
+}
+
+/* Ensure base thumb has a transition so scaling animates smoothly on all pages */
+.ambient-panel input[type="range"]::-webkit-slider-thumb {
+    transition: transform 260ms cubic-bezier(.2,1,.22,1), box-shadow 260ms ease !important;
+    transform-origin: center center;
+    transform: scale(1) !important;
+}
+
+/* Animated track fill and thumb pop when volume changes */
+.ambient-panel input[type="range"] {
+    background: linear-gradient(90deg, var(--accent-gold) var(--ambient-fill,50%), rgba(0,0,0,0.12) var(--ambient-fill,50%));
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    transition: background 360ms cubic-bezier(.2,1,.22,1);
+}
+
+.ambient-panel input.volume-animate::-webkit-slider-thumb {
+    transform: scale(1.12) !important;
+    transition: transform 360ms cubic-bezier(.2,1,.22,1) !important;
+}
+
+/* Also ensure the base Firefox thumb transitions */
+.ambient-panel input[type="range"]::-moz-range-thumb {
+    transition: transform 260ms cubic-bezier(.2,1,.22,1), box-shadow 260ms ease;
+    transform-origin: center center;
+}
+
+.ambient-panel input.volume-animate::-moz-range-thumb {
+    transform: scale(1.12);
+    transition: transform 360ms cubic-bezier(.2,1,.22,1);
+}
+
+/* Fallback for Firefox: smooth track color via background */
+.ambient-panel input[type="range"]::-moz-range-track {
+    background: transparent;
+}
+
+/* Responsive ambient panel: full width on very small screens */
+@media (max-width: 420px) {
+    .ambient-panel {
+        right: 1rem;
+        bottom: 70px;
+        width: min(92vw, 320px);
+        padding: 0.9rem;
+    }
+
+    .ambient-panel input[type="range"] {
+        width: 100%;
+    }
+}
+
+/* Library page: make ambient volume control smaller for compact layout */
+.library-page .ambient-panel input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.12) !important;
+    background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold)) !important;
+    background-size: calc(var(--ambient-fill,50) * 1%) 100% !important;
+    background-repeat: no-repeat !important;
+    border-radius: 999px;
+    outline: none;
+}
+
+.library-page .ambient-panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+}
+
+.library-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px; /* center the larger thumb */
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+.library-page .ambient-panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    background: transparent;
+}
+
+.library-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+.library-page .ambient-panel .volume-control label {
+    font-size: 0.95rem;
+}
+
+/* Override responsive minimums that enlarge inputs (loaded in style-responsive.css) */
+.library-page .ambient-panel input[type="range"] {
+    min-height: 0 !important;
+    min-width: 0 !important;
+    height: 6px !important;
+}
+.library-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    width: 18px !important;
+    height: 18px !important;
+}
+.library-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+/* Profile page: same compact ambient volume styling as library */
+#profile-page .ambient-panel input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 6px;
+    background-color: rgba(0,0,0,0.12) !important;
+    background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold)) !important;
+    background-size: calc(var(--ambient-fill,50) * 1%) 100% !important;
+    background-repeat: no-repeat !important;
+    border-radius: 999px;
+    outline: none;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+
+#profile-page .ambient-panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+}
+
+#profile-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px;
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+#profile-page .ambient-panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    background: transparent;
+}
+
+#profile-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    border: 3px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+}
+
+#profile-page .ambient-panel .volume-control label {
+    font-size: 0.95rem;
+}
+
+/* Strong overrides to ensure page-scoped slider sizing is applied last */
+.library-page .ambient-panel input[type="range"],
+.profile-page .ambient-panel input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 120px !important;
+    height: 6px !important;
+    background: linear-gradient(90deg, var(--accent-gold) 50%, rgba(0,0,0,0.12) 50%) !important;
+    border-radius: 999px !important;
+    outline: none !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+
+.library-page .ambient-panel input[type="range"]::-webkit-slider-thumb,
+.profile-page .ambient-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    margin-top: 0 !important;
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--accent-gold) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25) !important;
+    border: 3px solid rgba(255,255,255,0.8) !important;
+    cursor: pointer !important;
+}
+
+.library-page .ambient-panel input[type="range"]::-moz-range-thumb,
+.profile-page .ambient-panel input[type="range"]::-moz-range-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    background: var(--accent-gold) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25) !important;
+    border: 3px solid rgba(255,255,255,0.8) !important;
+    cursor: pointer !important;
 }
 
 .switch {
