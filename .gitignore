@@ -32,3 +32,9 @@ instance/
 *.db
 # Virtual Environment
 venv/
+
+# Environment local configurations
+.env
+.env.local
+.env.*.local
+*.env
