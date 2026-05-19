@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Request a Book – BiblioDrift</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/style_main.css"/>
+  <link rel="stylesheet" href="../css/style-responsive.css"/>
+  <style>
+    :root {
+      --rb-bg: #f5f0e8;
+      --rb-card: #ffffff;
+      --rb-border: #d4c9b0;
+      --rb-input-bg: #faf7f2;
+      --rb-text: #2c2416;
+      --rb-text-muted: #6b5d4f;
+      --rb-text-secondary: #4a3f35;
+      --rb-accent: #8b6914;
+      --rb-btn-text: #ffffff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --rb-bg: #0a0a0f;
+        --rb-card: #12121a;
+        --rb-border: #2a2a3e;
+        --rb-input-bg: #1a1a28;
+        --rb-text: #e8e0d0;
+        --rb-text-muted: #9a8e7e;
+        --rb-text-secondary: #c8bfb0;
+        --rb-accent: #c9a84c;
+        --rb-btn-text: #0a0a0f;
+      }
+    }
+
+    .request-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: var(--rb-bg);
+    }
+    .request-card {
+      background: var(--rb-card);
+      border: 1px solid var(--rb-border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 520px;
+    }
+    .request-card h2 {
+      font-family: 'Georgia', serif;
+      color: var(--rb-accent);
+      font-size: 1.8rem;
+      margin-bottom: 0.4rem;
+    }
+    .request-card p.subtitle {
+      color: var(--rb-text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.8rem;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      color: var(--rb-text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--rb-input-bg);
+      border: 1px solid var(--rb-border);
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      color: var(--rb-text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: var(--rb-text-muted);
+      opacity: 1;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--rb-accent);
+    }
+    .form-group select option {
+      background: var(--rb-card);
+      color: var(--rb-text);
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--rb-accent);
+      color: var(--rb-btn-text);
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: opacity 0.2s;
+    }
+    .submit-btn:hover { opacity: 0.85; }
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 2rem 0;
+    }
+    .success-msg .checkmark {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    .success-msg h3 {
+      color: var(--rb-accent);
+      font-family: 'Georgia', serif;
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .success-msg p {
+      color: var(--rb-text-muted);
+      font-size: 0.9rem;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 1.5rem;
+      color: var(--rb-accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<section class="request-section">
+  <div class="request-card">
+
+    <div id="form-container">
+      <h2>📖 Request a Book</h2>
+      <p class="subtitle">Can't find a book? Let us know and we'll try to add it.</p>
+
+      <form id="requestForm">
+        <div class="form-group">
+          <label for="bookTitle">Book Title *</label>
+          <input type="text" id="bookTitle" placeholder="e.g. The Secret History" required/>
+        </div>
+
+        <div class="form-group">
+          <label for="authorName">Author Name *</label>
+          <input type="text" id="authorName" placeholder="e.g. Donna Tartt" required/>
+        </div>
+
+        <div class="form-group">
+          <label for="genre">Genre *</label>
+          <select id="genre" required>
+            <option value="" disabled selected>Select a genre</option>
+            <option>Fiction</option>
+            <option>Mystery</option>
+            <option>Dark Academia</option>
+            <option>Romance</option>
+            <option>Fantasy</option>
+            <option>Non-Fiction</option>
+            <option>Science Fiction</option>
+            <option>Horror</option>
+            <option>Classic Literature</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reason">Why do you want this book? *</label>
+          <textarea id="reason" placeholder="Tell us why this book would be a great addition..." required></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn">Submit Request</button>
+      </form>
+    </div>
+
+    <div class="success-msg" id="successMsg">
+      <div class="checkmark">✨</div>
+      <h3>Request Submitted!</h3>
+      <p>Thank you for your suggestion. We'll review it and try to add it to BiblioDrift soon.</p>
+      <a href="../pages/index.html" class="back-link">← Back to Discovery</a>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  document.getElementById('requestForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    document.getElementById('form-container').style.display = 'none';
+    document.getElementById('successMsg').style.display = 'block';
+  });
+</script>
+
+    <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
+</body>
+</html>

@@ -14,6 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with Elara | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/pwa.css">
     <!-- Unified Font Imports -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -77,27 +78,6 @@
         border-radius: 18px;
     }
 }
-        /* Full height layout - No double scroll */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            /* ALLOW SCROLL */
-            height: auto;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            font-family: 'Georgia', serif;
-        }
-
         /* Navigation */
         nav.nav-container {
             flex-shrink: 0;
@@ -105,14 +85,6 @@
         }
 
         /* Main Content */
-        /* Main Content */
-        main.main-content {
-            /* Allow content to push height */
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
 
         .chat-container {
             flex: 1;
@@ -266,38 +238,43 @@
 </head>
 
 <body>
-    <header>
-        <a href="index.html" class="logo">
-            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-        </a>
-        <div class="header-controls">
-            <div class="search-bar">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling..." />
-                <i class="fa-solid fa-search search-icon"></i>
-            </div>
-            <nav class="nav-links">
-                <div class="tooltip">
-                    <a href="index.html" class="active">Discovery</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
-                </div>
-                <div class="tooltip">
-                    <a href="library.html">My Library</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-                </div>
-                <div class="tooltip">
-                    <a href="chat.html">Chat</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-                </div>
-                <div class="tooltip">
-                    <a href="auth.html">Sign In</a>
-                    <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
-                </div>
-            </nav>
-            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-                <i class="fa-solid fa-moon"></i>
-            </button>
+      <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html" >Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
-    </header>
+        <div class="tooltip">
+          <a href="vault.html" >My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" >My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html" class="active">Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
 
     <!-- Main Content -->
     <main style="padding-top: 2rem;">
@@ -414,6 +391,37 @@
                         Mind-Expanding
                     </button>
                 </div>
+
+                <!-- Ambient Playlist Prompts -->
+                <div class="suggestions-header" style="margin-top: 1.25rem;">
+                    <span><i class="fa-solid fa-music" style="margin-right: 0.4rem; opacity: 0.8;"></i>Create your ambient reading playlist</span>
+                </div>
+                <div class="suggestions-list">
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m about to read a dark gothic novel by candlelight. Which ambient sounds from the sanctuary should I layer together, and how loud?')">
+                        <i class="fa-solid fa-moon"></i>
+                        Gothic Candlelight
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m curled up with a cozy mystery and chamomile tea. Help me build the perfect ambient atmosphere — rain, fireplace, or both?')">
+                        <i class="fa-solid fa-fire"></i>
+                        Cozy Mystery Nook
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m reading a sweeping ocean adventure. What ambient soundscape from the sanctuary would put me right on the high seas?')">
+                        <i class="fa-solid fa-water"></i>
+                        Ocean Adventure
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('Build me an ambient reading sanctuary for late-night literary fiction — hushed, contemplative, a little melancholy. Which sounds suit this best?')">
+                        <i class="fa-solid fa-star"></i>
+                        Late-Night Literary
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m diving into a fantasy epic with ancient forests and magic. What ambient layers from the sanctuary would bring that world alive?')">
+                        <i class="fa-solid fa-leaf"></i>
+                        Forest &amp; Magic
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a stormy, tense atmosphere for the thriller I\'m reading. Should I use the stormy rain sound? Help me set the scene.')">
+                        <i class="fa-solid fa-bolt"></i>
+                        Stormy Thriller
+                    </button>
+                </div>
             </div>
 
             <!-- Chat Input -->
@@ -449,7 +457,8 @@
         });
     </script>
     <script src="../js/config.js"></script>
-    <script src="../js/ambient.js"></script>
+    <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
     <script src="../js/chat.js"></script>
     <script src="../js/app.js"></script>
     <script src="../js/footer.js"></script>

@@ -8,15 +8,18 @@ from flask import request, jsonify
 
 try:
     from .error_responses import invalid_json_error
-    from .security_parsers import validate_content_type as _validate_content_type_header
+    from .security_parsers import (
+        DEFAULT_ALLOWED_CONTENT_TYPES,
+        validate_content_type as _validate_content_type_header,
+    )
 except ImportError:
     from error_responses import invalid_json_error
-    from security_parsers import validate_content_type as _validate_content_type_header
+    from security_parsers import DEFAULT_ALLOWED_CONTENT_TYPES, validate_content_type as _validate_content_type_header
 
 logger = logging.getLogger(__name__)
 
 
-def validate_content_type_middleware(f):
+def validate_content_type_middleware(f=None, *, allowed_types=None):
     """
     Decorator to validate Content-Type header for POST/PATCH/PUT requests.
     Skips validation for GET requests and requests without body.
@@ -27,26 +30,33 @@ def validate_content_type_middleware(f):
         def my_endpoint():
             ...
     """
+    if f is None:
+        return lambda wrapped_function: validate_content_type_middleware(
+            wrapped_function,
+            allowed_types=allowed_types,
+        )
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Skip for GET and HEAD requests (no body)
         if request.method in ['GET', 'HEAD', 'DELETE']:
             return f(*args, **kwargs)
-        
+
         # Skip for requests without body
         if request.content_length is None or request.content_length == 0:
             return f(*args, **kwargs)
 
-        is_valid, error_message = _validate_content_type_header()
+        effective_allowed_types = allowed_types or list(DEFAULT_ALLOWED_CONTENT_TYPES)
+        is_valid, error_message = _validate_content_type_header(effective_allowed_types)
         if not is_valid:
             logger.warning(
                 f"Invalid Content-Type '{request.content_type}' for {request.method} "
                 f"{request.path} from {request.remote_addr}"
             )
             return invalid_json_error(error_message)
-        
+
         return f(*args, **kwargs)
-    
+
     return decorated_function
 
 
@@ -116,7 +126,8 @@ def require_json_content_type(f):
 def safe_request_handler(
     validate_content_type: bool = True,
     max_size_bytes: int = 1_000_000,
-    require_json: bool = True
+    require_json: bool = True,
+    allowed_types=None
 ):
     """
     Composite decorator for comprehensive request validation.
@@ -138,11 +149,10 @@ def safe_request_handler(
         def decorated_function(*args, **kwargs):
             # Content-Type validation
             if validate_content_type and request.method not in ['GET', 'HEAD']:
-                allowed = ['application/json'] if require_json else [
-                    'application/json',
-                    'application/x-www-form-urlencoded'
-                ]
-                is_valid, error_message = _validate_content_type_header(allowed)
+                effective_allowed_types = allowed_types or (
+                    ['application/json'] if require_json else list(DEFAULT_ALLOWED_CONTENT_TYPES)
+                )
+                is_valid, error_message = _validate_content_type_header(effective_allowed_types)
                 if not is_valid:
                     logger.warning(f"Content-Type validation failed for {request.path}")
                     return invalid_json_error(error_message)

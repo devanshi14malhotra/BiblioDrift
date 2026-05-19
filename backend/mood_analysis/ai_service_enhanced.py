@@ -5,19 +5,27 @@
 from .goodreads_scraper import GoodReadsReviewScraper
 from .mood_analyzer import BookMoodAnalyzer
 import json
-import os
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 # Import caching decorators
 try:
-    from cache_service import cache_mood_analysis, cache_mood_tags
+    from cache_service import cache_mood_tags, CacheConfig
 except ImportError:
     # Fallback if cache_service is not available
-    def cache_mood_analysis(func):
-        return func
     def cache_mood_tags(func):
         return func
+    class CacheConfig:
+        MOOD_ANALYSIS_TTL = 86400
+
+try:
+    from backend.models import db, MoodCache
+except ImportError:
+    from models import db, MoodCache
+
+
+logger = logging.getLogger(__name__)
 
 class AIBookService:
     """Enhanced AI service with GoodReads mood analysis integration."""
@@ -25,33 +33,60 @@ class AIBookService:
     def __init__(self):
         self.scraper = GoodReadsReviewScraper()
         self.mood_analyzer = BookMoodAnalyzer()
-        self.cache_file = os.path.join(os.path.dirname(__file__), 'mood_cache.json')
-        self.mood_cache = self._load_cache()
-    
-    def _load_cache(self) -> Dict:
-        """Load cached mood analyses to avoid re-scraping."""
-        if os.path.exists(self.cache_file):
-            try:
-                with open(self.cache_file, 'r') as f:
-                    return json.load(f)
-            except:
-                pass
-        return {}
-    
-    def _save_cache(self):
-        """Save mood analyses to cache."""
-        try:
-            with open(self.cache_file, 'w') as f:
-                json.dump(self.mood_cache, f, indent=2)
-        except Exception as e:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error saving cache: {e}")
     
     def _get_cache_key(self, title: str, author: str = "") -> str:
         """Generate cache key for book."""
         return f"{title.lower().strip()}|{author.lower().strip()}"
+
+    def _is_cache_fresh(self, cached_entry: MoodCache) -> bool:
+        """Check whether a cache entry is still valid."""
+        updated_at = cached_entry.updated_at
+        if updated_at is None:
+            return False
+
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+
+        age = datetime.now(timezone.utc) - updated_at
+        return age <= timedelta(seconds=CacheConfig.MOOD_ANALYSIS_TTL)
+
+    def _load_cached_analysis(self, cache_key: str) -> Optional[Dict]:
+        """Load cached mood analysis from the database."""
+        cached_entry = MoodCache.query.filter_by(cache_key=cache_key).first()
+        if not cached_entry or not self._is_cache_fresh(cached_entry):
+            return None
+
+        try:
+            return json.loads(cached_entry.analysis_json)
+        except (TypeError, json.JSONDecodeError):
+            logger.warning("Invalid mood cache payload for key: %s", cache_key)
+            return None
+
+    def _store_cached_analysis(self, cache_key: str, title: str, author: str, mood_analysis: Dict) -> None:
+        """Persist mood analysis in the database cache."""
+        try:
+            cached_entry = MoodCache.query.filter_by(cache_key=cache_key).first()
+            payload = json.dumps(mood_analysis)
+
+            if cached_entry is None:
+                cached_entry = MoodCache(
+                    cache_key=cache_key,
+                    book_title=title.strip(),
+                    book_author=author.strip(),
+                    analysis_json=payload,
+                )
+                db.session.add(cached_entry)
+            else:
+                cached_entry.book_title = title.strip()
+                cached_entry.book_author = author.strip()
+                cached_entry.analysis_json = payload
+                cached_entry.updated_at = datetime.now(timezone.utc)
+
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("Error saving mood cache for %s: %s", cache_key, e)
     
-    @cache_mood_analysis
     def analyze_book_mood(self, title: str, author: str = "") -> Optional[Dict]:
         """
         Analyze book mood using GoodReads reviews.
@@ -66,17 +101,16 @@ class AIBookService:
         cache_key = self._get_cache_key(title, author)
         
         # Check cache first
-        if cache_key in self.mood_cache:
-            logger = logging.getLogger(__name__)
+        cached_analysis = self._load_cached_analysis(cache_key)
+        if cached_analysis is not None:
             logger.info(f"Using cached mood analysis for: {title}")
-            return self.mood_cache[cache_key]
+            return cached_analysis
         
         try:
             # Scrape reviews
             reviews = self.scraper.get_book_reviews(title, author, max_reviews=15)
             
             if not reviews:
-                logger = logging.getLogger(__name__)
                 logger.warning(f"No reviews found for: {title}")
                 return None
             
@@ -84,13 +118,12 @@ class AIBookService:
             mood_analysis = self.mood_analyzer.determine_primary_mood(reviews)
             
             # Cache the result
-            self.mood_cache[cache_key] = mood_analysis
-            self._save_cache()
+            if mood_analysis:
+                self._store_cached_analysis(cache_key, title, author, mood_analysis)
             
             return mood_analysis
             
         except Exception as e:
-            logger = logging.getLogger(__name__)
             logger.error(f"Error analyzing book mood: {e}")
             return None
 
