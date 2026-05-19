@@ -1834,7 +1834,7 @@ main {
 display: grid;
    
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1.25rem;
+    gap: 2rem;
     padding: 2rem 0.5rem
 }
 
@@ -1918,9 +1918,14 @@ display: grid;
     background: linear-gradient(90deg, #0d1b33 0%, #1a2f52 40%, #12213d 100%);
 }
 
-/* Fiction: Classic Dark Green */
+/* Fiction: Dark Brown */
 .genre-card[data-genre="fiction"] {
-    background: linear-gradient(90deg, #0f3316 0%, #1e5228 40%, #163d1e 100%);
+    background: linear-gradient(90deg, #330f0f 0%, #52381e 40%, #3d1616 100%);
+}
+
+/* Non-Fiction: Lighter Brown */
+.genre-card[data-genre="nonfiction"] {
+    background: linear-gradient(90deg, #786969 0%, #b09f97 40%, #8a7878 100%);
 }
 
 /* Crime: Charcoal Black */
@@ -1931,6 +1936,16 @@ display: grid;
 /* Fantasy: Deep Royal Purple */
 .genre-card[data-genre="fantasy"] {
     background: linear-gradient(90deg, #240a3d 0%, #3e1b61 40%, #2e104a 100%);
+}
+
+/* Classics: Deep Green */
+.genre-card[data-genre="classics"] {
+    background: linear-gradient(90deg, #083d25 0%, #12612c 40%, #0d4a13 100%);
+}
+
+/* Science Fiction: Light Blue */
+.genre-card[data-genre="science fiction"] {
+    background: linear-gradient(90deg, #115764 0%, #267f8f 40%, #1a5661 100%);
 }
 
 /* Thriller: Burnt Rust/Dark Terracotta */

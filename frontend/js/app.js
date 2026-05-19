@@ -1012,6 +1012,8 @@ class BookRenderer {
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
+        }
+
         // Explore Mood Button
         const moodBtnModal = document.getElementById('modal-mood-btn');
         if (moodBtnModal) {
@@ -1372,7 +1374,8 @@ class BookRenderer {
                 } else {
                     showError(`Failed to fetch mood analysis (Server error: ${res.status}).`);
                 }
-} catch (err) {
+            }
+        } catch (err) {
             console.error('Failed to explore book mood:', err);
             showError('Network error connecting to mood analysis service.');
         }
@@ -2740,23 +2743,36 @@ class GenreManager {
     constructor(libraryManager = null) {
         this.libraryManager = libraryManager;
         this.genreGrid = document.getElementById('genre-grid');
+        this.subgenreGrid = document.getElementById('subgenre-grid');
         this.modal = document.getElementById('genre-modal');
         this.closeBtn = document.getElementById('close-genre-modal');
         this.modalTitle = document.getElementById('genre-modal-title');
         this.booksGrid = document.getElementById('genre-books-grid');
+        this.selectedParentGenre = null;
     }
 
     init() {
         if (!this.genreGrid) return;
 
-        // Add click listeners to genre cards
-        const cards = this.genreGrid.querySelectorAll('.genre-card');
-        cards.forEach(card => {
+        // Add click listeners to parent genre cards
+        const mainCards = this.genreGrid.querySelectorAll(':scope > .genre-card');
+        mainCards.forEach(card => {
             card.addEventListener('click', () => {
                 const genre = card.dataset.genre;
-                this.openGenre(genre);
+                this.selectGenreGroup(genre);
             });
         });
+
+        // Add click listeners to subgenre cards
+        if (this.subgenreGrid) {
+            const subgenreCards = this.subgenreGrid.querySelectorAll('.genre-card');
+            subgenreCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const genre = card.dataset.genre;
+                    this.openGenre(genre);
+                });
+            });
+        }
 
         // Close modal listeners
         if (this.closeBtn) {
@@ -2768,6 +2784,33 @@ class GenreManager {
                 if (e.target === this.modal) this.closeModal();
             });
         }
+    }
+
+    selectGenreGroup(parentGenre) {
+        if (!this.subgenreGrid) return;
+
+        const wasSelected = this.selectedParentGenre === parentGenre;
+        const mainCards = this.genreGrid.querySelectorAll('.genre-card');
+
+        if (wasSelected) {
+            this.selectedParentGenre = null;
+            this.subgenreGrid.classList.add('hidden');
+            mainCards.forEach(card => card.classList.remove('active'));
+            return;
+        }
+
+        this.selectedParentGenre = parentGenre;
+        this.subgenreGrid.classList.remove('hidden');
+
+        const subgenreCards = this.subgenreGrid.querySelectorAll('.genre-card');
+        subgenreCards.forEach(card => {
+            const isParentMatch = card.dataset.parent === parentGenre;
+            card.classList.toggle('hidden', !isParentMatch);
+        });
+
+        mainCards.forEach(card => {
+            card.classList.toggle('active', card.dataset.genre === parentGenre);
+        });
     }
 
     openGenre(genre) {
