@@ -43,9 +43,6 @@ class SoftDeleteQuery(db.Query):
         Special query method to explicitly include both active and 
         soft-deleted records in the results.
         """
-        # Bypasses the default filter by explicitly setting is_deleted to either True or False
-        # In a real implementation, this might be more complex, but for this
-        # use case, returning the base query is sufficient.
         return super(SoftDeleteQuery, self)
 
 class SoftDeleteMixin:
@@ -94,7 +91,6 @@ class User(db.Model, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    # password_hash = db.Column(db.String(255), nullable=False)
 
     # Nullable because OAuth users may not have passwords
     password_hash = db.Column(db.String(255), nullable=True)
@@ -163,31 +159,18 @@ class ShelfItem(db.Model, SoftDeleteMixin):
     shelf_type = db.Column(db.String(50), nullable=False)
     progress = db.Column(db.Integer, default=0)
     rating = db.Column(db.Integer)
-    finished_at = db.Column(db.DateTime, nullable=True)  # Timestamp when book was marked as finished
+    finished_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     # Price tracking fields
-    price_alert = db.Column(db.Boolean, default=False)  # Enable/disable price alerts
-    target_price = db.Column(db.Float, nullable=True)  # User's target price for alerts
+    price_alert = db.Column(db.Boolean, default=False)
+    target_price = db.Column(db.Float, nullable=True)
 
     # Versioning for optimistic locking
     version = db.Column(db.Integer, default=1, nullable=False)
 
-    # =========================================================================
-    # INTENSIVE INPUT VALIDATION AND SANITIZATION
-    # =========================================================================
-    # Why?: Unvalidated input can lead to SQL injection, command injection, 
-    # or application crashes. By enforcing strict validation rules at the 
-    # database model level, we ensure that all incoming request parameters 
-    # are thoroughly validated and sanitized before they are processed or 
-    # persisted to the database. This acts as a robust defense mechanism.
-
     @validates('progress')
     def validate_progress(self, key, value):
-        """
-        Validate and sanitize the 'progress' parameter.
-        Ensures the progress is a valid non-negative integer.
-        """
         if value is not None:
             try:
                 val = int(value)
@@ -200,10 +183,6 @@ class ShelfItem(db.Model, SoftDeleteMixin):
 
     @validates('rating')
     def validate_rating(self, key, value):
-        """
-        Validate and sanitize the 'rating' parameter.
-        Ensures the rating is an integer between 1 and 5.
-        """
         if value is not None:
             try:
                 val = int(value)
@@ -216,10 +195,6 @@ class ShelfItem(db.Model, SoftDeleteMixin):
 
     @validates('target_price')
     def validate_target_price(self, key, value):
-        """
-        Validate and sanitize the 'target_price' parameter.
-        Ensures the target price is a valid non-negative float.
-        """
         if value is not None:
             try:
                 val = float(value)
@@ -232,64 +207,14 @@ class ShelfItem(db.Model, SoftDeleteMixin):
 
     @validates('shelf_type')
     def validate_shelf_type(self, key, value):
-        """
-        =========================================================================
-        SHELF TYPE VALIDATION LOGIC
-        =========================================================================
-        
-        This method ensures that the 'shelf_type' property is always set to one
-        of the allowed, predefined values before any database operations occur.
-        
-        ALLOWED VALUES:
-        - 'want': Books the user wants to read in the future.
-        - 'current': Books the user is currently reading.
-        - 'finished': Books the user has already finished reading.
-        
-        RATIONALE:
-        While Pydantic models typically handle validation at the API layer,
-        relying solely on API-level validation is insufficient for robust
-        data integrity. Direct database insertions, future code modifications,
-        or internal background jobs that bypass the API layer could potentially
-        store invalid values (e.g., 'wishlist', 'reading', 'done') in the
-        'shelf_type' column. This would lead to inconsistent states, breaking
-        frontend rendering and business logic.
-        
-        By implementing this ORM-level @validates decorator, we establish an
-        additional layer of defense (defense-in-depth). This guarantees that
-        any Python code interacting with the ShelfItem model must provide a
-        valid shelf_type, regardless of whether the request originated from
-        an API endpoint or an internal service.
-        
-        Furthermore, we couple this ORM validation with a strict database-level
-        CHECK constraint defined in __table_args__. This dual-layered approach
-        ensures absolute data consistency across all system layers.
-        
-        PROCESS:
-        1. Check if the incoming value is within the allowed set.
-        2. If invalid, log the attempt (optional but good for auditing) and
-           raise a ValueError detailing the expected values.
-        3. If valid, return the value to be assigned to the model instance.
-        
-        =========================================================================
-        """
-        
-        # Define the strict set of allowed shelf types
         allowed_types = {'want', 'current', 'finished'}
-        
-        # Perform the validation check against the allowed types
         if value not in allowed_types:
-            
-            # Construct a detailed error message for better debugging
             error_msg = (
                 f"CRITICAL VALIDATION ERROR: Invalid shelf_type provided: '{value}'. "
                 f"The shelf_type must be strictly one of the following "
                 f"allowed values: {', '.join(allowed_types)}."
             )
-            
-            # Raise a ValueError to prevent the invalid data from being processed
             raise ValueError(error_msg)
-            
-        # Return the validated and sanitized value
         return value
 
     # Relationships
@@ -297,27 +222,9 @@ class ShelfItem(db.Model, SoftDeleteMixin):
     book = db.relationship('Book', backref=db.backref('shelf_items', lazy=True))
     price_alerts = db.relationship('PriceAlert', backref='shelf_item', lazy=True, cascade='all, delete-orphan')
 
-    # =========================================================================
-    # DATABASE LEVEL CONSTRAINTS
-    # =========================================================================
-    # Implementing strict database-level constraints is a critical best
-    # practice for ensuring data integrity and preventing data corruption.
-    # 
-    # The CheckConstraint defined below acts as the ultimate safeguard against
-    # invalid 'shelf_type' values being written to the database. Even if both
-    # the API validation layer and the SQLAlchemy ORM validation layer were
-    # to fail or be bypassed entirely (e.g., via direct SQL execution or
-    # faulty database migration scripts), the database engine itself will
-    # strictly reject any row that does not conform to the defined rules.
-    #
-    # This addresses the specific vulnerability where a plain db.String(50)
-    # column could accept arbitrary string values, leading to unrecoverable
-    # application states.
-    # =========================================================================
-
     __table_args__ = (
         db.CheckConstraint(
-            "shelf_type IN ('want', 'current', 'finished')", 
+            "shelf_type IN ('want', 'current', 'finished')",
             name='check_valid_shelf_type'
         ),
     )
@@ -527,7 +434,7 @@ def register_user(username, email, password):
 def login_user(identifier, password):
     # Try finding by username first
     user = User.query.filter_by(username=identifier).first()
-    
+
     # If not found, try finding by email
     if not user:
         user = User.query.filter_by(email=identifier).first()
@@ -546,19 +453,19 @@ class PriceHistory(db.Model, SoftDeleteMixin):
     """Model for tracking book prices across different retailers."""
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False, index=True)
-    retailer = db.Column(db.String(50), nullable=False)  # 'google_books', 'amazon', 'barnes_noble', etc.
+    retailer = db.Column(db.String(50), nullable=False)
     price = db.Column(db.Float, nullable=False)
-    currency = db.Column(db.String(3), default='USD')  # ISO currency code
+    currency = db.Column(db.String(3), default='USD')
     checked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     # Relationships
     book = db.relationship('Book', backref=db.backref('price_history', lazy=True))
-    
+
     __table_args__ = (
         db.Index('idx_price_history_book_retailer', 'book_id', 'retailer'),
         db.Index('idx_price_history_checked_at', 'checked_at'),
     )
-    
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -581,17 +488,17 @@ class PriceAlert(db.Model, SoftDeleteMixin):
     shelf_item_id = db.Column(db.Integer, db.ForeignKey('shelf_item.id'), nullable=False, index=True)
     target_price = db.Column(db.Float, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    notified_at = db.Column(db.DateTime, nullable=True)  # Timestamp when user was notified
+    notified_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    
+
     # Relationships
     user = db.relationship('User', backref=db.backref('price_alerts', lazy=True))
-    
+
     __table_args__ = (
         db.UniqueConstraint('user_id', 'shelf_item_id', name='uq_user_shelf_item_alert'),
     )
-    
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -619,21 +526,21 @@ class Review(db.Model, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)  # 1-5 star rating
-    review_text = db.Column(db.Text, nullable=True)  # Optional detailed review
+    rating = db.Column(db.Integer, nullable=False)
+    review_text = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    
+
     # Relationships
     user = db.relationship('User', backref=db.backref('reviews', lazy=True))
     book = db.relationship('Book', backref=db.backref('reviews', lazy=True))
-    
+
     __table_args__ = (
         db.UniqueConstraint('user_id', 'book_id', name='uq_user_book_review'),
         db.Index('idx_review_book_id', 'book_id'),
         db.Index('idx_review_user_id', 'user_id'),
     )
-    
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -652,6 +559,41 @@ class Review(db.Model, SoftDeleteMixin):
         }
 
 
+# ==================== BOOKMARKS ====================
+
+class Bookmark(db.Model, SoftDeleteMixin):
+    query_class = SoftDeleteQuery
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False, index=True)
+    page_number = db.Column(db.Integer, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('bookmarks', lazy=True))
+    book = db.relationship('Book', backref=db.backref('bookmarks', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'book_id', name='unique_user_book_bookmark'),
+        db.CheckConstraint('page_number IS NULL OR page_number > 0', name='check_page_number_positive'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "book_id": self.book_id,
+            "book": self.book.to_dict() if self.book else None,
+            "page_number": self.page_number,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "is_deleted": self.is_deleted
+        }
+
+
 # ==================== PERSONAL READING JOURNAL ====================
 
 class JournalEntry(db.Model, SoftDeleteMixin):
@@ -660,10 +602,10 @@ class JournalEntry(db.Model, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=True, index=True)
-    title = db.Column(db.String(255), nullable=False)  # Entry title (e.g., "Reflections on Chapter 4")
-    content = db.Column(db.Text, nullable=False)      # The actual journal text
-    mood = db.Column(db.String(50), nullable=True)     # Emotional state during reading
-    is_private = db.Column(db.Boolean, default=True)   # Journal entries are private by default
+    title = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    mood = db.Column(db.String(50), nullable=True)
+    is_private = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
