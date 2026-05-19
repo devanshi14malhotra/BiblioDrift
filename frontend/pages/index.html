@@ -323,10 +323,40 @@
   <script src="../js/pwa.js"></script>
   <script src="../script/vault.js"></script>
 
-</body>
 
-</body>
-
+<!-- Background Theme Selector -->
+<div class="bg-theme-selector">
+    <button class="bg-theme-btn" id="bgThemeBtn" title="Change Background">
+        <i class="fa-solid fa-image"></i>
+    </button>
+    <div class="bg-theme-panel" id="bgThemePanel">
+        <h4><i class="fa-solid fa-paintbrush"></i> Background</h4>
+        <div class="bg-option" data-bg="none">
+            <div class="bg-option-preview" style="background:#f9f7f2;"></div>
+            None
+        </div>
+        <div class="bg-option" data-bg="default">
+            <div class="bg-option-preview" style="background-image:url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=100');background-size:cover;"></div>
+            Cozy Library
+        </div>
+        <div class="bg-option" data-bg="library">
+            <div class="bg-option-preview" style="background-image:url('https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=100');background-size:cover;"></div>
+            Dark Library
+        </div>
+        <div class="bg-option" data-bg="parchment">
+            <div class="bg-option-preview" style="background-color:#f5f0e6;"></div>
+            Parchment
+        </div>
+        <div class="bg-option" data-bg="linen">
+            <div class="bg-option-preview" style="background-color:#f0e9dd;"></div>
+            Linen
+        </div>
+        <div class="bg-option" data-bg="oldbooks">
+            <div class="bg-option-preview" style="background:radial-gradient(ellipse at center,#f0e7d4,#cfc3a4);"></div>
+            Old Books
+        </div>
+    </div>
+</div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('themeToggle');
@@ -367,5 +397,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-
+</body>
 </html>

@@ -228,10 +228,15 @@ const CollectionAPI = {
     }
 };
 window.CollectionAPI = CollectionAPI;
-import { saveBookOffline, removeOfflineBook, db } from './db.js';
+
+// db.js functions are accessed via window globals (loaded separately in index.html)
+const saveBookOffline = window.saveBookOffline || (() => Promise.resolve(false));
+const removeOfflineBook = window.removeOfflineBook || (() => Promise.resolve(false));
 
 // Example click handler for your custom "Save for Offline" icon
 async function handleDownloadToggle(bookCard, bookData) {
+    const db = window.db;
+    if (!db) return;
     const isAlreadyDownloaded = await db.downloadedBooks.get(bookData.id);
     
     if (isAlreadyDownloaded) {
@@ -314,12 +319,8 @@ async function verifyStoredAuthSession() {
         }
 
         try {
-            const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
             const headers = {
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             };
             const csrf = getCookie('csrf_access_token');
             if (csrf) {
@@ -327,10 +328,9 @@ async function verifyStoredAuthSession() {
             }
 
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                credentials: 'include',
-                headers,
                 method: 'GET',
                 credentials: 'include',
+                headers,
             });
 
             if (!response.ok) {
@@ -1024,6 +1024,8 @@ scene.innerHTML = `
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
+        } // end if (purchaseLinksEl)
+
         // Explore Mood Button
         const moodBtnModal = document.getElementById('modal-mood-btn');
         if (moodBtnModal) {
@@ -1384,7 +1386,8 @@ scene.innerHTML = `
                 } else {
                     showError(`Failed to fetch mood analysis (Server error: ${res.status}).`);
                 }
-} catch (err) {
+            }
+        } catch (err) {
             console.error('Failed to explore book mood:', err);
             showError('Network error connecting to mood analysis service.');
         }
@@ -2670,7 +2673,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Load Config (Non-blocking)
     loadConfig();
+// ── Background Theme Selector ──────────────────────────────
+const bgThemeBtn = document.getElementById('bgThemeBtn');
+const bgThemePanel = document.getElementById('bgThemePanel');
 
+if (bgThemeBtn && bgThemePanel) {
+    // Restore saved background on load
+    const savedBg = localStorage.getItem('bibliodrift_bg');
+    if (savedBg) {
+        document.body.setAttribute('data-bg', savedBg);
+        bgThemePanel.querySelectorAll('.bg-option').forEach(o => {
+            o.classList.toggle('active', o.dataset.bg === savedBg);
+        });
+    }
+
+    // Toggle panel open/close
+    bgThemeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        bgThemePanel.classList.toggle('active');
+    });
+
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!bgThemeBtn.contains(e.target) && !bgThemePanel.contains(e.target)) {
+            bgThemePanel.classList.remove('active');
+        }
+    });
+
+    // Handle option clicks
+    bgThemePanel.addEventListener('click', (e) => {
+        const option = e.target.closest('.bg-option');
+        if (!option) return;
+        const bg = option.dataset.bg;
+        document.body.setAttribute('data-bg', bg);
+        localStorage.setItem('bibliodrift_bg', bg);
+        bgThemePanel.querySelectorAll('.bg-option').forEach(o =>
+            o.classList.toggle('active', o === option)
+        );
+        bgThemePanel.classList.remove('active');
+    });
+}
+// ────────────────────────────────────────────────────────────
 
 
     // --- AUTH LOGIC ---

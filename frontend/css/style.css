@@ -35,10 +35,6 @@
     --book-thick: 40px;
 }
 
-
-    --book-thick: 40px;
-}
-
 /* Fix: WCAG AA Contrast Floor - Issue #534 */
 .glass-panel,
 .book-tooltip,
@@ -78,16 +74,229 @@ html {
     transition: background-color 0.4s ease, color 0.4s ease;
 }
 
+/* ===== BASE BACKGROUND ===== */
+
 body {
     background-color: var(--bg-color);
     color: var(--text-main);
     font-family: "Georgia", serif;
-    /* Classic serif for books */
     overflow-x: hidden;
     min-height: 100vh;
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
+/* ===== BACKGROUND THEMES ===== */
+body[data-bg="none"] {
+    background: var(--bg-color);
+}
 
+body[data-bg="default"] {
+    background:
+        linear-gradient(rgba(249,247,242,0.72), rgba(249,247,242,0.72)),
+        url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1920') center/cover fixed;
+}
+
+body[data-bg="library"] {
+    background:
+        linear-gradient(rgba(249,247,242,0.70), rgba(249,247,242,0.70)),
+        url('https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=1920') center/cover fixed;
+}
+body[data-bg="parchment"] {
+    background-color: #f5f0e6;
+    background-image:
+        /* grain noise via inline SVG — no external request */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E"),
+        /* gentle warm gradient — matches --wood-light / --accent-gold family */
+        linear-gradient(155deg, #f8f3e8 0%, #ede3d0 55%, #f2ead8 100%);
+    background-attachment: fixed;
+}
+ 
+/* ── 2. LINEN ──────────────────────────────────────────────────
+   Woven fabric feel — fine horizontal weave lines + grain.
+*/
+body[data-bg="linen"] {
+    background-color: #f0e9dd;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+        /* subtle woven weave lines */
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 3px,
+            rgba(160, 130, 90, 0.035) 3px,
+            rgba(160, 130, 90, 0.035) 4px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 3px,
+            rgba(160, 130, 90, 0.025) 3px,
+            rgba(160, 130, 90, 0.025) 4px
+        ),
+        linear-gradient(180deg, #f0e9dd 0%, #e5dace 100%);
+    background-attachment: fixed;
+}
+ 
+/* ── 3. OLD BOOKS ──────────────────────────────────────────────
+   Aged, warmer tone — like an old library shelf's ambient glow.
+   Heavier grain, deeper vignette.
+*/
+body[data-bg="oldbooks"] {
+    background-color: #ede4d0;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse at 50% 30%, #f0e7d4 0%, #dfd3b8 60%, #cfc3a4 100%);
+    background-attachment: fixed;
+}
+ 
+/* ── 4. NIGHT MODE overrides for all three ────────────────────
+   Keep grain texture but on the dark #1e1a18 base.
+   (The existing rule for photo-based themes is already there —
+    add these alongside it, or replace the partial one at line ~125.)
+*/
+[data-theme="night"] body[data-bg="parchment"],
+[data-theme="night"] body[data-bg="linen"],
+[data-theme="night"] body[data-bg="oldbooks"] {
+    background-color: #1e1a18;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+        linear-gradient(135deg, #1e1a18 0%, #251f1b 60%, #1a1612 100%);
+    background-attachment: fixed;
+}
+/* Night mode overrides */
+[data-theme="night"] body[data-bg="default"] {
+    background:
+        linear-gradient(rgba(30,26,24,0.78), rgba(30,26,24,0.78)),
+        url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1920') center/cover fixed;
+}
+
+[data-theme="night"] body[data-bg="library"] {
+    background:
+        linear-gradient(rgba(30,26,24,0.78), rgba(30,26,24,0.78)),
+        url('https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=1920') center/cover fixed;
+}
+
+/* Dark mode overrides for bg themes */
+[data-theme="night"] body[data-bg="default"],
+[data-theme="night"] body[data-bg="library"] {
+    background:
+        linear-gradient(135deg, rgba(30,26,24,0.88) 0%, rgba(30,26,24,0.88) 100%),
+        url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1920') center/cover fixed;
+}
+
+[data-theme="night"] body[data-bg="parchment"],
+[data-theme="night"] body[data-bg="oldbooks"],
+[data-theme="night"] body[data-bg="grain"],
+[data-theme="night"] body[data-bg="linen"] {
+    background:
+        linear-gradient(135deg, rgba(30,26,24,0.88) 0%, rgba(30,26,24,0.88) 100%),
+        url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1920') center/cover fixed;
+}
+
+/* Background selector UI */
+.bg-theme-selector {
+    position: fixed;
+    bottom: 10rem;
+    right: 2rem;
+    z-index: 10003;
+}
+
+.bg-theme-btn {
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 50%;
+    background: var(--header-bg);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.bg-theme-btn:hover {
+    background: var(--accent-gold);
+    color: white;
+    transform: scale(1.05);
+}
+
+.bg-theme-panel {
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    width: 220px;
+    background: var(--header-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 1rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 10004;
+}
+
+.bg-theme-panel.active {
+    display: flex;
+}
+
+.bg-theme-panel h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    color: var(--accent-gold);
+    margin-bottom: 0.5rem;
+}
+
+.bg-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    border: 1px solid transparent;
+}
+
+.bg-option:hover {
+    background: rgba(212,175,55,0.1);
+    border-color: var(--accent-gold);
+}
+
+.bg-option.active {
+    background: rgba(212,175,55,0.15);
+    border-color: var(--accent-gold);
+    font-weight: bold;
+}
+
+.bg-option-preview {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.1);
+    background-size: cover;
+    background-position: center;
+}
+/* OPTIONAL LIBRARY SHADOW DEPTH */
+main::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 40%,
+            rgba(0,0,0,0.12) 100%
+        );
+
+    z-index: -1;
+}
 /* Explicit night-mode overrides — bulletproof fallback */
 [data-theme="night"] body,
 html[data-theme="night"],
@@ -324,7 +533,7 @@ main {
     justify-content: space-between;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 1rem
+    gap: 1rem;
     justify-content: space-between;
     align-items: baseline;
     gap: 1rem;
@@ -1838,7 +2047,7 @@ main {
     max-width: 100%;
     overflow-x: hidden;
 }
-display: grid;
+.display-grid{
    
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1.25rem;
