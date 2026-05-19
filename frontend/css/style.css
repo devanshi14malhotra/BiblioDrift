@@ -5491,3 +5491,81 @@ input:checked+.slider:before {
         justify-content: flex-end;
     }
 }
+
+/* ============================================================ */
+/* CUSTOM CURSOR & SPARKLE EFFECTS (for desktop with hover)     */
+body { cursor: none; }
+@media (hover: none) { body { cursor: auto; } }
+
+#sc-glow-outer,
+#sc-glow-mid,
+#sc-glow-inner,
+#sc-dot {
+  position: fixed;
+  pointer-events: none;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  will-change: left, top;
+}
+
+#sc-glow-outer {
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(180,120,70,0.40) 0%, transparent 70%);
+  filter: blur(18px);
+  mix-blend-mode: normal;
+  z-index: 99996;
+}
+#sc-glow-mid {
+  width: 60px; height: 60px;
+  background: radial-gradient(circle, rgba(180,120,70,0.55) 0%, rgba(180,120,70,0.20) 50%, transparent 75%);
+  filter: blur(8px);
+  mix-blend-mode: normal;
+  z-index: 99997;
+}
+#sc-glow-inner {
+  width: 24px; height: 24px;
+  background: radial-gradient(circle, rgba(180,120,70,0.85) 0%, transparent 100%);
+  filter: blur(4px);
+  mix-blend-mode: normal;
+  z-index: 99998;
+}
+#sc-dot {
+  width: 9px; height: 9px;
+  background: #7A4A28;
+  opacity: 1;
+  z-index: 99999;
+}
+
+@media (prefers-color-scheme: dark) {
+  #sc-glow-outer {
+    background: radial-gradient(circle, rgba(212,184,150,0.12) 4%, transparent 70%);
+    mix-blend-mode: normal;
+  }
+  #sc-glow-mid {
+    background: radial-gradient(circle, rgba(212,184,150,0.25) 0%, rgba(212,184,150,0.07) 50%, transparent 75%);
+    mix-blend-mode: normal;
+  }
+  #sc-glow-inner {
+    background: radial-gradient(circle, rgba(212,184,150,0.5) 0%, transparent 75%);
+    mix-blend-mode: normal;
+  }
+  #sc-dot { background: #D4B896; }
+}
+
+@media (hover: none) {
+  #sc-glow-outer, #sc-glow-mid, #sc-glow-inner, #sc-dot { display: none; }
+}
+
+.sc-sparkle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99995;
+  transform: translate(-50%, -50%);
+  animation: sc-pop 0.8s ease-out forwards;
+}
+
+@keyframes sc-pop {
+  0%   { opacity: 1;   transform: translate(-50%, -50%) scale(1); }
+  60%  { opacity: 0.7; }
+  100% { opacity: 0;   transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.15); }
+}
