@@ -41,7 +41,8 @@ from cache_service import (
     cache_recommendations, 
     cache_mood_tags, 
     cache_chat_response,
-    cache_mood_analysis
+    cache_mood_analysis,
+    cache_category_books,
 )
 
 # Setup logging from environment
@@ -724,7 +725,7 @@ def get_ai_recommendations(query):
     
     return f"Based on your interest in '{query}', I'd recommend exploring books that capture similar themes and emotional resonance."
 
-
+@cache_category_books
 def get_category_books(category: str, vibe_description: str, count: int = 5) -> list:
     """
     Generate a list of real, relevant books for a specific shelf category.
