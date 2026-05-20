@@ -4,8 +4,8 @@ const MOOD_API_BASE = 'http://127.0.0.1:5000/api/v1';
 const CONFIG = {
     // Google Books API - loaded from backend config endpoint
     // Leave empty - it will be populated by loadConfig() in app.js
-    GOOGLE_BOOKS_API_KEY: '',
-    GOOGLE_BOOKS_API_KEYS: [],
+    // GOOGLE_BOOKS_API_KEY: '',
+    GOOGLE_BOOKS_API_KEYS: ['AIzaSyBMdZfumoQTeFLNspVdETNs6f663GIfAEk'],
 
     // Backend API Base - use relative path for proxy-aware deployment
     // In development: proxy to localhost:5000
@@ -43,8 +43,7 @@ if (typeof window !== 'undefined') {
             for (let index = 0; index < candidates.length; index += 1) {
                 const key = candidates[index];
                 const keyParam = key ? `&key=${encodeURIComponent(key)}` : '';
-                const url = `${CONFIG.API_BASE}?q=${encodeURIComponent(query)}&maxResults=${maxResults}${extraParams}${keyParam}`;
-
+                 const url = `${CONFIG.API_BASE}?q=${encodeURIComponent(query)}&maxResults=${maxResults}${extraParams}${keyParam}`;
                 try {
                     const response = await fetch(url);
                     if (response.ok) {

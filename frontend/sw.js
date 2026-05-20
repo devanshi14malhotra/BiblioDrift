@@ -151,10 +151,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // ── 4. Google Books jsapi / viewer → Cache-first ───────────────────────────
-  if (url.hostname === 'www.google.com' && url.pathname.startsWith('/books/')) {
-    event.respondWith(_cacheFirst(request, FONT_CACHE));
-    return;
-  }
+  // if (url.hostname === 'www.google.com' && url.pathname.startsWith('/books/')) {
+  //   event.respondWith(_cacheFirst(request, FONT_CACHE));
+  //   return;
+  // }
 
   // ── 5. Local app assets → Stale-while-revalidate ───────────────────────────
   // Covers HTML pages, CSS, JS, images, sounds
@@ -232,8 +232,12 @@ async function _staleWhileRevalidate(request, cacheName) {
 
   // Kick off a background network fetch regardless
   const networkFetch = fetch(request).then((response) => {
-    if (response.ok) {
-      cache.put(request, response.clone());
+    if (response && response.status === 200 && response.type !== 'basic') {
+      try{
+        cache.put(request, response.clone());
+      }catch (err) {
+      console.warn("Cache skipped:", err);
+      } 
     }
     return response;
   }).catch(() => null);

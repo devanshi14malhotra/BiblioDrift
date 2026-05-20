@@ -1,7 +1,7 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
-from flask import Flask, request, jsonify
+from flask import Flask, make_response, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
@@ -123,9 +123,20 @@ jwt = JWTManager(app)
 # =====================================================================
 # ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5000,http://localhost:5000
 # For development, we'll allow all to be safe, then restrict in prod
-CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5000", "http://localhost:5000","http://127.0.0.1:5501",
-        "http://localhost:5501"])
-
+# CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5000", "http://localhost:5000","http://127.0.0.1:5501",
+#         "http://localhost:5501"])
+CORS(
+    app,
+    supports_credentials=True,
+    resources={r"/*": {"origins": [
+        "http://127.0.0.1:5500",
+        "http://127.0.0.1:5000",
+        "http://localhost:5000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5501",
+        "http://localhost:5501"
+    ]}}
+)
 # Initialize cache service
 cache_service.init_app(app)
 
@@ -140,19 +151,30 @@ cache_service.init_app(app)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["300 per hour"],
     storage_uri="memory://"
 )
-@app.before_request
-def debug_request():
-    print("🔥 REQUEST HIT:", request.path, request.method)
 
+@limiter.request_filter
+def ignore_options():
+    return request.method == "OPTIONS"
+
+@app.before_request
+def handle_options():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.status_code = 200
+        return response
 
 @app.errorhandler(404)
 def page_not_found(e: Exception):
     if request.path.startswith('/api/'):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
     return jsonify({'error': '404 Not Found'}), 404
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 
 @app.after_request
@@ -567,6 +589,8 @@ def handle_category_books():
         logger.error(f"Error in handle_category_books: {str(e)}", exc_info=True)
         return internal_error(str(e))
 
+
+
 @app.route('/api/v1/chat', methods=['POST'])
 @rate_limit('chat')
 def handle_chat():
@@ -739,7 +763,7 @@ def get_library(user_id):
         return forbidden_error("Cannot access another user's library")
         
     try:
-        items = ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id).all()
+        items = (ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id).all())
         return success_response(data={"library": [item.to_dict() for item in items]})
     except Exception as e:
         return internal_error(str(e))
@@ -1040,7 +1064,7 @@ def sync_library():
 # Finally, JWT access cookies are locked and loaded on the response object.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("30 per minute")
 def register():
     """Register a new user and return JWT token."""
     from sqlalchemy.exc import IntegrityError
@@ -1086,7 +1110,7 @@ def register():
         return internal_error(str(e))
 
 @app.route('/api/v1/login', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("30 per minute")
 def login():
     """Authenticate user and return JWT token."""
     from exceptions import DatabaseQueryError, ValidationException
@@ -1966,7 +1990,7 @@ jwt = JWTManager(app)
 CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5000", "http://localhost:5000"])
 
 # Initialize cache service
-# cache_service.init_app(app)
+cache_service.init_app(app)
 
 @app.errorhandler(404)
 def page_not_found(e: Exception):
@@ -1975,178 +1999,178 @@ def page_not_found(e: Exception):
     return app.send_static_file('404.html'), 404
 
 
-@app.after_request
-def add_security_headers(response):
-    """
-    Add security headers to all responses for defense-in-depth XSS prevention.
+# @app.after_request
+# def add_security_headers(response):
+#     """
+#     Add security headers to all responses for defense-in-depth XSS prevention.
     
-    Headers Added:
-    - Content-Security-Policy: Restricts resource loading and inline scripts
-    - X-Content-Type-Options: Prevents MIME type sniffing
-    - X-Frame-Options: Prevents clickjacking by disallowing framing
-    - X-XSS-Protection: Legacy XSS protection (browser-level)
-    - Strict-Transport-Security: Forces HTTPS for next 1 year
-    - Referrer-Policy: Controls referrer information sharing
+#     Headers Added:
+#     - Content-Security-Policy: Restricts resource loading and inline scripts
+#     - X-Content-Type-Options: Prevents MIME type sniffing
+#     - X-Frame-Options: Prevents clickjacking by disallowing framing
+#     - X-XSS-Protection: Legacy XSS protection (browser-level)
+#     - Strict-Transport-Security: Forces HTTPS for next 1 year
+#     - Referrer-Policy: Controls referrer information sharing
     
-    Args:
-        response: Flask response object
+#     Args:
+#         response: Flask response object
         
-    Returns:
-        response: Response with added security headers
-    """
-    # Content Security Policy: Restrict resource loading to prevent inline scripts/XSS
-    # - default-src 'self': Only allow resources from the same origin
-    # - script-src 'self' https://cdn.jsdelivr.net: Allow scripts from self and DOMPurify CDN
-    # - style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com: Allow styles from self and CDN
-    # - img-src 'self' data: blob: https:: Allow images from self, data URLs, blob URLs, and HTTPS
-    # - font-src 'self' https://fonts.gstatic.com: Allow fonts from self and Google Fonts
-    # - connect-src 'self' ws: wss: https:: Allow connections to own origin, secure WebSocket, and HTTPS
-    # - frame-ancestors 'none': Prevent framing/clickjacking
-    # - base-uri 'self': Restrict base tag to same origin
-    # - form-action 'self': Restrict form submissions to same origin
-    # - upgrade-insecure-requests: Upgrade HTTP to HTTPS
-    csp_policy = (
-        "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-        "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
-        "img-src 'self' data: blob: https:; "
-        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-        "connect-src 'self' ws: wss: https:; "
-        "frame-ancestors 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self'; "
-        "upgrade-insecure-requests"
-    )
-    response.headers['Content-Security-Policy'] = csp_policy
+#     Returns:
+#         response: Response with added security headers
+#     """
+#     # Content Security Policy: Restrict resource loading to prevent inline scripts/XSS
+#     # - default-src 'self': Only allow resources from the same origin
+#     # - script-src 'self' https://cdn.jsdelivr.net: Allow scripts from self and DOMPurify CDN
+#     # - style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com: Allow styles from self and CDN
+#     # - img-src 'self' data: blob: https:: Allow images from self, data URLs, blob URLs, and HTTPS
+#     # - font-src 'self' https://fonts.gstatic.com: Allow fonts from self and Google Fonts
+#     # - connect-src 'self' ws: wss: https:: Allow connections to own origin, secure WebSocket, and HTTPS
+#     # - frame-ancestors 'none': Prevent framing/clickjacking
+#     # - base-uri 'self': Restrict base tag to same origin
+#     # - form-action 'self': Restrict form submissions to same origin
+#     # - upgrade-insecure-requests: Upgrade HTTP to HTTPS
+#     csp_policy = (
+#         "default-src 'self'; "
+#         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+#         "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+#         "img-src 'self' data: blob: https:; "
+#         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+#         "connect-src 'self' ws: wss: https:; "
+#         "frame-ancestors 'none'; "
+#         "base-uri 'self'; "
+#         "form-action 'self'; "
+#         "upgrade-insecure-requests"
+#     )
+#     response.headers['Content-Security-Policy'] = csp_policy
     
-    # Prevent MIME type sniffing (forces browser to respect Content-Type header)
-    response.headers['X-Content-Type-Options'] = 'nosniff'
+#     # Prevent MIME type sniffing (forces browser to respect Content-Type header)
+#     response.headers['X-Content-Type-Options'] = 'nosniff'
     
-    # Prevent clickjacking by disallowing the site to be framed
-    response.headers['X-Frame-Options'] = 'DENY'
+#     # Prevent clickjacking by disallowing the site to be framed
+#     response.headers['X-Frame-Options'] = 'DENY'
     
-    # Legacy XSS protection header (for older browsers)
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+#     # Legacy XSS protection header (for older browsers)
+#     response.headers['X-XSS-Protection'] = '1; mode=block'
     
-    # Force HTTPS for 1 year (including subdomains)
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+#     # Force HTTPS for 1 year (including subdomains)
+#     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     
-    # Control referrer information to reduce information leakage
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+#     # Control referrer information to reduce information leakage
+#     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     
-    # Restrict permissions and features the page can use
-    response.headers['Permissions-Policy'] = (
-        'geolocation=(), '
-        'microphone=(), '
-        'camera=(), '
-        'payment=(), '
-        'usb=(), '
-        'magnetometer=(), '
-        'gyroscope=(), '
-        'accelerometer=()'
-    )
+#     # Restrict permissions and features the page can use
+#     response.headers['Permissions-Policy'] = (
+#         'geolocation=(), '
+#         'microphone=(), '
+#         'camera=(), '
+#         'payment=(), '
+#         'usb=(), '
+#         'magnetometer=(), '
+#         'gyroscope=(), '
+#         'accelerometer=()'
+#     )
     
-    return response
+#     return response
 
-# Rate limiting configuration
-RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
-RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30'))
+# # Rate limiting configuration
+# RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
+# RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30'))
 
-_request_log = defaultdict(deque)
-_request_calls = 0
-
-
-def _cleanup_expired_keys(cutoff: float) -> None:
-    """Remove keys whose newest timestamp is already outside the window."""
-    stale_keys = [key for key, dq in _request_log.items() if not dq or dq[-1] <= cutoff]
-    for key in stale_keys:
-        _request_log.pop(key, None)
+# _request_log = defaultdict(deque)
+# _request_calls = 0
 
 
-def _rate_limited(endpoint: str) -> tuple[bool, int]:
-    """Sliding window limiter per IP/endpoint."""
-    if not app_config.rate_limit.enabled:
-        return False, 0
+# def _cleanup_expired_keys(cutoff: float) -> None:
+#     """Remove keys whose newest timestamp is already outside the window."""
+#     stale_keys = [key for key, dq in _request_log.items() if not dq or dq[-1] <= cutoff]
+#     for key in stale_keys:
+#         _request_log.pop(key, None)
+
+
+# def _rate_limited(endpoint: str) -> tuple[bool, int]:
+#     """Sliding window limiter per IP/endpoint."""
+#     if not app_config.rate_limit.enabled:
+#         return False, 0
     
-    global _request_calls
-    key = f"{request.remote_addr}|{endpoint}"
-    now = time()
-    window_start = now - RATE_LIMIT_WINDOW
-    _request_calls += 1
+#     global _request_calls
+#     key = f"{request.remote_addr}|{endpoint}"
+#     now = time()
+#     window_start = now - RATE_LIMIT_WINDOW
+#     _request_calls += 1
 
-    dq = _request_log[key]
-    while dq and dq[0] <= window_start:
-        dq.popleft()
+#     dq = _request_log[key]
+#     while dq and dq[0] <= window_start:
+#         dq.popleft()
 
-    if len(dq) >= RATE_LIMIT_MAX_REQUESTS:
-        oldest = dq[0]
-        retry_after = max(1, ceil(RATE_LIMIT_WINDOW - (now - oldest)))
-        return True, retry_after
+#     if len(dq) >= RATE_LIMIT_MAX_REQUESTS:
+#         oldest = dq[0]
+#         retry_after = max(1, ceil(RATE_LIMIT_WINDOW - (now - oldest)))
+#         return True, retry_after
 
-    dq.append(now)
+#     dq.append(now)
 
-    if _request_calls % 100 == 0:
-        _cleanup_expired_keys(window_start)
+#     if _request_calls % 100 == 0:
+#         _cleanup_expired_keys(window_start)
 
-    return False, 0
-
-
-def rate_limit(endpoint_name: str):
-    """Decorator to apply rate limiting to an endpoint."""
-    def decorator(f):
-        def wrapped(*args, **kwargs):
-            limited, retry_after = _rate_limited(endpoint_name)
-            if limited:
-                response = jsonify({
-                    "success": False,
-                    "error": "Rate limit exceeded. Try again shortly.",
-                    "retry_after": retry_after
-                })
-                response.status_code = 429
-                response.headers['Retry-After'] = retry_after
-                return response
-            return f(*args, **kwargs)
-        wrapped.__name__ = f.__name__
-        return wrapped
-    return decorator
-
-# Initialize AI service if available
-if MOOD_ANALYSIS_AVAILABLE:
-    ai_service = AIBookService()
+#     return False, 0
 
 
-# ==================== JWT SECRET VALIDATION AT STARTUP ====================
-def _validate_jwt_secret_startup():
-    is_valid, errors = app_config.validate()
+# def rate_limit(endpoint_name: str):
+#     """Decorator to apply rate limiting to an endpoint."""
+#     def decorator(f):
+#         def wrapped(*args, **kwargs):
+#             limited, retry_after = _rate_limited(endpoint_name)
+#             if limited:
+#                 response = jsonify({
+#                     "success": False,
+#                     "error": "Rate limit exceeded. Try again shortly.",
+#                     "retry_after": retry_after
+#                 })
+#                 response.status_code = 429
+#                 response.headers['Retry-After'] = retry_after
+#                 return response
+#             return f(*args, **kwargs)
+#         wrapped.__name__ = f.__name__
+#         return wrapped
+#     return decorator
+
+# # Initialize AI service if available
+# if MOOD_ANALYSIS_AVAILABLE:
+#     ai_service = AIBookService()
+
+
+# # ==================== JWT SECRET VALIDATION AT STARTUP ====================
+# def _validate_jwt_secret_startup():
+#     is_valid, errors = app_config.validate()
     
-    if not is_valid:
-        if app_config.is_production():
-            logger.critical("=" * 70)
-            logger.critical("CRITICAL SECURITY ERROR - APPLICATION REFUSING TO START")
-            logger.critical("=" * 70)
-            for error in errors:
-                logger.critical(f"  - {error}")
-            logger.critical("=" * 70)
-            import sys
-            sys.exit(1)
-        else:
-            logger.warning("=" * 70)
-            logger.warning("WARNING: CONFIGURATION ISSUES DETECTED")
-            logger.warning("=" * 70)
-            for error in errors:
-                logger.warning(f"  - {error}")
-            logger.warning("=" * 70)
-    else:
-        if app_config.is_development():
-            logger.info("=" * 70)
-            logger.info("CONFIGURATION VALIDATION: OK")
-            logger.info("=" * 70)
-            logger.info(f"Environment: {app_config.get_environment_name()}")
-            logger.info(f"Rate limiting: {'Enabled' if app_config.rate_limit.enabled else 'Disabled'}")
-            logger.info("=" * 70)
+#     if not is_valid:
+#         if app_config.is_production():
+#             logger.critical("=" * 70)
+#             logger.critical("CRITICAL SECURITY ERROR - APPLICATION REFUSING TO START")
+#             logger.critical("=" * 70)
+#             for error in errors:
+#                 logger.critical(f"  - {error}")
+#             logger.critical("=" * 70)
+#             import sys
+#             sys.exit(1)
+#         else:
+#             logger.warning("=" * 70)
+#             logger.warning("WARNING: CONFIGURATION ISSUES DETECTED")
+#             logger.warning("=" * 70)
+#             for error in errors:
+#                 logger.warning(f"  - {error}")
+#             logger.warning("=" * 70)
+#     else:
+#         if app_config.is_development():
+#             logger.info("=" * 70)
+#             logger.info("CONFIGURATION VALIDATION: OK")
+#             logger.info("=" * 70)
+#             logger.info(f"Environment: {app_config.get_environment_name()}")
+#             logger.info(f"Rate limiting: {'Enabled' if app_config.rate_limit.enabled else 'Disabled'}")
+#             logger.info("=" * 70)
 
 
-_validate_jwt_secret_startup()
+# _validate_jwt_secret_startup()
 
 # @app.route('/api/v1/config', methods=['GET'])
 # def get_config():
@@ -2157,51 +2181,51 @@ _validate_jwt_secret_startup()
 #     })
 
 # @app.route('/')
-def index():
-    """Simple index page showing available API endpoints."""
-    endpoints_info = {
-        "service": "BiblioDrift Mood Analysis API",
-        "version": "1.0.0",
-        "status": "running",
-        "endpoints": {
-            "GET /": "This page - API documentation",
-            "GET /api/v1/health": "Health check endpoint",
-            "POST /api/v1/generate-note": "Generate AI book notes",
-            "POST /api/v1/chat": "Chat with bookseller",
-            "POST /api/v1/mood-search": "Search books by mood/vibe",
-            "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category"
-        },
-        "note": "All endpoints except / and /api/v1/health require POST requests with JSON body",
-        "example_usage": {
-            "chat": {
-                "url": "/api/v1/chat",
-                "method": "POST",
-                "body": {"message": "I want something cozy for a rainy evening"}
-            },
-            "mood_search": {
-                "url": "/api/v1/mood-search",
-                "method": "POST",
-                "body": {"query": "mystery thriller"}
-            },
-            "category_books": {
-                "url": "/api/v1/category-books",
-                "method": "POST",
-                "body": {
-                    "category": "Rainy Evening Reads",
-                    "vibe_description": "quiet, melancholy, introspective — best read on grey afternoons",
-                    "count": 5
-                }
-            }
-        }
-    }
+# def index():
+#     """Simple index page showing available API endpoints."""
+#     endpoints_info = {
+#         "service": "BiblioDrift Mood Analysis API",
+#         "version": "1.0.0",
+#         "status": "running",
+#         "endpoints": {
+#             "GET /": "This page - API documentation",
+#             "GET /api/v1/health": "Health check endpoint",
+#             "POST /api/v1/generate-note": "Generate AI book notes",
+#             "POST /api/v1/chat": "Chat with bookseller",
+#             "POST /api/v1/mood-search": "Search books by mood/vibe",
+#             "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category"
+#         },
+#         "note": "All endpoints except / and /api/v1/health require POST requests with JSON body",
+#         "example_usage": {
+#             "chat": {
+#                 "url": "/api/v1/chat",
+#                 "method": "POST",
+#                 "body": {"message": "I want something cozy for a rainy evening"}
+#             },
+#             "mood_search": {
+#                 "url": "/api/v1/mood-search",
+#                 "method": "POST",
+#                 "body": {"query": "mystery thriller"}
+#             },
+#             "category_books": {
+#                 "url": "/api/v1/category-books",
+#                 "method": "POST",
+#                 "body": {
+#                     "category": "Rainy Evening Reads",
+#                     "vibe_description": "quiet, melancholy, introspective — best read on grey afternoons",
+#                     "count": 5
+#                 }
+#             }
+#         }
+#     }
     
-    if MOOD_ANALYSIS_AVAILABLE:
-        endpoints_info["endpoints"]["POST /api/v1/analyze-mood"] = "Analyze book mood from GoodReads"
-        endpoints_info["endpoints"]["POST /api/v1/mood-tags"] = "Get mood tags for a book"
-    else:
-        endpoints_info["note"] += " | Mood analysis endpoints disabled (missing dependencies)"
+#     if MOOD_ANALYSIS_AVAILABLE:
+#         endpoints_info["endpoints"]["POST /api/v1/analyze-mood"] = "Analyze book mood from GoodReads"
+#         endpoints_info["endpoints"]["POST /api/v1/mood-tags"] = "Get mood tags for a book"
+#     else:
+#         endpoints_info["note"] += " | Mood analysis endpoints disabled (missing dependencies)"
     
-    return jsonify(endpoints_info)
+#     return jsonify(endpoints_info)
 
 # @app.route('/api/v1/analyze-mood', methods=['POST'])
 # @rate_limit('analyze_mood')
@@ -2365,9 +2389,10 @@ def index():
 #         logger.error(f"Error in handle_category_books: {str(e)}", exc_info=True)
 #         return internal_error(str(e))
 
-print(app.url_map)
-@app.route('/api/v1/generate-note', methods=['POST'])
-# @rate_limit('generate_note')
+
+@app.route('/api/v1/generate-note', methods=['POST', 'OPTIONS'])
+@limiter.limit("10000 per hour" if app.debug else "300 per hour")
+@rate_limit('generate_note')
 def handle_generate_note():
     """Generate AI-powered book recommendation with vibe support."""
     from exceptions import (
@@ -2424,16 +2449,8 @@ def handle_generate_note():
         logger.error(f"Unexpected error in handle_generate_note: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "handle_generate_note")
 
-# @app.route('/api/v1/generate-note', methods=['POST'])
-# def handle_generate_note():
-#     print("🔥 ROUTE WORKING")
-#     return jsonify({
-#         "success": True,
-#         "message": "generate-note route working"
-#     })
-@app.route("/test", methods=["GET"])
-def test():
-    return jsonify({"message": "working"})
+
+
 
 # @app.route('/api/v1/chat', methods=['POST'])
 # @rate_limit('chat')
@@ -3679,7 +3696,6 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    print(app.url_map)
     server_config = app_config.server
     
     if server_config.debug:

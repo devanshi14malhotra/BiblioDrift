@@ -83,7 +83,7 @@ const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].inclu
 
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-let GOOGLE_API_KEY = '';
+let GOOGLE_API_KEY = 'AIzaSyCDe5dwBS37k0JXdHJDoA4PHiz8smROfnQ';
 
 /**
  * Utility to extract a cookie value by name.
@@ -380,7 +380,8 @@ const SafeStorage = {
 };
 const MOCK_BOOKS = [
     {
-        id: "mock-dune",
+        // id: "mock-dune",
+        id: "lon4DwAAQBAJ",
         volumeInfo: {
             title: "Dune",
             authors: ["Frank Herbert"],
@@ -389,7 +390,8 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-1984",
+        // id: "mock-1984",
+        id: "kotPYEqx7kMC",
         volumeInfo: {
             title: "1984",
             authors: ["George Orwell"],
@@ -398,7 +400,8 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-hobbit",
+        // id: "mock-hobbit",
+        id: "aQl4DwAAQBAJ",
         volumeInfo: {
             title: "The Hobbit",
             authors: ["J.R.R. Tolkien"],
@@ -407,7 +410,8 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-pride",
+        // id: "mock-pride",
+        id: "iRawlAEACAAJ",
         volumeInfo: {
             title: "Pride and Prejudice",
             authors: ["Jane Austen"],
@@ -416,7 +420,8 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-gatsby",
+        // id: "mock-gatsby",
+        id: "OndBDwAAQBAJ",
         volumeInfo: {
             title: "The Great Gatsby",
             authors: ["F. Scott Fitzgerald"],
@@ -425,7 +430,8 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-sapiens",
+        // id: "mock-sapiens",
+        id: "FmyBDwAAQBAJ",
         volumeInfo: {
             title: "Sapiens",
             authors: ["Yuval Noah Harari"],
@@ -434,7 +440,8 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-hail-mary",
+        // id: "mock-hail-mary",
+        id: "fRoYEAAAQBAJ",
         volumeInfo: {
             title: "Project Hail Mary",
             authors: ["Andy Weir"],
@@ -464,16 +471,35 @@ function scoreMockBook(book, queryTerms) {
     return queryTerms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
 }
 
-function getFallbackBooks(query, maxResults = 5) {
-    const queryTerms = normalizeQueryTerms(query);
-    const ranked = MOCK_BOOKS
-        .map(book => ({ book, score: scoreMockBook(book, queryTerms) }))
-        .sort((a, b) => b.score - a.score);
+// function getFallbackBooks(query, maxResults = 5) {
+//     const queryTerms = normalizeQueryTerms(query);
+//     const ranked = MOCK_BOOKS
+//         .map(book => ({ book, score: scoreMockBook(book, queryTerms) }))
+//         .sort((a, b) => b.score - a.score);
 
-    const matches = ranked.filter(item => item.score > 0).map(item => item.book);
-    const pool = matches.length > 0 ? matches : MOCK_BOOKS;
+//     const matches = ranked.filter(item => item.score > 0).map(item => item.book);
+//     const pool = matches.length > 0 ? matches : MOCK_BOOKS;
 
-    return pool.slice(0, maxResults);
+//     return pool.slice(0, maxResults);
+// }
+async function getFallbackBooks(query, maxResults = 5) {
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${maxResults}&langRestrict=en&orderBy=relevance`
+        );
+
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+        const data = await response.json();
+        const items = data.items || [];
+
+        if (items.length > 0) return items;
+
+        return []; 
+    } catch (error) {
+        console.error("getFallbackBooks failed:", error);
+        return [];
+    }
 }
 
 
@@ -503,7 +529,7 @@ class BookRenderer {
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
-        const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
+        const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 80) + "..." : "A mysterious tome waiting to be opened.";
         const categories = volumeInfo.categories || [];
 
         const vibe = this.generateVibe(originalDescription, categories);
@@ -543,7 +569,7 @@ class BookRenderer {
                 <div class="book__face book__face--top"></div>
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
-                    <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
+                  <div style="overflow-y: auto; height: calc(100% - 50px); padding-right: 5px; scrollbar-width: thin;">
                         <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
                         <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
                         ${bookData.moods && bookData.moods.length > 0 ? `
@@ -572,18 +598,18 @@ class BookRenderer {
         `;
 
         // Fetch AI-generated blurb asynchronously
-        const blurbElement = scene.querySelector('.book-blurb');
-        if (blurbElement) {
-            this.fetchAIBlurb(id, title, authors, volumeInfo.description || "", categories)
-                .then(aiBlurb => {
-                    if (aiBlurb && blurbElement) {
-                        blurbElement.textContent = aiBlurb;
-                    }
-                })
-                .catch(err => {
-                    // Silently keep fallback description
-                });
-        }
+        // const blurbElement = scene.querySelector('.book-blurb');
+        // if (blurbElement) {
+        //     this.fetchAIBlurb(id, title, authors, volumeInfo.description || "", categories)
+        //         .then(aiBlurb => {
+        //             if (aiBlurb && blurbElement) {
+        //                 blurbElement.textContent = aiBlurb;
+        //             }
+        //         })
+        //         .catch(err => {
+        //             // Silently keep fallback description
+        //         });
+        // }
 
         // Interaction: Progress Slider
         const slider = scene.querySelector('.progress-slider');
@@ -660,21 +686,59 @@ class BookRenderer {
         });
 
         // Async fetch AI Vibe - Hydrate the UI
-        this.fetchAIVibe(title, authors, volumeInfo.description || "").then(aiVibe => {
-            if (aiVibe) {
-                // Strip any accidental prefix the AI might return
-                const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+        // this.fetchAIVibe(title, authors, volumeInfo.description || "").then(aiVibe => {
+        //     if (aiVibe) {
+        //         // Strip any accidental prefix the AI might return
+        //         const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
 
-                const noteEl = scene.querySelector('.handwritten-note');
-                if (noteEl) {
-                    noteEl.innerHTML = cleanVibe;
-                    noteEl.classList.add('fade-in'); // Optional animation hook
-                }
+        //         const noteEl = scene.querySelector('.handwritten-note');
+        //         if (noteEl) {
+        //             noteEl.innerHTML = cleanVibe;
+        //             noteEl.classList.add('fade-in'); // Optional animation hook
+        //         }
+        //     }
+        // });
+        
+        const blurbElement = scene.querySelector('.book-blurb');
+        this._fetchAIContent(id, title, authors, volumeInfo.description || "", categories)
+        .then(({ vibe, blurb }) => {
+        if (blurb && blurbElement) {
+            blurbElement.textContent = blurb;
+        }
+        if (vibe) {
+            const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
+            const noteEl = scene.querySelector('.handwritten-note');
+            if (noteEl) {
+                noteEl.innerHTML = cleanVibe;
+                noteEl.classList.add('fade-in');
             }
-        });
+        }
+    })
+    .catch(() => {});
 
         return scene;
     }
+    async _fetchAIContent(bookId, title, author, description, categories = []) {
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ bookId, title, author, description, categories })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return {
+                vibe: data.data?.vibe || null,
+                blurb: data.data?.blurb || null
+            };
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return { vibe: null, blurb: null };
+}
 
     async fetchAIVibe(title, author, description) {
     try {
@@ -705,7 +769,7 @@ class BookRenderer {
 
 async fetchAIBlurb(bookId, title, author, description, categories = []) {
     try {
-        const res = await fetch(`${MOOD_API_BASE}v1/generate-note`, {
+        const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -785,13 +849,25 @@ async fetchAIBlurb(bookId, title, author, description, categories = []) {
             this.fetchAIVibe(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "", book.volumeInfo.description || "").then(vibe => {
                 if (vibe) {
                     const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
-                    summaryEl.innerHTML = `<p class="fade-in">${cleanVibe}</p>`;
+                    summaryEl.innerHTML = `<p class="fade-in" style="
+                        max-height: 180px;
+                        overflow-y: auto;
+                        font-size: 0.85rem;
+                        line-height: 1.5;
+                        scrollbar-width: thin;
+                        ">${cleanVibe}</p>`;
                 } else {
                     // Fallback to description if AI vibe fails
-                    summaryEl.textContent = book.volumeInfo.description || "No description available.";
-                }
-            });
-        }
+                   const desc = book.volumeInfo.description || "No description available.";
+                    summaryEl.innerHTML = `<p style="
+                    max-height: 180px;
+                    overflow-y: auto;
+                    font-size: 0.85rem;
+                    line-height: 1.5;
+                    scrollbar-width: thin;">${desc.substring(0, 400)}...</p>`;
+                    }
+                });
+            }
 
         const addBtn = document.getElementById('modal-add-btn');
         const shareBtn = document.getElementById('modal-share-btn');
@@ -936,7 +1012,7 @@ async fetchAIBlurb(bookId, title, author, description, categories = []) {
             if (data.items && data.items.length > 0) {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
-                const fallbackBooks = getFallbackBooks(query, maxResults);
+                const fallbackBooks = await getFallbackBooks(query, maxResults);
                 if (fallbackBooks.length > 0) {
                     await this.renderBookCards(container, fallbackBooks);
                 } else {
@@ -949,7 +1025,7 @@ async fetchAIBlurb(bookId, title, author, description, categories = []) {
             }
         } catch (err) {
             console.error("Failed to fetch books", err);
-            const fallbackBooks = getFallbackBooks(query, maxResults);
+            const fallbackBooks = await getFallbackBooks(query, maxResults);
             if (fallbackBooks.length > 0) {
                 await this.renderBookCards(container, fallbackBooks);
                 return;
@@ -987,11 +1063,17 @@ async fetchAIBlurb(bookId, title, author, description, categories = []) {
             }
 
             const payload = await res.json();
-            const categoryBooks = payload?.data?.books || [];
+            // const categoryBooks = payload?.data?.books || [];
+            const categoryBooks = payload?.books || payload?.data?.books || [];
 
-            if (categoryBooks.length === 0) {
-                throw new Error(`No books returned for category: ${categoryConfig.category}`);
+            // if (categoryBooks.length === 0) {
+            //     throw new Error(`No books returned for category: ${categoryConfig.category}`);
+            // }
+            if (!categoryBooks || categoryBooks.length === 0) {
+                console.warn(`No books found for: ${categoryConfig.category}`);
+                return; 
             }
+            
 
             const resolvedBooks = await this.resolveCategoryBooks(categoryBooks);
             if (resolvedBooks.length > 0) {
@@ -1803,11 +1885,11 @@ class GenreManager {
             if (items.length > 0) {
                 this.renderBooks(items);
             } else {
-                this.renderBooks(getFallbackBooks(genre, 20));
+                this.renderBooks(await getFallbackBooks(genre, 20));
             }
         } catch (error) {
             console.error('Error fetching genre books:', error);
-            this.renderBooks(getFallbackBooks(genre, 20));
+            this.renderBooks(await getFallbackBooks(genre, 20));
         }
     }
 
@@ -2302,7 +2384,7 @@ async function handleAuth(event) {
     }
 
     try {
-        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
+        const res = await fetch(`${MOOD_API_BASE}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
