@@ -1868,7 +1868,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 authForm.dataset.mode = 'login';
                 authTitle.textContent = 'Welcome Back';
                 authBtn.textContent = 'Sign In';
-                toggleLink.textContent = 'No account? Create one.';
+                toggleLink.textContent = "Don't have an account? Sign up.";
                 if (nameField) nameField.style.display = 'none';
             }
         });

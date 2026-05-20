@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 :root {
     /* Fix: WCAG AA Contrast Floor - Issue #534 */
 .glass-panel,
@@ -67,7 +68,7 @@ html {
 body {
     background-color: var(--bg-color);
     color: var(--text-main);
-    font-family: "Georgia", serif;
+    font-family: "Poppins", serif;
     /* Classic serif for books */
     overflow-x: hidden;
     min-height: 100vh;
@@ -280,8 +281,9 @@ main {
 
 
 .hero h1 {
-    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    font-size: clamp(4rem, 8vw, 5.5rem);
     margin-bottom: 1.5rem;
+    font-style: cormorant Garamond;
     font-style: italic;
     line-height: 1.2;
     letter-spacing: 0.5px;
@@ -290,9 +292,9 @@ main {
 
 .hero p {
     color: var(--text-muted);
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     line-height: 1.8;
-    max-width: 55ch;
+    max-width: 650px;
     margin: 0 auto;
 }
 
@@ -497,10 +499,10 @@ main {
     background-color: #3e2723; 
     color: #fffdf9;
     border: 1px solid var(--accent-gold);
-    padding: 6px 16px; 
-    border-radius: 6px;
+    padding: 12px 20px; 
+    border-radius: 14px;
     font-family: 'Playfair Display', 'Georgia', serif;
-    font-size: 0.82rem;
+    font-size: 15px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1814,14 +1816,11 @@ main {
 
 /* ===== GENRE SECTION STYLES ===== */
 .genre-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    padding: 2rem 1rem;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-}
+display: grid;
+
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.25rem;
+    padding: 2rem 0.5rem
 }
 
 /* Genre Card - Vintage Book Spine Look */
@@ -1832,19 +1831,20 @@ main {
     /* Horizontal layout */
     align-items: center;
     justify-content: flex-start;
-    padding: 1.25rem 1.75rem;
+    padding: 1.35rem 1.6rem;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 
     /* Rectangular Shape */
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
 
-    height: 100px;
+    height: 120px;
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.1);
     gap: 1.5rem;
+    backdrop-filter: blur(10px);
 }
 
 /* Remove gold lines for cleaner small look */
@@ -1854,7 +1854,7 @@ main {
 }
 
 .genre-card i {
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     margin-bottom: 0;
     margin-right: 0;
     color: rgba(255, 255, 255, 0.95);
@@ -1877,11 +1877,12 @@ main {
     writing-mode: horizontal-tb;
     /* Horizontal Text */
     transform: none;
+    line-height: 1.2;
 }
 
 .genre-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.3);
     z-index: 10;
 }
 
@@ -3436,7 +3437,7 @@ main {
 }
 
 .footer-brand .logo {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Cormorant Garamond', serif;
     font-size: 1.8rem;
     font-weight: 700;
     color: var(--text-main);
