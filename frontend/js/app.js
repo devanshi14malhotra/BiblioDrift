@@ -324,9 +324,8 @@ async function verifyStoredAuthSession() {
             }
 
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                credentials: 'include',
-                headers,
                 method: 'GET',
+                headers,
                 credentials: 'include',
             });
 
@@ -345,8 +344,9 @@ async function verifyStoredAuthSession() {
             }
             return null;
         } catch (error) {
-            console.warn('Auth verification failed; using cached session state if available.', error);
-            return storedUser;
+            console.warn('Auth verification could not reach the server; clearing local session.', error);
+            clearStoredAuthState();
+            return null;
         }
     })();
 
