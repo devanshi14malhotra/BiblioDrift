@@ -47,9 +47,10 @@ Before you begin, make sure you are familiar with the current stack:
    ```
    **Important** to do before any contribution.
 
-3. Setup your python environment:
+3. Setup your python environment: (Recommended python version is Python 3.12)
    ```bash
-   python -m venv .venv
+   python -m venv .venv //Uses your system's python version.
+   py -3.12 -m venv .venv //Uses python 3.12 explicitly.
    ```
 4. Activate your virtual environment:
    ```bash
@@ -73,13 +74,41 @@ Before you begin, make sure you are familiar with the current stack:
    ```bash
    python -m pip --version
    ```
-7. Install backend dependencies if needed:
+
+## Running the Backend
+1. Install backend dependencies if needed:
    ```bash
    python -m pip install -r requirements.txt
    ```
-8. Run the app or open the frontend directly:
+
+2. Create the .env file in backend and paste everything from .env.example into it.
+
+3. Config the following least neccessary stuff:
    ```bash
-   python app.py
+   #Generate jwt key
+   python -c "import secrets; print(secrets.token_hex(32))"
+
+   #Get you Books API key from cloud console.
+
+   #Choose any provide OpenAI, Groq, Gemini. Paste the respective API key.
+
+   #Set the preferred LLM.
+
+   ```
+3. Run the backend:
+   ```bash
+   python -m backend.app
+   ```
+
+   Switch between Debug and Production Mode as per requirement inside the .env:
+   ```bash
+   APP_ENV=development
+   FLASK_DEBUG=True
+
+   OR
+
+   APP_ENV=production
+   FLASK_DEBUG=False
    ```
    Or open `index.html` in your browser for frontend-only changes.
 

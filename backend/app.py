@@ -25,8 +25,8 @@ from datetime import datetime, timedelta, timezone
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from sanitizer import sanitize_payload
-from reader_identity.routes import reader_identity_bp
+from backend.sanitizer import sanitize_payload
+# from backend.reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -40,12 +40,12 @@ else:
     load_dotenv()
 
 # Environment variables are now loaded centrally in backend/config.py
-from config import app_config, setup_logging, validate_required_env_vars
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
-from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
-from price_tracker import get_price_tracker
-from cache_service import cache_service
-from validators import (
+from backend.config import app_config, setup_logging, validate_required_env_vars
+from backend.ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
+from backend.models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
+from backend.price_tracker import get_price_tracker
+from backend.cache_service import cache_service
+from backend.validators import (
     validate_request,
     validate_google_books_id,
     AnalyzeMoodRequest,
@@ -75,7 +75,7 @@ from validators import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from error_responses import (
+from backend.error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
@@ -109,7 +109,7 @@ except ImportError:
 # to ensure API integrity across all origins.
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
-app.register_blueprint(reader_identity_bp)
+# app.register_blueprint(reader_identity_bp)
 
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
@@ -133,6 +133,9 @@ app.config.update(app_config.flask_config)
 # of defense. This will automatically validate CSRF tokens for all
 # POST, PUT, PATCH, and DELETE requests.
 # =====================================================================
+if os.getenv("APP_ENV") == "development":
+    app.config["WTF_CSRF_ENABLED"] = False
+
 csrf = CSRFProtect(app)
 
 # Exclude certain endpoints from global CSRF if they are handled by JWT CSRF
@@ -752,11 +755,11 @@ def handle_analyze_mood():
 @rate_limit('mood_tags')
 def handle_mood_tags():
     """Get mood tags for a book."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException, 
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -787,11 +790,11 @@ def handle_mood_tags():
 @rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe with improved query parsing."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -932,12 +935,12 @@ def handle_purchase_links():
 @rate_limit('generate_note')
 def handle_generate_note():
     """Generate AI-powered book recommendation with vibe support."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         DatabaseQueryError, DatabaseIntegrityError,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -989,11 +992,11 @@ def handle_generate_note():
 @rate_limit('chat')
 def handle_chat():
     """Handle chat messages and generate bookseller responses."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -1084,8 +1087,8 @@ def health_check():
 def add_to_library():
     """Add a book to the user's shelf."""
     from sqlalchemy.exc import IntegrityError
-    from exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
-    from error_responses import handle_exception
+    from backend.exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -1539,8 +1542,8 @@ def register():
 @limiter.limit("5 per minute")
 def login():
     """Authenticate user and return JWT token."""
-    from exceptions import DatabaseQueryError, ValidationException
-    from error_responses import handle_exception
+    from backend.exceptions import DatabaseQueryError, ValidationException
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -2438,7 +2441,13 @@ if __name__ == '__main__':
         logger.info("  POST /api/v1/chat - Chat with bookseller")
         logger.info("  GET  /api/v1/health - Health check")
 
-    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+    # app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+    app.run(
+    debug=False,
+    use_reloader=False,
+    port=server_config.port,
+    host=server_config.host
+)
 
 
     
@@ -2459,7 +2468,7 @@ import requests
 
 import logging
 from datetime import datetime, timedelta, timezone
-from sanitizer import sanitize_payload
+from backend.sanitizer import sanitize_payload
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -2472,12 +2481,12 @@ elif os.path.exists(backend_env_path):
 else:
     load_dotenv()
 
-from config import app_config, setup_logging
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
-from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
-from price_tracker import get_price_tracker
-from cache_service import cache_service
-from validators import (
+from backend.config import app_config, setup_logging
+from backend.ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
+from backend.models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
+from backend.price_tracker import get_price_tracker
+from backend.cache_service import cache_service
+from backend.validators import (
     validate_request,
     validate_google_books_id,
     AnalyzeMoodRequest,
@@ -2507,7 +2516,7 @@ from validators import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from error_responses import (
+from backend.error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
@@ -2837,11 +2846,11 @@ def handle_analyze_mood():
 @rate_limit('mood_tags')
 def handle_mood_tags():
     """Get mood tags for a book."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException, 
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -2872,11 +2881,11 @@ def handle_mood_tags():
 @rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -2973,12 +2982,12 @@ def handle_category_books():
 @rate_limit('generate_note')
 def handle_generate_note():
     """Generate AI-powered book recommendation with vibe support."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         DatabaseQueryError, DatabaseIntegrityError,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -3031,11 +3040,11 @@ def handle_generate_note():
 @rate_limit('chat')
 def handle_chat():
     """Handle chat messages and generate bookseller responses."""
-    from exceptions import (
+    from backend.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -3127,8 +3136,8 @@ def health_check():
 def add_to_library():
     """Add a book to the user's shelf."""
     from sqlalchemy.exc import IntegrityError
-    from exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
-    from error_responses import handle_exception
+    from backend.exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -3503,8 +3512,8 @@ def sync_library():
 def register():
     """Register a new user and return JWT token."""
     from sqlalchemy.exc import IntegrityError
-    from exceptions import DatabaseIntegrityError, DatabaseQueryError, ValidationException
-    from error_responses import handle_exception
+    from backend.exceptions import DatabaseIntegrityError, DatabaseQueryError, ValidationException
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -3548,8 +3557,8 @@ def register():
 @limiter.limit("5 per minute")
 def login():
     """Authenticate user and return JWT token."""
-    from exceptions import DatabaseQueryError, ValidationException
-    from error_responses import handle_exception
+    from backend.exceptions import DatabaseQueryError, ValidationException
+    from backend.error_responses import handle_exception
     
     try:
         data = request.get_json()
@@ -4434,5 +4443,9 @@ if __name__ == '__main__':
         logger.info("  POST /api/v1/chat - Chat with bookseller")
         logger.info("  GET  /api/v1/health - Health check")
 
-    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
-    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+    app.run(
+    debug=False,
+    use_reloader=False,
+    host=server_config.host,
+    port=server_config.port
+)

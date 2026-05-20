@@ -31,4 +31,5 @@ dist/
 instance/
 *.db
 # Virtual Environment
+.venv/
 venv/

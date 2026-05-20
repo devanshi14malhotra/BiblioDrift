@@ -37,7 +37,7 @@ def process_new_book(book_data):
 
 
 # Import caching decorators
-from cache_service import (
+from backend.cache_service import (
     cache_recommendations, 
     cache_mood_tags, 
     cache_chat_response,

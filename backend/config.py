@@ -165,8 +165,10 @@ class GoogleOAuthConfig:
             client_secret=os.getenv('GOOGLE_CLIENT_SECRET') or os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),
             redirect_uri=os.getenv('GOOGLE_OAUTH_REDIRECT_URI'),
             frontend_redirect_url=os.getenv('FRONTEND_URL', 'http://127.0.0.1:5500/frontend/pages/library.html'),
-            scope=os.getenv('GOOGLE_OAUTH_SCOPE', 'openid email profile')
+            scope=os.getenv('GOOGLE_OAUTH_SCOPE', 'openid email profile'),
+        )
           
+@dataclass
 class EmailConfig:
     """Email service configuration (e.g., SendGrid, Mailgun)."""
     api_key: Optional[str]
