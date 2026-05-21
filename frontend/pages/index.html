@@ -10,13 +10,50 @@
         document.documentElement.setAttribute('data-theme', 'night');
       }
     })();
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) {
+        console.error('themeToggle button not found');
+        return;
+    }
+
+    const icon = btn.querySelector('i');
+    const STORAGE_KEY = 'bibliodrift_theme';
+
+    function applyTheme(theme) {
+        if (theme === 'night') {
+            document.documentElement.setAttribute('data-theme', 'night');
+            if (icon) icon.className = 'fa-solid fa-sun';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (icon) icon.className = 'fa-solid fa-moon';
+        }
+
+        localStorage.setItem(STORAGE_KEY, theme);
+        if (typeof restoreTheme === 'function') restoreTheme();
+        console.log('Theme applied:', theme);
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+    applyTheme(savedTheme);
+
+    // Toggle on click
+    btn.addEventListener('click', function () {
+        const current =
+            document.documentElement.getAttribute('data-theme') === 'night'
+                ? 'night'
+                : 'light';
+
+        const next = current === 'night' ? 'light' : 'night';
+        applyTheme(next);
+    });
+});
   </script>
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-
   <script src="../js/db.js"></script>
 
   <script src="../js/library-3d.js"></script>
-  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations." />
   <title>BiblioDrift | Find yourself in the pages</title>
@@ -42,7 +79,11 @@
 </head>
 
 <body>
-    <header>
+  <div id="sc-glow-outer"></div>
+  <div id="sc-glow-mid"></div>
+  <div id="sc-glow-inner"></div>
+  <div id="sc-dot"></div>
+  <header>
     <a href="index.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
@@ -269,53 +310,5 @@
       </div>
     </div>
   </div>
-
-  <script src="../js/theme-manager.js"></script>
-  <script src="../js/ambient.js"></script>
-  <script src="../js/security.js"></script>
-
 </body>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const btn = document.getElementById('themeToggle');
-    if (!btn) {
-        console.error('themeToggle button not found');
-        return;
-    }
-
-    const icon = btn.querySelector('i');
-    const STORAGE_KEY = 'bibliodrift_theme';
-
-    function applyTheme(theme) {
-        if (theme === 'night') {
-            document.documentElement.setAttribute('data-theme', 'night');
-            if (icon) icon.className = 'fa-solid fa-sun';
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            if (icon) icon.className = 'fa-solid fa-moon';
-        }
-
-        localStorage.setItem(STORAGE_KEY, theme);
-        if (typeof restoreTheme === 'function') restoreTheme();
-        console.log('Theme applied:', theme);
-    }
-
-    // Load saved theme
-    const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
-    applyTheme(savedTheme);
-
-    // Toggle on click
-    btn.addEventListener('click', function () {
-        const current =
-            document.documentElement.getAttribute('data-theme') === 'night'
-                ? 'night'
-                : 'light';
-
-        const next = current === 'night' ? 'light' : 'night';
-        applyTheme(next);
-    });
-});
-</script>
-
 </html>

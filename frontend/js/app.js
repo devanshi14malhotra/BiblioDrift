@@ -682,8 +682,8 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: #2c2420;">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: #5d4037;">${safeVibe}</div>
                         ${bookData.moods && bookData.moods.length > 0 ? `
                         <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
                             ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
@@ -729,10 +729,12 @@ class BookRenderer {
         }
 
         // Interaction: Flip
-        const bookEl = scene.querySelector('.book-container-3d');
+        const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
-                bookEl.classList.toggle('flipped');
+                if (bookEl) {
+                    bookEl.classList.toggle('flipped');
+                }
                 // Play sound
                 flipSound.play().catch(e => {
                     if (IS_DEV) {
@@ -1028,11 +1030,11 @@ class BookRenderer {
         const emotionContainer = document.createElement('div');
         emotionContainer.className = 'emotion-tagging-section';
         emotionContainer.innerHTML = `
-            <h3 class="modal-section-title">How does this book make you feel?</h3>
+            <h3 class="modal-section-title" style="color: var(--text-main); font-family: 'Playfair Display', serif; font-size: 1rem; margin-bottom: 10px;">How does this book make you feel?</h3>
             <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
             const isActive = book.moods && book.moods.includes(mood);
-            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="color: var(--text-main); border-color: var(--control-border);">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
         }).join('')}
@@ -1198,6 +1200,7 @@ class BookRenderer {
                 }
             })();
         }
+    }
     }
 
     async exploreBookMood(title, author) {

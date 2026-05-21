@@ -254,3 +254,132 @@ class AmbientManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.ambientManager = new AmbientManager();
 });
+
+(function () {
+  'use strict';
+
+  const isTouchOnly = window.matchMedia('(hover: none)').matches;
+
+  function getColors() {
+    const isNight = document.documentElement.getAttribute('data-theme') === 'night';
+    const COLORS_LIGHT = ['#5D4037','#4A362E','#6D4C41','#3E2723','#8D6E63','#5C4033'];
+    const COLORS_NIGHT = ['#E8D5B7','#C9A87C','#F0E0C8','#B8956A','#D4B896','#F5ECD8'];
+    return isNight ? COLORS_NIGHT : COLORS_LIGHT;
+  }
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function spawnSparkle(x, y) {
+    const el    = document.createElement('div');
+    const color = pick(getColors());
+    const size  = rand(10, 22);
+    const angle = rand(0, Math.PI * 2);
+    const dist  = rand(20, 55);
+
+    el.className = 'sc-sparkle';
+    el.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    el.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    el.style.animationDuration = rand(0.5, 0.9) + 's';
+    el.style.animationDelay   = rand(0, 0.06) + 's';
+
+    const type = Math.random();
+    if (type < 0.5) {
+      el.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
+        <path d="M10 1 L11.5 8.5 L19 10 L11.5 11.5 L10 19 L8.5 11.5 L1 10 L8.5 8.5 Z"
+          fill="${color}" opacity="0.9"/></svg>`;
+    } else if (type < 0.75) {
+      const s = size * 0.7;
+      el.innerHTML = `<svg width="${s}" height="${s}" viewBox="0 0 14 14">
+        <circle cx="7" cy="7" r="5" fill="${color}" opacity="0.85"/>
+        <line x1="7" y1="0" x2="7" y2="14" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
+        <line x1="0" y1="7" x2="14" y2="7" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
+        </svg>`;
+    } else {
+      const s = size * 0.8;
+      el.innerHTML = `<svg width="${s}" height="${s}" viewBox="0 0 20 20">
+        <polygon points="10,2 12,8 18,8 13,12 15,18 10,14 5,18 7,12 2,8 8,8"
+          fill="${color}" opacity="0.9"/></svg>`;
+    }
+
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  function burst(x, y, count) {
+    for (let i = 0; i < count; i++) spawnSparkle(x, y);
+  }
+
+  /* ── Inject the glow DOM elements if not already in HTML ── */
+  function injectGlowElements() {
+    if (document.getElementById('sc-glow-outer')) return;
+    ['sc-glow-outer', 'sc-glow-mid', 'sc-glow-inner', 'sc-dot'].forEach(id => {
+      const el = document.createElement('div');
+      el.id = id;
+      document.body.prepend(el);
+    });
+  }
+
+  function initDesktop() {
+    injectGlowElements();
+
+    const glowOuter = document.getElementById('sc-glow-outer');
+    const glowMid   = document.getElementById('sc-glow-mid');
+    const glowInner = document.getElementById('sc-glow-inner');
+    const dot       = document.getElementById('sc-dot');
+
+    let mx = innerWidth / 2, my = innerHeight / 2;
+    let ox = mx, oy = my;
+    let midx = mx, midy = my;
+    let inx = mx, iny = my;
+    let lastSx = mx, lastSy = my;
+    let accum = 0;
+
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+    (function loop() {
+      ox   = lerp(ox,   mx, 0.08);  oy   = lerp(oy,   my, 0.08);
+      midx = lerp(midx, mx, 0.14);  midy = lerp(midy, my, 0.14);
+      inx  = lerp(inx,  mx, 0.22);  iny  = lerp(iny,  my, 0.22);
+
+      glowOuter.style.left = ox   + 'px'; glowOuter.style.top = oy   + 'px';
+      glowMid.style.left   = midx + 'px'; glowMid.style.top   = midy + 'px';
+      glowInner.style.left = inx  + 'px'; glowInner.style.top = iny  + 'px';
+      dot.style.left = mx + 'px';         dot.style.top = my + 'px';
+
+      const dx = mx - lastSx, dy = my - lastSy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      accum += dist;
+
+      while (accum >= 12) {
+        accum -= 12;
+        const t = Math.random();
+        spawnSparkle(lastSx + dx * t, lastSy + dy * t);
+      }
+
+      if (dist > 0) { lastSx = mx; lastSy = my; }
+
+      requestAnimationFrame(loop);
+    })();
+  }
+  
+  function initMobile() {
+    document.addEventListener('touchstart', function (e) {
+      Array.from(e.changedTouches).forEach(t => {
+        burst(t.clientX, t.clientY, 8);
+      });
+    }, { passive: true });
+  }
+
+  /* ── Init ── */
+  if (isTouchOnly) {
+    initMobile();
+  } else {
+    initDesktop();
+  }
+
+})();
+
