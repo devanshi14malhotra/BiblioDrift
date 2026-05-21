@@ -1,5 +1,5 @@
-from flask import Flask
-from mangum import Mangum
+from flask import Flask # type: ignore
+import mangum # type: ignore
 
 app = Flask(__name__)
 
@@ -7,4 +7,4 @@ app = Flask(__name__)
 def home():
     return "Hello from Flask on Netlify"
 
-handler = Mangum(app)
+handler = mangum.Mangum(app)
