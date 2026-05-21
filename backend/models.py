@@ -94,8 +94,23 @@ class User(db.Model, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    # password_hash = db.Column(db.String(255), nullable=False)
+
+    # Nullable because OAuth users may not have passwords
+    password_hash = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # OAuth fields
+    google_id = db.Column(db.String(255), unique=True, nullable=True)
+
+    auth_provider = db.Column(
+        db.String(50),
+        default="local"
+    )
+
+    profile_picture = db.Column(db.String(500), nullable=True)
+
+    email_verified = db.Column(db.Boolean, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -108,7 +123,11 @@ class User(db.Model, SoftDeleteMixin):
             "id": self.id,
             "username": self.username,
             "email": self.email,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "auth_provider": self.auth_provider,
+            "profile_picture": self.profile_picture,
+            "email_verified": self.email_verified,
+            "created_at": self.created_at.isoformat()
+                if self.created_at else None,
             "is_deleted": self.is_deleted
         }
 
@@ -344,6 +363,20 @@ class BookNote(db.Model, SoftDeleteMixin):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "is_deleted": self.is_deleted
         }
+
+
+class MoodCache(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cache_key = db.Column(db.String(512), nullable=False, index=True)
+    book_title = db.Column(db.String(255), nullable=False)
+    book_author = db.Column(db.String(255), nullable=False, default="")
+    analysis_json = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.UniqueConstraint('cache_key', name='uq_mood_cache_key'),
+    )
 
 
 class ReadingGoal(db.Model, SoftDeleteMixin):
@@ -617,6 +650,7 @@ class Review(db.Model, SoftDeleteMixin):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "is_deleted": self.is_deleted
         }
+<<<<<<< HEAD
 #-----------------------class for bookmark---------------------#
 class Bookmark(db.Model, SoftDeleteMixin):
     query_class = SoftDeleteQuery
@@ -638,14 +672,49 @@ class Bookmark(db.Model, SoftDeleteMixin):
         db.CheckConstraint('page_number IS NULL OR page_number > 0', name='check_page_number_positive'),
     )
     
+=======
+
+
+# ==================== PERSONAL READING JOURNAL ====================
+
+class JournalEntry(db.Model, SoftDeleteMixin):
+    query_class = SoftDeleteQuery
+    """Model for user's private reading journal entries."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=True, index=True)
+    title = db.Column(db.String(255), nullable=False)  # Entry title (e.g., "Reflections on Chapter 4")
+    content = db.Column(db.Text, nullable=False)      # The actual journal text
+    mood = db.Column(db.String(50), nullable=True)     # Emotional state during reading
+    is_private = db.Column(db.Boolean, default=True)   # Journal entries are private by default
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('journal_entries', lazy=True))
+    book = db.relationship('Book', backref=db.backref('journal_entries', lazy=True))
+
+>>>>>>> 70f31ed5a27e06da426d195c97d59284b694a6b3
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
             "book_id": self.book_id,
+<<<<<<< HEAD
             "book": self.book.to_dict() if self.book else None,
             "page_number": self.page_number,
             "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+=======
+            "book_title": self.book.title if self.book else None,
+            "title": self.title,
+            "content": self.content,
+            "mood": self.mood,
+            "is_private": self.is_private,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "is_deleted": self.is_deleted
+        }
+>>>>>>> 70f31ed5a27e06da426d195c97d59284b694a6b3

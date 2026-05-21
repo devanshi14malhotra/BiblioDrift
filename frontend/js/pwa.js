@@ -29,6 +29,7 @@
     const SW_SCOPE = '/frontend/';
 
     let _swRegistration = null;
+    let _syncRequestInFlight = false;
 
     navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE })
         .then((registration) => {
@@ -55,6 +56,27 @@
             console.warn('[PWA] Service worker registration failed:', err);
         });
 
+    async function _requestLibrarySync() {
+        if (_syncRequestInFlight) return;
+        _syncRequestInFlight = true;
+
+        try {
+            if (_swRegistration && 'sync' in _swRegistration) {
+                await _swRegistration.sync.register('bibliodrift-library-sync');
+            }
+
+            if (navigator.onLine && window.libManager && typeof window.libManager.flushPendingLibraryMutations === 'function') {
+                await window.libManager.flushPendingLibraryMutations();
+            }
+        } catch (err) {
+            console.warn('[PWA] Failed to request library sync:', err);
+        } finally {
+            _syncRequestInFlight = false;
+        }
+    }
+
+    window.requestLibrarySync = _requestLibrarySync;
+
     // Reload the page once the new SW has taken control
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
@@ -63,17 +85,16 @@
     // Listen for messages from the SW (e.g. background sync trigger)
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'SYNC_LIBRARY') {
-            // Delegate to LibraryManager if it's available on this page
-            if (window.libManager && typeof window.libManager.syncLocalToBackend === 'function') {
-                const user = window.libManager.getUser?.();
-                if (user) {
-                    window.libManager.syncLocalToBackend(user).catch((err) => {
-                        console.warn('[PWA] Background library sync failed:', err);
-                    });
-                }
+            if (window.libManager && typeof window.libManager.flushPendingLibraryMutations === 'function') {
+                window.libManager.flushPendingLibraryMutations().catch((err) => {
+                    console.warn('[PWA] Background library sync failed:', err);
+                });
             }
         }
     });
+
+    window.addEventListener('bibliodrift:library-sync-queued', _requestLibrarySync);
+    window.addEventListener('online', _requestLibrarySync);
 
     // ── Install Prompt (A2HS) ──────────────────────────────────────────────────
 
@@ -108,10 +129,10 @@
         banner.setAttribute('aria-label', 'Install BiblioDrift app');
         banner.innerHTML = `
             <div class="pwa-banner-content">
-                <img src="/frontend/assets/images/biblioDrift_favicon.png"
+                <img src="../assets/images/biblioDrift_favicon.png"
                      alt="BiblioDrift icon" class="pwa-banner-icon">
                 <div class="pwa-banner-text">
-                    <strong>Install BiblioDrift</strong>
+                    <strong>Install BiblioDrift.</strong>
                     <span>Read offline, anytime.</span>
                 </div>
             </div>
@@ -127,7 +148,7 @@
             </div>
         `;
 
-        document.body.appendChild(banner);
+        document.querySelector("main").appendChild(banner);
 
         // Animate in
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));

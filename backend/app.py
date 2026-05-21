@@ -1,7 +1,7 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
@@ -11,10 +11,14 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from sqlalchemy.orm import joinedload
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
+from backend.spine_generator import create_spine
 import os
 import requests
+import secrets
+from urllib.parse import urlencode
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -22,15 +26,20 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sanitizer import sanitize_payload
+from reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
 env_path = os.path.join(os.path.dirname(__file__), '..', 'config', f'.env.{env}')
+backend_env_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(env_path):
     load_dotenv(env_path)
+elif os.path.exists(backend_env_path):
+    load_dotenv(backend_env_path)
 else:
     load_dotenv()
 
+# Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
 from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
@@ -100,6 +109,7 @@ except ImportError:
 # to ensure API integrity across all origins.
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
+app.register_blueprint(reader_identity_bp)
 
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
@@ -107,6 +117,28 @@ validate_required_env_vars()
 
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
+
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: CSRF PROTECTION (FLASK-WTF)
+# =====================================================================
+# Cross-Site Request Forgery (CSRF) is a serious vulnerability where 
+# an attacker tricks a user into performing actions they didn't intend
+# to do on a different website where they are authenticated.
+#
+# While JWT-Extended provides CSRF protection for authenticated 
+# requests via cookies, the initial authentication flow (Login/Register) 
+# often remains vulnerable if not explicitly protected.
+#
+# We initialize Flask-WTF's CSRFProtect to provide a secondary layer
+# of defense. This will automatically validate CSRF tokens for all
+# POST, PUT, PATCH, and DELETE requests.
+# =====================================================================
+csrf = CSRFProtect(app)
+
+# Exclude certain endpoints from global CSRF if they are handled by JWT CSRF
+# or if they are intended to be public-facing without token requirements.
+# In this architecture, we prefer explicit protection on all mutation routes.
+# csrf.exempt(some_blueprint) 
 
 # Initialize JWT Manager
 jwt = JWTManager(app)
@@ -122,7 +154,7 @@ jwt = JWTManager(app)
 # =====================================================================
 # ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5000,http://localhost:5000
 # For development, we'll allow all to be safe, then restrict in prod
-CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5000", "http://localhost:5000"])
+CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5501", "http://localhost:5501", "http://127.0.0.1:5000", "http://localhost:5000"])
 
 # Initialize cache service
 cache_service.init_app(app)
@@ -142,11 +174,326 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+
+
+
+
 @app.errorhandler(404)
 def page_not_found(e: Exception):
     if request.path.startswith('/api/'):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
     return app.send_static_file('404.html'), 404
+
+# =========================================================================
+# GLOBAL EXCEPTION HANDLER (SECURITY & COMPLIANCE UPDATE)
+# =========================================================================
+# The following global exception handler is designed to catch all unhandled
+# exceptions that bubble up to the Flask application level. 
+# 
+# WHY THIS MATTERS (SECURITY & COMPLIANCE):
+# 1. Information Leakage Prevention: In default Flask configurations, unhandled
+#    exceptions can result in raw stack traces being returned to the client in
+#    the HTTP 500 response. These stack traces often expose sensitive internal
+#    application logic, directory structures, third-party library versions, 
+#    and potentially database schema details. Attackers can use this information
+#    to craft targeted exploits against the application infrastructure.
+# 2. Consistent API Responses: By catching all exceptions globally, we ensure
+#    that clients always receive a well-structured JSON response, even when 
+#    catastrophic failures occur. This improves client-side error handling and
+#    overall system reliability.
+# 3. Centralized Auditing: This handler serves as a single choke point for
+#    logging critical failures. All unhandled exceptions are logged with full
+#    tracebacks internally, ensuring that developers have the information needed
+#    to debug issues without exposing that information to the end user.
+# 4. Production vs. Development: In production environments, generic error
+#    messages are returned to obscure system details. In development environments
+#    (as determined by app_config), more detailed error information may be
+#    included to assist in local debugging.
+# 5. Incident Response Facilitation: By assigning a unique Error Reference ID
+#    to each occurrence, customer support and engineering teams can easily
+#    correlate a user's reported problem with the specific log entry containing
+#    the full stack trace and request context.
+#
+# ANATOMY OF A SECURE ERROR RESPONSE:
+# - error: A generic string like "Internal Server Error"
+# - error_code: A consistent, machine-readable string like "INTERNAL_ERROR"
+# - reference_id: A UUID string like "a1b2c3d4-..."
+# - timestamp: ISO 8601 formatted timestamp of the occurrence
+#
+# WHAT IS EXCLUDED FROM THE RESPONSE:
+# - Raw stack traces (traceback module output)
+# - Exception messages (str(e)) which might contain SQL query fragments
+# - Local variable states
+# - System paths (e.g., /var/www/app/backend/...)
+# - Dependency versions
+#
+# EXCEPTION HANDLING STRATEGY:
+# - Step 1: Intercept the exception.
+# - Step 2: Determine if it's a known HTTP exception (e.g., 404, 405). If so,
+#   let it proceed or format it appropriately.
+# - Step 3: Generate a unique error reference ID (UUID).
+# - Step 4: Extract request context (method, URL, headers - excluding auth).
+# - Step 5: Log the full traceback, request context, and the reference ID at
+#   the ERROR or CRITICAL level.
+# - Step 6: Construct the safe, generic JSON response.
+# - Step 7: Return the response with a 500 status code.
+# =========================================================================
+
+from werkzeug.exceptions import HTTPException
+import traceback
+import uuid
+import json
+
+@app.errorhandler(Exception)
+def handle_unhandled_exception(e):
+    """
+    Global catch-all exception handler to prevent stack trace leakage and 
+    ensure uniform error responses across the entire application API.
+    
+    Args:
+        e (Exception): The unhandled exception instance caught by Flask.
+        
+    Returns:
+        tuple: A Flask JSON response object and an HTTP status code.
+    """
+    
+    # 1. Handle HTTP Exceptions Normally
+    # If the exception is an intentional HTTP error (e.g., abort(404)),
+    # we should return its intended status code and message, assuming it's
+    # already formatted safely.
+    if isinstance(e, HTTPException):
+        # We can safely return the description of HTTP exceptions
+        logger.warning(
+            f"HTTP Exception encountered: {e.code} {e.name} - {e.description} "
+            f"| Path: {request.path}"
+        )
+        return jsonify({
+            "success": False,
+            "error_code": "HTTP_EXCEPTION",
+            "error": e.description,
+            "status_code": e.code
+        }), e.code
+
+    # 2. Database Session Cleanup
+    # If the exception occurred during a database transaction, the session
+    # might be left in an invalid state. We must roll it back to prevent
+    # subsequent requests in the same thread from failing.
+    try:
+        from sqlalchemy.exc import SQLAlchemyError
+        if isinstance(e, SQLAlchemyError):
+            db.session.rollback()
+            logger.error("Rolled back database session due to SQLAlchemyError in global handler.")
+    except ImportError:
+        pass
+    except Exception as db_rollback_error:
+        # Failsafe: If rollback itself fails, we log it but don't crash the handler
+        logger.critical(f"Failed to rollback DB session: {db_rollback_error}")
+
+    # 3. Generate Error Reference ID
+    # This UUID will be returned to the client so they can provide it to support.
+    # It will also be logged alongside the stack trace.
+    error_reference_id = str(uuid.uuid4())
+    
+    # 4. Extract Safe Request Context
+    # We want to log what the user was trying to do, but we MUST NOT log
+    # sensitive information like passwords, tokens, or full credit card numbers.
+    request_method = request.method
+    request_url = request.url
+    client_ip = request.remote_addr
+    
+    # Safely extract headers (excluding Authorization and Cookies)
+    safe_headers = {}
+    for key, value in request.headers.items():
+        if key.lower() not in ['authorization', 'cookie', 'x-api-key']:
+            safe_headers[key] = value
+            
+    # Safely extract query parameters
+    query_params = dict(request.args)
+    
+    # 5. Structure the Log Payload
+    # Create a detailed dictionary for logging purposes
+    log_payload = {
+        "error_reference_id": error_reference_id,
+        "exception_type": type(e).__name__,
+        "exception_message": str(e),
+        "request": {
+            "method": request_method,
+            "url": request_url,
+            "client_ip": client_ip,
+            "headers": safe_headers,
+            "query_parameters": query_params
+        }
+    }
+    
+    # 6. Log the Exception
+    # We use logger.error with exc_info=True to automatically append the
+    # full stack trace to the log entry. This is critical for debugging.
+    # We prefix the log message with the reference ID for easy searching.
+    logger.error(
+        f"[ERROR REF: {error_reference_id}] Unhandled Exception: {type(e).__name__} "
+        f"at {request_method} {request_url}\n"
+        f"Details: {json.dumps(log_payload, indent=2)}",
+        exc_info=True
+    )
+    
+    # 7. Determine Response Content based on Environment
+    # In development, we MIGHT want to return the stack trace for convenience.
+    # In production, we MUST return a generic message.
+    
+    # Check if we are in production mode using the imported is_production_mode helper
+    # or the app_config object.
+    is_prod = True
+    try:
+        if hasattr(app_config, 'is_production'):
+            is_prod = app_config.is_production()
+        elif hasattr(app_config, 'flask_config'):
+            is_prod = app_config.flask_config.get('ENV') == 'production'
+    except Exception:
+        # Default to secure production behavior if config check fails
+        is_prod = True
+        
+    # Construct the base response
+    response_data = {
+        "success": False,
+        "error_code": "INTERNAL_SERVER_ERROR",
+        "error": "An unexpected internal server error occurred.",
+        "message": "Our team has been notified. Please try again later.",
+        "reference_id": error_reference_id,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # If explicitly NOT in production, we can append debug info
+    if not is_prod:
+        response_data["_debug"] = {
+            "exception": type(e).__name__,
+            "message": str(e),
+            "traceback": traceback.format_exc().splitlines()
+        }
+        logger.warning(
+            f"[ERROR REF: {error_reference_id}] Returning detailed error response "
+            f"because environment is NOT production."
+        )
+    else:
+        logger.info(
+            f"[ERROR REF: {error_reference_id}] Returning generic secure error response "
+            f"because environment is production."
+        )
+        
+    # 8. Return the Secure JSON Response
+    # Always return a 500 Internal Server Error status code for unhandled exceptions.
+    response = jsonify(response_data)
+    
+    # Adding security headers to error responses as defense in depth
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    
+    return response, 500
+
+# =========================================================================
+# DATABASE EXCEPTION HANDLER (SECURITY & COMPLIANCE UPDATE)
+# =========================================================================
+# Why a separate handler for database errors?
+# Database errors (like IntegrityError, OperationalError) often contain
+# raw SQL queries, table names, or constraint names in their string
+# representations. Exposing these details is a severe security risk 
+# (Information Exposure).
+# 
+# This handler intercepts all exceptions deriving from SQLAlchemyError,
+# securely logs the full details (including the potentially sensitive query),
+# and returns a highly sanitized, generic error to the client.
+# 
+# Key Actions:
+# 1. Rolls back the active database session to prevent bad state.
+# 2. Generates a unique tracking ID.
+# 3. Logs the raw error internally.
+# 4. Returns a safe "Database Operation Failed" message.
+# =========================================================================
+from sqlalchemy.exc import SQLAlchemyError
+
+@app.errorhandler(SQLAlchemyError)
+def handle_sqlalchemy_exception(e):
+    """
+    Dedicated handler for database-related exceptions to prevent SQL injection
+    reconnaissance and schema leakage.
+    """
+    # 1. Ensure the session is rolled back safely
+    try:
+        db.session.rollback()
+    except Exception as rollback_err:
+        logger.critical(f"Failed to rollback DB session during SQLAlchemyError handling: {rollback_err}")
+        
+    # 2. Generate Tracking ID
+    error_reference_id = str(uuid.uuid4())
+    
+    # 3. Secure Internal Logging
+    # We log the full error (which may contain SQL) but ONLY internally.
+    logger.error(
+        f"[DB ERROR REF: {error_reference_id}] Database Exception: {type(e).__name__} "
+        f"at {request.method} {request.path}\n"
+        f"Message: {str(e)}",
+        exc_info=True
+    )
+    
+    # 4. Safe External Response
+    response_data = {
+        "success": False,
+        "error_code": "DATABASE_ERROR",
+        "error": "A database operation failed.",
+        "message": "The issue has been logged and our team is investigating.",
+        "reference_id": error_reference_id,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # In non-production, we might want to see the error, but even then
+    # we should be careful. We'll only expose the type, not the full SQL.
+    is_prod = True
+    try:
+        if hasattr(app_config, 'is_production'):
+            is_prod = app_config.is_production()
+        elif hasattr(app_config, 'flask_config'):
+            is_prod = app_config.flask_config.get('ENV') == 'production'
+    except Exception:
+        is_prod = True
+        
+    if not is_prod:
+        response_data["_debug"] = {
+            "exception": type(e).__name__,
+            "message": "Database error details are suppressed for security, see logs.",
+            "traceback": traceback.format_exc().splitlines()
+        }
+        
+    response = jsonify(response_data)
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response, 500
+
+# =========================================================================
+# END OF GLOBAL EXCEPTION HANDLERS
+# =========================================================================
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    """
+    =========================================================================
+    CUSTOM CSRF ERROR HANDLER
+    =========================================================================
+    Intercepts CSRF validation failures and returns a standardized JSON 
+    error response instead of the default HTML error page.
+    
+    This is critical for a RESTful API architecture where the client 
+    expects consistent JSON structures even during security failures.
+    
+    Status: 400 Bad Request (as per Flask-WTF default for CSRF failures)
+    =========================================================================
+    """
+    logger.warning(f"CSRF Validation Failed: {e.description} | Remote IP: {request.remote_addr}")
+    return jsonify({
+        "success": False,
+        "error": "CSRF_VALIDATION_FAILED",
+        "message": f"Security token validation failed: {e.description}. Please refresh the page.",
+        "code": 400
+    }), 400
 
 
 @app.after_request
@@ -168,17 +515,6 @@ def add_security_headers(response):
     Returns:
         response: Response with added security headers
     """
-    # Content Security Policy: Restrict resource loading to prevent inline scripts/XSS
-    # - default-src 'self': Only allow resources from the same origin
-    # - script-src 'self' https://cdn.jsdelivr.net: Allow scripts from self and DOMPurify CDN
-    # - style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com: Allow styles from self and CDN
-    # - img-src 'self' data: blob: https:: Allow images from self, data URLs, blob URLs, and HTTPS
-    # - font-src 'self' https://fonts.gstatic.com: Allow fonts from self and Google Fonts
-    # - connect-src 'self' ws: wss: https:: Allow connections to own origin, secure WebSocket, and HTTPS
-    # - frame-ancestors 'none': Prevent framing/clickjacking
-    # - base-uri 'self': Restrict base tag to same origin
-    # - form-action 'self': Restrict form submissions to same origin
-    # - upgrade-insecure-requests: Upgrade HTTP to HTTPS
     csp_policy = (
         "default-src 'self'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
@@ -192,23 +528,11 @@ def add_security_headers(response):
         "upgrade-insecure-requests"
     )
     response.headers['Content-Security-Policy'] = csp_policy
-    
-    # Prevent MIME type sniffing (forces browser to respect Content-Type header)
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    
-    # Prevent clickjacking by disallowing the site to be framed
     response.headers['X-Frame-Options'] = 'DENY'
-    
-    # Legacy XSS protection header (for older browsers)
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    
-    # Force HTTPS for 1 year (including subdomains)
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    
-    # Control referrer information to reduce information leakage
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    
-    # Restrict permissions and features the page can use
     response.headers['Permissions-Policy'] = (
         'geolocation=(), '
         'microphone=(), '
@@ -219,7 +543,6 @@ def add_security_headers(response):
         'gyroscope=(), '
         'accelerometer=()'
     )
-    
     return response
 
 # Rate limiting configuration
@@ -330,6 +653,25 @@ def get_config():
         "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
     })
 
+# =====================================================================
+# ENDPOINT: CSRF Token Retrieval
+# =====================================================================
+# Since this is a decoupled frontend, we need a way for the client-side
+# application to "prime" itself with a valid CSRF token before attempting
+# a state-mutating request (like Login or Register).
+#
+# This endpoint generates a new token and sets the associated session 
+# cookie. The frontend should call this on page load of sensitive forms.
+# =====================================================================
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf_token():
+    """
+    Generate and return a fresh CSRF token.
+    The token is automatically tied to the user's session.
+    """
+    token = generate_csrf()
+    return success_response(data={"csrf_token": token})
+
 @app.route('/')
 def index():
     """Simple index page showing available API endpoints."""
@@ -343,7 +685,8 @@ def index():
             "POST /api/v1/generate-note": "Generate AI book notes",
             "POST /api/v1/chat": "Chat with bookseller",
             "POST /api/v1/mood-search": "Search books by mood/vibe",
-            "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category"
+            "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category",
+            "POST /api/v1/reader-archetype":"Generate AI reader archetype",
         },
         "note": "All endpoints except / and /api/v1/health require POST requests with JSON body",
         "example_usage": {
@@ -561,6 +904,87 @@ def handle_category_books():
         logger.error(f"Error in handle_category_books: {str(e)}", exc_info=True)
         return internal_error(str(e))
 
+
+@app.route('/api/v1/books/purchase-links', methods=['GET'])
+@rate_limit('purchase_links')
+def handle_purchase_links():
+    """Get purchase links for a book."""
+    try:
+        title = request.args.get('title')
+        author = request.args.get('author', '')
+        isbn = request.args.get('isbn', '')
+        
+        if not title:
+            return jsonify({'success': False, 'error': 'Title is required'}), 400
+            
+        from purchase_links import PurchaseManager
+        manager = PurchaseManager()
+        
+        links = manager.get_quick_links(title=title, author=author, isbn=isbn)
+        
+        return success_response(data={"links": links})
+        
+    except Exception as e:
+        logger.error(f"Error getting purchase links: {str(e)}", exc_info=True)
+        return internal_error(str(e))
+
+@app.route('/api/v1/generate-note', methods=['POST'])
+@rate_limit('generate_note')
+def handle_generate_note():
+    """Generate AI-powered book recommendation with vibe support."""
+    from exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException,
+        DatabaseQueryError, DatabaseIntegrityError,
+        ValidationException, InvalidInputError
+    )
+    from error_responses import handle_exception
+    
+    try:
+        data = request.get_json()
+        
+        is_valid, validated_data = validate_request(GenerateNoteRequest, data)
+        if not is_valid:
+            return jsonify(validated_data), 400
+        
+        description = validated_data.description
+        title = validated_data.title
+        author = validated_data.author
+        vibe = getattr(validated_data, 'vibe', 'cozy discovery')
+        
+        # Check cache
+        cached_note = BookNote.query.filter_by(book_title=title, book_author=author).first()
+        if cached_note:
+            logger.debug(f"Cache hit for {title} by {author}")
+            return success_response(data={"blurb": cached_note.content})
+        
+        # Generate AI recommendation with vibe context
+        recommendation = generate_book_note(description, title, author, vibe)
+        
+        try:
+            if recommendation and isinstance(recommendation, dict):
+                blurb_content = recommendation.get('blurb', str(recommendation))
+                new_note = BookNote(book_title=title, book_author=author, content=blurb_content)
+                db.session.add(new_note)
+                db.session.commit()
+        except SQLAlchemyError as e:
+            logger.error(f"Database error caching note: {e}")
+            db.session.rollback()
+        except Exception as e:
+            logger.error(f"Unexpected error caching note: {e}")
+            db.session.rollback()
+
+        return success_response(data=recommendation)
+        
+    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
+        logger.error(f"AI service error in handle_generate_note: {e}", exc_info=True)
+        return handle_exception(e, "handle_generate_note")
+    except (ValidationException, InvalidInputError) as e:
+        logger.warning(f"Validation error in handle_generate_note: {e}")
+        return handle_exception(e, "handle_generate_note")
+    except Exception as e:
+        logger.error(f"Unexpected error in handle_generate_note: {type(e).__name__}: {e}", exc_info=True)
+        return handle_exception(e, "handle_generate_note")
+
 @app.route('/api/v1/chat', methods=['POST'])
 @rate_limit('chat')
 def handle_chat():
@@ -644,7 +1068,6 @@ def health_check():
     })
 
 
-
 # =========================================================================
 # ENDPOINT: Add Book to Library
 # This endpoint allows authenticated users to add a new book to their
@@ -685,6 +1108,18 @@ def add_to_library():
             )
             db.session.add(book)
             db.session.flush()
+
+            # --- DYNAMIC SPINE GENERATION FOR SINGLE ADD ---
+            try:
+                # Safely parse authors if it comes in as a list structure
+                author_str = ", ".join(validated_data.authors) if isinstance(validated_data.authors, list) else validated_data.authors
+                clean_id = "".join([c if c.isalnum() else "_" for c in validated_data.title.lower().strip()])
+                
+                # Render the image file straight to frontend assets
+                create_spine(validated_data.title, author_str, clean_id)
+            except Exception as spine_err:
+                logger.error(f"Spine generation failed during direct add: {spine_err}")
+            # -----------------------------------------------
 
         existing_item = ShelfItem.query.filter_by(user_id=validated_data.user_id, book_id=book.id).with_for_update().first()
         if existing_item:
@@ -727,7 +1162,7 @@ def add_to_library():
 @app.route('/api/v1/library/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_library(user_id):
-    """Get paginated books in a user's library."""
+    """Get all books in a user's library."""
     current_user_id = get_jwt_identity()
     if str(user_id) != str(current_user_id):
         return forbidden_error("Cannot access another user's library")
@@ -772,34 +1207,45 @@ def _update_reading_stats(user_id, book):
 
 
 def _calculate_reading_streak(user_id):
-    """Calculate the user's current reading streak in days."""
+    """Calculate the user's current reading streak in days.
+
+    Multiple books finished on the same calendar day count as a single
+    streak day, fixing the bug reported in issue #513.
+    """
     finished_items = ShelfItem.query.filter_by(
         user_id=user_id, shelf_type='finished'
     ).filter(ShelfItem.finished_at.isnot(None)).order_by(ShelfItem.finished_at.desc()).all()
-    
+
     if not finished_items:
         return 0
-    
+
+    # Deduplicate dates so two books on the same day count as one streak day.
+    # Without this, days_diff == 0 silently skips and corrupts prev_date,
+    # causing the next iteration to see a false gap and break early.
+    unique_dates = sorted(
+        {item.finished_at.date() for item in finished_items},
+        reverse=True,
+    )
+
     now = datetime.now(timezone.utc)
     today = now.date()
-    most_recent = finished_items[0].finished_at.date()
-    
+    most_recent = unique_dates[0]
+
     if (today - most_recent).days > 1:
         return 0
-    
+
     streak = 1
     prev_date = most_recent
-    
-    for item in finished_items[1:]:
-        finish_date = item.finished_at.date()
+
+    for finish_date in unique_dates[1:]:
         days_diff = (prev_date - finish_date).days
-        
+
         if days_diff == 1:
             streak += 1
             prev_date = finish_date
-        elif days_diff > 1:
+        else:
             break
-    
+
     return streak
 
 
@@ -921,13 +1367,16 @@ def sync_library():
             return jsonify(validated_data), 400
         
         user_id = validated_data.user_id
-        items = sanitize_payload(validated_data.items)
+        raw_items = validated_data.items
         
         if str(user_id) != str(current_user_id):
             return forbidden_error("Cannot sync to another user's library")
 
+        # NOTE: validated_data.items is List[Dict[str, Any]] per SyncLibraryRequest validator.
+        # Each item_data is a raw dictionary (not a Pydantic model), so .get() and isinstance()
+        # checks are safe. Sanitization happens after ID validation to prevent XSS in valid books.
         invalid_ids = []
-        for index, item_data in enumerate(raw_items):
+        for index, item_data in enumerate(validated_data.items):
             if not isinstance(item_data, dict):
                 continue
             raw_google_id = item_data.get('id')
@@ -938,14 +1387,12 @@ def sync_library():
             for index, bad_value in invalid_ids:
                 logger.warning(
                     "Rejected sync payload with invalid Google Books ID. user_id=%s item_index=%s id=%r",
-                    user_id,
-                    index,
-                    bad_value
+                    user_id, index, bad_value
                 )
             return validation_error("Invalid Google Books ID format in sync payload")
 
         # Sanitize the items list only after validating Google Books IDs.
-        items = sanitize_payload(raw_items)
+        items = sanitize_payload(validated_data.items)
         
         synced_count = 0
         conflicts = 0
@@ -980,6 +1427,15 @@ def sync_library():
                         )
                         db.session.add(book)
                         db.session.flush()
+
+                        # --- DYNAMIC SPINE GENERATION FOR BULK SYNC ---
+                        try:
+                            sync_title = volume_info.get('title', 'Untitled')
+                            clean_id = "".join([c if c.isalnum() else "_" for c in sync_title.lower().strip()])
+                            create_spine(sync_title, authors, clean_id)
+                        except Exception as spine_err:
+                            logger.error(f"Spine generation failed during bulk sync: {spine_err}")
+                        # -----------------------------------------------
 
                     existing_item = ShelfItem.query.filter_by(user_id=user_id, book_id=book.id).with_for_update().first()
                     shelf_type = item_data.get('shelf', 'want')
@@ -1027,22 +1483,22 @@ def sync_library():
 # ENDPOINT: User Registration
 # Core signup flow. Validates credentials, creates a User entity, and
 # immediately responds with an active session ready to go.
-# 
-# Security checks run here include rate limiting to prevent spam and
-# Pydantic enforcing minimum password complexities / valid email formats.
-# The user record is hashed internally inside the `register_user` util.
-# Finally, JWT access cookies are locked and loaded on the response object.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
 @limiter.limit("5 per minute")
 def register():
     """Register a new user and return JWT token."""
-    from sqlalchemy.exc import IntegrityError
-    from exceptions import DatabaseIntegrityError, DatabaseQueryError, ValidationException
-    from error_responses import handle_exception
-    
     try:
         data = request.get_json()
+        
+        # =========================================================================
+        # SECURITY AUDIT: REGISTRATION ATTEMPT
+        # =========================================================================
+        # All registration attempts are logged for security auditing purposes.
+        # CSRF protection is enforced automatically by Flask-WTF for this 
+        # POST request, ensuring the signup originates from our own UI.
+        # =========================================================================
+        logger.info(f"Registration attempt for user: {data.get('username')} from IP: {request.remote_addr}")
         
         is_valid, validated_data = validate_request(RegisterRequest, data)
         if not is_valid:
@@ -1052,7 +1508,6 @@ def register():
         email = validated_data.email
         password = validated_data.password
 
-        # check if user exists
         if User.query.filter((User.username==username) | (User.email==email)).first():
             return resource_exists_error("User")
 
@@ -1079,6 +1534,7 @@ def register():
         logger.error(f"Unexpected error in register endpoint: {e}")
         return internal_error(str(e))
 
+
 @app.route('/api/v1/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
@@ -1089,6 +1545,15 @@ def login():
     try:
         data = request.get_json()
         
+        # =========================================================================
+        # SECURITY AUDIT: LOGIN ATTEMPT
+        # =========================================================================
+        # All login attempts are strictly validated against CSRF tokens.
+        # This prevents an attacker from creating a malicious site that 
+        # automatically logs a user into an account they control.
+        # =========================================================================
+        logger.info(f"Login attempt for identifier: {data.get('username')} from IP: {request.remote_addr}")
+        
         is_valid, validated_data = validate_request(LoginRequest, data)
         if not is_valid:
             return jsonify(validated_data), 400
@@ -1096,11 +1561,9 @@ def login():
         username_or_email = validated_data.username
         password = validated_data.password
 
-        # Try to find user by username or email
         user = User.query.filter((User.username==username_or_email) | (User.email==username_or_email)).first()
         
         if user and user.check_password(password):
-            # Create JWT token
             access_token = create_access_token(identity=str(user.id))
             
             resp, status = success_response(
@@ -1111,11 +1574,161 @@ def login():
             )
             set_access_cookies(resp, access_token)
             return resp, status
+
+        if user and not user.password_hash:
+            return auth_error("This account uses Google sign-in. Please continue with Google.")
             
         return auth_error("Invalid username or password")
     except Exception as e:
         logger.error(f"Unexpected error in login: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "login")
+
+
+@app.route('/api/v1/auth/google', methods=['GET'])
+@limiter.limit("10 per minute")
+def google_login():
+    google_client_id = app.config.get('GOOGLE_CLIENT_ID')
+    google_redirect_uri = app.config.get('GOOGLE_OAUTH_REDIRECT_URI') or url_for('google_oauth_callback', _external=True)
+    google_scope = app.config.get('GOOGLE_OAUTH_SCOPE', 'openid email profile https://www.googleapis.com/auth/books')
+
+    if not google_client_id:
+        return internal_error("Google OAuth client ID is not configured.")
+
+    oauth_state = secrets.token_urlsafe(32)
+    params = {
+        'client_id': google_client_id,
+        'redirect_uri': google_redirect_uri,
+        'response_type': 'code',
+        'scope': google_scope,
+        'state': oauth_state,
+        'access_type': 'offline',
+        'prompt': 'select_account'
+    }
+
+    response = redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+    response.set_cookie(
+        'google_oauth_state',
+        oauth_state,
+        httponly=True,
+        secure=app_config.is_production(),
+        samesite='Lax',
+        max_age=600
+    )
+    return response
+
+
+@app.route('/api/v1/auth/google/callback', methods=['GET'])
+@limiter.limit("10 per minute")
+def google_oauth_callback():
+    code = request.args.get('code')
+    state = request.args.get('state')
+    stored_state = request.cookies.get('google_oauth_state')
+    google_client_id = app.config.get('GOOGLE_CLIENT_ID')
+    google_client_secret = app.config.get('GOOGLE_CLIENT_SECRET')
+    google_redirect_uri = app.config.get('GOOGLE_OAUTH_REDIRECT_URI') or url_for('google_oauth_callback', _external=True)
+    frontend_redirect_url = app.config.get('GOOGLE_OAUTH_FRONTEND_REDIRECT_URL', 'http://127.0.0.1:5500/frontend/pages/library.html')
+    
+
+    if not code:
+        return auth_error("Google OAuth authorization code is missing.")
+
+    if not stored_state or not state or stored_state != state:
+        return auth_error("Invalid Google OAuth state.")
+
+    if not google_client_id or not google_client_secret:
+        return internal_error("Google OAuth client credentials are not configured.")
+
+    try:
+        token_response = requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'code': code,
+                'client_id': google_client_id,
+                'client_secret': google_client_secret,
+                'redirect_uri': google_redirect_uri,
+                'grant_type': 'authorization_code'
+            },
+            timeout=10
+        )
+        token_response.raise_for_status()
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
+
+        if not access_token:
+            return auth_error("Google OAuth access token is missing.")
+
+        userinfo_response = requests.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10
+        )
+        userinfo_response.raise_for_status()
+        google_user = userinfo_response.json()
+
+        google_id = google_user.get('sub')
+        email = google_user.get('email')
+        username = google_user.get('name') or (email.split('@')[0] if email else None)
+
+        if not google_id or not email or not username:
+            return auth_error("Google account did not provide required profile information.")
+
+        user = User.query.filter_by(google_id=google_id).first()
+        if not user:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.google_id = google_id
+                user.auth_provider = 'google'
+                user.profile_picture = google_user.get('picture')
+                user.email_verified = bool(google_user.get('email_verified'))
+            else:
+                base_username = ''.join(ch for ch in username.strip().replace(' ', '_') if ch.isalnum() or ch == '_')[:50]
+                if len(base_username) < 3:
+                    base_username = email.split('@')[0][:50]
+
+                unique_username = base_username
+                suffix = 1
+                while User.query.filter_by(username=unique_username).first():
+                    suffix_text = str(suffix)
+                    unique_username = f"{base_username[:50 - len(suffix_text)]}{suffix_text}"
+                    suffix += 1
+
+                user = User(
+                    username=unique_username,
+                    email=email,
+                    google_id=google_id,
+                    auth_provider='google',
+                    profile_picture=google_user.get('picture'),
+                    email_verified=bool(google_user.get('email_verified'))
+                )
+                db.session.add(user)
+
+        db.session.commit()
+
+        jwt_access_token = create_access_token(identity=str(user.id))
+        response = redirect(frontend_redirect_url)
+        set_access_cookies(response, jwt_access_token)
+        response.delete_cookie('google_oauth_state')
+        return response
+    except requests.RequestException as e:
+        logger.error(f"Google OAuth request failed: {e}", exc_info=True)
+        return service_unavailable_error("Google authentication service is unavailable.")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Google OAuth callback failed: {e}", exc_info=True)
+        return internal_error("Google authentication failed.")
+
+
+@app.route('/api/v1/auth/verify', methods=['GET'])
+@jwt_required()
+def verify_auth():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    print(user)
+
+    if not user:
+        return auth_error("Invalid or expired session.")
+
+    return jsonify({"user": user.to_dict()}), 200
 
 
 @app.route('/api/v1/logout', methods=['POST'])
@@ -1126,12 +1739,27 @@ def logout():
     return resp, status
 
 
+@app.route('/api/v1/auth/verify', methods=['GET'])
+@jwt_required()
+def verify_auth_session():
+    """Validate JWT from access cookie and return the current user (session restore)."""
+    try:
+        uid = get_jwt_identity()
+        user = User.query.get(int(uid))
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify({
+            "user": {"id": user.id, "username": user.username, "email": user.email}
+        }), 200
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid session"}), 401
+
+
 # ==================== READING STATS ENDPOINTS ====================
 @app.route('/api/v1/stats/goal', methods=['POST'])
 @jwt_required()
 def set_reading_goal():
     """Set or update annual reading goal."""
-    # Use get_json(silent=True) to avoid automatic 400 on malformed JSON
     data = request.get_json(silent=True)
     if data is None:
         return jsonify({"error": "Invalid or missing JSON body"}), 400
@@ -1172,15 +1800,6 @@ def set_reading_goal():
 def get_reading_stats():
     """Get reading statistics for the user."""
     user_id = request.args.get('user_id', type=int)
-    
-    # =========================================================================
-    # TIMEZONE-AWARE YEAR RESOLUTION
-    # =========================================================================
-    # The default year is dynamically resolved using a timezone-aware UTC 
-    # datetime object. This avoids edge cases near New Year's Eve where a server 
-    # running in a different timezone might incorrectly calculate the 'current'
-    # year relative to the user's local time or universal time.
-    # =========================================================================
     year = request.args.get('year', datetime.now(timezone.utc).year, type=int)
     
     if not user_id:
@@ -1216,25 +1835,12 @@ def get_reading_stats():
 @jwt_required()
 def get_leaderboard():
     """Get community reading leaderboard."""
-    
-    # =========================================================================
-    # TIMEZONE-AWARE YEAR RESOLUTION (LEADERBOARD)
-    # =========================================================================
-    # Similar to reading stats, the leaderboard must ensure the default year
-    # aligns with UTC correctly. Relying on naive datetime could cause 
-    # discrepancies in leaderboard data rendering at the turn of the year.
-    # =========================================================================
     year = request.args.get('year', datetime.now(timezone.utc).year, type=int)
     limit = request.args.get('limit', 10, type=int)
     
     try:
         from sqlalchemy import func
 
-        # Description
-        # where: app.py(get_leaderboard)
-        # issue: _get_yearly_stats is called inside the leaderboard loop, making additional queries per user
-        # why?: Combined with , this creates a severe N+1+N query pattern in the leaderboard endpoint, making it O(n) database calls.
-        # fix: Aggregate stats in a single SQL query using GROUP BY user_id alongside the leaderboard goal query.
         stats_query = db.session.query(
             ReadingGoal.user_id,
             User.username,
@@ -1279,7 +1885,6 @@ def get_leaderboard():
 @jwt_required()
 def create_collection():
     """Create a new collection."""
-    # Use get_json(silent=True) to avoid automatic 400 on malformed JSON
     data = request.get_json(silent=True)
     if data is None:
         return jsonify({"error": "Invalid or missing JSON body"}), 400
@@ -1294,7 +1899,6 @@ def create_collection():
     
     try:
         existing = Collection.query.filter_by(user_id=validated_data.user_id, name=validated_data.name).first()
-        
         if existing:
             return jsonify({"error": "Collection with this name already exists"}), 409
         
@@ -1356,7 +1960,6 @@ def get_collection(collection_id):
 @jwt_required()
 def update_collection(collection_id):
     """Update a collection."""
-    # Use get_json(silent=True) to avoid automatic 400 on malformed JSON
     data = request.get_json(silent=True)
     if data is None:
         return jsonify({"error": "Invalid or missing JSON body"}), 400
@@ -1422,7 +2025,6 @@ def delete_collection(collection_id):
 @jwt_required()
 def add_book_to_collection(collection_id):
     """Add a book to a collection."""
-    # Use get_json(silent=True) to avoid automatic 400 on malformed JSON
     data = request.get_json(silent=True)
     if data is None:
         return jsonify({"error": "Invalid or missing JSON body"}), 400
@@ -1452,7 +2054,6 @@ def add_book_to_collection(collection_id):
             db.session.flush()
         
         existing_item = CollectionItem.query.filter_by(collection_id=collection_id, book_id=book.id).first()
-        
         if existing_item:
             return jsonify({"error": "Book already in collection"}), 409
         
@@ -1481,7 +2082,6 @@ def get_collection_books(collection_id):
             return forbidden_error("Unauthorized")
         
         items = CollectionItem.query.filter_by(collection_id=collection_id).order_by(CollectionItem.added_at.desc()).all()
-        
         return jsonify({"collection": collection.to_dict(), "books": [item.to_dict() for item in items]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1736,6 +2336,12 @@ def get_price_history(book_id):
         history = price_tracker.get_price_history(book_id=book.id, retailer=retailer, limit=limit)
         latest_prices = price_tracker.get_latest_prices(book.id)
         
+        # If no history exists, fetch the current price and record it
+        if not history and not latest_prices:
+            price_tracker.update_prices_for_book(book.id, book.google_books_id)
+            history = price_tracker.get_price_history(book_id=book.id, retailer=retailer, limit=limit)
+            latest_prices = price_tracker.get_latest_prices(book.id)
+        
         return jsonify({
             "book_id": book.id,
             "google_books_id": book.google_books_id,
@@ -1858,8 +2464,11 @@ from sanitizer import sanitize_payload
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
 env_path = os.path.join(os.path.dirname(__file__), '..', 'config', f'.env.{env}')
+backend_env_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(env_path):
     load_dotenv(env_path)
+elif os.path.exists(backend_env_path):
+    load_dotenv(backend_env_path)
 else:
     load_dotenv()
 
@@ -1956,7 +2565,7 @@ jwt = JWTManager(app)
 # =====================================================================
 # ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5000,http://localhost:5000
 # For development, we'll allow all to be safe, then restrict in prod
-CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5000", "http://localhost:5000"])
+CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5501", "http://localhost:5501", "http://127.0.0.1:5000", "http://localhost:5000"])
 
 # Initialize cache service
 cache_service.init_app(app)
@@ -2955,6 +3564,9 @@ def login():
         # Try to find user by username or email
         user = User.query.filter((User.username==username_or_email) | (User.email==username_or_email)).first()
         
+        if user and not user.password_hash:
+            return auth_error("This account uses Google sign-in. Please continue with Google.")
+
         if user and user.check_password(password):
             # Create JWT token
             access_token = create_access_token(identity=str(user.id))
@@ -2972,6 +3584,151 @@ def login():
     except Exception as e:
         logger.error(f"Unexpected error in login: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "login")
+
+
+@app.route('/api/v1/auth/google', methods=['GET'])
+@limiter.limit("10 per minute")
+def google_login_active():
+    google_client_id = app.config.get('GOOGLE_CLIENT_ID')
+    google_redirect_uri = app.config.get('GOOGLE_OAUTH_REDIRECT_URI') or url_for('google_oauth_callback_active', _external=True)
+    google_scope = app.config.get('GOOGLE_OAUTH_SCOPE', 'openid email profile')
+
+    if not google_client_id:
+        return internal_error("Google OAuth client ID is not configured.")
+
+    oauth_state = secrets.token_urlsafe(32)
+    params = {
+        'client_id': google_client_id,
+        'redirect_uri': google_redirect_uri,
+        'response_type': 'code',
+        'scope': google_scope,
+        'state': oauth_state,
+        'access_type': 'offline',
+        'prompt': 'select_account'
+    }
+
+    response = redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+    response.set_cookie(
+        'google_oauth_state',
+        oauth_state,
+        httponly=True,
+        secure=app_config.is_production(),
+        samesite='Lax',
+        max_age=600
+    )
+    return response
+
+
+@app.route('/api/v1/auth/google/callback', methods=['GET'])
+@limiter.limit("10 per minute")
+def google_oauth_callback_active():
+    code = request.args.get('code')
+    state = request.args.get('state')
+    stored_state = request.cookies.get('google_oauth_state')
+    google_client_id = app.config.get('GOOGLE_CLIENT_ID')
+    google_client_secret = app.config.get('GOOGLE_CLIENT_SECRET')
+    google_redirect_uri = app.config.get('GOOGLE_OAUTH_REDIRECT_URI') or url_for('google_oauth_callback_active', _external=True)
+    frontend_redirect_url = app.config.get('GOOGLE_OAUTH_FRONTEND_REDIRECT_URL', 'http://127.0.0.1:5500/frontend/pages/library.html')
+
+    if not code:
+        return auth_error("Google OAuth authorization code is missing.")
+
+    if not stored_state or not state or stored_state != state:
+        return auth_error("Invalid Google OAuth state.")
+
+    if not google_client_id or not google_client_secret:
+        return internal_error("Google OAuth client credentials are not configured.")
+
+    try:
+        token_response = requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'code': code,
+                'client_id': google_client_id,
+                'client_secret': google_client_secret,
+                'redirect_uri': google_redirect_uri,
+                'grant_type': 'authorization_code'
+            },
+            timeout=10
+        )
+        token_response.raise_for_status()
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
+
+        if not access_token:
+            return auth_error("Google OAuth access token is missing.")
+
+        userinfo_response = requests.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10
+        )
+        userinfo_response.raise_for_status()
+        google_user = userinfo_response.json()
+
+        google_id = google_user.get('sub')
+        email = google_user.get('email')
+        username = google_user.get('name') or (email.split('@')[0] if email else None)
+
+        if not google_id or not email or not username:
+            return auth_error("Google account did not provide required profile information.")
+
+        user = User.query.filter_by(google_id=google_id).first()
+        if not user:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.google_id = google_id
+                user.auth_provider = 'google'
+                user.profile_picture = google_user.get('picture')
+                user.email_verified = bool(google_user.get('email_verified'))
+            else:
+                base_username = ''.join(ch for ch in username.strip().replace(' ', '_') if ch.isalnum() or ch == '_')[:50]
+                if len(base_username) < 3:
+                    base_username = email.split('@')[0][:50]
+
+                unique_username = base_username
+                suffix = 1
+                while User.query.filter_by(username=unique_username).first():
+                    suffix_text = str(suffix)
+                    unique_username = f"{base_username[:50 - len(suffix_text)]}{suffix_text}"
+                    suffix += 1
+
+                user = User(
+                    username=unique_username,
+                    email=email,
+                    google_id=google_id,
+                    auth_provider='google',
+                    profile_picture=google_user.get('picture'),
+                    email_verified=bool(google_user.get('email_verified'))
+                )
+                db.session.add(user)
+
+        db.session.commit()
+
+        jwt_access_token = create_access_token(identity=str(user.id))
+        response = redirect(frontend_redirect_url)
+        set_access_cookies(response, jwt_access_token)
+        response.delete_cookie('google_oauth_state')
+        return response
+    except requests.RequestException as e:
+        logger.error(f"Google OAuth request failed: {e}", exc_info=True)
+        return service_unavailable_error("Google authentication service is unavailable.")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Google OAuth callback failed: {e}", exc_info=True)
+        return internal_error("Google authentication failed.")
+
+
+@app.route('/api/v1/auth/verify', methods=['GET'])
+@jwt_required()
+def verify_auth_session():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return auth_error("Invalid or expired session.")
+
+    return jsonify({"user": user.to_dict()}), 200
 
 
 @app.route('/api/v1/logout', methods=['POST'])
@@ -3678,6 +4435,7 @@ if __name__ == '__main__':
         logger.info("  GET  /api/v1/health - Health check")
 
     app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+<<<<<<< HEAD
 # Add Bookmark import at the top
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, Bookmark, register_user, login_user
 
@@ -3881,3 +4639,6 @@ def check_bookmark(book_id):
     except Exception as e:
         logger.error(f"Error checking bookmark: {e}")
         return internal_error()
+=======
+    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
+>>>>>>> 70f31ed5a27e06da426d195c97d59284b694a6b3
