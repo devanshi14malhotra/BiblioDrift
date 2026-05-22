@@ -5760,4 +5760,9 @@ body { cursor: none; }
     --book-bg: var(--theme-surface) !important;
     --header-bg: var(--theme-bg) !important;
     --accent-gold: var(--theme-accent) !important;
+    --surface-panel: color-mix(in srgb, var(--theme-surface) 88%, transparent) !important;
+    --surface-soft: color-mix(in srgb, var(--theme-surface) 55%, transparent) !important;
+    --surface-elevated: var(--theme-surface) !important;
+    --control-border: var(--theme-border) !important;
+    --control-hover: var(--theme-pill-bg) !important;
 }

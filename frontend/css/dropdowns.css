@@ -1,0 +1,212 @@
+/**
+ * BiblioDrift — unified dropdown & select styling
+ * Maps menu surfaces to each page background (day/night, mood themes, page scopes).
+ */
+
+:root {
+    --dropdown-bg: var(--surface-soft);
+    --dropdown-bg-solid: var(--surface-panel);
+    --dropdown-border: var(--control-border);
+    --dropdown-text: var(--text-main);
+    --dropdown-text-muted: var(--text-muted);
+    --dropdown-option-bg: var(--surface-elevated);
+    --dropdown-option-text: var(--text-main);
+    --dropdown-hover-bg: var(--control-hover);
+    --dropdown-focus-ring: var(--control-focus-ring);
+    --dropdown-accent: var(--accent-gold);
+    --dropdown-shadow: var(--shadow-soft);
+    --dropdown-radius: var(--radius-control, 18px);
+}
+
+[data-theme="night"] {
+    --dropdown-option-bg: var(--surface-elevated);
+}
+
+/* Mood themes (index, library, etc.) */
+[data-mood] {
+    --dropdown-bg: color-mix(in srgb, var(--theme-surface) 72%, transparent);
+    --dropdown-bg-solid: var(--theme-surface);
+    --dropdown-border: var(--theme-border);
+    --dropdown-text: var(--theme-text);
+    --dropdown-text-muted: var(--theme-text-muted);
+    --dropdown-option-bg: var(--theme-surface);
+    --dropdown-option-text: var(--theme-text);
+    --dropdown-hover-bg: var(--theme-pill-bg);
+    --dropdown-accent: var(--theme-accent);
+}
+
+/* Request-book page (warm parchment / dark ink) */
+.request-section {
+    --dropdown-bg: var(--rb-input-bg);
+    --dropdown-bg-solid: var(--rb-card);
+    --dropdown-border: var(--rb-border);
+    --dropdown-text: var(--rb-text);
+    --dropdown-text-muted: var(--rb-text-muted);
+    --dropdown-option-bg: var(--rb-card);
+    --dropdown-option-text: var(--rb-text);
+    --dropdown-hover-bg: var(--rb-input-bg);
+    --dropdown-accent: var(--rb-accent);
+}
+
+/* ── Native selects (all pages) ─────────────────────────────────────────── */
+
+select {
+    color: var(--dropdown-text);
+    background-color: var(--dropdown-bg-solid);
+    border: 1px solid var(--dropdown-border);
+    border-radius: var(--dropdown-radius);
+    font-family: "Georgia", serif;
+    cursor: pointer;
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+select:hover {
+    border-color: var(--dropdown-accent);
+    background-color: var(--dropdown-hover-bg);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--dropdown-accent);
+    box-shadow: 0 0 0 4px var(--dropdown-focus-ring);
+}
+
+select option,
+select optgroup {
+    background-color: var(--dropdown-option-bg);
+    color: var(--dropdown-option-text);
+}
+
+select option:checked,
+select option:hover {
+    background-color: var(--dropdown-hover-bg);
+    color: var(--dropdown-text);
+}
+
+select option:disabled {
+    color: var(--dropdown-text-muted);
+}
+
+/* Library filter bar — glass shell, themed menu text */
+.filter-group .sort-select {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--dropdown-text);
+}
+
+.filter-group .sort-select:hover,
+.filter-group .sort-select:focus {
+    background: transparent;
+    box-shadow: none;
+    color: var(--dropdown-accent);
+}
+
+.filter-group .sort-select option {
+    background-color: var(--dropdown-bg-solid);
+    color: var(--dropdown-option-text);
+}
+
+/* Library modal shelf picker */
+.library-shelf-select,
+.shelf-select.library-shelf-select {
+    background: linear-gradient(
+        180deg,
+        var(--dropdown-hover-bg),
+        var(--dropdown-bg-solid)
+    );
+    color: var(--dropdown-text);
+    border-color: var(--dropdown-border);
+}
+
+.library-shelf-select option,
+.shelf-select.library-shelf-select option {
+    background-color: var(--dropdown-option-bg);
+    color: var(--dropdown-option-text);
+}
+
+/* Vault upload form */
+select.vault-field {
+    background-color: var(--field-bg, var(--dropdown-bg-solid));
+    border-color: var(--border-color, var(--dropdown-border));
+    color: var(--text-main, var(--dropdown-text));
+    min-height: 44px;
+}
+
+select.vault-field option {
+    background-color: var(--dropdown-option-bg);
+    color: var(--dropdown-option-text);
+}
+
+[data-theme="night"] select.vault-field option {
+    background-color: var(--surface-elevated);
+}
+
+/* Request-book genre dropdown */
+.request-section .form-group select {
+    background-color: var(--dropdown-bg);
+    border-color: var(--dropdown-border);
+    color: var(--dropdown-text);
+}
+
+.request-section .form-group select option {
+    background-color: var(--dropdown-option-bg);
+    color: var(--dropdown-option-text);
+}
+
+/* Night mode global selects */
+[data-theme="night"] select:not(.sort-select) {
+    background-color: var(--dropdown-bg-solid);
+    color: var(--dropdown-text);
+}
+
+[data-theme="night"] select option {
+    background-color: #2c2420;
+    color: #e0d5cb;
+}
+
+/* ── Ambient sound panel “options” (toggle rows) ─────────────────────────── */
+
+.ambient-panel {
+    background: var(--dropdown-bg-solid) !important;
+    border-color: var(--dropdown-border) !important;
+    color: var(--dropdown-text);
+}
+
+.ambient-panel .ambient-option {
+    padding: 0.5rem 0.65rem;
+    border-radius: 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.ambient-panel .ambient-option:hover {
+    background: var(--dropdown-hover-bg);
+    border-color: color-mix(in srgb, var(--dropdown-border) 65%, transparent);
+}
+
+.ambient-panel .ambient-option span,
+.ambient-panel .volume-control label {
+    color: var(--dropdown-text);
+}
+
+.ambient-panel .volume-control .range-wrap .range-track {
+    background: color-mix(in srgb, var(--dropdown-text) 12%, transparent);
+}
+
+/* Library / profile ambient panels inherit page background */
+body.library-page .ambient-panel,
+body.profile-page .ambient-panel {
+    background: var(--header-bg) !important;
+}
+
+[data-theme="night"] .ambient-panel .ambient-option:hover {
+    background: var(--surface-soft);
+}

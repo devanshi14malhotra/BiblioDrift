@@ -4,7 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Request a Book – BiblioDrift</title>
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night' || theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/dropdowns.css"/>
   <link rel="stylesheet" href="../css/style_main.css"/>
   <link rel="stylesheet" href="../css/style-responsive.css"/>
   <style>
@@ -32,6 +41,18 @@
         --rb-accent: #c9a84c;
         --rb-btn-text: #0a0a0f;
       }
+    }
+
+    html[data-theme="night"] {
+      --rb-bg: #1e1a18;
+      --rb-card: #2c2420;
+      --rb-border: rgba(255, 255, 255, 0.1);
+      --rb-input-bg: rgba(0, 0, 0, 0.2);
+      --rb-text: #e0d5cb;
+      --rb-text-muted: #a89a8e;
+      --rb-text-secondary: #d5c9bc;
+      --rb-accent: #fccb4e;
+      --rb-btn-text: #1e1a18;
     }
 
     .request-section {
@@ -95,10 +116,6 @@
     .form-group select:focus,
     .form-group textarea:focus {
       border-color: var(--rb-accent);
-    }
-    .form-group select option {
-      background: var(--rb-card);
-      color: var(--rb-text);
     }
     .form-group textarea {
       resize: vertical;
@@ -169,7 +186,7 @@
 
         <div class="form-group">
           <label for="genre">Genre *</label>
-          <select id="genre" required>
+          <select id="genre" class="bd-select" required>
             <option value="" disabled selected>Select a genre</option>
             <option>Fiction</option>
             <option>Mystery</option>
