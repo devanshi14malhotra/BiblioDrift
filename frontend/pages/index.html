@@ -3,6 +3,20 @@
 
 <head>
   <meta charset="UTF-8" />
+  <div class="search-bar">
+    <input
+        type="text"
+        id="aiSearchInput"
+        class="search-input"
+        placeholder="Ask AI for books..."
+    />
+
+    <button id="aiSearchBtn" class="ai-search-btn">
+        🔍 AI Search
+    </button>
+</div>
+
+<div id="aiSearchResults" class="ai-results-container"></div>
   <script>
     (function () {
       const theme = localStorage.getItem('bibliodrift_theme');
@@ -80,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="BiblioDrift">
   <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+  
 </head>
 
 <body>
