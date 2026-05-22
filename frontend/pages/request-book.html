@@ -22,15 +22,15 @@
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --rb-bg: #0a0a0f;
-        --rb-card: #12121a;
-        --rb-border: #2a2a3e;
-        --rb-input-bg: #1a1a28;
+        --rb-bg: #1c140e;
+        --rb-card: #2a1f18;
+        --rb-border: #3d2d23;
+        --rb-input-bg: #1f1610;
         --rb-text: #e8e0d0;
         --rb-text-muted: #9a8e7e;
         --rb-text-secondary: #c8bfb0;
         --rb-accent: #c9a84c;
-        --rb-btn-text: #0a0a0f;
+        --rb-btn-text: #1c140e;
       }
     }
 
@@ -76,11 +76,11 @@
     .form-group select,
     .form-group textarea {
       width: 100%;
-      background: var(--rb-input-bg);
-      border: 1px solid var(--rb-border);
+      background: var(--rb-input-bg) !important;
+      border: 1px solid var(--rb-border) !important;
       border-radius: 8px;
       padding: 0.7rem 1rem;
-      color: var(--rb-text);
+      color: var(--rb-text) !important;
       font-size: 0.95rem;
       outline: none;
       transition: border-color 0.2s;
@@ -88,13 +88,13 @@
     }
     .form-group input::placeholder,
     .form-group textarea::placeholder {
-      color: var(--rb-text-muted);
+      color: var(--rb-text-muted) !important;
       opacity: 1;
     }
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
-      border-color: var(--rb-accent);
+      border-color: var(--rb-accent) !important;
     }
     .form-group select option {
       background: var(--rb-card);

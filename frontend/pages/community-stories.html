@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') document.documentElement.setAttribute('data-theme', 'night');
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BiblioDrift Community Stories – Read and publish your own stories." />
+  <title>Community Stories | BiblioDrift</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2c2420">
+  <style>
+    .community-hero {
+      text-align: center;
+      padding: 5rem 1rem 3rem;
+      animation: heroFade 1s ease-out;
+    }
+    .community-hero h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-style: italic;
+      margin-bottom: 1rem;
+    }
+    .community-hero p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 50ch;
+      margin: 0 auto 2rem;
+      line-height: 1.8;
+    }
+    .btn-write {
+      background: var(--text-main);
+      color: var(--bg-color);
+      border: none;
+      padding: 0.9rem 2rem;
+      border-radius: 30px;
+      font-family: "Georgia", serif;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .btn-write:hover {
+      background: var(--accent-gold);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Form Modal */
+    .story-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .story-modal-backdrop.active { display: flex; }
+    .story-form-modal {
+      background: var(--bg-color);
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      position: relative;
+      animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .story-form-modal h2 {
+      font-family: "Playfair Display", serif;
+      font-size: 1.8rem;
+      margin-bottom: 1.8rem;
+      color: var(--text-main);
+    }
+    .form-group {
+      margin-bottom: 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-group label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-family: "Georgia", serif;
+      font-size: 1rem;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+      background: var(--book-bg);
+    }
+    .form-group textarea {
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+    .char-count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .btn-publish {
+      flex: 1;
+      background: var(--accent-gold);
+      color: var(--wood-dark);
+      border: none;
+      padding: 0.9rem;
+      border-radius: 30px;
+      font-family: "Georgia", serif;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .btn-publish:hover {
+      background: #c49a2f;
+      transform: translateY(-2px);
+    }
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--input-border);
+      color: var(--text-muted);
+      padding: 0.9rem 1.5rem;
+      border-radius: 30px;
+      font-family: "Georgia", serif;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-cancel:hover { color: var(--text-main); }
+    .close-form-btn {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: var(--glass-bg);
+      border: none;
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .close-form-btn:hover { background: var(--accent-gold); color: #fff; transform: rotate(90deg); }
+
+    /* Stories Grid */
+    .stories-section { margin-bottom: 5rem; }
+    .stories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2rem;
+      padding: 1rem 0;
+    }
+
+    /* Story Card */
+    .story-card {
+      background: var(--book-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .story-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--wood-dark), var(--accent-gold));
+      border-radius: 16px 16px 0 0;
+    }
+    .story-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+      border-color: var(--accent-gold);
+    }
+    .story-genre-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: capitalize;
+      width: fit-content;
+    }
+    .story-card h3 {
+      font-family: "Playfair Display", serif;
+      font-size: 1.3rem;
+      color: var(--text-main);
+      line-height: 1.3;
+      margin: 0;
+    }
+    .story-author-line {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .story-preview {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .story-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--glass-border);
+    }
+    .story-date { display: flex; align-items: center; gap: 0.3rem; }
+    .story-read-btn {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: "Georgia", serif;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .story-read-btn:hover { background: var(--accent-gold); color: var(--wood-dark); border-color: var(--accent-gold); }
+
+    /* Empty State */
+    .stories-empty {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text-muted);
+      grid-column: 1 / -1;
+    }
+    .stories-empty i { font-size: 3rem; color: var(--accent-gold); opacity: 0.5; margin-bottom: 1rem; display: block; }
+    .stories-empty p { font-size: 1.1rem; font-family: "Playfair Display", serif; font-style: italic; }
+
+    /* Read Modal */
+    .story-read-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .story-read-backdrop.active { display: flex; }
+    .story-read-modal {
+      background: var(--paper-color);
+      border-radius: 20px;
+      padding: 3rem;
+      width: 100%;
+      max-width: 700px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      position: relative;
+      animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .story-read-modal .read-genre-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.8rem;
+    }
+    .story-read-modal h2 {
+      font-family: "Playfair Display", serif;
+      font-size: 2rem;
+      font-style: italic;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+    .story-read-modal .read-author {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid var(--accent-gold);
+    }
+    .story-full-content {
+      font-family: "Georgia", serif;
+      font-size: 1.05rem;
+      line-height: 1.9;
+      color: var(--text-main);
+      white-space: pre-wrap;
+    }
+    .close-read-btn {
+      position: absolute;
+      top: 1.2rem; right: 1.2rem;
+      background: var(--glass-bg);
+      border: none;
+      width: 2.2rem; height: 2.2rem;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .close-read-btn:hover { background: var(--accent-gold); color: #fff; transform: rotate(90deg); }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+      align-items: center;
+    }
+    .filter-bar label { font-size: 0.9rem; color: var(--text-muted); }
+    .filter-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: "Georgia", serif;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--accent-gold);
+      color: var(--wood-dark);
+      border-color: var(--accent-gold);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--text-main);
+      color: var(--bg-color);
+      padding: 0.8rem 1.8rem;
+      border-radius: 30px;
+      font-family: "Georgia", serif;
+      font-size: 0.95rem;
+      z-index: 9999;
+      transition: transform 0.4s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 768px) {
+      .stories-grid { grid-template-columns: 1fr; }
+      .story-form-modal, .story-read-modal { padding: 1.5rem; }
+      .form-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html">Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html">My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="community-stories.html" class="active">Community</a>
+          <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html">Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink">Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="community-hero">
+      <h1>Write Your Story.</h1>
+      <p>A space for dreamers, readers, and storytellers. Share your words with the BiblioDrift community.</p>
+      <button class="btn-write" id="openFormBtn">
+        <i class="fa-solid fa-pen-nib"></i> Publish a Story
+      </button>
+    </section>
+
+    <section class="stories-section curated-section">
+      <div class="section-header">
+        <h2>Community Stories</h2>
+        <span><i class="fa-solid fa-book-open"></i> Written by readers like you</span>
+      </div>
+
+      <div class="filter-bar">
+        <label>Filter:</label>
+        <button class="filter-btn active" data-genre="all">All</button>
+        <button class="filter-btn" data-genre="romance">Romance</button>
+        <button class="filter-btn" data-genre="mystery">Mystery</button>
+        <button class="filter-btn" data-genre="fiction">Fiction</button>
+        <button class="filter-btn" data-genre="fantasy">Fantasy</button>
+        <button class="filter-btn" data-genre="thriller">Thriller</button>
+        <button class="filter-btn" data-genre="other">Other</button>
+      </div>
+
+      <div class="stories-grid" id="storiesGrid"></div>
+    </section>
+  </main>
+
+  <!-- Publish Modal -->
+  <div class="story-modal-backdrop" id="storyFormBackdrop">
+    <div class="story-form-modal">
+      <button class="close-form-btn" id="closeFormBtn"><i class="fa-solid fa-xmark"></i></button>
+      <h2><i class="fa-solid fa-feather" style="color: var(--accent-gold); margin-right: 0.5rem;"></i>Publish Your Story</h2>
+
+      <div class="form-group">
+        <label for="storyTitle">Story Title *</label>
+        <input type="text" id="storyTitle" placeholder="Give your story a title..." maxlength="100" />
+      </div>
+      <div class="form-group">
+        <label for="storyAuthor">Author Name *</label>
+        <input type="text" id="storyAuthor" placeholder="Your name or pen name..." maxlength="60" />
+      </div>
+      <div class="form-group">
+        <label for="storyGenre">Genre *</label>
+        <select id="storyGenre">
+          <option value="" disabled selected>Select a genre...</option>
+          <option value="romance">Romance</option>
+          <option value="mystery">Mystery</option>
+          <option value="fiction">Fiction</option>
+          <option value="fantasy">Fantasy</option>
+          <option value="thriller">Thriller</option>
+          <option value="biography">Biography</option>
+          <option value="self-help">Self-Help</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="storyContent">Your Story *</label>
+        <textarea id="storyContent" placeholder="Once upon a time..." maxlength="5000"></textarea>
+        <div class="char-count"><span id="charCount">0</span> / 5000 characters</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-publish" id="publishBtn"><i class="fa-solid fa-paper-plane"></i> Publish Story</button>
+        <button class="btn-cancel" id="cancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Read Modal -->
+  <div class="story-read-backdrop" id="storyReadBackdrop">
+    <div class="story-read-modal">
+      <button class="close-read-btn" id="closeReadBtn"><i class="fa-solid fa-xmark"></i></button>
+      <div class="read-genre-label" id="readGenre"></div>
+      <h2 id="readTitle"></h2>
+      <div class="read-author" id="readAuthor"></div>
+      <div class="story-full-content" id="readContent"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toastMsg">Story published!</span>
+  </div>
+
+  <script src="../js/footer.js"></script>
+  <script src="../js/community-stories.js"></script>
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    const icon = themeToggle.querySelector('i');
+    if (localStorage.getItem('bibliodrift_theme') === 'night') {
+      document.documentElement.setAttribute('data-theme', 'night');
+      icon.classList.replace('fa-moon', 'fa-sun');
+    }
+    themeToggle.addEventListener('click', () => {
+      const isNight = document.documentElement.getAttribute('data-theme') === 'night';
+      if (isNight) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('bibliodrift_theme', 'day');
+        icon.classList.replace('fa-sun', 'fa-moon');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'night');
+        localStorage.setItem('bibliodrift_theme', 'night');
+        icon.classList.replace('fa-moon', 'fa-sun');
+      }
+    });
+  </script>
+
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top"
+    onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+</body>
+</html>

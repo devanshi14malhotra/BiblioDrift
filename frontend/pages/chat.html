@@ -10,9 +10,50 @@
                 document.documentElement.setAttribute('data-theme', 'night');
             }
         })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('themeToggle');
+            if (!btn) return;
+
+            const icon = btn.querySelector('i');
+            const STORAGE_KEY = 'bibliodrift_theme';
+
+            function applyTheme(theme) {
+                if (theme === 'night') {
+                    document.documentElement.setAttribute('data-theme', 'night');
+                    if (icon) icon.className = 'fa-solid fa-sun';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    if (icon) icon.className = 'fa-solid fa-moon';
+                }
+
+                localStorage.setItem(STORAGE_KEY, theme);
+                if (typeof restoreTheme === 'function') restoreTheme();
+            }
+
+            const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+            applyTheme(savedTheme);
+
+            btn.addEventListener('click', function () {
+                const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
+                const next = current === 'night' ? 'light' : 'night';
+                applyTheme(next);
+            });
+        });
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with Elara | BiblioDrift</title>
+    <!-- SEO & Open Graph meta tags -->
+    <meta name="description"
+        content="Chat with Elara, your AI-powered reading companion on BiblioDrift. Get personalised book recommendations, discuss stories, and discover your next great read." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/chat" />
+    <meta property="og:title" content="Chat with Elara | BiblioDrift" />
+    <meta property="og:description"
+        content="Chat with Elara, your AI-powered reading companion on BiblioDrift. Get personalised book recommendations, discuss stories, and discover your next great read." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/pwa.css">
     <!-- Unified Font Imports -->
@@ -30,54 +71,76 @@
 
     <style>
         .chat-messages {
-    background: rgba(255, 248, 235, 0.45);
-    border: 1px solid rgba(139, 69, 19, 0.12);
-    border-radius: 22px;
-    padding: 1.25rem;
-    margin: 0.75rem 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
+            background: rgba(255, 248, 235, 0.45);
+            border: 1px solid rgba(139, 69, 19, 0.12);
+            border-radius: 22px;
+            padding: 1.25rem;
+            margin: 0.75rem 0;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
 
-.message-bubble {
-    line-height: 1.7;
-}
+        .message-bubble {
+            line-height: 1.7;
+        }
 
-.chat-input-wrapper {
-    background: rgba(255, 248, 235, 0.8);
-    border: 1px solid rgba(139, 69, 19, 0.18);
-    border-radius: 18px;
-    padding: 0.4rem;
-}
+        .chat-input-wrapper {
+            background: rgba(255, 248, 235, 0.8);
+            border: 1px solid rgba(139, 69, 19, 0.18);
+            border-radius: 18px;
+            padding: 0.4rem;
+        }
 
-.send-btn {
-    min-width: 44px;
-    min-height: 44px;
-}
+        .send-btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
 
-@media (max-width: 768px) {
-    .chat-header {
-        gap: 1rem;
-        align-items: flex-start;
-    }
+        @media (max-width: 768px) {
+            .chat-header {
+                gap: 1rem;
+                align-items: flex-start;
+            }
 
-    .bookseller-info {
-        align-items: flex-start;
-    }
+            .bookseller-info {
+                align-items: flex-start;
+            }
 
-    .chat-actions {
-        flex-wrap: wrap;
-        justify-content: flex-start;
-    }
+            .chat-actions {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
 
-    .suggestions-list {
-        grid-template-columns: 1fr;
-    }
+            .suggestions-list {
+                grid-template-columns: 1fr;
+            }
 
-    .chat-messages {
-        padding: 1rem;
-        border-radius: 18px;
-    }
-}
+            .chat-messages {
+                padding: 1rem;
+                border-radius: 18px;
+            }
+        }
+
+        /* Full height layout - No double scroll */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            /* ALLOW SCROLL */
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            font-family: 'Georgia', serif;
+        }
+
         /* Navigation */
         nav.nav-container {
             flex-shrink: 0;
@@ -201,6 +264,7 @@
                 justify-content: center;
             }
         }
+
         /* Typing indicator label */
         .typing-label {
             font-size: 0.75rem;
@@ -220,6 +284,7 @@
         .typing-indicator .message-avatar {
             background: linear-gradient(135deg, #b8860b, #8b4513);
         }
+
         /* Override global ambient panel position for chat header */
         .chat-actions .ambient-panel {
             top: 100%;
@@ -229,6 +294,7 @@
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
+    <link rel="stylesheet" href="../css/pwa.css">
     <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#2c2420">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -352,7 +418,9 @@
                     <div class="message-content">
                         <div class="message-bubble">
                             <p>Ah, a wandering soul has found their way through the door&hellip; Welcome.</p>
-                            <p>I am Elara &mdash; keeper of stories, reader of moods, and devoted guide to the worlds that live between pages. Whether your heart is heavy with rain or light as a summer afternoon, I will find you the perfect book.</p>
+                            <p>I am Elara &mdash; keeper of stories, reader of moods, and devoted guide to the worlds
+                                that live between pages. Whether your heart is heavy with rain or light as a summer
+                                afternoon, I will find you the perfect book.</p>
                             <p>Tell me: what is stirring in you today?</p>
                         </div>
                         <div class="message-time">Just now</div>
@@ -366,27 +434,33 @@
                     <span>What mood are you in?</span>
                 </div>
                 <div class="suggestions-list">
-                    <button class="suggestion-btn" onclick="sendQuickMessage('It\'s raining outside and I want something melancholy and beautiful')">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('It\'s raining outside and I want something melancholy and beautiful')">
                         <i class="fa-solid fa-cloud-rain"></i>
                         Rainy &amp; Melancholy
                     </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('I need to escape reality completely — take me to another world')">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I need to escape reality completely — take me to another world')">
                         <i class="fa-solid fa-wand-sparkles"></i>
                         Escape Reality
                     </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('My heart is a little heavy today, I need something that understands grief')">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('My heart is a little heavy today, I need something that understands grief')">
                         <i class="fa-solid fa-heart"></i>
                         Something Healing
                     </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a thriller that keeps me up at night, unable to put it down')">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I want a thriller that keeps me up at night, unable to put it down')">
                         <i class="fa-solid fa-magnifying-glass"></i>
                         Can’t-Put-Down Thriller
                     </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('I want something cozy, like tea and blankets on a Sunday morning')">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I want something cozy, like tea and blankets on a Sunday morning')">
                         <i class="fa-solid fa-mug-hot"></i>
                         Cozy &amp; Comforting
                     </button>
-                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a book that completely changed how someone sees the world')">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I want a book that completely changed how someone sees the world')">
                         <i class="fa-solid fa-lightbulb"></i>
                         Mind-Expanding
                     </button>

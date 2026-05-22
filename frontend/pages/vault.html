@@ -18,8 +18,10 @@
 
   <script>
     (function () {
-      const theme = localStorage.getItem('bibliodrift_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
     })();
   </script>
 
@@ -699,7 +701,7 @@
       
       function updateThemeToggleButton(currentTheme) {
         const icon = themeToggle.querySelector("i");
-        if (currentTheme === "night" || currentTheme === "dark") {
+        if (currentTheme === "night") {
           icon.className = "fa-solid fa-sun";
           themeToggle.setAttribute("title", "Switch to Light Mode");
         } else {
@@ -712,9 +714,13 @@
 
       themeToggle.addEventListener("click", () => {
         const activeTheme = document.documentElement.getAttribute('data-theme');
-        const nextTheme = (activeTheme === "dark" || activeTheme === "night") ? "light" : "dark";
+        const nextTheme = (activeTheme === "night") ? "light" : "night";
         
-        document.documentElement.setAttribute('data-theme', nextTheme);
+        if (nextTheme === "night") {
+          document.documentElement.setAttribute('data-theme', 'night');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
         localStorage.setItem('bibliodrift_theme', nextTheme);
         if (typeof restoreTheme === 'function') restoreTheme();
         updateThemeToggleButton(nextTheme);
@@ -851,193 +857,230 @@
           return;
         }
 
-        localBooks.forEach((book, idx) => {
-          // Build the book cover spine node - STRICTLY hardbound color fill
-          const spineNode = document.createElement("div");
-          spineNode.className = "spine-spine-node";
-          spineNode.setAttribute("data-id", book.id);
-          spineNode.style.zIndex = idx + 5;
-          spineNode.style.backgroundColor = book.coverColor || '#4a2810';
+        let vaultRenderIndex = 0;
+        const vaultChunkSize = window.CONFIG?.CHUNK_SIZE || 20;
 
-          spineNode.innerHTML = `<div class="spine-vertical-text">${DOMPurify.sanitize(book.title)}</div>`;
+        if (shelfRow._vaultObserver) {
+            shelfRow._vaultObserver.disconnect();
+        }
 
-          // Manage metadata tags mapping
-          const tagsArray = book.genre ? book.genre.split(',').map(t => t.trim()).filter(t => t !== "") : ["Literature"];
-          let tagPillsHtml = tagsArray.map(tag => `<span class="tag-bubble"><i class="fa-solid fa-tag" style="font-size:0.65rem; margin-right:4px;"></i>${tag}</span>`).join('');
+        const sentinel = document.createElement('div');
+        sentinel.style.width = '100%';
+        sentinel.style.height = '20px';
 
-          const metaDrawer = document.createElement("div");
-          metaDrawer.className = "shelf-isolated-meta-drawer";
-          metaDrawer.id = `drawer-sheet-${book.id}`;
-
-          let aiBadge = book.elaraScanStatus === "PASSED" 
-            ? `<span class="ai-status-badge ai-status-passed"><i class="fa-solid fa-shield-halved"></i> Elara Checked</span>`
-            : `<span class="ai-status-badge ai-status-failed"><i class="fa-solid fa-triangle-exclamation"></i> Flagged Asset</span>`;
-
-          // Background Cover Logic Configuration
-          const hasCoverImage = book.coverUrl && book.coverUrl.trim() !== "";
-          const dynamicCoverStyle = hasCoverImage 
-            ? `background-image: url('${encodeURI(book.coverUrl)}'); background-size: cover; background-position: center;` 
-            : `background-color: ${book.coverColor || '#4a2810'}; display: flex; flex-direction: column; justify-content: space-between; padding: 25px 20px; box-sizing: border-box; text-align: left;`;
-
-          // Typographic Fallback Block Builder
-          const titleRenderBlock = hasCoverImage 
-            ? `<div class="cover-title-display" id="cover-title-render-${book.id}" style="display: none;">${DOMPurify.sanitize(book.title)}</div>`
-            : `
-              <div style="width: 100%;" class="fallback-meta-wrapper-${book.id}">
-                <div class="cover-title-display" id="cover-title-render-${book.id}" style="font-family: 'Playfair Display', serif; font-size: 1.35rem; color: #ffffff; margin-bottom: 6px; font-weight: 700; line-height: 1.3; word-break: break-word;">
-                  ${DOMPurify.sanitize(book.title)}
-                </div>
-                <div class="cover-author-display" id="cover-author-render-${book.id}" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); font-style: italic; word-break: break-word;">
-                  by ${DOMPurify.sanitize(book.author)}
-                </div>
-              </div>
-              <div style="font-size: 0.65rem; color: rgba(255, 255, 255, 0.4); font-family: sans-serif; letter-spacing: 1.5px; font-weight: bold; text-transform: uppercase; margin-top: auto;">
-                BiblioDrift Vault
-              </div>
-            `;
-
-          // Clean Integrated Front-Cover Split-Form Component Architecture
-          metaDrawer.innerHTML = `
-            <div class="vault-split-card">
-              
-              <div class="vault-cover-preview-canvas" style="${dynamicCoverStyle}">
-                ${titleRenderBlock}
-              </div>
-
-              <div class="vault-essential-details-pane">
-                <div>
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding-bottom:10px; border-bottom:1px solid var(--border-color);">
-                    <div class="tag-container-row" id="tag-row-target-${book.id}">
-                      ${tagPillsHtml}
-                    </div>
-                    <div>${aiBadge}</div>
-                  </div>
-
-                  <div class="vault-form-grid" style="gap:14px;">
-                    <div class="vault-input-group">
-                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Asset Title Label</label>
-                      <input type="text" class="editable-input-node inline-edit-title" value="${book.title}" style="font-family:'Playfair Display', serif; font-size:1.25rem; font-weight:600; border-bottom:1px solid var(--border-color);" placeholder="Book Title">
-                    </div>
-                    <div class="vault-input-group">
-                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Author Signature</label>
-                      <input type="text" class="editable-input-node inline-edit-author" value="${book.author}" style="font-size:1.02rem; font-style:italic; color:var(--text-muted);" placeholder="Author Name">
-                    </div>
-                    <div class="vault-input-group full-width-field">
-                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Genre Field Config <span class="requirement-hint">(Commas)</span></label>
-                      <input type="text" class="editable-input-node inline-edit-genre" value="${book.genre || ''}" style="border-bottom:1px solid var(--border-color); font-size:0.9rem;" placeholder="e.g. Fiction, Cyberpunk">
-                    </div>
-                    <div class="vault-input-group full-width-field">
-                      <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Annotations & Context Notes</label>
-                      <textarea class="editable-input-node inline-edit-desc" rows="2" style="line-height:1.5; font-size:0.9rem;" placeholder="Add private contextual details...">${book.desc || ''}</textarea>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:15px; display:flex; align-items:center; gap:6px;">
-                    <i class="fa-solid fa-paperclip"></i> <span>Sandbox Block: <strong>${book.filename}</strong></span>
-                  </div>
-
-                  <div class="vault-action-row" style="margin-top:12px; padding-top:12px;">
-                    <div style="display:flex; gap:8px;">
-                      <button class="privacy-toggle-btn action-privacy-node" style="padding: 8px 14px; font-size:0.8rem;">
-                        <i class="fa-solid ${book.privacy === 'private' ? 'fa-lock' : 'fa-globe'}"></i> ${book.privacy.toUpperCase()}
-                      </button>
-                      <button class="btn-delete-vault action-delete-node" style="padding: 8px 14px; font-size:0.8rem;">
-                        <i class="fa-solid fa-trash-can"></i> Delete
-                      </button>
-                    </div>
-                    <button class="btn-read-book action-open-reader-node" style="padding: 8px 16px; font-size:0.82rem;">
-                      <i class="fa-solid fa-book-open"></i> Open Interactive Reader
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          `;
-
-          // Handle Drawer Display State Toggles
-          spineNode.addEventListener("click", () => {
-            const allDrawers = document.querySelectorAll(".shelf-isolated-meta-drawer");
-            const allSpines = document.querySelectorAll(".spine-spine-node");
-            const targetDrawer = document.getElementById(`drawer-sheet-${book.id}`);
-
-            if(spineNode.classList.contains("active-open")) {
-              spineNode.classList.remove("active-open");
-              targetDrawer.style.display = "none";
-            } else {
-              allSpines.forEach(s => s.classList.remove("active-open"));
-              allDrawers.forEach(d => d.style.display = "none");
-              
-              spineNode.classList.add("active-open");
-              targetDrawer.style.display = "block";
-              targetDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        shelfRow._vaultObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                renderChunk();
             }
-          });
-
-          // Metadata Sync Listeners
-          const titleIn = metaDrawer.querySelector(".inline-edit-title");
-          const authorIn = metaDrawer.querySelector(".inline-edit-author");
-          const genreIn = metaDrawer.querySelector(".inline-edit-genre");
-          const descIn = metaDrawer.querySelector(".inline-edit-desc");
-
-          const fireSyncToDB = async () => {
-            const t = DOMPurify.sanitize(titleIn.value.trim());
-            const a = DOMPurify.sanitize(authorIn.value.trim());
-            const g = DOMPurify.sanitize(genreIn.value.trim());
-            const d = DOMPurify.sanitize(descIn.value.trim());
-
-            if(t) {
-              await db.vaultBooks.update(book.id, { title: t, author: a, genre: g, desc: d });
-              
-              // Synchronize text live across Spine text node
-              spineNode.querySelector(".spine-vertical-text").textContent = t;
-              
-              // Synchronize text live inside the typographic canvas container
-              const coverTitleNode = document.getElementById(`cover-title-render-${book.id}`);
-              if (coverTitleNode) {
-                coverTitleNode.textContent = t;
-              }
-              const coverAuthorNode = document.getElementById(`cover-author-render-${book.id}`);
-              if (coverAuthorNode && a) {
-                coverAuthorNode.textContent = `by ${a}`;
-              }
-
-              const updatedTags = g ? g.split(',').map(x => x.trim()).filter(x => x !== "") : ["Literature"];
-              document.getElementById(`tag-row-target-${book.id}`).innerHTML = updatedTags.map(tag => `<span class="tag-bubble"><i class="fa-solid fa-tag" style="font-size:0.65rem; margin-right:4px;"></i>${tag}</span>`).join('');
-            }
-          };
-
-          titleIn.addEventListener("blur", fireSyncToDB);
-          authorIn.addEventListener("blur", fireSyncToDB);
-          genreIn.addEventListener("blur", fireSyncToDB);
-          descIn.addEventListener("blur", fireSyncToDB);
-
-          // Privacy Toggle Layer
-          metaDrawer.querySelector(".action-privacy-node").addEventListener("click", async () => {
-            const nextPrivacy = book.privacy === "private" ? "public" : "private";
-            await db.vaultBooks.update(book.id, { privacy: nextPrivacy });
-            await renderVaultShelf();
-            document.querySelector(`.spine-spine-node[data-id="${book.id}"]`).click();
-          });
-
-          // Delete Layer
-          metaDrawer.querySelector(".action-delete-node").addEventListener("click", async () => {
-            if(confirm(`Purge "${book.title}" from local encrypted sector loops entirely?`)) {
-              await db.vaultBooks.delete(book.id);
-              await renderVaultShelf();
-            }
-          });
-
-          // Interactive Reader Launch Configuration
-          metaDrawer.querySelector(".action-open-reader-node").addEventListener("click", () => {
-            launchRealisticReader(book);
-          });
-
-          shelfRow.appendChild(spineNode);
-          drawerMetaTarget.appendChild(metaDrawer);
         });
+
+        function renderChunk() {
+            const chunk = localBooks.slice(vaultRenderIndex, vaultRenderIndex + vaultChunkSize);
+            if (chunk.length === 0) return;
+
+            if (sentinel.parentNode) {
+                shelfRow.removeChild(sentinel);
+            }
+
+            chunk.forEach((book, idx) => {
+              const realIdx = vaultRenderIndex + idx;
+              // Build the book cover spine node - STRICTLY hardbound color fill
+              const spineNode = document.createElement("div");
+              spineNode.className = "spine-spine-node";
+              spineNode.setAttribute("data-id", book.id);
+              spineNode.style.zIndex = realIdx + 5;
+              spineNode.style.backgroundColor = book.coverColor || '#4a2810';
+
+              spineNode.innerHTML = `<div class="spine-vertical-text">${DOMPurify.sanitize(book.title)}</div>`;
+
+              // Manage metadata tags mapping
+              const tagsArray = book.genre ? book.genre.split(',').map(t => t.trim()).filter(t => t !== "") : ["Literature"];
+              let tagPillsHtml = tagsArray.map(tag => `<span class="tag-bubble"><i class="fa-solid fa-tag" style="font-size:0.65rem; margin-right:4px;"></i>${tag}</span>`).join('');
+
+              const metaDrawer = document.createElement("div");
+              metaDrawer.className = "shelf-isolated-meta-drawer";
+              metaDrawer.id = `drawer-sheet-${book.id}`;
+
+              let aiBadge = book.elaraScanStatus === "PASSED" 
+                ? `<span class="ai-status-badge ai-status-passed"><i class="fa-solid fa-shield-halved"></i> Elara Checked</span>`
+                : `<span class="ai-status-badge ai-status-failed"><i class="fa-solid fa-triangle-exclamation"></i> Flagged Asset</span>`;
+
+              // Background Cover Logic Configuration
+              const hasCoverImage = book.coverUrl && book.coverUrl.trim() !== "";
+              const dynamicCoverStyle = hasCoverImage 
+                ? `background-image: url('${encodeURI(book.coverUrl)}'); background-size: cover; background-position: center;` 
+                : `background-color: ${book.coverColor || '#4a2810'}; display: flex; flex-direction: column; justify-content: space-between; padding: 25px 20px; box-sizing: border-box; text-align: left;`;
+
+              // Typographic Fallback Block Builder
+              const titleRenderBlock = hasCoverImage 
+                ? `<div class="cover-title-display" id="cover-title-render-${book.id}" style="display: none;">${DOMPurify.sanitize(book.title)}</div>`
+                : `
+                  <div style="width: 100%;" class="fallback-meta-wrapper-${book.id}">
+                    <div class="cover-title-display" id="cover-title-render-${book.id}" style="font-family: 'Playfair Display', serif; font-size: 1.35rem; color: #ffffff; margin-bottom: 6px; font-weight: 700; line-height: 1.3; word-break: break-word;">
+                      ${DOMPurify.sanitize(book.title)}
+                    </div>
+                    <div class="cover-author-display" id="cover-author-render-${book.id}" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); font-style: italic; word-break: break-word;">
+                      by ${DOMPurify.sanitize(book.author)}
+                    </div>
+                  </div>
+                  <div style="font-size: 0.65rem; color: rgba(255, 255, 255, 0.4); font-family: sans-serif; letter-spacing: 1.5px; font-weight: bold; text-transform: uppercase; margin-top: auto;">
+                    BiblioDrift Vault
+                  </div>
+                `;
+
+              // Clean Integrated Front-Cover Split-Form Component Architecture
+              metaDrawer.innerHTML = `
+                <div class="vault-split-card">
+                  
+                  <div class="vault-cover-preview-canvas" style="${dynamicCoverStyle}">
+                    ${titleRenderBlock}
+                  </div>
+
+                  <div class="vault-essential-details-pane">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding-bottom:10px; border-bottom:1px solid var(--border-color);">
+                        <div class="tag-container-row" id="tag-row-target-${book.id}">
+                          ${tagPillsHtml}
+                        </div>
+                        <div>${aiBadge}</div>
+                      </div>
+
+                      <div class="vault-form-grid" style="gap:14px;">
+                        <div class="vault-input-group">
+                          <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Asset Title Label</label>
+                          <input type="text" class="editable-input-node inline-edit-title" value="${book.title}" style="font-family:'Playfair Display', serif; font-size:1.25rem; font-weight:600; border-bottom:1px solid var(--border-color);" placeholder="Book Title">
+                        </div>
+                        <div class="vault-input-group">
+                          <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Author Signature</label>
+                          <input type="text" class="editable-input-node inline-edit-author" value="${book.author}" style="font-size:1.02rem; font-style:italic; color:var(--text-muted);" placeholder="Author Name">
+                        </div>
+                        <div class="vault-input-group full-width-field">
+                          <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Genre Field Config <span class="requirement-hint">(Commas)</span></label>
+                          <input type="text" class="editable-input-node inline-edit-genre" value="${book.genre || ''}" style="border-bottom:1px solid var(--border-color); font-size:0.9rem;" placeholder="e.g. Fiction, Cyberpunk">
+                        </div>
+                        <div class="vault-input-group full-width-field">
+                          <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px;">Annotations & Context Notes</label>
+                          <textarea class="editable-input-node inline-edit-desc" rows="2" style="line-height:1.5; font-size:0.9rem;" placeholder="Add private contextual details...">${book.desc || ''}</textarea>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style="font-size:0.72rem; color:var(--text-muted); margin-top:15px; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-paperclip"></i> <span>Sandbox Block: <strong>${book.filename}</strong></span>
+                      </div>
+
+                      <div class="vault-action-row" style="margin-top:12px; padding-top:12px;">
+                        <div style="display:flex; gap:8px;">
+                          <button class="privacy-toggle-btn action-privacy-node" style="padding: 8px 14px; font-size:0.8rem;">
+                            <i class="fa-solid ${book.privacy === 'private' ? 'fa-lock' : 'fa-globe'}"></i> ${book.privacy.toUpperCase()}
+                          </button>
+                          <button class="btn-delete-vault action-delete-node" style="padding: 8px 14px; font-size:0.8rem;">
+                            <i class="fa-solid fa-trash-can"></i> Delete
+                          </button>
+                        </div>
+                        <button class="btn-read-book action-open-reader-node" style="padding: 8px 16px; font-size:0.82rem;">
+                          <i class="fa-solid fa-book-open"></i> Open Interactive Reader
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              `;
+
+              // Handle Drawer Display State Toggles
+              spineNode.addEventListener("click", () => {
+                const allDrawers = document.querySelectorAll(".shelf-isolated-meta-drawer");
+                const allSpines = document.querySelectorAll(".spine-spine-node");
+                const targetDrawer = document.getElementById(`drawer-sheet-${book.id}`);
+
+                if(spineNode.classList.contains("active-open")) {
+                  spineNode.classList.remove("active-open");
+                  targetDrawer.style.display = "none";
+                } else {
+                  allSpines.forEach(s => s.classList.remove("active-open"));
+                  allDrawers.forEach(d => d.style.display = "none");
+                  
+                  spineNode.classList.add("active-open");
+                  targetDrawer.style.display = "block";
+                  targetDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+              });
+
+              // Metadata Sync Listeners
+              const titleIn = metaDrawer.querySelector(".inline-edit-title");
+              const authorIn = metaDrawer.querySelector(".inline-edit-author");
+              const genreIn = metaDrawer.querySelector(".inline-edit-genre");
+              const descIn = metaDrawer.querySelector(".inline-edit-desc");
+
+              const fireSyncToDB = async () => {
+                const t = DOMPurify.sanitize(titleIn.value.trim());
+                const a = DOMPurify.sanitize(authorIn.value.trim());
+                const g = DOMPurify.sanitize(genreIn.value.trim());
+                const d = DOMPurify.sanitize(descIn.value.trim());
+
+                if(t) {
+                  await db.vaultBooks.update(book.id, { title: t, author: a, genre: g, desc: d });
+                  
+                  // Synchronize text live across Spine text node
+                  spineNode.querySelector(".spine-vertical-text").textContent = t;
+                  
+                  // Synchronize text live inside the typographic canvas container
+                  const coverTitleNode = document.getElementById(`cover-title-render-${book.id}`);
+                  if (coverTitleNode) {
+                    coverTitleNode.textContent = t;
+                  }
+                  const coverAuthorNode = document.getElementById(`cover-author-render-${book.id}`);
+                  if (coverAuthorNode && a) {
+                    coverAuthorNode.textContent = `by ${a}`;
+                  }
+
+                  const updatedTags = g ? g.split(',').map(x => x.trim()).filter(x => x !== "") : ["Literature"];
+                  document.getElementById(`tag-row-target-${book.id}`).innerHTML = updatedTags.map(tag => `<span class="tag-bubble"><i class="fa-solid fa-tag" style="font-size:0.65rem; margin-right:4px;"></i>${tag}</span>`).join('');
+                }
+              };
+
+              titleIn.addEventListener("blur", fireSyncToDB);
+              authorIn.addEventListener("blur", fireSyncToDB);
+              genreIn.addEventListener("blur", fireSyncToDB);
+              descIn.addEventListener("blur", fireSyncToDB);
+
+              // Privacy Toggle Layer
+              metaDrawer.querySelector(".action-privacy-node").addEventListener("click", async () => {
+                const nextPrivacy = book.privacy === "private" ? "public" : "private";
+                await db.vaultBooks.update(book.id, { privacy: nextPrivacy });
+                await renderVaultShelf();
+                document.querySelector(`.spine-spine-node[data-id="${book.id}"]`).click();
+              });
+
+              // Delete Layer
+              metaDrawer.querySelector(".action-delete-node").addEventListener("click", async () => {
+                if(confirm(`Purge "${book.title}" from local encrypted sector loops entirely?`)) {
+                  await db.vaultBooks.delete(book.id);
+                  await renderVaultShelf();
+                }
+              });
+
+              // Interactive Reader Launch Configuration
+              metaDrawer.querySelector(".action-open-reader-node").addEventListener("click", () => {
+                launchRealisticReader(book);
+              });
+
+              shelfRow.appendChild(spineNode);
+              drawerMetaTarget.appendChild(metaDrawer);
+            });
+
+            vaultRenderIndex += vaultChunkSize;
+            if (vaultRenderIndex < localBooks.length) {
+                shelfRow.appendChild(sentinel);
+                shelfRow._vaultObserver.observe(sentinel);
+            } else if (shelfRow._vaultObserver) {
+                shelfRow._vaultObserver.disconnect();
+            }
+        }
+
+        renderChunk();
       }
 
       // Read Actual Binary Document Stream from Database & Output to Viewer Workspace
