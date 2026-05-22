@@ -72,24 +72,24 @@ const THEMES = {
     },
     "cozy": {
         light: {
-            "--theme-bg": "#fcf9f2",
+            "--theme-bg": "#fdf5f3",
             "--theme-surface": "#ffffff",
-            "--theme-accent": "#b68d40",
-            "--theme-accent-light": "#d4a373",
-            "--theme-text": "#4a3728",
-            "--theme-text-muted": "#8b7355",
-            "--theme-border": "#e9e4d9",
-            "--theme-pill-bg": "#f7f3e9"
+            "--theme-accent": "#c24b22",
+            "--theme-accent-light": "#e07a5f",
+            "--theme-text": "#4a2e28",
+            "--theme-text-muted": "#8b5a50",
+            "--theme-border": "#e9d9d5",
+            "--theme-pill-bg": "#f7ebe8"
         },
         dark: {
-            "--theme-bg": "#1c140e",
-            "--theme-surface": "#2d2118",
-            "--theme-accent": "#d4a373",
-            "--theme-accent-light": "#faedcb",
-            "--theme-text": "#fcf9f2",
-            "--theme-text-muted": "#c8b09d",
-            "--theme-border": "#4a3728",
-            "--theme-pill-bg": "#3e2f23"
+            "--theme-bg": "#1c0f0a",
+            "--theme-surface": "#2d1812",
+            "--theme-accent": "#e07a5f",
+            "--theme-accent-light": "#f4a261",
+            "--theme-text": "#fdf5f3",
+            "--theme-text-muted": "#c89f95",
+            "--theme-border": "#4a2e28",
+            "--theme-pill-bg": "#3e2018"
         }
     },
     "dark-academia": {
