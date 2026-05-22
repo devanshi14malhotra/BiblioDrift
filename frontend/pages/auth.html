@@ -13,6 +13,17 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth | BiblioDrift</title>
+    <!-- SEO & Open Graph meta tags -->
+    <meta name="description"
+        content="Sign in or create your BiblioDrift account to start discovering books by mood, saving your favourites, and chatting with Elara, your AI reading companion." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/auth" />
+    <meta property="og:title" content="Sign In | BiblioDrift" />
+    <meta property="og:description"
+        content="Sign in or create your BiblioDrift account to start discovering books by mood, saving your favourites, and chatting with Elara, your AI reading companion." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
@@ -379,53 +390,46 @@
                     </div>
 
                     <div class="input-group">
-                        <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required autocomplete="email">
+                        <input type="email" id="email" class="auth-input" placeholder="Email Address"
+                            value="demo@bibliodrift.com" required autocomplete="email">
                     </div>
 
                     <div class="input-group">
-                        <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123" required autocomplete="current-password">
+                        <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123"
+                            required autocomplete="current-password">
                     </div>
 
+                    <!-- 
+                        =============================================================
+                        SECURITY COMPLIANCE: CSRF TOKEN FIELD
+                        =============================================================
+                        This hidden input is dynamically populated with a one-time 
+                        security token provided by the backend. It protects against
+                        Cross-Site Request Forgery attacks by ensuring that the 
+                        form submission originated from this specific application 
+                        instance.
+                        =============================================================
+                    -->
+                    <input type="hidden" id="csrf_token" name="csrf_token" value="">
+
+                    <!-- Primary Action Button -->
                     <button type="submit" id="submitBtn" class="auth-btn">
                         Sign In
                     </button>
+
+                    <!-- Google Authentication -->
+                    <button type="button" id="googleAuthBtn" class="google-auth-btn">
+                        <i class="fa-brands fa-google"></i>
+                        <span>Sign in with Google</span>
+                    </button>
                 </form>
 
-                <div class="auth-footer">
+                <!-- Mode Toggle Link -->
+                <div class="auth-footer" style="margin-top: 1.5rem;">
                     <span id="toggleText" class="toggle-link">
                         No account? Create one.
                     </span>
                 </div>
-                
-                <!-- 
-                    =============================================================
-                    SECURITY COMPLIANCE: CSRF TOKEN FIELD
-                    =============================================================
-                    This hidden input is dynamically populated with a one-time 
-                    security token provided by the backend. It protects against
-                    Cross-Site Request Forgery attacks by ensuring that the 
-                    form submission originated from this specific application 
-                    instance.
-                    =============================================================
-                -->
-                <input type="hidden" id="csrf_token" name="csrf_token" value="">
-                
-                <!-- Primary Action Button -->
-                <button type="submit" id="submitBtn" class="auth-btn">
-                    Sign In
-                </button>
-
-                <button type="button" id="googleAuthBtn" class="google-auth-btn">
-                    <i class="fa-brands fa-google"></i>
-                    <span>Sign in with Google</span>
-                </button>
-            </form>
-            
-            <!-- Mode Toggle Link -->
-            <div class="auth-footer" style="margin-top: 1.5rem;">
-                <span id="toggleText" class="toggle-link">
-                    No account? Create one.
-                </span>
             </div>
         </section>
     </main>
@@ -545,11 +549,11 @@
                     method: 'GET',
                     credentials: 'include'
                 });
-                
+
                 if (response.ok) {
                     const result = await response.json();
                     const token = result.data?.csrf_token;
-                    
+
                     if (token) {
                         const csrfInput = document.getElementById('csrf_token');
                         if (csrfInput) {

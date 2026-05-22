@@ -292,6 +292,17 @@ async function toggleOfflineBook(book, buttonElement) {
         console.error("Failed to alter local shelf cache:", error);
     }
 }
+function debounce(func, delay) {
+    let timeout;
+
+    return function (...args) {
+        clearTimeout(timeout);
+
+        timeout = setTimeout(() => {
+            func.apply(this, args);
+        }, delay);
+    };
+}
 class BookshelfRenderer3D {
     constructor() {
         this.tooltip = document.getElementById('book-tooltip');
@@ -987,14 +998,21 @@ class BookshelfRenderer3D {
 
         // Search listener for "Search for a feeling..."
         const searchInput = document.getElementById('searchInput');
+
         if (searchInput) {
-            this.addManagedListener(searchInput, 'input', (e) => {
-                this.searchQuery = e.target.value.toLowerCase();
+            const debouncedSearch = debounce((value) => {
+                console.log("Debounced fired:", value);
+                this.searchQuery = value.toLowerCase();
+
                 if (this.currentView === 'shelves') {
                     this.refreshShelves();
                 } else {
                     this.renderConstellation();
                 }
+            }, 300);
+
+            this.addManagedListener(searchInput, 'input', (e) => {
+                debouncedSearch(e.target.value);
             });
         }
 
@@ -1970,15 +1988,59 @@ spine.addEventListener('blur', () => this.hideTooltip());
                 window.renderer.fetchAIVibe(book.title, book.author, book.description || "").then(vibe => {
                     if (vibe) {
                         const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
-                        aiNoteEl.innerHTML = `<p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); font-style: italic;">"${cleanVibe}"</p>`;
+
+                        const primaryMood = book.moods?.[0];
+
+                        aiNoteEl.innerHTML = `
+                            <div class="bookseller-note-card fade-in-note">
+
+                                <div class="bookseller-note-header">
+                                    <span class="bookseller-note-label">
+                                        ✨ Bookseller's Note
+                                    </span>
+
+                                    ${primaryMood ? `
+                                        <span class="immersive-mood-badge">
+                                            <i class="fa-solid ${this.getMoodIcon(primaryMood)}"></i>
+                                            ${primaryMood}
+                                        </span>
+                                    ` : ''}
+                                </div>
+
+                                <p class="bookseller-note-text">
+                                    "${cleanVibe}"
+                                </p>
+
+                                <div class="bookseller-context-hint">
+                                    Why this book was shown to you
+                                </div>
+
+                            </div>
+                        `;
                     } else {
-                        aiNoteEl.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">AI is contemplating the deep themes of this journey...</p>`;
+                        aiNoteEl.innerHTML = `
+                            <div class="bookseller-note-card fade-in-note">
+                                <p class="bookseller-note-text">
+                                    AI is contemplating the deep themes of this journey...
+                                </p>
+                            </div>
+                        `;
                     }
                 });
             } else {
                 // Mock vibe for offline/fallback
                 setTimeout(() => {
-                    aiNoteEl.innerHTML = `<p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); font-style: italic;">"A journey that resonates with the soul, perfect for quiet introspection."</p>`;
+                    aiNoteEl.innerHTML = `
+                        <div class="bookseller-note-card fade-in-note">
+                            <div class="bookseller-note-label">
+                                ✨ Bookseller's Note
+                            </div>
+
+                            <p class="bookseller-note-text">
+                                "A journey that resonates with the soul, perfect for quiet introspection."
+                            </p>
+                        </div>
+                    `;
                 }, 800);
             }
         }

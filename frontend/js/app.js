@@ -3004,7 +3004,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                  vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
                  fallbackQuery: 'subject:gothic fiction subject:campus'
             },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' }
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
         ];
         (async () => {
             try {

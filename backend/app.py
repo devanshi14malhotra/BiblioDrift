@@ -25,8 +25,8 @@ from datetime import datetime, timedelta, timezone
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from sanitizer import sanitize_payload
-from reader_identity.routes import reader_identity_bp
+from backend.sanitizer import sanitize_payload
+from backend.reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')

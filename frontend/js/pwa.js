@@ -148,7 +148,14 @@
             </div>
         `;
 
-        document.querySelector("main").appendChild(banner);
+        const footer = document.querySelector(".main-footer");
+        if (footer) {
+            footer.parentNode.insertBefore(banner, footer);
+        } else {
+            const main = document.querySelector("main");
+            if (main) main.appendChild(banner);
+            else document.body.appendChild(banner);
+        }
 
         // Animate in
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));

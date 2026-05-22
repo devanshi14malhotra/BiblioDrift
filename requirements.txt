@@ -35,7 +35,7 @@ textblob==0.17.1
 # Web Scraping
 requests>=2.32.2
 beautifulsoup4==4.12.2
-lxml==4.9.3
+lxml>=4.9.3
 
 # Data Processing
 numpy>=1.26.0

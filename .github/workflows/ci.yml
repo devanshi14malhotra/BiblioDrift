@@ -1,0 +1,59 @@
+name: CI – Run Tests
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov
+          pip install flask-wtf bleach Pillow beautifulsoup4 "pydantic[email]" pytest pytest-cov
+
+      - name: Run pytest
+        env:
+          GOOGLE_BOOKS_API_KEY: "ci-fake-key"
+          OPENAI_API_KEY: "ci-fake-key"
+          GROQ_API_KEY: "ci-fake-key"
+          GEMINI_API_KEY: "ci-fake-key"
+          FLASK_ENV: testing
+          PYTHONPATH: ".:backend"
+        run: |
+          python -m pytest tests/ \
+            --ignore=tests/test_llm.py \
+            --ignore=tests/test_mood_improvements.py \
+            --ignore=tests/test_mood_cache_db.py \
+            --ignore=tests/test_category_cache.py \
+            --ignore=tests/test_env_validation.py \
+            --ignore=tests/test_purchase_links.py \
+            -v --tb=short --cov=backend
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r backend/requirements.txt
+          pip install flask-wtf bleach Pillow pytest pytest-cov
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r backend/requirements.txt
+          pip install flask-wtf bleach Pillow beautifulsoup4 pytest pytest-cov
