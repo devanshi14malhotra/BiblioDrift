@@ -646,12 +646,14 @@ def _validate_jwt_secret_startup():
 _validate_jwt_secret_startup()
 
 @app.route('/api/v1/config', methods=['GET'])
+@limiter.exempt
 def get_config():
-    """Serve public configuration values like Google Books API Key."""
-    return jsonify({
-        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
-        "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
+    response = jsonify({
+        "google_books_key": os.getenv("GOOGLE_BOOKS_API_KEY", ""),
+        "google_books_key_secondary": os.getenv("GOOGLE_BOOKS_API_KEY_SECONDARY", "")
     })
+
+    return response
 
 # =====================================================================
 # ENDPOINT: CSRF Token Retrieval
@@ -783,10 +785,14 @@ def handle_mood_tags():
         logger.error(f"Unexpected error in handle_mood_tags: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "handle_mood_tags")
 
-@app.route('/api/v1/mood-search', methods=['POST'])
+@app.route('/api/v1/mood-search', methods=['POST', 'OPTIONS'])
 @rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe with improved query parsing."""
+    # Handle CORS preflight request
+    if request.method == 'OPTIONS':
+        return '', 204
+
     from exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
@@ -2446,7 +2452,6 @@ if __name__ == '__main__':
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
     get_jwt_identity, set_access_cookies, unset_jwt_cookies
@@ -2749,14 +2754,6 @@ def _validate_jwt_secret_startup():
 
 
 _validate_jwt_secret_startup()
-
-@app.route('/api/v1/config', methods=['GET'])
-def get_config():
-    """Serve public configuration values like Google Books API Key."""
-    return jsonify({
-        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
-        "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
-    })
 
 @app.route('/')
 def index():
@@ -4434,5 +4431,4 @@ if __name__ == '__main__':
         logger.info("  POST /api/v1/chat - Chat with bookseller")
         logger.info("  GET  /api/v1/health - Health check")
 
-    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
     app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)

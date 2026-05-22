@@ -48,15 +48,65 @@ if (typeof window !== 'undefined') {
     window.MOOD_API_BASE = MOOD_API_BASE;
     window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
+        // ─── In-memory response cache (survives page session) ──────────────
+        _cache: new Map(),
+        _CACHE_TTL_MS: 10 * 60 * 1000, // 10 minutes
+
+        // ─── Sequential request queue with minimum inter-request delay ─────
+        _queue: Promise.resolve(),
+        _MIN_DELAY_MS: 300, // ms between outgoing requests
+
         setKeys(keys) {
-            CONFIG.GOOGLE_BOOKS_API_KEYS = Array.from(new Set((keys || []).map(key => String(key || '').trim()).filter(Boolean)));
+            CONFIG.GOOGLE_BOOKS_API_KEYS = Array.from(
+                new Set((keys || []).map(key => String(key || '').trim()).filter(Boolean))
+            );
         },
+
         getKeys() {
             return CONFIG.GOOGLE_BOOKS_API_KEYS || [];
         },
+
+        /** Returns cached data if still fresh, otherwise null. */
+        _getCache(cacheKey) {
+            const entry = this._cache.get(cacheKey);
+            if (!entry) return null;
+            if (Date.now() - entry.timestamp > this._CACHE_TTL_MS) {
+                this._cache.delete(cacheKey);
+                return null;
+            }
+            return entry.data;
+        },
+
+        /** Stores a response in the in-memory cache. */
+        _setCache(cacheKey, data) {
+            this._cache.set(cacheKey, { data, timestamp: Date.now() });
+        },
+
+        /**
+         * Public entry-point. Checks cache first, then serialises the real
+         * HTTP call through _queue so requests go out one-at-a-time with a
+         * minimum _MIN_DELAY_MS gap — preventing 429 burst errors.
+         */
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
+            const cacheKey = `${query}|${maxResults}|${extraParams}`;
+
+            const cached = this._getCache(cacheKey);
+            if (cached) return cached;
+
+            // Chain onto the existing queue so calls are serialised.
+            const result = await (this._queue = this._queue.then(async () => {
+                await new Promise(r => setTimeout(r, this._MIN_DELAY_MS));
+                return this._doFetch(query, maxResults, extraParams);
+            }));
+
+            this._setCache(cacheKey, result);
+            return result;
+        },
+
+        /** Internal: performs the actual fetch with key-rotation on 429/403/503. */
+        async _doFetch(query, maxResults, extraParams) {
             const keys = this.getKeys();
             const candidates = keys.length > 0 ? keys : [null];
             let lastError = null;
@@ -74,6 +124,8 @@ if (typeof window !== 'undefined') {
 
                     const retryableStatuses = [429, 403, 503];
                     if (retryableStatuses.includes(response.status) && index < candidates.length - 1) {
+                        // Brief pause before trying the next key
+                        await new Promise(r => setTimeout(r, 500));
                         lastError = new Error(`Google Books API returned ${response.status}`);
                         continue;
                     }
@@ -81,9 +133,7 @@ if (typeof window !== 'undefined') {
                     throw new Error(`Google Books API returned ${response.status}`);
                 } catch (error) {
                     lastError = error;
-                    if (index < candidates.length - 1) {
-                        continue;
-                    }
+                    if (index < candidates.length - 1) continue;
                 }
             }
 

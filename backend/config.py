@@ -90,7 +90,7 @@ class RateLimitConfig:
         """Create rate limit config from environment variables."""
         return cls(
             window_seconds=int(os.getenv('RATE_LIMIT_WINDOW', '60')),
-            max_requests=int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30')),
+            max_requests=int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '20')),
             enabled=os.getenv('RATE_LIMIT_ENABLED', 'True').lower() == 'true'
         )
 
@@ -166,7 +166,10 @@ class GoogleOAuthConfig:
             redirect_uri=os.getenv('GOOGLE_OAUTH_REDIRECT_URI'),
             frontend_redirect_url=os.getenv('FRONTEND_URL', 'http://127.0.0.1:5500/frontend/pages/library.html'),
             scope=os.getenv('GOOGLE_OAUTH_SCOPE', 'openid email profile')
-          
+        )
+
+
+@dataclass
 class EmailConfig:
     """Email service configuration (e.g., SendGrid, Mailgun)."""
     api_key: Optional[str]

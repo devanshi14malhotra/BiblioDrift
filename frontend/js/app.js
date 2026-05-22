@@ -730,10 +730,12 @@ class BookRenderer {
         }
 
         // Interaction: Flip
-        const bookEl = scene.querySelector('.book-container-3d');
+        const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
-                bookEl.classList.toggle('flipped');
+                if (bookEl) {
+                    bookEl.classList.toggle('flipped');
+                }
                 // Play sound
                 flipSound.play().catch(e => {
                     if (IS_DEV) {
@@ -1012,6 +1014,8 @@ class BookRenderer {
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
+        } // end if (purchaseLinksEl)
+
         // Explore Mood Button
         const moodBtnModal = document.getElementById('modal-mood-btn');
         if (moodBtnModal) {
@@ -1372,7 +1376,8 @@ class BookRenderer {
                 } else {
                     showError(`Failed to fetch mood analysis (Server error: ${res.status}).`);
                 }
-} catch (err) {
+            }
+        } catch (err) {
             console.error('Failed to explore book mood:', err);
             showError('Network error connecting to mood analysis service.');
         }
@@ -1508,17 +1513,18 @@ class BookRenderer {
                 : `intitle:${title}`;
 
             try {
+                // Always use GoogleBooksClient — it handles caching + request
+                // queuing (300 ms gap between calls) to prevent 429 bursts.
                 const client = window.GoogleBooksClient;
-                const data = client
-                    ? await client.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' })
-                    : await (async () => {
-                        const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-                        const res = await fetch(`${API_BASE}?q=${encodeURIComponent(searchQuery)}&maxResults=1&printType=books${keyParam}`);
-                        if (!res.ok) {
-                            throw new Error(`Google Books API Error: ${res.status}`);
-                        }
-                        return await res.json();
-                    })();
+                if (!client) {
+                    console.warn('GoogleBooksClient not available, skipping', title);
+                    continue;
+                }
+
+                const data = await client.fetchVolumes(searchQuery, {
+                    maxResults: 1,
+                    extraParams: '&printType=books'
+                });
 
                 const matchedBook = data?.items?.[0];
                 if (matchedBook) {
