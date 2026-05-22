@@ -57,3 +57,45 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r backend/requirements.txt
           pip install flask-wtf bleach Pillow beautifulsoup4 pytest pytest-cov
+  e2e:
+    name: Cypress E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          
+      - name: Install backend dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install flask-wtf bleach Pillow beautifulsoup4 "pydantic[email]" pytest pytest-cov
+          
+      - name: Start backend server
+        env:
+          GOOGLE_BOOKS_API_KEY: "ci-fake-key"
+          OPENAI_API_KEY: "ci-fake-key"
+          GROQ_API_KEY: "ci-fake-key"
+          GEMINI_API_KEY: "ci-fake-key"
+          FLASK_ENV: testing
+          PYTHONPATH: ".:backend"
+        run: |
+          nohup python backend/app.py > backend.log 2>&1 &
+          sleep 5
+          
+      - name: Install frontend dependencies
+        run: npm ci || npm install
+        
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          wait-on: 'http://127.0.0.1:5000'
+          wait-on-timeout: 30
+          browser: chrome
