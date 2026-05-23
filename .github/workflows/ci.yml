@@ -94,14 +94,23 @@ jobs:
           
       - name: Install frontend dependencies
         run: npm install
+
+      - name: Start frontend server
+        run: |
+          nohup python -m http.server 5500 > frontend.log 2>&1 &
+          sleep 2
         
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
-          wait-on: 'http://127.0.0.1:5000'
+          wait-on: 'http://127.0.0.1:5000, http://127.0.0.1:5500'
           wait-on-timeout: 30
           browser: chrome
 
       - name: Print backend logs on failure
         if: failure()
-        run: cat backend.log
+        run: |
+          echo "=== BACKEND LOG ==="
+          cat backend.log || true
+          echo "=== FRONTEND LOG ==="
+          cat frontend.log || true
