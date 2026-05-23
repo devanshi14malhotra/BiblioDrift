@@ -229,15 +229,21 @@ const CollectionAPI = {
 };
 window.CollectionAPI = CollectionAPI;
 
+// db.js functions are accessed via window globals (loaded separately in index.html)
+const saveBookOffline = window.saveBookOffline || (() => Promise.resolve(false));
+const removeOfflineBook = window.removeOfflineBook || (() => Promise.resolve(false));
+
 // Example click handler for your custom "Save for Offline" icon
 async function handleDownloadToggle(bookCard, bookData) {
-    const isAlreadyDownloaded = await window.db.downloadedBooks.get(bookData.id);
+    const db = window.db;
+    if (!db) return;
+    const isAlreadyDownloaded = await db.downloadedBooks.get(bookData.id);
     
     if (isAlreadyDownloaded) {
-        const success = await window.removeOfflineBook(bookData.id);
+        const success = await removeOfflineBook(bookData.id);
         if (success) bookCard.classList.remove('is-downloaded');
     } else {
-        const success = await window.saveBookOffline(bookData);
+        const success = await saveBookOffline(bookData);
         if (success) bookCard.classList.add('is-downloaded');
     }
 }
@@ -260,7 +266,6 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
-    authSessionPromise = null;
 }
 
 function parseStoredUser() {
@@ -301,16 +306,16 @@ async function verifyStoredAuthSession() {
     authSessionPromise = (async () => {
         const token = SafeStorage.get('bibliodrift_token');
         const storedUser = parseStoredUser();
-        const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
+
+        if (!token) {
+            if (storedUser || SafeStorage.get('isLoggedIn') === 'true') {
+                clearStoredAuthState();
+            }
+            return null;
+        }
 
         if (token === 'demo-token-12345') {
             return storedUser;
-        }
-
-        // Real logins use HttpOnly JWT cookies (see backend JWT_TOKEN_LOCATION). Optional CSRF cookie is readable by JS.
-        const shouldProbe = thinksLoggedIn || storedUser || getCookie('csrf_access_token');
-        if (!shouldProbe) {
-            return null;
         }
 
         try {
@@ -328,20 +333,22 @@ async function verifyStoredAuthSession() {
                 headers,
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                const verifiedUser = data.user || storedUser;
-                if (verifiedUser) {
-                    SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 422) {
+                    clearStoredAuthState();
                 }
-                SafeStorage.set('isLoggedIn', 'true');
-                return verifiedUser || null;
+                return null;
             }
 
-            if (response.status === 401 || response.status === 422) {
-                clearStoredAuthState();
+            const data = await response.json();
+            const verifiedUser = data.user || storedUser;
+
+            if (verifiedUser) {
+                SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
             }
-            return null;
+            SafeStorage.set('isLoggedIn', 'true');
+
+            return verifiedUser;
         } catch (error) {
             console.warn('Auth verification failed; using cached session state if available.', error);
             return storedUser;
@@ -671,48 +678,55 @@ class BookRenderer {
         const safeVibe = escapeHTML(vibe);
         const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
 
-        scene.innerHTML = `
-            <div class="book" data-id="${escapeHTML(id)}">
-                <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+scene.innerHTML = `
+    <div class="book-container-3d" data-id="${escapeHTML(id)}">
+        <div class="book-spine-3d" style="background-image: url('${spineImagePath}'); background-size: cover; background-position: center;"></div>
+        
+        <div class="book-cover-3d" style="background-image: url('${safeThumb}'); background-size: cover; background-position: center;"></div>
+        
+        <div class="book-back-3d">
+            <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
+                <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                ${bookData.moods && bookData.moods.length > 0 ? `
+                <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
+                    ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
                 </div>
-                <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
-                <div class="book__face book__face--right"></div>
-                <div class="book__face book__face--top"></div>
-                <div class="book__face book__face--bottom"></div>
-                <div class="book__face book__face--back">
-                    <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: #2c2420;">${safeTitle}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: #5d4037;">${safeVibe}</div>
-                        ${bookData.moods && bookData.moods.length > 0 ? `
-                        <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
-                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    <button class="read-details-btn" title="Read Details">
-                        <i class="fa-solid fa-circle-info"></i> Read Details
-                    </button>
-
-                    ${shelf === 'current' ? `
-                    <div class="reading-progress">
-                        <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
-                        <small>${progress}% read</small>
-                    </div>` : ''}
-                    <div class="book-actions">
-                        <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                        <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
-                        <button class="btn-icon mood-btn" title="Explore Mood"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
-                        <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
-                    </div>
-                </div>
+                ` : ''}
+                <div class="book-blurb" data-book-id="${escapeHTML(id)}" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify; min-height: 60px;">${safeOriginalDescription}</div>
             </div>
+            ${shelf === 'current' ? `
+            <div class="reading-progress">
+                <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
+                <small>${progress}% read</small>
+            </div>` : ''}
+            <div class="book-actions">
+                <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
+                <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
+                <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
+            </div>
+        </div>
+        
         <div class="book-pages-3d"></div>
+    </div>
     <div class="glass-overlay">
         <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
     </div>
 `;
+
+        // Fetch AI-generated blurb asynchronously
+        const blurbElement = scene.querySelector('.book-blurb');
+        if (blurbElement) {
+            this.fetchAIBlurb(id, title, authors, volumeInfo.description || "", categories)
+                .then(aiBlurb => {
+                    if (aiBlurb && blurbElement) {
+                        blurbElement.textContent = aiBlurb;
+                    }
+                })
+                .catch(err => {
+                    // Silently keep fallback description
+                });
+        }
 
         // Interaction: Progress Slider
         const slider = scene.querySelector('.progress-slider');
@@ -729,12 +743,10 @@ class BookRenderer {
         }
 
         // Interaction: Flip
-        const bookEl = scene.querySelector('.book');
+        const bookEl = scene.querySelector('.book-container-3d');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
-                if (bookEl) {
-                    bookEl.classList.toggle('flipped');
-                }
+                bookEl.classList.toggle('flipped');
                 // Play sound
                 flipSound.play().catch(e => {
                     if (IS_DEV) {
@@ -762,7 +774,7 @@ class BookRenderer {
         });
 
         // Info Button
-        scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
+        scene.querySelector('.info-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
         });
@@ -823,8 +835,7 @@ class BookRenderer {
             });
             if (res.ok) {
                 const data = await res.json();
-                const payload = data.data || data;
-                return payload?.vibe || payload?.bookseller_note || payload?.insight || payload?.note || null;
+                return data.data?.vibe || null;
             }
         } catch (e) {
             // Silently fail to use fallback
@@ -1030,11 +1041,11 @@ class BookRenderer {
         const emotionContainer = document.createElement('div');
         emotionContainer.className = 'emotion-tagging-section';
         emotionContainer.innerHTML = `
-            <h3 class="modal-section-title" style="color: var(--text-main); font-family: 'Playfair Display', serif; font-size: 1rem; margin-bottom: 10px;">How does this book make you feel?</h3>
+            <h3 class="modal-section-title">How does this book make you feel?</h3>
             <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
             const isActive = book.moods && book.moods.includes(mood);
-            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="color: var(--text-main); border-color: var(--control-border);">
+            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
         }).join('')}
@@ -1200,7 +1211,6 @@ class BookRenderer {
                 }
             })();
         }
-    }
     }
 
     async exploreBookMood(title, author) {
@@ -1868,10 +1878,6 @@ class LibraryManager {
 
         // 4. Sync with backend if available (Full Refresh)
         await this.syncWithBackend();
-        if (navigator.onLine) {
-            await this.flushPendingLibraryMutations();
-        }
-        await this.updateSyncStatus();
     }
 
     getUser() {
@@ -1889,194 +1895,6 @@ class LibraryManager {
             headers['X-CSRF-TOKEN'] = csrfToken;
         }
         return new Headers(headers);
-    }
-
-    async _getPendingSyncCount() {
-        const user = this.getUser();
-        if (!user || !window.db?.syncQueue) return 0;
-        return await window.db.syncQueue.where('userId').equals(user.id).count();
-    }
-
-    async updateSyncStatus() {
-        const statusEl = document.getElementById('library-sync-status');
-        if (!statusEl) return;
-
-        const pendingCount = await this._getPendingSyncCount();
-        statusEl.hidden = false;
-        statusEl.textContent = pendingCount > 0
-            ? `${pendingCount} pending sync${pendingCount === 1 ? '' : 's'}`
-            : 'Synced';
-        statusEl.dataset.state = pendingCount > 0 ? 'pending' : 'synced';
-    }
-
-    async _queueMutation(action, book, extra = {}) {
-        if (typeof window.enqueueLibraryMutation !== 'function') return;
-
-        const user = this.getUser();
-        if (!user || !window.db?.syncQueue) return;
-
-        const snapshot = JSON.parse(JSON.stringify(book));
-
-        const existingMutations = (await window.db.syncQueue.where('userId').equals(user.id).toArray())
-            .filter((mutation) => mutation.bookId === snapshot.id);
-
-        if (action === 'remove') {
-            await Promise.all(existingMutations.map((mutation) => window.db.syncQueue.delete(mutation.id)));
-            await this.updateSyncStatus();
-            return;
-        }
-
-        const shelf = extra.shelf || this.findBookShelf(snapshot.id) || null;
-        const mergedMutation = {
-            userId: user.id,
-            action,
-            bookId: snapshot.id,
-            db_id: snapshot.db_id || null,
-            shelf,
-            payload: extra,
-            book: snapshot
-        };
-
-        const pendingAdd = existingMutations.find((mutation) => mutation.action === 'add');
-        if (pendingAdd && (action === 'move' || action === 'update')) {
-            await window.db.syncQueue.put({
-                ...pendingAdd,
-                db_id: mergedMutation.db_id || pendingAdd.db_id || null,
-                shelf: action === 'move' ? extra.toShelf || pendingAdd.shelf : pendingAdd.shelf,
-                payload: {
-                    ...(pendingAdd.payload || {}),
-                    ...extra
-                },
-                book: snapshot,
-                createdAt: pendingAdd.createdAt || new Date().toISOString()
-            });
-            await this.updateSyncStatus();
-            return;
-        }
-
-        if (action === 'add') {
-            await Promise.all(existingMutations.map((mutation) => window.db.syncQueue.delete(mutation.id)));
-        }
-
-        await window.enqueueLibraryMutation(mergedMutation);
-        await this.updateSyncStatus();
-    }
-
-    async _applyQueuedMutation(mutation) {
-        const user = this.getUser();
-        if (!user) return;
-
-        const localBookResult = this.findBookInShelf(mutation.bookId);
-        const localBook = localBookResult?.book || mutation.book;
-        const dbId = localBook?.db_id || mutation.db_id;
-
-        if (mutation.action === 'add') {
-            if (!localBook) return;
-
-            const payload = {
-                user_id: user.id,
-                google_books_id: localBook.id,
-                title: localBook.volumeInfo?.title || localBook.title || '',
-                authors: localBook.volumeInfo?.authors ? localBook.volumeInfo.authors.join(', ') : '',
-                thumbnail: localBook.volumeInfo?.imageLinks?.thumbnail || '',
-                shelf_type: mutation.shelf || mutation.payload?.shelf || 'want'
-            };
-
-            const res = await fetch(`${this.apiBase}/library`, {
-                method: 'POST',
-                headers: this.getAuthHeaders(),
-                credentials: 'include',
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `HTTP ${res.status}`);
-            }
-
-            const data = await res.json();
-            if (localBook) {
-                localBook.db_id = data.item.id;
-                localBook.version = data.item.version;
-                this.saveLocally();
-            }
-            return;
-        }
-
-        if (mutation.action === 'remove') {
-            if (!dbId) return;
-
-            const res = await fetch(`${this.apiBase}/library/${dbId}`, {
-                method: 'DELETE',
-                headers: this.getAuthHeaders(),
-                credentials: 'include'
-            });
-
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `HTTP ${res.status}`);
-            }
-            return;
-        }
-
-        if (mutation.action === 'move' || mutation.action === 'update') {
-            if (!dbId || !localBook) return;
-
-            const body = mutation.action === 'move'
-                ? {
-                    shelf_type: mutation.payload?.toShelf,
-                    progress: localBook.progress,
-                    version: localBook.version
-                }
-                : {
-                    ...mutation.payload?.updates,
-                    version: localBook.version
-                };
-
-            const res = await fetch(`${this.apiBase}/library/${dbId}`, {
-                method: 'PUT',
-                headers: this.getAuthHeaders(),
-                credentials: 'include',
-                body: JSON.stringify(body)
-            });
-
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `HTTP ${res.status}`);
-            }
-
-            const data = await res.json();
-            localBook.version = data.item.version;
-            this.saveLocally();
-        }
-    }
-
-    async flushPendingLibraryMutations() {
-        const user = this.getUser();
-        if (!user || !window.db?.syncQueue) {
-            await this.updateSyncStatus();
-            return 0;
-        }
-
-        const pendingMutations = await window.db.syncQueue.where('userId').equals(user.id).sortBy('createdAt');
-        if (pendingMutations.length === 0) {
-            await this.updateSyncStatus();
-            return 0;
-        }
-
-        let processed = 0;
-        for (const mutation of pendingMutations) {
-            await this._applyQueuedMutation(mutation);
-            await window.db.syncQueue.delete(mutation.id);
-            processed += 1;
-        }
-
-        if (processed > 0) {
-            await this.syncWithBackend();
-        }
-
-        await this.updateSyncStatus();
-        return processed;
     }
 
     async syncWithBackend() {
@@ -2171,7 +1989,6 @@ class LibraryManager {
                         this.renderShelf('finished', 'shelf-finished');
                     }
                 }
-                await this.updateSyncStatus();
             }
         } catch (e) {
             console.error("Sync failed", e);
@@ -2229,7 +2046,6 @@ class LibraryManager {
 
                 // After upload, pull fresh state from backend to get the new DB IDs and versions
                 await this.syncWithBackend();
-                await this.updateSyncStatus();
             } else {
                 const data = await res.json();
                 console.error("Backend refused sync", data);
@@ -2399,12 +2215,10 @@ class LibraryManager {
                     enrichedBook.db_id = data.item.id;
                     enrichedBook.version = data.item.version;
                     this.saveLocally();
-                    await this.updateSyncStatus();
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
-                await this._queueMutation('add', enrichedBook, { shelf });
-                showToast("Saved locally; sync queued", "info");
+                showToast("Saved locally (Sync failed)", "info");
             }
         }
     }
@@ -2450,7 +2264,6 @@ class LibraryManager {
                     const data = await res.json();
                     book.version = data.item.version;
                     this.saveLocally();
-                    await this.updateSyncStatus();
                 } else if (res.status === 409) {
                     const data = await res.json();
                     showToast("Conflict detected! Syncing with server...", "error");
@@ -2462,8 +2275,7 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to update backend", e);
-                await this._queueMutation('update', book, { updates });
-                showToast("Saved locally; sync queued", "info");
+                showToast("Saved locally (Sync failed)", "info");
             }
         }
     }
@@ -2527,11 +2339,9 @@ class LibraryManager {
                         headers: this.getAuthHeaders(),
                         credentials: 'include'
                     });
-                    await this.updateSyncStatus();
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
-                    await this._queueMutation('remove', book, { shelf });
-                    showToast("Removed locally; sync queued", "info");
+                    showToast("Removed locally (Backend sync failed)", "info");
                 }
             } else if (user) {
                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
@@ -2583,7 +2393,6 @@ class LibraryManager {
                     const data = await res.json();
                     book.version = data.item.version;
                     this.saveLocally();
-                    await this.updateSyncStatus();
                 } else if (res.status === 409) {
                     showToast("Conflict detected! Syncing with server...", "error");
                     await this.syncWithBackend();
@@ -2594,12 +2403,10 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to update backend during move", e);
-                await this._queueMutation('move', book, { fromShelf, toShelf });
-                showToast("Moved locally; sync queued", "info");
+                showToast("Moved locally (Sync failed)", "info");
             }
         }
 
-        await this.updateSyncStatus();
         return true;
     }
 
@@ -2866,47 +2673,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Load Config (Non-blocking)
     loadConfig();
-// ── Background Theme Selector ──────────────────────────────
-const bgThemeBtn = document.getElementById('bgThemeBtn');
-const bgThemePanel = document.getElementById('bgThemePanel');
-
-if (bgThemeBtn && bgThemePanel) {
-    // Restore saved background on load
-    const savedBg = localStorage.getItem('bibliodrift_bg');
-    if (savedBg) {
-        document.body.setAttribute('data-bg', savedBg);
-        bgThemePanel.querySelectorAll('.bg-option').forEach(o => {
-            o.classList.toggle('active', o.dataset.bg === savedBg);
-        });
-    }
-
-    // Toggle panel open/close
-    bgThemeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        bgThemePanel.classList.toggle('active');
-    });
-
-    // Close panel when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!bgThemeBtn.contains(e.target) && !bgThemePanel.contains(e.target)) {
-            bgThemePanel.classList.remove('active');
-        }
-    });
-
-    // Handle option clicks
-    bgThemePanel.addEventListener('click', (e) => {
-        const option = e.target.closest('.bg-option');
-        if (!option) return;
-        const bg = option.dataset.bg;
-        document.body.setAttribute('data-bg', bg);
-        localStorage.setItem('bibliodrift_bg', bg);
-        bgThemePanel.querySelectorAll('.bg-option').forEach(o =>
-            o.classList.toggle('active', o === option)
-        );
-        bgThemePanel.classList.remove('active');
-    });
-}
-// ────────────────────────────────────────────────────────────
+    // Background theme selector is handled by bg-theme.js (loaded separately)
 
 
     // --- AUTH LOGIC ---
@@ -3019,19 +2786,16 @@ if (bgThemeBtn && bgThemePanel) {
         searchInput.value = query;
     }
 
-    if (query && document.getElementById('search-results-section')) {
-        const searchSection = document.getElementById('search-results-section');
-        const queryDisplay = document.getElementById('search-query-display');
-        
-        queryDisplay.textContent = `Results for "${query}"`;
-        searchSection.removeAttribute('hidden');
-        
-        // Hide other main content to focus on search without destroying modals
-        document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
-            el.style.display = 'none';
-        });
-
-        renderer.renderCuratedSection(query, 'search-results-grid', 20);
+    if (query && document.getElementById('row-rainy')) {
+        document.querySelector('main').innerHTML = `
+            <section class="hero">
+                <h1>Results for "${query}"</h1>
+                <p>Found specific books matching your vibe.</p>
+            </section>
+            <section class="curated-section">
+                <div class="curated-row" id="search-results" style="flex-wrap: wrap; justify-content: center;"></div>
+            </section>`;
+        renderer.renderCuratedSection(query, 'search-results', 20);
     } else if (document.getElementById('row-rainy')) {
         console.log('📚 Initializing Curated Discovery Sections...');
         const discoveryShelves = [
@@ -3045,8 +2809,7 @@ if (bgThemeBtn && bgThemePanel) {
                  vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
                  fallbackQuery: 'subject:gothic fiction subject:campus'
             },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
-            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' }
         ];
         (async () => {
             try {
@@ -3245,204 +3008,6 @@ if (bgThemeBtn && bgThemePanel) {
         }
 
         loadExtendedStats();
-
-        // =====================================================================
-        // READER IDENTITY LOGIC
-        // Fetches reviews, determines archetype/mood/cluster, and renders states.
-        // =====================================================================
-        const renderErrorIdentityState = () => {
-            const identityContent = document.getElementById('reader-identity-content');
-            if (!identityContent) return;
-
-            identityContent.innerHTML = `
-                <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted); background: rgba(229, 57, 53, 0.05); border: 1px solid rgba(229, 57, 53, 0.2); border-radius: 10px;">
-                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #e53935; margin-bottom: 1rem; display: block;"></i>
-                    <p style="margin-bottom: 1rem;">Failed to load Reader Identity profile.</p>
-                    <button id="retry-identity-btn" class="action-btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">Retry</button>
-                </div>
-            `;
-
-            const retryBtn = document.getElementById('retry-identity-btn');
-            if (retryBtn) {
-                retryBtn.addEventListener('click', () => {
-                    loadReaderIdentity();
-                });
-            }
-        };
-
-        const fetchAndRenderArchetype = async (genres, reviewsList) => {
-            const identityContent = document.getElementById('reader-identity-content');
-            if (!identityContent) return;
-
-            const token = SafeStorage.get('bibliodrift_token');
-            const response = await fetch(`${MOOD_API_BASE}/reader-archetype`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ genres, reviews: reviewsList })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch archetype (Status: ${response.status})`);
-            }
-
-            const data = await response.json();
-            if (!data.success || !data.reader_profile) {
-                throw new Error('API returned unsuccessful profile generation');
-            }
-
-            const profile = data.reader_profile;
-            const archetype = profile.archetype || "Unknown Reader";
-            const mood = profile.reader_mood || "Balanced Analytical Reader";
-            const sentimentScore = typeof profile.sentiment_score === 'number' ? profile.sentiment_score.toFixed(2) : '0.00';
-            const cluster = typeof profile.reader_cluster === 'number' ? (profile.reader_cluster === -1 ? 'Unclassified' : `Group #${profile.reader_cluster}`) : 'Unclassified';
-
-            const archetypeDescriptions = {
-                "Deep Thinker": "Drawn to philosophy, existential questions, and reflective/psychological themes.",
-                "Emotional Reader": "Connects deeply with romance, relationships, emotional journeys, and human feelings.",
-                "Dark Reader": "Enjoys crime, violence, psychological thrillers, horror, and mystery.",
-                "Adventurous Reader": "Seeks sci-fi, fantasy, action-packed adventures, and exploration."
-            };
-            const desc = archetypeDescriptions[archetype] || "Based on your current reading habits and preferences.";
-
-            identityContent.innerHTML = `
-                <div class="reader-identity-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; text-align: left;">
-                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Archetype</div>
-                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-brain" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
-                            <span id="identity-archetype">${archetype}</span>
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;" id="identity-archetype-desc">
-                            ${desc}
-                        </div>
-                    </div>
-                    
-                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Mood</div>
-                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-masks-theater" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
-                            <span id="identity-mood">${mood}</span>
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
-                            Sentiment Score: <strong id="identity-sentiment">${sentimentScore}</strong>
-                        </div>
-                    </div>
-
-                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Group</div>
-                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-people-group" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
-                            <span id="identity-cluster">${cluster}</span>
-                        </div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
-                            Based on review text analysis.
-                        </div>
-                    </div>
-                </div>
-            `;
-        };
-
-        const renderEmptyIdentityState = (genres) => {
-            const identityContent = document.getElementById('reader-identity-content');
-            if (!identityContent) return;
-
-            identityContent.innerHTML = `
-                <div class="empty-state" style="padding: 1rem 0; text-align: center; color: var(--text-muted);">
-                    <i class="fa-solid fa-circle-info" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
-                    <p style="margin-bottom: 1.5rem;">We couldn't find any reviews in your profile yet. Add reviews to your finished books to unlock your reader identity!</p>
-                    <div style="max-width: 450px; margin: 0 auto; background: rgba(255, 255, 255, 0.02); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: left;">
-                        <h4 style="color: var(--text-main); margin-bottom: 0.5rem;">Or try a quick test right now:</h4>
-                        <p style="font-size: 0.85rem; margin-bottom: 1rem;">Write a brief summary of the kinds of books you love reading (e.g. "I love deep space adventures with complex characters"):</p>
-                        <textarea id="onboarding-review-text" placeholder="I love exploring dark mystery novels and fast-paced thrillers..." style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); margin-bottom: 1rem; font-family: inherit; font-size: 0.9rem; resize: none;"></textarea>
-                        <button id="submit-onboarding-btn" class="action-btn-primary" style="font-size: 0.85rem; padding: 6px 15px;">Analyze Mood & Archetype</button>
-                    </div>
-                </div>
-            `;
-
-            const submitBtn = document.getElementById('submit-onboarding-btn');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', async () => {
-                    const textInput = document.getElementById('onboarding-review-text').value.trim();
-                    if (!textInput) return;
-
-                    identityContent.innerHTML = `
-                        <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
-                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
-                            <p>Analyzing your custom input...</p>
-                        </div>
-                    `;
-
-                    try {
-                        await fetchAndRenderArchetype(genres, [textInput]);
-                    } catch (error) {
-                        console.error('Error analyzing custom onboarding input:', error);
-                        renderErrorIdentityState();
-                    }
-                });
-            }
-        };
-
-        const loadReaderIdentity = async () => {
-            const identityContent = document.getElementById('reader-identity-content');
-            if (!identityContent) return;
-
-            identityContent.innerHTML = `
-                <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
-                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
-                    <p>Analyzing your reading profile and reviews...</p>
-                </div>
-            `;
-
-            const token = SafeStorage.get('bibliodrift_token');
-            if (!token) {
-                identityContent.innerHTML = `
-                    <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
-                        <p>Please log in to view your Reader Identity.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            try {
-                // 1. Fetch user reviews
-                const reviewsResponse = await fetch(`${MOOD_API_BASE}/users/${user.id}/reviews`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!reviewsResponse.ok) {
-                    throw new Error(`Failed to fetch reviews (Status: ${reviewsResponse.status})`);
-                }
-
-                const reviewsData = await reviewsResponse.json();
-                const reviewsList = (reviewsData.reviews || []).map(r => r.review_text).filter(Boolean);
-
-                // Derive genres
-                const allBooks = [
-                    ...(libManager.library.current || []),
-                    ...(libManager.library.want || []),
-                    ...(libManager.library.finished || [])
-                ];
-                const genres = Array.from(new Set(
-                    allBooks.flatMap(book => book.volumeInfo?.categories || [])
-                ));
-
-                // 2. Render empty/onboarding or loaded state
-                if (reviewsList.length === 0) {
-                    renderEmptyIdentityState(genres);
-                } else {
-                    await fetchAndRenderArchetype(genres, reviewsList);
-                }
-            } catch (error) {
-                console.error('Error loading reader identity:', error);
-                renderErrorIdentityState();
-            }
-        };
-
-        // Initialize reader identity loading
-        loadReaderIdentity();
 
         // Progress Bar Calculation
         const barFinished = document.getElementById('bar-finished');
@@ -3649,7 +3214,7 @@ async function handleAuth(event) {
     const mode = form.dataset.mode || 'login';
 
     const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const password = form.querySelector('input[type="password"]').value;
     const usernameInput = document.getElementById("username");
 
     // Helper to reset button state on failure
@@ -3699,36 +3264,13 @@ async function handleAuth(event) {
         payload = { username: email, password: password };
     }
 
-    // =========================================================================
-    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
-    // =========================================================================
-    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
-    // This token is then injected into the 'X-CSRF-Token' header. 
-    // The Flask-WTF backend expects this header for all state-changing
-    // AJAX requests. This protects against Cross-Site Request Forgery 
-    // by ensuring that the request is authenticated via the browser's 
-    // Same-Origin Policy and session-bound secrets.
-    // =========================================================================
-    const csrfToken = document.getElementById('csrf_token')?.value;
-
     try {
-        const fetchOptions = {
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify(payload)
-        };
-
-        // Inject CSRF token into headers if available
-        if (csrfToken) {
-            fetchOptions.headers['X-CSRF-Token'] = csrfToken;
-        } else if (IS_DEV) {
-            console.warn('[Security] No CSRF token found in DOM. Request may be rejected by server.');
-        }
-
-        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
+        });
 
         const data = await res.json();
 
@@ -4185,134 +3727,3 @@ window.addEventListener('offline', handleConnectivityChange);
 
 // Run a status check right away on startup in case the user loads the app while already disconnected
 document.addEventListener('DOMContentLoaded', handleConnectivityChange);
-
-// Reading Mood Quiz - manager-based implementation
-class ReadingMoodQuizManager {
-        constructor(libraryManager, renderer) {
-                this.libraryManager = libraryManager;
-                this.renderer = renderer;
-                this.section = null;
-                this.quizAnswers = {};
-        }
-
-        init() {
-                this.section = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
-                if (!this.section) return;
-
-                this.quizOptionGroups = this.section.querySelectorAll('.quiz-options');
-                this.generateBtn = this.section.querySelector('#generateMoodTags');
-                this.results = this.section.querySelector('#quizResults');
-                this.moodTagsContainer = this.section.querySelector('#moodTags');
-                this.retakeBtn = this.section.querySelector('#retakeQuiz');
-
-                if (!this.quizOptionGroups.length || !this.generateBtn || !this.results || !this.moodTagsContainer || !this.retakeBtn) {
-                        return;
-                }
-
-                this._wireOptions();
-                this._wireButtons();
-                this.loadSavedMoodTags();
-                this._updateGenerateButtonState();
-        }
-
-        _wireOptions() {
-                this.quizOptionGroups.forEach(group => {
-                        const key = group.dataset.question;
-                        const buttons = group.querySelectorAll('button');
-                        buttons.forEach(btn => {
-                                btn.addEventListener('click', () => {
-                                        buttons.forEach(b => b.classList.remove('selected'));
-                                        btn.classList.add('selected');
-                                        this.quizAnswers[key] = btn.dataset.value;
-                                        this._updateGenerateButtonState();
-                                });
-                        });
-                });
-        }
-
-        _wireButtons() {
-                this.generateBtn.addEventListener('click', async () => {
-                        const tags = Object.values(this.quizAnswers).filter(Boolean);
-                        this.renderMoodTags(tags);
-                        // Persist using SafeStorage wrapper
-                        try { SafeStorage.set('readingMoodTags', JSON.stringify(tags)); } catch (e) { localStorage.setItem('readingMoodTags', JSON.stringify(tags)); }
-
-                        // Compose a generated query from tags and render results
-                        const generatedMoodQuery = tags.join(' ');
-                        try {
-                                if (this.renderer && typeof this.renderer.renderCuratedSection === 'function') {
-                                        this.renderer.renderCuratedSection(generatedMoodQuery, 'mood-quiz-results-grid', 16);
-                                }
-                        } catch (e) {
-                                console.error('Mood quiz: failed to render curated section', e);
-                        }
-                });
-
-                this.retakeBtn.addEventListener('click', () => {
-                        this.quizAnswers = {};
-                        this.quizOptionGroups.forEach(group => {
-                                group.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
-                        });
-                        this.moodTagsContainer.innerHTML = '';
-                        this.results.hidden = true;
-                        try { SafeStorage.remove('readingMoodTags'); } catch (e) { localStorage.removeItem('readingMoodTags'); }
-                        this._updateGenerateButtonState();
-                });
-        }
-
-        _updateGenerateButtonState() {
-                const total = this.quizOptionGroups.length;
-                const answered = Object.keys(this.quizAnswers).length;
-                this.generateBtn.disabled = answered !== total;
-        }
-
-        renderMoodTags(tags) {
-                this.moodTagsContainer.innerHTML = '';
-                tags.forEach(tag => {
-                        const span = document.createElement('span');
-                        span.textContent = `#${tag}`;
-                        this.moodTagsContainer.appendChild(span);
-                });
-                this.results.hidden = false;
-        }
-
-        loadSavedMoodTags() {
-                let saved = null;
-                try { saved = SafeStorage.get('readingMoodTags'); } catch (e) { saved = localStorage.getItem('readingMoodTags'); }
-                if (saved) {
-                        try {
-                                const tags = JSON.parse(saved);
-                                if (Array.isArray(tags) && tags.length > 0) this.renderMoodTags(tags);
-                        } catch (e) { /* ignore */ }
-                }
-        }
-}
-
-// Initialize the manager if the page contains the quiz. Wait for library/renderer readiness.
-function _startReadingMoodQuiz() {
-        const startIfReady = () => {
-                const el = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
-                if (!el) return;
-                if (window.libManager && window.renderer) {
-                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
-                        window.moodQuizManager.init();
-                } else {
-                        // Wait for library-manager-ready event
-                        window.addEventListener('bibliodrift:library-manager-ready', () => {
-                                if (window.libManager && window.renderer) {
-                                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
-                                        window.moodQuizManager.init();
-                                }
-                        }, { once: true });
-                }
-        };
-
-        if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', startIfReady, { once: true });
-        } else {
-                startIfReady();
-        }
-}
-
-_startReadingMoodQuiz();
-
