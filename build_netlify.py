@@ -67,6 +67,7 @@ def build_html() -> None:
 
 def write_clean_route_redirects() -> None:
     redirects = [
+        "/app /app.html 200",
         "/chat /chat.html 200",
         "/auth /auth.html 200",
         "/library /library.html 200",
@@ -75,6 +76,9 @@ def write_clean_route_redirects() -> None:
         "/privacy-policy /privacy-policy.html 200",
         "/terms-and-conditions /terms-and-conditions.html 200",
         "/request-book /request-book.html 200",
+        "/contributors /contributors.html 200",
+        "/contributing /contributing.html 200",
+        "/community-stories /community-stories.html 200",
     ]
     (DIST / "_redirects").write_text("\n".join(redirects) + "\n", encoding="utf-8")
 
