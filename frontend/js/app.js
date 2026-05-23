@@ -12,60 +12,60 @@
  * Key Components:
  * ---------------
  * 1. SafeStorage:
- *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism.
- *    This component is critical for offline-first capabilities and prevents the
- *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent
- *    standard `localStorage` operations.
- *    - Automatically handles QuotaExceeded exceptions.
- *    - Provides asynchronous data restoration algorithms.
- *    - Integrates closely with the LibraryManager to store thousands of books safely.
+ * A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism.
+ * This component is critical for offline-first capabilities and prevents the
+ * entire app from crashing when iOS/Safari or restrictive browser quotas prevent
+ * standard `localStorage` operations.
+ * - Automatically handles QuotaExceeded exceptions.
+ * - Provides asynchronous data restoration algorithms.
+ * - Integrates closely with the LibraryManager to store thousands of books safely.
  *
  * 2. LibraryManager:
- *    The central state machine over the user's book collection.
- *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
- *    - Concurrency Control: Handles race conditions when syncing local states with
- *      the backend utilizing optimistic locking techniques.
- *    - Merging Strategy: In the event of a conflict between the client data and
- *      server data, it attempts a non-destructive merge, retaining the state with
- *      the highest integer version map.
+ * The central state machine over the user's book collection.
+ * - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
+ * - Concurrency Control: Handles race conditions when syncing local states with
+ * the backend utilizing optimistic locking techniques.
+ * - Merging Strategy: In the event of a conflict between the client data and
+ * server data, it attempts a non-destructive merge, retaining the state with
+ * the highest integer version map.
  *
  * 3. BookRenderer:
- *    An interface bridge to the DOM. Handles instantiation of HTML templates for
- *    individual 3D book instances, binding their unique event listeners, and
- *    applying their generated CSS styles and thematic properties.
- *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
+ * An interface bridge to the DOM. Handles instantiation of HTML templates for
+ * individual 3D book instances, binding their unique event listeners, and
+ * applying their generated CSS styles and thematic properties.
+ * It integrates directly with `LibraryManager` to reflect real-time progress updates.
  *
  * 4. ThemeManager:
- *    Observes User Preferences and seamlessly toggles the UI's color palette between
- *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
- *    these preferences to SafeStorage for a seamless experience across reloads.
+ * Observes User Preferences and seamlessly toggles the UI's color palette between
+ * predefined themes (e.g., dark mode and light mode, wood mode), persisting
+ * these preferences to SafeStorage for a seamless experience across reloads.
  *
  * API Architecture Details:
  * -------------------------
  * - Google Books API: Facilitates the search and retrieval of rich book metadata
- *   including volume summaries, author info, and high-quality thumbnail images.
+ * including volume summaries, author info, and high-quality thumbnail images.
  * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
- *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
- *   client-side compute limitations and securely handle secret API keys.
+ * sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
+ * client-side compute limitations and securely handle secret API keys.
  *
  * Security & Data Integrity Considerations:
  * -----------------------------------------
  * - Data Sanitization: All text rendered from external APIs is strictly passed
- *   through the `escapeHTML` utility safely converting brackets to entities to
- *   prevent XSS (Cross-Site Scripting) vectors.
+ * through the `escapeHTML` utility safely converting brackets to entities to
+ * prevent XSS (Cross-Site Scripting) vectors.
  * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
- *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing
- *   Cross Site Request Forgery attacks against logged-in users.
+ * to securely validate state-mutating requests (POST, PUT, DELETE) preventing
+ * Cross Site Request Forgery attacks against logged-in users.
  *
  * Coding Standards and Development Guidelines:
  * --------------------------------------------
  * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are
- *    optimistically applied to local state before waiting for server resolution.
+ * optimistically applied to local state before waiting for server resolution.
  * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native
- *    `localStorage.setItem()`.
+ * `localStorage.setItem()`.
  * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in
- *    `index.css` rather than directly overriding inline styles to maintain a
- *    dynamic and cohesive theme strategy.
+ * `index.css` rather than directly overriding inline styles to maintain a
+ * dynamic and cohesive theme strategy.
  *
  * File Structure:
  * ---------------
@@ -326,7 +326,6 @@ async function verifyStoredAuthSession() {
                 credentials: 'include',
                 headers,
                 method: 'GET',
-                credentials: 'include',
             });
 
             if (response.ok) {
@@ -1014,6 +1013,8 @@ class BookRenderer {
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
+        }
+
         // Explore Mood Button
         const moodBtnModal = document.getElementById('modal-mood-btn');
         if (moodBtnModal) {
@@ -1108,7 +1109,7 @@ class BookRenderer {
                     <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
                 </h4>
                 <div id="modal-discovery-collections-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-folder-open fa-spin"></i> Retrieving collections...</span>
                 </div>
             `;
             
@@ -1246,8 +1247,7 @@ class BookRenderer {
                         <div class="mood-section">
                             <h4>Primary Moods</h4>
                             <div class="mood-tags-large" id="mood-modal-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem;">
-                                <!-- Mood tags go here -->
-                            </div>
+                                </div>
                         </div>
                         <div class="mood-section" style="margin-top: 1.5rem;">
                             <h4>Overall Sentiment</h4>
@@ -1259,12 +1259,10 @@ class BookRenderer {
                         <div class="mood-section" style="margin-top: 1.5rem;">
                             <h4>Bookseller's Vibe</h4>
                             <div class="vibe-quote" id="mood-modal-vibe" style="margin-top: 0.5rem;">
-                                <!-- Vibe quote goes here -->
-                            </div>
+                                </div>
                         </div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 1.5rem;" id="mood-modal-meta">
-                            <!-- Meta info goes here -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -1400,7 +1398,7 @@ class BookRenderer {
             'atmospheric': 'fa-wind',
             'thoughtful': 'fa-brain',
             'thought-provoking': 'fa-brain',
-            'emotional': 'fa-face-sad-tear'
+            'emotional': 'fa-sad-tear'
         };
         return icons[mood.toLowerCase().trim()] || 'fa-tag';
     }
@@ -2347,9 +2345,7 @@ class LibraryManager {
                 showToast("Book already in this shelf!", "info");
                 return;
             } else if (existingShelf) {
-                // Move logic? For now, prevent duplicates and notify user.
-                // Or allow "moving" implicitly? 
-                // Let's implement move: Remove from old, add to new.
+                // Move logic implicit execution
                 this.removeBook(book.id);
                 // Fall through to add
                 showToast(`Moved book from ${existingShelf} to ${shelf}`, "info");
@@ -2453,7 +2449,6 @@ class LibraryManager {
                 } else if (res.status === 409) {
                     const data = await res.json();
                     showToast("Conflict detected! Syncing with server...", "error");
-                    // Optionally show a more detailed merge UI here
                     await this.syncWithBackend();
                 } else {
                     const data = await res.json();
@@ -2516,9 +2511,6 @@ class LibraryManager {
 
             // 2. Update Backend
             const user = this.getUser();
-            // We need the DB ID to delete from backend usually, 
-            // but our remove_from_library endpoint uses item_id (DB ID).
-            // Do we have it?
             if (user && book.db_id) {
                 try {
                     await fetch(`${this.apiBase}/library/${book.db_id}`, {
@@ -2533,10 +2525,6 @@ class LibraryManager {
                     showToast("Removed locally; sync queued", "info");
                 }
             } else if (user) {
-                // Fallback: If we don't have db_id locally (maybe added before login logic), 
-                // we might need to look it up or accept that local-only items can't be remotely deleted easily
-                // without an API change to delete by google_id.
-                // For MVP, we proceed.
                 console.warn("Could not delete from backend: missing db_id");
             }
 
@@ -2611,7 +2599,6 @@ class LibraryManager {
         if (!container) return;
         const books = this.library[shelfName];
         if (books.length === 0) {
-            // If we have no books, ensure empty state is visible (if we cleared it previously)
             container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
             return;
         }
@@ -2638,10 +2625,8 @@ class ThemeManager {
         this.toggleBtn = null;
         this.currentTheme = 'light';
 
-        // Named handler so we can safely remove/re-add without stacking listeners
         this._handler = this._onClick.bind(this);
 
-        // Wait until the DOM is ready before querying #themeToggle
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init(), { once: true });
         } else {
@@ -2650,7 +2635,6 @@ class ThemeManager {
     }
 
     _getStoredTheme() {
-        // Safe fallback if SafeStorage is not loaded yet
         try {
             if (typeof SafeStorage !== 'undefined' && SafeStorage.get) {
                 const stored = SafeStorage.get(this.themeKey);
@@ -2685,17 +2669,13 @@ class ThemeManager {
     }
 
     init() {
-        // Re-query in case the button wasn't available during construction
         this.toggleBtn = document.getElementById('themeToggle');
 
-        // Load saved theme and apply it even if the button doesn't exist
         this.currentTheme = this._getStoredTheme();
         this.applyTheme(this.currentTheme);
 
-        // Exit if no toggle button on this page
         if (!this.toggleBtn) return;
 
-        // Prevent duplicate listeners if init() runs more than once
         this.toggleBtn.removeEventListener('click', this._handler);
         this.toggleBtn.addEventListener('click', this._handler);
     }
@@ -2703,14 +2683,12 @@ class ThemeManager {
     applyTheme(theme) {
         const isNight = theme === 'night';
 
-        // Apply theme to <html>
         if (isNight) {
             document.documentElement.setAttribute('data-theme', 'night');
         } else {
             document.documentElement.removeAttribute('data-theme');
         }
 
-        // Update toggle button icon and accessibility labels
         if (this.toggleBtn) {
             const icon = this.toggleBtn.querySelector('i');
 
@@ -2834,7 +2812,6 @@ class GenreManager {
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
 
-
         const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
@@ -2843,7 +2820,52 @@ class GenreManager {
     }
 }
 
-// Init
+// --- Auxiliary Function: Render Dynamic Time-Based Onboarding Greetings ---
+function executePersonalizedGreetingRouting() {
+    const greetingNode = document.getElementById("personalized-greeting");
+    if (!greetingNode) return; // Silent escape if DOM element isn't matching layout view
+
+    let targetedUser = "Reader";
+    try {
+        const rawSession = SafeStorage.get("bibliodrift_user");
+        if (rawSession) {
+            const parsedObj = JSON.parse(rawSession);
+            targetedUser = parsedObj.username || parsedObj.name || "Reader";
+        }
+    } catch (err) {
+        console.warn("[Greeting Engine] Failed parsing active user state tokens:", err);
+    }
+
+    const currentSystemHour = new Date().getHours();
+    let computedGreetingString = "";
+
+    // Exact ranges as documented in Feature Specification Issue #794 (EMOJIS REMOVED)
+    if (currentSystemHour >= 5 && currentSystemHour < 12) {
+        computedGreetingString = `Good Morning, ${targetedUser}.`;
+    } else if (currentSystemHour >= 12 && currentSystemHour < 17) {
+        computedGreetingString = `Good Afternoon, ${targetedUser}.`;
+    } else if (currentSystemHour >= 17 && currentSystemHour < 21) {
+        computedGreetingString = `Good Evening, ${targetedUser}.`;
+    } else {
+        computedGreetingString = `Good Night, ${targetedUser}.`;
+    }
+
+    // Colors linked directly to CSS variables to match site headings natively
+    greetingNode.innerHTML = `
+        <span class="font-serif tracking-wide block" style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+            ${computedGreetingString}
+        </span>
+        <p class="text-xs md:text-sm font-sans tracking-normal italic font-normal" style="font-family: Georgia, serif; color: var(--text-main); opacity: 0.85; margin-bottom: 12px;">
+            Welcome back to your literary sanctuary.
+        </p>
+    `;
+
+    // Trigger standard CSS 1-second transition effect smoothly
+    setTimeout(() => {
+        greetingNode.style.opacity = "1";
+    }, 150);
+}
+
 // --- Application Bootstrap ---
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 BiblioDrift Initializing...');
@@ -2866,7 +2888,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Load Config (Non-blocking)
     loadConfig();
 
-
+    // 3. Fire dynamic user greeting hook module safely (Issue #794)
+    executePersonalizedGreetingRouting();
 
     // --- AUTH LOGIC ---
     const toggleLink = document.getElementById('toggleText');
@@ -2919,7 +2942,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const a = document.createElement("a");
             a.href = url;
             a.download = `bibliodrift_library_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
 
@@ -2927,8 +2949,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast("Library exported successfully!", "success");
         });
     }
-
-
 
     const verifiedUser = await verifyStoredAuthSession();
     const isLoggedIn = !!verifiedUser;
@@ -2951,8 +2971,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const performSearch = () => {
         if (searchInput && searchInput.value.trim()) {
-            // Only redirect to discovery search if we're not already on the library page 
-            // where search is handled by the local library filter.
             if (!window.location.pathname.includes('library.html')) {
                 window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
             }
@@ -2973,7 +2991,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('q');
 
-    // Fill search box if query exists
     if (query && searchInput) {
         searchInput.value = query;
     }
@@ -2985,7 +3002,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         queryDisplay.textContent = `Results for "${query}"`;
         searchSection.removeAttribute('hidden');
         
-        // Hide other main content to focus on search without destroying modals
         document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
             el.style.display = 'none';
         });
@@ -3023,15 +3039,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         })();
     }
-
-    // Re-rendering is now handled by libManager.init() asynchronously to ensure
-    // data is loaded from IndexedDB backup if LocalStorage was wiped.
-    // if (document.getElementById('shelf-want')) {
-    //     libManager.renderShelf('want', 'shelf-want');
-    //     libManager.renderShelf('current', 'shelf-current');
-    //     libManager.renderShelf('finished', 'shelf-finished');
-    // }
-
 
     // Check if Profile Page
     if (document.getElementById('profile-page')) {
@@ -3424,10 +3431,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 100);
         }
 
-        // =====================================================================
-        // READING PROGRESS OVERVIEW
-        // Renders a progress card for each book currently being read.
-        // =====================================================================
         const progressGrid = document.getElementById('progress-overview-grid');
         if (progressGrid) {
             const currentBooks = libManager.library.current || [];
@@ -3467,7 +3470,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     `;
 
-                    // Wire up the quick-update slider
                     const slider = card.querySelector('.progress-card-slider');
                     const barFill = card.querySelector('.progress-card-bar-fill');
                     const pctLabel = card.querySelector('.progress-card-pct');
@@ -3482,7 +3484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     saveBtn.addEventListener('click', async () => {
                         const newProgress = parseInt(slider.value);
                         saveBtn.disabled = true;
-                        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
                         try {
                             await libManager.updateBook(book.id, { progress: newProgress });
                             book.progress = newProgress;
@@ -3534,7 +3536,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Logout
         document.getElementById('logout-btn').addEventListener('click', async () => {
             try {
-                // Clear backend cookies
                 await fetch(`${MOOD_API_BASE}/logout`, { method: 'POST', credentials: 'include' });
             } catch (e) {
                 console.warn("Backend logout failed", e);
@@ -3545,6 +3546,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = 'index.html';
         });
     }
+
     // Scroll Manager (Back to Top)
     const backToTopBtn = document.getElementById('backToTop');
     if (backToTopBtn) {
@@ -3563,33 +3565,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
     }
-
-
 });
 
 /**
  * ==============================================================================
  * SECURITY FIX: CSRF PROTECTION & SESSION MANAGEMENT
- * ==============================================================================
- * 
- * Issue:
- * ------
- * The auth form has no CSRF protection — it directly POSTs credentials to the API 
- * from the browser.
- * 
- * Why it matters:
- * ---------------
- * Without a CSRF token, a malicious third-party page could trick authenticated 
- * users into making authenticated requests. Also, isLoggedIn was previously stored 
- * as a plain string 'true' in localStorage, meaning any script could forge the 
- * login state by setting this key.
- * 
- * Fix:
- * ----
- * Move the authenticated session indicator to an HttpOnly cookie managed by the 
- * backend, and validate the JWT on every protected API call (which is already 
- * done server-side — the frontend just needs to stop relying on the localStorage 
- * flag for access control decisions).
  * ==============================================================================
  */
 async function handleAuth(event) {
@@ -3598,20 +3578,17 @@ async function handleAuth(event) {
     const btn = form.querySelector('button[type="submit"]') || document.getElementById('submitBtn');
     const originalText = btn ? btn.innerHTML : (form.dataset.mode === 'register' ? 'Sign Up' : 'Sign In');
 
-    // 1. Immediate UI Feedback: Disable button and show loading state
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
     }
 
-    // Determine mode from dataset (set by our toggle logic) or default to login
     const mode = form.dataset.mode || 'login';
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     const usernameInput = document.getElementById("username");
 
-    // Helper to reset button state on failure
     const resetBtn = () => {
         if (btn) {
             btn.disabled = false;
@@ -3619,7 +3596,6 @@ async function handleAuth(event) {
         }
     };
 
-    // Validate Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         if (typeof showToast === 'function') showToast("Enter a valid email address", "error");
@@ -3638,14 +3614,12 @@ async function handleAuth(event) {
         if (typeof showToast === 'function')
             showToast(`Welcome, Demo User!`, "success");
 
-        // Keep button disabled during redirect delay
         setTimeout(() => {
             window.location.href = "library.html";
         }, 1000);
         return;
     }
 
-    // Prepare Payload
     let payload = {};
     let endpoint = "";
 
@@ -3658,16 +3632,6 @@ async function handleAuth(event) {
         payload = { username: email, password: password };
     }
 
-    // =========================================================================
-    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
-    // =========================================================================
-    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
-    // This token is then injected into the 'X-CSRF-Token' header. 
-    // The Flask-WTF backend expects this header for all state-changing
-    // AJAX requests. This protects against Cross-Site Request Forgery 
-    // by ensuring that the request is authenticated via the browser's 
-    // Same-Origin Policy and session-bound secrets.
-    // =========================================================================
     const csrfToken = document.getElementById('csrf_token')?.value;
 
     try {
@@ -3680,7 +3644,6 @@ async function handleAuth(event) {
             body: JSON.stringify(payload)
         };
 
-        // Inject CSRF token into headers if available
         if (csrfToken) {
             fetchOptions.headers['X-CSRF-Token'] = csrfToken;
         } else if (IS_DEV) {
@@ -3688,30 +3651,24 @@ async function handleAuth(event) {
         }
 
         const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
-
         const data = await res.json();
 
         if (res.ok) {
-            // Success!
-            // Token is now in an HttpOnly cookie (managed by backend)
             SafeStorage.set('bibliodrift_user', JSON.stringify(data.user));
             SafeStorage.set('isLoggedIn', 'true');
 
             if (typeof showToast === 'function')
                 showToast(`${mode === 'login' ? 'Welcome back' : 'Welcome'}, ${data.user.username}!`, "success");
 
-            // SYNC LOGIC
             if (window.libManager) {
                 if (typeof showToast === 'function') showToast("Syncing your library...", "info");
                 await window.libManager.syncLocalToBackend(data.user);
             }
 
-            // Redirect - Button remains disabled
             setTimeout(() => {
                 window.location.href = "library.html";
             }, 1000);
         } else {
-            // Authentication failed - re-enable button
             if (typeof showToast === 'function') showToast(data.error || "Authentication failed", "error");
             else alert(data.error || "Authentication failed");
             resetBtn();
@@ -3734,7 +3691,6 @@ function enableTapEffects() {
         });
     });
 
-
     document.querySelectorAll('.nav-links a').forEach(link => {
         link.addEventListener('click', () => {
             link.classList.toggle('tap-nav-link');
@@ -3755,7 +3711,6 @@ function enableTapEffects() {
         });
     }
 
-
     document.querySelectorAll('.social_icons a').forEach(icon => {
         icon.addEventListener('click', () => {
             icon.classList.toggle('tap-social-icon');
@@ -3765,7 +3720,6 @@ function enableTapEffects() {
 
 enableTapEffects();
 
-// --- creak and page flip effects ---
 const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
 pageFlipSound.preload = 'auto';
 pageFlipSound.volume = 0.2;
@@ -3788,20 +3742,16 @@ document.addEventListener("click", (e) => {
     const overlay = scene.querySelector(".glass-overlay");
 
     pageFlipSound.muted = false;
-
     pageFlipSound.pause();
     pageFlipSound.currentTime = 0;
     book.classList.toggle("tap-effect");
     if (overlay) overlay.classList.toggle("tap-overlay");
 });
+
 // ============================================
 // Keyboard Shortcuts Module (Issue #103)
 // ============================================
-// Provides keyboard navigation and interaction
-// with BiblioDrift library and book management
-
 const KeyboardShortcuts = {
-    // Shortcut configuration mapping
     shortcuts: {
         'j': { action: 'navigateNext', description: 'Navigate to next book' },
         'k': { action: 'navigatePrev', description: 'Navigate to previous book' },
@@ -3814,7 +3764,6 @@ const KeyboardShortcuts = {
         '/': { action: 'focusSearch', description: 'Focus search bar' }
     },
 
-    // Initialize keyboard event listener
     init() {
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
         if (IS_DEV) {
@@ -3822,10 +3771,7 @@ const KeyboardShortcuts = {
         }
     },
 
-
-    // Handle keypress events
     handleKeyPress(event) {
-        // Don't trigger shortcuts when typing in input fields
         if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) {
             return;
         }
@@ -3839,86 +3785,51 @@ const KeyboardShortcuts = {
         }
     },
 
-    // Execute action based on shortcut
     executeAction(action) {
         switch (action) {
             case 'navigateNext':
-                if (IS_DEV) {
-                    console.log('Navigating to next book...');
-                }
                 this.navigateToNextBook();
                 break;
             case 'navigatePrev':
-                if (IS_DEV) {
-                    console.log('Navigating to previous book...');
-                }
                 this.navigateToPreviousBook();
                 break;
             case 'selectBook':
-                if (IS_DEV) {
-                    console.log('Selecting current book...');
-                }
                 this.selectCurrentBook();
                 break;
             case 'addToWantRead':
-                if (IS_DEV) {
-                    console.log('Adding to Want to Read list...');
-                }
                 this.moveCurrentBookToShelf('want');
                 break;
             case 'markCurrentlyReading':
-                if (IS_DEV) {
-                    console.log('Marking as Currently Reading...');
-                }
                 this.moveCurrentBookToShelf('current');
                 break;
             case 'addToFavorites':
-                if (IS_DEV) {
-                    console.log('Adding to Favorites...');
-                }
                 this.moveCurrentBookToShelf('finished');
                 break;
             case 'closeModal':
-                if (IS_DEV) {
-                    console.log('Closing modal...');
-                }
                 const modals = document.querySelectorAll('.modal, [role="dialog"]');
                 modals.forEach(modal => modal.style.display = 'none');
                 break;
             case 'showHelpMenu':
-                if (IS_DEV) {
-                    console.log('Showing help menu...');
-                }
                 this.displayHelpMenu();
                 break;
             case 'focusSearch':
-                if (IS_DEV) {
-                    console.log('Focusing search bar...');
-                }
                 const searchInput = document.querySelector('input[type="search"], input.search, [placeholder*="search" i]');
                 if (searchInput) searchInput.focus();
                 break;
         }
     },
 
-    // Display keyboard shortcuts help menu
     displayHelpMenu() {
-        const helpContent = Object.entries(this.shortcuts)
-            .map(([key, data]) => `<strong>${key}</strong>: ${data.description}`)
-            .join('<br/>');
-
         alert('BiblioDrift Keyboard Shortcuts\n\n' +
             Object.entries(this.shortcuts)
                 .map(([key, data]) => `${key}: ${data.description}`)
                 .join('\n'));
     },
 
-    // Helper: Get all visible book spine elements
     getVisibleBooks() {
         return Array.from(document.querySelectorAll('.book-spine-3d'));
     },
 
-    // Helper: Get current focused book index
     getFocusedBookIndex() {
         const books = this.getVisibleBooks();
         const focused = document.querySelector('.book-spine-3d.focused');
@@ -3928,9 +3839,7 @@ const KeyboardShortcuts = {
         return -1;
     },
 
-    // Helper: Set focus on a book spine
     setBookFocus(bookElement) {
-        // Remove previous focus
         document.querySelectorAll('.book-spine-3d.focused').forEach(el => {
             el.classList.remove('focused');
         });
@@ -3939,7 +3848,6 @@ const KeyboardShortcuts = {
             bookElement.classList.add('focused');
             bookElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 
-            // Get the book data from the element
             const bookId = bookElement.dataset.bookId;
             if (window.bookshelfRenderer && bookId) {
                 const storage = window.libManager?.getLibrarySnapshot?.() || { current: [], want: [], finished: [] };
@@ -3965,7 +3873,6 @@ const KeyboardShortcuts = {
         }
     },
 
-    // Navigate to next book
     navigateToNextBook() {
         const books = this.getVisibleBooks();
         if (books.length === 0) {
@@ -3979,7 +3886,6 @@ const KeyboardShortcuts = {
         this.setBookFocus(books[nextIndex]);
     },
 
-    // Navigate to previous book
     navigateToPreviousBook() {
         const books = this.getVisibleBooks();
         if (books.length === 0) {
@@ -3993,7 +3899,6 @@ const KeyboardShortcuts = {
         this.setBookFocus(books[prevIndex]);
     },
 
-    // Select/open the current book
     selectCurrentBook() {
         if (window.bookshelfRenderer && window.bookshelfRenderer.currentBook) {
             window.bookshelfRenderer.openModal(window.bookshelfRenderer.currentBook);
@@ -4003,7 +3908,6 @@ const KeyboardShortcuts = {
         }
     },
 
-    // Move current book to a specific shelf
     moveCurrentBookToShelf(targetShelf) {
         if (!window.bookshelfRenderer || !window.bookshelfRenderer.currentBook) {
             showToast('No book selected', 'info');
@@ -4013,7 +3917,6 @@ const KeyboardShortcuts = {
         const currentBook = window.bookshelfRenderer.currentBook;
         const storage = window.libManager?.getLibrarySnapshot?.() || { current: [], want: [], finished: [] };
 
-        // Find current shelf
         let currentShelf = null;
         for (const shelf of ['current', 'want', 'finished']) {
             const found = storage[shelf].find(b => b.id === currentBook.id);
@@ -4033,10 +3936,8 @@ const KeyboardShortcuts = {
             return;
         }
 
-        // Move the book
         window.bookshelfRenderer.moveBook(currentBook.id, currentShelf, targetShelf);
 
-        // Show appropriate feedback
         const shelfNames = {
             'current': 'Currently Immersed',
             'want': 'Anticipated Journeys',
@@ -4047,13 +3948,12 @@ const KeyboardShortcuts = {
     }
 };
 
-// Initialize keyboard shortcuts when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
 } else {
     KeyboardShortcuts.init();
 }
-// Register Service Worker for offline asset caching
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
@@ -4061,38 +3961,29 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('Service Worker registration failed:', err));
     });
 }
-// --- Connection Management & Offline Fallback Fallback Hooks ---
 
-// Function to automatically track network status changes
+// --- Connection Management & Offline Fallback Fallback Hooks ---
 function handleConnectivityChange() {
     const offlineIndicator = document.getElementById('offline-indicator');
     
     if (!navigator.onLine) {
         console.warn("🌐 Connection dropped. Switching to local sanctuary archives...");
-        
-        // Show an elegant banner to let the user know they are reading offline
         if (offlineIndicator) {
             offlineIndicator.style.display = 'block';
         }
-        
-        // Fall back to loading cached books from IndexedDB
         triggerOfflineLibraryView();
     } else {
         console.log("🌐 Connection restored! Connected back to the live backend cloud server.");
         if (offlineIndicator) {
             offlineIndicator.style.display = 'none';
         }
-        
-        // Reload live API content if the user comes back online
         if (typeof loadDiscoverBooks === 'function') {
             loadDiscoverBooks();
         }
     }
 }
 
-// Fallback logic to retrieve data from Dexie when offline
 async function triggerOfflineLibraryView() {
-    // Look up the database instance initialized on the global window context
     if (!window.db) {
         console.error("Database layer is missing from window.db context.");
         return;
@@ -4100,22 +3991,19 @@ async function triggerOfflineLibraryView() {
 
     try {
         const savedBooks = await window.db.books.toArray();
-        // Target your bookshelf or matching layout grid element from the page markup
         const libraryContainer = document.getElementById('search-results-grid') || document.querySelector('.bookshelf');
         
         if (!libraryContainer) return;
 
         if (savedBooks.length === 0) {
-            // Friendly empty state UI explaining how to save books
             libraryContainer.innerHTML = `
                 <div class="offline-empty-state" style="grid-column: 1/-1; text-align: center; color: #a0a0a0; padding: 3rem 1rem;">
                     <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">✨ You are wandering offline</p>
                     <p style="font-size: 1rem; opacity: 0.8;">No cached books found on your shelf. Save books while online to read them anywhere.</p>
                 </div>`;
         } else {
-            libraryContainer.innerHTML = ""; // Wipe standard layout containers
+            libraryContainer.innerHTML = ""; 
             
-            // Render cached items back onto the UI shelf
             savedBooks.forEach(book => {
                 const bookCard = document.createElement('div');
                 bookCard.className = 'book-card offline-card';
@@ -4138,9 +4026,11 @@ async function triggerOfflineLibraryView() {
     }
 }
 
-// Attach network listeners directly to the window lifecycle
 window.addEventListener('online', handleConnectivityChange);
 window.addEventListener('offline', handleConnectivityChange);
+<<<<<<< HEAD
+document.addEventListener('DOMContentLoaded', handleConnectivityChange);
+=======
 
 // Run a status check right away on startup in case the user loads the app while already disconnected
 document.addEventListener('DOMContentLoaded', handleConnectivityChange);
@@ -4275,3 +4165,4 @@ function _startReadingMoodQuiz() {
 
 _startReadingMoodQuiz();
 
+>>>>>>> 17cbe7267fa77c1fc0361056847f6cd44876d552
