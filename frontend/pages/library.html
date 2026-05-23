@@ -19,9 +19,17 @@
     <script src="../js/library-3d.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
+    <!-- SEO & Open Graph meta tags -->
     <meta name="description"
-        content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations.">
+        content="My Library on BiblioDrift — View your saved books, track your reading progress, and revisit your personal reading journey all in one place." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/library" />
+    <meta property="og:title" content="My Library | BiblioDrift" />
+    <meta property="og:description"
+        content="My Library on BiblioDrift — View your saved books, track your reading progress, and revisit your personal reading journey all in one place." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/pwa.css">
@@ -32,7 +40,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
+    <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#2c2420">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -126,7 +135,6 @@
                         <option value="pages">Sort by Pages</option>
                     </select>
                 </div>
-            </div>
         </section>
 
 
@@ -135,13 +143,50 @@
 
             <!-- Empty State Placeholder (Visible when filter returns no books) -->
             <div id="library-empty-state" class="library-empty-state" hidden>
-                <div class="empty-state-icon">
-                    <i class="fa-solid fa-book-open"></i>
+                <!-- Animated SVG Illustration -->
+                <div class="empty-state-illustration">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" class="empty-shelf-svg">
+                        <!-- Empty bookshelf illustration -->
+                        <rect x="20" y="140" width="160" height="8" fill="var(--accent-gold)" opacity="0.3" rx="2"/>
+                        <rect x="25" y="148" width="150" height="4" fill="var(--accent-gold)" opacity="0.2" rx="1"/>
+                        
+                        <!-- Open book in center -->
+                        <g class="floating-book">
+                            <path d="M70 80 L70 120 L100 115 L130 120 L130 80 L100 85 Z" 
+                                  fill="var(--card-bg)" 
+                                  stroke="var(--accent-gold)" 
+                                  stroke-width="2"/>
+                            <line x1="100" y1="85" x2="100" y2="115" 
+                                  stroke="var(--accent-gold)" 
+                                  stroke-width="1.5" 
+                                  opacity="0.5"/>
+                            <!-- Pages -->
+                            <path d="M75 90 L95 92" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
+                            <path d="M75 95 L92 97" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
+                            <path d="M75 100 L90 102" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
+                            <path d="M105 92 L125 90" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
+                            <path d="M108 97 L125 95" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
+                            <path d="M110 102 L125 100" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
+                        </g>
+                        
+                        <!-- Sparkles -->
+                        <circle cx="50" cy="60" r="2" fill="var(--accent-gold)" class="sparkle sparkle-1"/>
+                        <circle cx="150" cy="70" r="2" fill="var(--accent-gold)" class="sparkle sparkle-2"/>
+                        <circle cx="100" cy="50" r="1.5" fill="var(--accent-gold)" class="sparkle sparkle-3"/>
+                    </svg>
                 </div>
-                <h2>No books found here</h2>
-                <p>Your search for adventure continues... try a different shelf or explore new titles!</p>
+                
+                <!-- Enhanced Typography -->
+                <div class="empty-state-content">
+                    <h2 class="empty-state-title">Your library awaits its first chapter</h2>
+                    <p class="empty-state-description">
+                        No books found here. Start your reading journey by discovering stories that speak to your soul.
+                    </p>
+                </div>
+                
+                <!-- Call to Action -->
                 <a href="index.html" class="btn-primary library-empty-link">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Explore Books
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Discover Books
                 </a>
             </div>
 
@@ -286,8 +331,8 @@
 
         <!-- Book Detail Modal -->
         <div class="book-detail-modal" id="book-detail-modal">
-            <button class="modal-close-btn" id="modal-close-btn" title="Close details">
-                <i class="fa-solid fa-times"></i>
+            <button class="modal-close-btn" id="modal-close-btn" aria-label="Close details" title="Close details">
+                <i class="fa-solid fa-xmark"></i>
             </button>
             <div class="book-detail-content">
                 <div class="book-expanded-layout">
@@ -581,6 +626,35 @@
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
+  <!-- AI Chatbot Widget -->
+  <div id="ai-chatbot-widget" class="chatbot-widget">
+    <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" title="Chat with Elara">
+      <i class="fa-solid fa-robot"></i>
+    </button>
+    <div id="chatbot-window" class="chatbot-window hidden">
+      <div class="chatbot-header">
+        <div class="chatbot-bot-info">
+          <div class="chatbot-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div class="chatbot-name-status">
+            <h4>Elara</h4>
+            <span class="chatbot-status">The Bookseller</span>
+          </div>
+        </div>
+        <button id="chatbot-close-btn" class="chatbot-close-btn"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div id="chatbot-messages" class="chatbot-messages">
+        <div class="chat-message bot-message">
+          <p>Hello, wanderer. What kind of story are you looking for today?</p>
+        </div>
+      </div>
+      <div class="chatbot-input-area">
+        <input type="text" id="chatbot-input" placeholder="Describe a mood, setting, or feeling...">
+        <button id="chatbot-send-btn" class="chatbot-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+  <script src="../js/chatbot.js"></script>
+
 </body>
 
 </html>

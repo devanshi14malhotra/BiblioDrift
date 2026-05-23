@@ -10,52 +10,61 @@
         document.documentElement.setAttribute('data-theme', 'night');
       }
     })();
-document.addEventListener('DOMContentLoaded', function () {
-    const btn = document.getElementById('themeToggle');
-    if (!btn) {
+    document.addEventListener('DOMContentLoaded', function () {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) {
         console.error('themeToggle button not found');
         return;
-    }
+      }
 
-    const icon = btn.querySelector('i');
-    const STORAGE_KEY = 'bibliodrift_theme';
+      const icon = btn.querySelector('i');
+      const STORAGE_KEY = 'bibliodrift_theme';
 
-    function applyTheme(theme) {
+      function applyTheme(theme) {
         if (theme === 'night') {
-            document.documentElement.setAttribute('data-theme', 'night');
-            if (icon) icon.className = 'fa-solid fa-sun';
+          document.documentElement.setAttribute('data-theme', 'night');
+          if (icon) icon.className = 'fa-solid fa-sun';
         } else {
-            document.documentElement.removeAttribute('data-theme');
-            if (icon) icon.className = 'fa-solid fa-moon';
+          document.documentElement.removeAttribute('data-theme');
+          if (icon) icon.className = 'fa-solid fa-moon';
         }
 
         localStorage.setItem(STORAGE_KEY, theme);
         if (typeof restoreTheme === 'function') restoreTheme();
         console.log('Theme applied:', theme);
-    }
+      }
 
-    // Load saved theme
-    const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
-    applyTheme(savedTheme);
+      // Load saved theme
+      const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+      applyTheme(savedTheme);
 
-    // Toggle on click
-    btn.addEventListener('click', function () {
+      // Toggle on click
+      btn.addEventListener('click', function () {
         const current =
-            document.documentElement.getAttribute('data-theme') === 'night'
-                ? 'night'
-                : 'light';
+          document.documentElement.getAttribute('data-theme') === 'night'
+            ? 'night'
+            : 'light';
 
         const next = current === 'night' ? 'light' : 'night';
         applyTheme(next);
+      });
     });
-});
   </script>
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
   <script src="../js/db.js"></script>
 
   <script src="../js/library-3d.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations." />
+  <meta name="description"
+    content="BiblioDrift — Your mood-based book discovery app. Find your next read by how you feel, track your journey, and get AI-powered recommendations." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bibliodrift-dm.netlify.app/" />
+  <meta property="og:title" content="BiblioDrift | Find yourself in the pages" />
+  <meta property="og:description"
+    content="BiblioDrift — Your mood-based book discovery app. Find your next read by how you feel, track your journey, and get AI-powered recommendations." />
+  <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <title>BiblioDrift | Find yourself in the pages</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
@@ -98,19 +107,23 @@ document.addEventListener('DOMContentLoaded', function () {
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
-          <a href="vault.html" >My Vault</a>
+          <a href="vault.html">My Vault</a>
           <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
         </div>
         <div class="tooltip">
-          <a href="library.html" >My Library</a>
+          <a href="library.html">My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
         <div class="tooltip">
-          <a href="chat.html" >Chat</a>
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
         <div class="tooltip">
-          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <a href="auth.html" id="navAuthLink">Sign In</a>
           <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
         </div>
       </nav>
@@ -164,6 +177,14 @@ document.addEventListener('DOMContentLoaded', function () {
         <span><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span>
       </div>
       <div class="curated-row" id="row-classics"></div>
+    </section>
+
+    <section class="curated-section">
+      <div class="section-header">
+        <h2>Thriller & Suspense</h2>
+        <span><i class="fa-solid fa-skull"></i> Edge of Your Seat</span>
+      </div>
+    <div class="curated-row" id="row-thriller"></div>
     </section>
 
     <section class="curated-section">
@@ -242,7 +263,8 @@ document.addEventListener('DOMContentLoaded', function () {
               <button id="modal-preview-btn" class="btn-preview"><i class="fa-solid fa-book-open"></i> Preview</button>
               <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i>
                 Share</button>
-              <button id="modal-mood-btn" class="btn-secondary"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore Mood</button>
+              <button id="modal-mood-btn" class="btn-secondary"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore
+                Mood</button>
             </div>
           </div>
         </div>
@@ -250,8 +272,122 @@ document.addEventListener('DOMContentLoaded', function () {
     </dialog>
   </main>
 
+  <section class="reader-perspectives">
+    <div class="section-header">
+      <h2>Reader Perspectives</h2>
+      <span>
+        <i class="fa-solid fa-book-open-reader"></i>
+        Quiet thoughts from wandering readers
+      </span>
+    </div>
 
-<script src="../js/config.js"></script>
+    <div class="perspective-grid">
+      <div class="perspective-card">
+        <div class="perspective-user">
+          <div class="avatar-circle"><i class="fa-solid fa-cloud-rain" style="color: #60a5fa;"></i></div>
+          <div>
+            <h3>Midnight Reader</h3>
+            <p class="stars">★★★★★</p>
+          </div>
+        </div>
+        <p class="perspective-text">
+          “BiblioDrift feels like wandering through a bookstore during rainfall.”
+        </p>
+      </div>
+
+      <div class="perspective-card">
+        <div class="perspective-user">
+          <div class="avatar-circle"><i class="fa-solid fa-mug-hot" style="color: #f97316;"></i></div>
+          <div>
+            <h3>Slow Sunday Soul</h3>
+            <p class="stars">★★★★★</p>
+          </div>
+        </div>
+        <p class="perspective-text">
+          “I came for books and stayed for the atmosphere.”
+        </p>
+      </div>
+
+      <div class="perspective-card">
+        <div class="perspective-user">
+          <div class="avatar-circle"><i class="fa-solid fa-moon" style="color: #facc15;"></i></div>
+          <div>
+            <h3>Wandering Philosopher</h3>
+            <p class="stars">★★★★★</p>
+          </div>
+        </div>
+        <p class="perspective-text">
+          “Elara somehow recommended a story that mirrored my entire week.”
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading-mood-quiz" id="readingMoodQuiz">
+    <div class="quiz-container">
+      <h2>Reading Mood Quiz</h2>
+      <p>
+        Answer a few quick questions to discover mood tags for personalized book
+        recommendations.
+      </p>
+
+      <div class="quiz-question">
+        <h3>1. What is your current reading mood?</h3>
+        <div class="quiz-options" data-question="mood">
+          <button type="button" data-value="cozy">Cozy</button>
+          <button type="button" data-value="dark">Dark</button>
+          <button type="button" data-value="romantic">Romantic</button>
+          <button type="button" data-value="mysterious">Mysterious</button>
+          <button type="button" data-value="adventurous">Adventurous</button>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <h3>2. Which genre do you prefer right now?</h3>
+        <div class="quiz-options" data-question="genre">
+          <button type="button" data-value="romance">Romance</button>
+          <button type="button" data-value="mystery">Mystery</button>
+          <button type="button" data-value="fantasy">Fantasy</button>
+          <button type="button" data-value="self-help">Self-help</button>
+          <button type="button" data-value="thriller">Thriller</button>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <h3>3. What reading pace do you want?</h3>
+        <div class="quiz-options" data-question="pace">
+          <button type="button" data-value="quick-read">Quick read</button>
+          <button type="button" data-value="medium-paced">Medium paced</button>
+          <button type="button" data-value="slow-immersive">Slow immersive</button>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <h3>4. What story vibe are you looking for?</h3>
+        <div class="quiz-options" data-question="vibe">
+          <button type="button" data-value="light-hearted">Light-hearted</button>
+          <button type="button" data-value="emotional">Emotional</button>
+          <button type="button" data-value="suspenseful">Suspenseful</button>
+          <button type="button" data-value="inspiring">Inspiring</button>
+          <button type="button" data-value="magical">Magical</button>
+        </div>
+      </div>
+
+      <button type="button" id="generateMoodTags" class="generate-tags-btn" disabled>
+        Generate Mood Tags
+      </button>
+
+      <div class="quiz-results" id="quizResults" hidden>
+        <h3>Your Reading Mood Tags</h3>
+        <div class="mood-tags" id="moodTags"></div>
+        <button type="button" id="retakeQuiz" class="retake-quiz-btn">
+          Retake Quiz
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script src="../js/config.js"></script>
   <script src="../js/security.js"></script>
   <script src="../js/app.js"></script>
   <script src="../js/book-preview.js"></script>
@@ -261,8 +397,8 @@ document.addEventListener('DOMContentLoaded', function () {
   <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
 
-
-  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top"
+    onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
     <i class="fa-solid fa-arrow-up"></i>
   </button>
 
@@ -270,8 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
     <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
       <i class="fa-solid fa-leaf"></i>
     </button>
+    
     <div id="ambientPanel" class="ambient-panel">
       <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
+      
       <div class="ambient-option">
         <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
         <label class="switch">
@@ -279,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <span class="slider"></span>
         </label>
       </div>
+      
       <div class="ambient-option">
         <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
         <label class="switch">
@@ -286,6 +425,47 @@ document.addEventListener('DOMContentLoaded', function () {
           <span class="slider"></span>
         </label>
       </div>
+
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-rocket"></i> Space Drift</span>
+        <label class="switch">
+          <input type="checkbox" id="spaceToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-train"></i> Night Train</span>
+        <label class="switch">
+          <input type="checkbox" id="trainToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-tree"></i> Forest Cabin</span>
+        <label class="switch">
+          <input type="checkbox" id="forestToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-wand-sparkles"></i> Magic Realm</span>
+        <label class="switch">
+          <input type="checkbox" id="magicToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="ambient-option">
+        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-torii-gate"></i> Wisteria Night</span>
+        <label class="switch">
+          <input type="checkbox" id="animeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
       <div class="ambient-option">
         <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
         <label class="switch">
@@ -301,7 +481,8 @@ document.addEventListener('DOMContentLoaded', function () {
         </label>
       </div>
       <div class="volume-control">
-        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
+        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i>
+          Volume</label>
         <div class="range-wrap">
           <div class="range-track" aria-hidden="true"></div>
           <div class="range-fill" aria-hidden="true"></div>
@@ -310,5 +491,34 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     </div>
   </div>
+
+  <div id="ai-chatbot-widget" class="chatbot-widget">
+    <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" title="Chat with Elara">
+      <i class="fa-solid fa-robot"></i>
+    </button>
+    <div id="chatbot-window" class="chatbot-window hidden">
+      <div class="chatbot-header">
+        <div class="chatbot-bot-info">
+          <div class="chatbot-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div class="chatbot-name-status">
+            <h4>Elara</h4>
+            <span class="chatbot-status">The Bookseller</span>
+          </div>
+        </div>
+        <button id="chatbot-close-btn" class="chatbot-close-btn"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div id="chatbot-messages" class="chatbot-messages">
+        <div class="chat-message bot-message">
+          <p>Hello, wanderer. What kind of story are you looking for today?</p>
+        </div>
+      </div>
+      <div class="chatbot-input-area">
+        <input type="text" id="chatbot-input" placeholder="Describe a mood, setting, or feeling...">
+        <button id="chatbot-send-btn" class="chatbot-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+  <script src="../js/chatbot.js"></script>
+
 </body>
 </html>

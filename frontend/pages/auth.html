@@ -13,6 +13,17 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth | BiblioDrift</title>
+    <!-- SEO & Open Graph meta tags -->
+    <meta name="description"
+        content="Sign in or create your BiblioDrift account to start discovering books by mood, saving your favourites, and chatting with Elara, your AI reading companion." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/auth" />
+    <meta property="og:title" content="Sign In | BiblioDrift" />
+    <meta property="og:description"
+        content="Sign in or create your BiblioDrift account to start discovering books by mood, saving your favourites, and chatting with Elara, your AI reading companion." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
@@ -191,6 +202,26 @@
 
         .input-group {
             margin: 0;
+            position: relative;
+        }
+
+        .password-toggle-icon {
+            position: absolute;
+            right: 1.05rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+            z-index: 10;
+        }
+
+        .password-toggle-icon:hover {
+            color: var(--text-main);
+        }
+
+        .auth-input.password-input {
+            padding-right: 2.75rem;
         }
 
         .auth-input {
@@ -315,43 +346,47 @@
 </head>
 
 <body class="auth-page">
-      <header>
-    <a href="index.html" class="logo">
-      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-    </a>
-    <div class="header-controls">
-      <div class="search-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
-      </div>
-      <nav class="nav-links">
-        <div class="tooltip">
-          <a href="index.html" >Discovery</a>
-          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+    <header>
+        <a href="index.html" class="logo">
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+        </a>
+        <div class="header-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+                <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+            </div>
+            <nav class="nav-links">
+                <div class="tooltip">
+                    <a href="index.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="vault.html">My Vault</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="community-stories.html">Community</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <!-- DYNAMIC AUTH LINK -->
+                <div class="tooltip">
+                    <a href="auth.html" id="navAuthLink" class="active">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
+            </nav>
+            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
         </div>
-        <div class="tooltip">
-          <a href="vault.html" >My Vault</a>
-          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
-        </div>
-        <div class="tooltip">
-          <a href="library.html" >My Library</a>
-          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-        </div>
-        <div class="tooltip">
-          <a href="chat.html" >Chat</a>
-          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-        </div>
-        <!-- DYNAMIC AUTH LINK -->
-        <div class="tooltip">
-          <a href="auth.html" id="navAuthLink" class="active">Sign In</a>
-          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
-        </div>
-      </nav>
-      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-    </div>
-  </header>
+    </header>
 
     <main class="auth-main">
         <section class="auth-shell">
@@ -379,53 +414,48 @@
                     </div>
 
                     <div class="input-group">
-                        <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required autocomplete="email">
+                        <input type="email" id="email" class="auth-input" placeholder="Email Address"
+                            value="demo@bibliodrift.com" required autocomplete="email">
                     </div>
 
                     <div class="input-group">
-                        <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123" required autocomplete="current-password">
+                        <input type="password" id="password" class="auth-input password-input" placeholder="Password"
+                            value="demo123" required autocomplete="current-password">
+                        <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
+                            aria-label="Show password" role="button" tabindex="0"></i>
                     </div>
 
+                    <!-- 
+                        =============================================================
+                        SECURITY COMPLIANCE: CSRF TOKEN FIELD
+                        =============================================================
+                        This hidden input is dynamically populated with a one-time 
+                        security token provided by the backend. It protects against
+                        Cross-Site Request Forgery attacks by ensuring that the 
+                        form submission originated from this specific application 
+                        instance.
+                        =============================================================
+                    -->
+                    <input type="hidden" id="csrf_token" name="csrf_token" value="">
+
+                    <!-- Primary Action Button -->
                     <button type="submit" id="submitBtn" class="auth-btn">
                         Sign In
                     </button>
+
+                    <!-- Google Authentication -->
+                    <button type="button" id="googleAuthBtn" class="google-auth-btn">
+                        <i class="fa-brands fa-google"></i>
+                        <span>Sign in with Google</span>
+                    </button>
                 </form>
 
-                <div class="auth-footer">
+                <!-- Mode Toggle Link -->
+                <div class="auth-footer" style="margin-top: 1.5rem;">
                     <span id="toggleText" class="toggle-link">
                         No account? Create one.
                     </span>
                 </div>
-                
-                <!-- 
-                    =============================================================
-                    SECURITY COMPLIANCE: CSRF TOKEN FIELD
-                    =============================================================
-                    This hidden input is dynamically populated with a one-time 
-                    security token provided by the backend. It protects against
-                    Cross-Site Request Forgery attacks by ensuring that the 
-                    form submission originated from this specific application 
-                    instance.
-                    =============================================================
-                -->
-                <input type="hidden" id="csrf_token" name="csrf_token" value="">
-                
-                <!-- Primary Action Button -->
-                <button type="submit" id="submitBtn" class="auth-btn">
-                    Sign In
-                </button>
-
-                <button type="button" id="googleAuthBtn" class="google-auth-btn">
-                    <i class="fa-brands fa-google"></i>
-                    <span>Sign in with Google</span>
-                </button>
-            </form>
-            
-            <!-- Mode Toggle Link -->
-            <div class="auth-footer" style="margin-top: 1.5rem;">
-                <span id="toggleText" class="toggle-link">
-                    No account? Create one.
-                </span>
             </div>
         </section>
     </main>
@@ -526,6 +556,35 @@
                 }
             });
         }
+
+        const togglePassword = document.getElementById('togglePassword');
+        if (togglePassword && passwordInput) {
+            const toggleVisibility = () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                if (type === 'password') {
+                    togglePassword.classList.remove('fa-eye-slash');
+                    togglePassword.classList.add('fa-eye');
+                    togglePassword.setAttribute('title', 'Show Password');
+                    togglePassword.setAttribute('aria-label', 'Show password');
+                } else {
+                    togglePassword.classList.remove('fa-eye');
+                    togglePassword.classList.add('fa-eye-slash');
+                    togglePassword.setAttribute('title', 'Hide Password');
+                    togglePassword.setAttribute('aria-label', 'Hide password');
+                }
+            };
+
+            togglePassword.addEventListener('click', toggleVisibility);
+
+            togglePassword.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleVisibility();
+                }
+            });
+        }
     </script>
     <script src="../js/pwa.js"></script>
     <script>
@@ -545,11 +604,11 @@
                     method: 'GET',
                     credentials: 'include'
                 });
-                
+
                 if (response.ok) {
                     const result = await response.json();
                     const token = result.data?.csrf_token;
-                    
+
                     if (token) {
                         const csrfInput = document.getElementById('csrf_token');
                         if (csrfInput) {

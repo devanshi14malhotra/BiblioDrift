@@ -14,7 +14,7 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
-from backend.spine_generator import create_spine
+from spine_generator import create_spine
 import os
 import requests
 import secrets
@@ -25,8 +25,8 @@ from datetime import datetime, timedelta, timezone
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from sanitizer import sanitize_payload
-from reader_identity.routes import reader_identity_bp
+from backend.sanitizer import sanitize_payload
+from backend.reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -2405,20 +2405,9 @@ def delete_price_alert(alert_id):
 with app.app_context():
     db.create_all()
 
-@app.route('/api/books', methods=['GET'])
-def get_books():
-    query = request.args.get('q')
-    max_results = request.args.get('maxResults', 10)
-
-    API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
-    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}&key={API_KEY}"
-
-    try:
-        response = requests.get(url)
-        data = response.json()
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": "Failed to fetch books"}), 500
+# NOTE: Book search is performed directly from the frontend using the Google Books API.
+# The old backend proxy endpoint /api/books has been removed to avoid unnecessary
+# load on the backend server.
 
 if __name__ == '__main__':
     server_config = app_config.server
