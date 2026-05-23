@@ -1,10 +1,12 @@
+import os
+os.environ['APP_ENV'] = 'testing'
 import pytest
 import json
 import sys
-import os
 from unittest.mock import patch
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 from app import app
+
 
 @pytest.fixture
 def client():

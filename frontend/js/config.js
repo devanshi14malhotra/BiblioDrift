@@ -36,6 +36,9 @@ const CONFIG = {
     // Google Books API endpoint
     API_BASE: 'https://www.googleapis.com/books/v1/volumes',
 
+    // UI Configuration
+    CHUNK_SIZE: 20,
+
     // Dynamic base URL helper for auth endpoints
     // Returns the current origin (works in dev and prod)
     getApiBaseUrl: function() {

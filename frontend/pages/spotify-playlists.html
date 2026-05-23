@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reading Playlists – BiblioDrift</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <link rel="stylesheet" href="../css/style_main.css"/>
+  <link rel="stylesheet" href="../css/style-responsive.css"/>
+  <style>
+  :root {
+    --sp-bg: #f5f0e8;
+    --sp-card: #ffffff;
+    --sp-border: #d4c9b0;
+    --sp-text: #2c2416;
+    --sp-text-muted: #6b5d4f;
+    --sp-accent: #8b6914;
+    --sp-btn-bg: transparent;
+    --sp-btn-active: #8b6914;
+    --sp-btn-active-text: #ffffff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sp-bg: #1c140e;
+      --sp-card: #2a1f18;
+      --sp-border: #3d2d23;
+      --sp-text: #e8e0d0;
+      --sp-text-muted: #9a8e7e;
+      --sp-accent: #c9a84c;
+      --sp-btn-bg: transparent;
+      --sp-btn-active: #c9a84c;
+      --sp-btn-active-text: #1c140e;
+    }
+  }
+
+  .playlist-section {
+    min-height: 100vh;
+    padding: 3rem 2rem;
+    background: var(--sp-bg);
+  }
+  .playlist-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .playlist-header h1 {
+    font-family: 'Georgia', serif;
+    color: var(--sp-accent);
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+  }
+  .playlist-header p {
+    color: var(--sp-text-muted);
+    font-size: 0.95rem;
+  }
+  .mood-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 2.5rem;
+  }
+  .mood-btn {
+    padding: 0.5rem 1.2rem;
+    border: 1px solid var(--sp-accent);
+    border-radius: 20px;
+    background: var(--sp-btn-bg);
+    color: var(--sp-accent);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mood-btn:hover, .mood-btn.active {
+    background: var(--sp-btn-active);
+    color: var(--sp-btn-active-text);
+    font-weight: 600;
+  }
+  .playlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .playlist-card {
+    background: var(--sp-card);
+    border: 1px solid var(--sp-border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: none;
+  }
+  .playlist-card.visible { display: block; }
+  .playlist-card iframe {
+    width: 100%;
+    border: none;
+    border-radius: 16px;
+  }
+  .card-label {
+    padding: 0.8rem 1rem 1rem;
+    color: var(--sp-text-muted);
+    font-size: 0.85rem;
+  }
+  .back-link {
+    display: block;
+    text-align: center;
+    margin-top: 2rem;
+    color: var(--sp-accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<section class="playlist-section">
+  <div class="playlist-header">
+    <h1><i data-lucide="music"></i> Reading Playlists</h1>
+    <p>Pick your mood and let the music set the atmosphere.</p>
+  </div>
+
+  <div class="mood-tabs">
+    <button class="mood-btn active" onclick="filterMood('all')">All</button>
+  <button class="mood-btn" onclick="filterMood('dark-academia')">Dark Academia</button>
+  <button class="mood-btn" onclick="filterMood('rainy')">Rainy & Melancholy</button>
+  <button class="mood-btn" onclick="filterMood('cozy')">Cozy Reads</button>
+  <button class="mood-btn" onclick="filterMood('fantasy')">Fantasy</button>
+  </div>
+
+  <div class="playlist-grid">
+
+    <div class="playlist-card visible" data-mood="dark-academia">
+      <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX4sWSpwq3LiO?utm_source=generator&theme=0"
+        height="352" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+      <div class="card-label">Dark Academia — Classical & Orchestral</div>
+    </div>
+
+    <div class="playlist-card visible" data-mood="rainy">
+      <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8ymr6UES7vc?utm_source=generator&theme=0"
+        height="352" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+      <div class="card-label">Rainy & Melancholy — Lo-fi Rain Ambience</div>
+    </div>
+
+    <div class="playlist-card visible" data-mood="cozy">
+      <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX4WYpdgoIcn6?utm_source=generator&theme=0"
+        height="352" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+      <div class="card-label">Cozy Reads — Cafe Jazz & Acoustic</div>
+    </div>
+
+    <div class="playlist-card visible" data-mood="fantasy">
+      <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX7EF8wVxBVhG?utm_source=generator&theme=0"
+        height="352" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+      <div class="card-label">Fantasy — Cinematic Soundtracks</div>
+    </div>
+
+  </div>
+
+  <a href="index.html" class="back-link">← Back to Discovery</a>
+</section>
+
+<script>
+  function filterMood(mood) {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.playlist-card').forEach(card => {
+      if (mood === 'all' || card.dataset.mood === mood) {
+        card.classList.add('visible');
+      } else {
+        card.classList.remove('visible');
+      }
+    });
+  }
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>
