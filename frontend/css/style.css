@@ -43,6 +43,7 @@
     --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.15);
 }
 
+
 /* Fix: WCAG AA Contrast Floor - Issue #534 */
 .glass-panel,
 .book-tooltip,
@@ -6809,5 +6810,29 @@ body.night-mode .tooltip-author {
     color: var(--text-main);
     border-color: var(--text-main);
 }
+.quote-banner {
+  text-align: center;
+  padding: 14px 20px;
+  background: var(--surface-elevated);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--control-border);
+  font-size: 1rem;
+  line-height: 1.5;
+}
 
+.quote-banner p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.quote-banner span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+[data-theme="night"] .quote-banner {
+  background: var(--surface-panel);
+}
 
