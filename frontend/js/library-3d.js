@@ -428,7 +428,7 @@ class BookshelfRenderer3D {
         if (!spinnerContainer) {
             spinnerContainer = document.createElement('div');
             spinnerContainer.id = 'bookshelf-3d-loader';
-            spinnerContainer.style.cssText = \`
+            spinnerContainer.style.cssText = `
                 position: absolute;
                 top: 0; left: 0; right: 0; bottom: 0;
                 background: rgba(18, 18, 18, 0.85);
@@ -443,11 +443,11 @@ class BookshelfRenderer3D {
                 font-family: 'Inter', sans-serif;
                 transition: opacity 0.5s ease;
                 border-radius: 12px;
-            \`;
+            `;
             
             const spinner = document.createElement('div');
             spinner.className = 'loader-spinner';
-            spinner.style.cssText = \`
+            spinner.style.cssText = `
                 width: 60px;
                 height: 60px;
                 border: 4px solid rgba(212, 175, 55, 0.2);
@@ -455,14 +455,14 @@ class BookshelfRenderer3D {
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
                 margin-bottom: 20px;
-            \`;
+            `;
             
             if (!document.getElementById('loader-keyframes')) {
                 const style = document.createElement('style');
                 style.id = 'loader-keyframes';
-                style.textContent = \`
+                style.textContent = `
                     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                \`;
+                `;
                 document.head.appendChild(style);
             }
             
@@ -476,23 +476,23 @@ class BookshelfRenderer3D {
             title.style.fontWeight = '500';
             
             const progressContainer = document.createElement('div');
-            progressContainer.style.cssText = \`
+            progressContainer.style.cssText = `
                 width: 250px;
                 height: 6px;
                 background: rgba(255,255,255,0.1);
                 border-radius: 3px;
                 overflow: hidden;
                 margin: 0 auto;
-            \`;
+            `;
             
             const progressBar = document.createElement('div');
             progressBar.id = 'bookshelf-3d-progress-bar';
-            progressBar.style.cssText = \`
+            progressBar.style.cssText = `
                 height: 100%;
                 width: 0%;
                 background: linear-gradient(90deg, #d4af37, #f3e5ab);
                 transition: width 0.3s ease;
-            \`;
+            `;
             
             const progressText = document.createElement('div');
             progressText.id = 'bookshelf-3d-progress-text';
@@ -522,8 +522,8 @@ class BookshelfRenderer3D {
     updateLoadingSpinner(progress) {
         const progressBar = document.getElementById('bookshelf-3d-progress-bar');
         const progressText = document.getElementById('bookshelf-3d-progress-text');
-        if (progressBar) progressBar.style.width = \`\${progress}%\`;
-        if (progressText) progressText.textContent = \`Loading high-res models... \${progress}%\`;
+        if (progressBar) progressBar.style.width = `${progress}%`;
+        if (progressText) progressText.textContent = `Loading high-res models... ${progress}%`;
     }
 
     hideLoadingSpinner() {
@@ -931,14 +931,14 @@ class BookshelfRenderer3D {
         `;
 
         const rating = document.createElement('span');
-        rating.innerHTML = \`<i class="fa-solid fa-star" style="color: #d4af37;"></i> \${book.rating ? book.rating.toFixed(1) : 'N/A'}\`;
+        rating.innerHTML = `<i class="fa-solid fa-star" style="color: #d4af37;"></i> ${book.rating ? book.rating.toFixed(1) : 'N/A'}`;
         rating.style.color = '#ccc';
 
         metaRow.appendChild(rating);
 
         if (shelfType === 'current' && book.progress > 0) {
             const progress = document.createElement('span');
-            progress.textContent = \`\${book.progress}%\`;
+            progress.textContent = `${book.progress}%`;
             progress.style.color = '#4caf50';
             progress.style.fontWeight = 'bold';
             metaRow.appendChild(progress);
@@ -954,7 +954,7 @@ class BookshelfRenderer3D {
         card.addEventListener('click', () => this.openModal(book));
         card.setAttribute('tabindex', '0');
         card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', \`\${book.title} by \${book.author}\`);
+        card.setAttribute('aria-label', `${book.title} by ${book.author}`);
 
         card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -2438,6 +2438,8 @@ spine.addEventListener('blur', () => this.hideTooltip());
             // Setup interactive handlers (flip, close) for the current book
             this.setupModalHandlers();
         }
+    }
+
     }
 
     closeModal() {

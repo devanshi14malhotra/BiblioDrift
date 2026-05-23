@@ -93,7 +93,7 @@ jobs:
           sleep 5
           
       - name: Install frontend dependencies
-        run: npm install
+        run: npm ci
 
       - name: Start frontend server
         run: |
