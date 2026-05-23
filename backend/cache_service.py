@@ -15,8 +15,12 @@ from enum import Enum
 from backend.config import app_config
 
 try:
-    import redis
     from flask_caching import Cache
+except ImportError:
+    pass
+
+try:
+    import redis
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
