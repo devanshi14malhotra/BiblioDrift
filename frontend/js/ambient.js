@@ -27,23 +27,23 @@ class AmbientManager {
         this.toggleBtn.setAttribute('aria-expanded', 'false');
 
         this.rainAudio = new Audio('https://archive.org/download/Red_Library_Nature_Rain/R22-25-General%20Rain.mp3');
-        this.rainAudio.preload = 'auto';
+        this.rainAudio.preload = 'none';
         this.fireAudio = new Audio('https://archive.org/download/1-hour-cozy-fire-crackling-fireplace-320/1%20hour%20Cozy%20Fire%20Crackling%20Fireplace%20320.mp3');
-        this.fireAudio.preload = 'auto';
+        this.fireAudio.preload = 'none';
         this.oceanAudio = new Audio('../assets/sounds/calm-ocean-waves.mp3');
-        this.oceanAudio.preload = 'auto';
+        this.oceanAudio.preload = 'none';
         this.stormAudio = new Audio('../assets/sounds/Rain-and-storm.mp3');
-        this.stormAudio.preload = 'auto';
+        this.stormAudio.preload = 'none';
         this.spaceAudio = new Audio('../assets/sounds/space.mp3');
-        this.spaceAudio.preload = 'auto';
+        this.spaceAudio.preload = 'none';
         this.trainAudio = new Audio('../assets/sounds/train.mp3');
-        this.trainAudio.preload = 'auto';
+        this.trainAudio.preload = 'none';
         this.forestAudio = new Audio('../assets/sounds/forest.mp3');
-        this.forestAudio.preload = 'auto';
+        this.forestAudio.preload = 'none';
         this.magicAudio = new Audio('../assets/sounds/magic.mp3');
-        this.magicAudio.preload = 'auto';
+        this.magicAudio.preload = 'none';
         this.animeAudio = new Audio('../assets/sounds/anime.mp3');
-        this.animeAudio.preload = 'auto';
+        this.animeAudio.preload = 'none';
         
         this.rainAudio.loop = true;
         this.fireAudio.loop = true;
