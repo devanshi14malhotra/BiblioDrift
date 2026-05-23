@@ -1189,3 +1189,152 @@ button, a, input {
 .book-container-3d.flipped {
     transform: rotateY(-180deg) translateZ(0px) !important;
 }
+
+/* =========================================
+   Nearby Bookstores Responsive
+========================================= */
+
+@media (max-width: 1200px) {
+
+    .nearby-bookstores-container {
+        padding: 40px 40px;
+    }
+
+    .bookstores-heading {
+        font-size: 2.3rem;
+    }
+
+    .bookstores-subtitle {
+        font-size: 1.05rem;
+    }
+
+    .bookstore-map-container {
+        height: 300px;
+    }
+}
+
+@media (max-width: 992px) {
+
+    .nearby-bookstores-container {
+        padding: 32px 28px;
+    }
+
+    .bookstores-header {
+        gap: 18px;
+    }
+
+    .bookstores-heading {
+        font-size: 2rem;
+    }
+
+    .bookstores-subtitle {
+        font-size: 1rem;
+    }
+
+    .bookstores-grid {
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(260px, 1fr)
+        );
+    }
+
+    .bookstore-map-container {
+        height: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .nearby-bookstores-container {
+        padding: 24px 20px;
+        gap: 20px;
+    }
+
+    .bookstores-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .bookstores-heading {
+        font-size: 1.8rem;
+    }
+
+    .bookstores-subtitle {
+        font-size: 0.98rem;
+        line-height: 1.5;
+    }
+
+    .bookstores-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .bookstore-card {
+        padding: 18px;
+        border-radius: 18px;
+    }
+
+    .bookstore-actions {
+        flex-direction: column;
+    }
+
+    .bookstore-map-container {
+        height: 240px;
+        border-radius: 18px;
+    }
+
+    .find-bookstore-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 18px;
+        font-size: 0.92rem;
+    }
+
+    .bookstore-name {
+        font-size: 1.25rem;
+    }
+
+    .bookstore-address,
+    .bookstore-hours {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .nearby-bookstores-container {
+        padding: 18px 14px;
+    }
+
+    .bookstores-heading {
+        font-size: 1.55rem;
+    }
+
+    .bookstores-subtitle {
+        font-size: 0.92rem;
+    }
+
+    .bookstore-card {
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .bookstore-map-container {
+        height: 220px;
+    }
+
+    .bookstore-name {
+        font-size: 1.15rem;
+    }
+
+    .bookstore-btn {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    .bookstore-distance,
+    .bookstore-rating {
+        font-size: 0.82rem;
+    }
+}

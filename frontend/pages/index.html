@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
   <link rel="stylesheet" href="../css/pwa.css">
   <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -108,6 +109,10 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="tooltip">
           <a href="library.html" >My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
         </div>
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
@@ -211,6 +216,8 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="genre-card" data-genre="history"><i class="fa-solid fa-landmark"></i><span>History</span></div>
       </div>
     </section>
+
+<!-- Genre Modal -->
 
     <!-- Genre Modal -->
     <dialog id="genre-modal" class="genre-modal">
@@ -325,5 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     </div>
   </div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="../js/nearby-bookstores.js"></script>
 </body>
 </html>
