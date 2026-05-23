@@ -53,10 +53,8 @@
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
   <script src="../js/db.js"></script>
 
-  <!-- <script src="../js/app.js"></script> -->
   <script src="../js/library-3d.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- SEO & Open Graph meta tags -->
   <meta name="description"
     content="BiblioDrift — Your mood-based book discovery app. Find your next read by how you feel, track your journey, and get AI-powered recommendations." />
   <meta property="og:type" content="website" />
@@ -72,7 +70,6 @@
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
   <link rel="stylesheet" href="../css/pwa.css">
   <link rel="manifest" href="../manifest.json">
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -80,10 +77,8 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-  <!-- Security: DOMPurify for XSS prevention -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
-  <!-- PWA -->
   <meta name="theme-color" content="#2c2420">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -126,7 +121,6 @@
           <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
-        <!-- DYNAMIC AUTH LINK -->
         <div class="tooltip">
           <a href="auth.html" id="navAuthLink">Sign In</a>
           <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
@@ -144,25 +138,94 @@
       <p>A curated sanctuary for those who read through emotions.</p>
     </section>
 
-    <!-- SEARCH RESULTS SECTION (Initially Hidden) -->
+    <section class="curated-section quotes-generator-section" style="text-align: center; padding: 40px 20px;">
+      <div style="margin: 0 1rem 1.5rem 1rem; display: flex; justify-content: space-between; align-items: baseline;">
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: normal; color: var(--text-main);">Daily Literary Inspiration</h2>
+        <span style="color: var(--text-muted); font-size: 0.95rem;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-gold);"></i> Words from timeless writers</span>
+      </div>
+      
+      <div class="quote-card-container" style="max-width: 650px; margin: 2rem auto; display: flex; flex-direction: column; align-items: center; gap: 24px;">
+        <div class="quote-card" id="quoteCard" style="width: 100%; padding: 40px; border-radius: 24px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); box-shadow: var(--shadow-soft); position: relative; transition: all 0.4s ease;">
+          <div class="quote-icon-top" style="opacity: 0.2; font-size: 1.2rem; text-align: left; margin-bottom: 8px;"><i class="fa-solid fa-quote-left"></i></div>
+          <p class="quote-text" id="quoteDisplay" style="font-family: 'Playfair Display', serif; font-size: 1.35rem; font-style: italic; line-height: 1.6; color: var(--text-main); margin-bottom: 16px;">“The more that you read, the more things you will know. The more that you learn, the more places you'll go.”</p>
+          <p class="quote-author" id="authorDisplay" style="font-size: 1rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-gold);">— Dr. Seuss</p>
+          <div class="quote-icon-bottom" style="opacity: 0.2; font-size: 1.2rem; text-align: right; margin-top: 8px;"><i class="fa-solid fa-quote-right"></i></div>
+        </div>
+        
+        <button type="button" id="inspireMeBtn" class="inspire-btn" style="padding: 14px 36px; font-family: 'Georgia', serif; font-size: 1.05rem; font-weight: 600; border: none; border-radius: 50px; color: #ffffff; background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899); background-size: 200% auto; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35); cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s ease;">
+          <i class="fa-solid fa-sparkles"></i> Inspire Me
+        </button>
+      </div>
+    </section>
+
+    <section class="curated-section achievements-badges-section">
+      <div style="margin: 0 1rem 1.5rem 1rem; display: flex; justify-content: space-between; align-items: baseline;">
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: normal; color: var(--text-main);">Your Reading Achievements</h2>
+        <span style="color: var(--text-muted); font-size: 0.95rem;"><i class="fa-solid fa-trophy" style="color: var(--accent-gold);"></i> Unlocking your literary milestones</span>
+      </div>
+
+      <div class="badges-showcase-container">
+        <div class="badge-card locked" id="badge-first-book">
+          <div class="badge-icon-wrap"><i class="fa-solid fa-book-bookmark"></i></div>
+          <div class="badge-info">
+            <h4>First Milestone</h4>
+            <p class="badge-criteria">Complete your first book</p>
+          </div>
+          <div class="badge-tooltip-box" id="tooltip-first-book"><i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Status: Locked | Complete 1 book to unlock!</div>
+        </div>
+
+        <div class="badge-card locked" id="badge-streak">
+          <div class="badge-icon-wrap"><i class="fa-solid fa-fire"></i></div>
+          <div class="badge-info">
+            <h4>7-Day Streak</h4>
+            <p class="badge-criteria">Maintain a 7-day streak</p>
+          </div>
+          <div class="badge-tooltip-box" id="tooltip-streak"><i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Status: Locked | Keep reading daily!</div>
+        </div>
+
+        <div class="badge-card locked" id="badge-night-owl">
+          <div class="badge-icon-wrap"><i class="fa-solid fa-moon"></i></div>
+          <div class="badge-info">
+            <h4>Night Owl</h4>
+            <p class="badge-criteria">Read books late at night</p>
+          </div>
+          <div class="badge-tooltip-box" id="tooltip-night-owl"><i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Status: Locked | Active between 11 PM - 4 AM.</div>
+        </div>
+
+        <div class="badge-card locked" id="badge-fast-finisher">
+          <div class="badge-icon-wrap"><i class="fa-solid fa-rocket"></i></div>
+          <div class="badge-info">
+            <h4>Fast Finisher</h4>
+            <p class="badge-criteria">Finish a book within 48h</p>
+          </div>
+          <div class="badge-tooltip-box" id="tooltip-fast-finisher"><i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Status: Locked | Rapid reading sprint.</div>
+        </div>
+
+        <div class="badge-card locked" id="badge-bookworm">
+          <div class="badge-icon-wrap"><i class="fa-solid fa-award"></i></div>
+          <div class="badge-info">
+            <h4>Bookworm</h4>
+            <p class="badge-criteria">Have 5 books in Library</p>
+          </div>
+          <div class="badge-tooltip-box" id="tooltip-bookworm"><i class="fa-solid fa-lock" style="margin-right: 4px;"></i> Status: Locked | Expand your sanctuary shelf.</div>
+        </div>
+      </div>
+    </section>
+
     <section id="search-results-section" class="curated-section" hidden>
       <div class="section-header">
         <h2 id="search-query-display">Search Results</h2>
         <span><i class="fa-solid fa-magnifying-glass"></i> Exploring your query</span>
       </div>
-      <!-- Mood-Tag Filter Bar -->
       <div id="mood-filter-bar" class="mood-filter-bar" hidden>
         <div class="filter-label">Filter by mood:</div>
         <div class="filter-chips" id="filter-chips">
-          <!-- Dynamically populated chips -->
-        </div>
+          </div>
       </div>
       <div class="curated-row" id="search-results-grid">
-        <!-- Dynamically Appended Books -->
-      </div>
+        </div>
     </section>
 
-    <!-- Curated Sections -->
     <section class="curated-section">
       <div class="section-header">
         <h2>Rainy Evening Reads</h2>
@@ -195,12 +258,6 @@
     <div class="curated-row" id="row-thriller"></div>
     </section>
 
-      
-    
-     
-      
-    
-
     <section class="curated-section">
       <div class="section-header">
         <h2>Dark Academia</h2>
@@ -217,7 +274,6 @@
       <div class="curated-row" id="row-fiction"></div>
     </section>
 
-    <!-- Genre Grid Section -->
     <section class="curated-section genre-section">
       <div class="section-header">
         <h2>Browse by Genre</h2>
@@ -239,7 +295,6 @@
       </div>
     </section>
 
-    <!-- Genre Modal -->
     <dialog id="genre-modal" class="genre-modal">
       <div class="genre-modal-content">
         <div class="genre-modal-header">
@@ -252,7 +307,6 @@
       </div>
     </dialog>
 
-    <!-- Book Details Modal -->
     <dialog id="book-details-modal" class="glass-modal">
       <div class="modal-content">
         <button class="close-modal-btn" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
@@ -269,7 +323,6 @@
                 <div class="text-skeleton skeleton" style="width: 70%"></div>
               </div>
             </div>
-            <!-- Added "Where to Buy" section -->
             <div class="purchase-links-box" style="margin-top: 15px;">
               <div class="purchase-header"><i class="fa-solid fa-cart-shopping"></i><span> Where to Buy</span></div>
               <div id="modal-purchase-links" class="purchase-links-container">
@@ -278,7 +331,7 @@
             </div>
             <div class="modal-actions">
               <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
-              <button id="modal-preview-btn" class="btn-preview"><i class="fa-solid fa-book-open"></i> Preview</button>
+              <button id="modal-preview-btn" class="btn-primary"><i class="fa-solid fa-book-open"></i> Preview</button>
               <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i>
                 Share</button>
               <button id="modal-mood-btn" class="btn-secondary"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore
@@ -289,135 +342,122 @@
       </div>
     </dialog>
   </main>
-<section class="reader-perspectives">
 
-
-  <div class="section-header">
-    <h2>Reader Perspectives</h2>
-    <span>
-      <i class="fa-solid fa-book-open-reader"></i>
-      Quiet thoughts from wandering readers
-    </span>
-  </div>
-
-  <div class="perspective-grid">
-
-    <div class="perspective-card">
-      <div class="perspective-user">
-        <div class="avatar-circle">🌧</div>
-
-        <div>
-          <h3>Midnight Reader</h3>
-          <p class="stars">★★★★★</p>
-        </div>
-      </div>
-
-      <p class="perspective-text">
-        “BiblioDrift feels like wandering through a bookstore during rainfall.”
-      </p>
+  <section class="reader-perspectives">
+    <div class="section-header">
+      <h2>Reader Perspectives</h2>
+      <span>
+        <i class="fa-solid fa-book-open-reader"></i>
+        Quiet thoughts from wandering readers
+      </span>
     </div>
 
-    <div class="perspective-card">
-      <div class="perspective-user">
-        <div class="avatar-circle">☕</div>
-
-        <div>
-          <h3>Slow Sunday Soul</h3>
-          <p class="stars">★★★★★</p>
+    <div class="perspective-grid">
+      <div class="perspective-card">
+        <div class="perspective-user">
+          <div class="avatar-circle"><i class="fa-solid fa-cloud-rain" style="color: #60a5fa;"></i></div>
+          <div>
+            <h3>Midnight Reader</h3>
+            <p class="stars">★★★★★</p>
+          </div>
         </div>
-      </div>
-
-      <p class="perspective-text">
-        “I came for books and stayed for the atmosphere.”
-      </p>
-    </div>
-
-    <div class="perspective-card">
-      <div class="perspective-user">
-        <div class="avatar-circle">🌙</div>
-
-        <div>
-          <h3>Wandering Philosopher</h3>
-          <p class="stars">★★★★★</p>
-        </div>
-      </div>
-
-      <p class="perspective-text">
-        “Elara somehow recommended a story that mirrored my entire week.”
-      </p>
-    </div>
-
-  </div>
-
-</section>
-
-    <!-- Reading mood quiz section -->
-    <section class="reading-mood-quiz" id="readingMoodQuiz">
-      <div class="quiz-container">
-        <h2>Reading Mood Quiz</h2>
-        <p>
-          Answer a few quick questions to discover mood tags for personalized book
-          recommendations.
+        <p class="perspective-text">
+          “BiblioDrift feels like wandering through a bookstore during rainfall.”
         </p>
+      </div>
 
-        <div class="quiz-question">
-          <h3>1. What is your current reading mood?</h3>
-          <div class="quiz-options" data-question="mood">
-            <button type="button" data-value="cozy">Cozy</button>
-            <button type="button" data-value="dark">Dark</button>
-            <button type="button" data-value="romantic">Romantic</button>
-            <button type="button" data-value="mysterious">Mysterious</button>
-            <button type="button" data-value="adventurous">Adventurous</button>
+      <div class="perspective-card">
+        <div class="perspective-user">
+          <div class="avatar-circle"><i class="fa-solid fa-mug-hot" style="color: #f97316;"></i></div>
+          <div>
+            <h3>Slow Sunday Soul</h3>
+            <p class="stars">★★★★★</p>
           </div>
         </div>
+        <p class="perspective-text">
+          “I came for books and stayed for the atmosphere.”
+        </p>
+      </div>
 
-        <div class="quiz-question">
-          <h3>2. Which genre do you prefer right now?</h3>
-          <div class="quiz-options" data-question="genre">
-            <button type="button" data-value="romance">Romance</button>
-            <button type="button" data-value="mystery">Mystery</button>
-            <button type="button" data-value="fantasy">Fantasy</button>
-            <button type="button" data-value="self-help">Self-help</button>
-            <button type="button" data-value="thriller">Thriller</button>
+      <div class="perspective-card">
+        <div class="perspective-user">
+          <div class="avatar-circle"><i class="fa-solid fa-moon" style="color: #facc15;"></i></div>
+          <div>
+            <h3>Wandering Philosopher</h3>
+            <p class="stars">★★★★★</p>
           </div>
         </div>
+        <p class="perspective-text">
+          “Elara somehow recommended a story that mirrored my entire week.”
+        </p>
+      </div>
+    </div>
+  </section>
 
-        <div class="quiz-question">
-          <h3>3. What reading pace do you want?</h3>
-          <div class="quiz-options" data-question="pace">
-            <button type="button" data-value="quick-read">Quick read</button>
-            <button type="button" data-value="medium-paced">Medium paced</button>
-            <button type="button" data-value="slow-immersive">Slow immersive</button>
-          </div>
-        </div>
+  <section class="reading-mood-quiz" id="readingMoodQuiz">
+    <div class="quiz-container">
+      <h2>Reading Mood Quiz</h2>
+      <p>
+        Answer a few quick questions to discover mood tags for personalized book
+        recommendations.
+      </p>
 
-        <div class="quiz-question">
-          <h3>4. What story vibe are you looking for?</h3>
-          <div class="quiz-options" data-question="vibe">
-            <button type="button" data-value="light-hearted">Light-hearted</button>
-            <button type="button" data-value="emotional">Emotional</button>
-            <button type="button" data-value="suspenseful">Suspenseful</button>
-            <button type="button" data-value="inspiring">Inspiring</button>
-            <button type="button" data-value="magical">Magical</button>
-          </div>
-        </div>
-
-        <button type="button" id="generateMoodTags" class="generate-tags-btn" disabled>
-          Generate Mood Tags
-        </button>
-
-        <div class="quiz-results" id="quizResults" hidden>
-          <h3>Your Reading Mood Tags</h3>
-          <div class="mood-tags" id="moodTags"></div>
-          <button type="button" id="retakeQuiz" class="retake-quiz-btn">
-            Retake Quiz
-          </button>
+      <div class="quiz-question">
+        <h3>1. What is your current reading mood?</h3>
+        <div class="quiz-options" data-question="mood">
+          <button type="button" data-value="cozy">Cozy</button>
+          <button type="button" data-value="dark">Dark</button>
+          <button type="button" data-value="romantic">Romantic</button>
+          <button type="button" data-value="mysterious">Mysterious</button>
+          <button type="button" data-value="adventurous">Adventurous</button>
         </div>
       </div>
-    </section>
 
+      <div class="quiz-question">
+        <h3>2. Which genre do you prefer right now?</h3>
+        <div class="quiz-options" data-question="genre">
+          <button type="button" data-value="romance">Romance</button>
+          <button type="button" data-value="mystery">Mystery</button>
+          <button type="button" data-value="fantasy">Fantasy</button>
+          <button type="button" data-value="self-help">Self-help</button>
+          <button type="button" data-value="thriller">Thriller</button>
+        </div>
+      </div>
 
-  <!--The footer is being called usingt footer.js.-->
+      <div class="quiz-question">
+        <h3>3. What reading pace do you want?</h3>
+        <div class="quiz-options" data-question="pace">
+          <button type="button" data-value="quick-read">Quick read</button>
+          <button type="button" data-value="medium-paced">Medium paced</button>
+          <button type="button" data-value="slow-immersive">Slow immersive</button>
+        </div>
+      </div>
+
+      <div class="quiz-question">
+        <h3>4. What story vibe are you looking for?</h3>
+        <div class="quiz-options" data-question="vibe">
+          <button type="button" data-value="light-hearted">Light-hearted</button>
+          <button type="button" data-value="emotional">Emotional</button>
+          <button type="button" data-value="suspenseful">Suspenseful</button>
+          <button type="button" data-value="inspiring">Inspiring</button>
+          <button type="button" data-value="magical">Magical</button>
+        </div>
+      </div>
+
+      <button type="button" id="generateMoodTags" class="generate-tags-btn" disabled>
+        Generate Mood Tags
+      </button>
+
+      <div class="quiz-results" id="quizResults" hidden>
+        <h3>Your Reading Mood Tags</h3>
+        <div class="mood-tags" id="moodTags"></div>
+        <button type="button" id="retakeQuiz" class="retake-quiz-btn">
+          Retake Quiz
+        </button>
+      </div>
+    </div>
+  </section>
+
   <script src="../js/config.js"></script>
   <script src="../js/security.js"></script>
   <script src="../js/app.js"></script>
@@ -428,13 +468,10 @@
   <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
 
-  <!-- Back to Top Button -->
-  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top"
-    onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top">
     <i class="fa-solid fa-arrow-up"></i>
   </button>
 
-  <!-- Ambient Sanctuary UI -->
   <div class="ambient-sanctuary">
     <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
       <i class="fa-solid fa-leaf"></i>
@@ -525,10 +562,6 @@
     </div>
   </div>
 
-  <script src="../js/ambient.js"></script>
-  <script src="../js/security.js"></script>
-  <script src="../js/pwa.js"></script>
-  <!-- AI Chatbot Widget -->
   <div id="ai-chatbot-widget" class="chatbot-widget">
     <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" title="Chat with Elara">
       <i class="fa-solid fa-robot"></i>
