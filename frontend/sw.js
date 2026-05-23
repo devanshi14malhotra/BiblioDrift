@@ -140,6 +140,11 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/api/v1/') ||
     url.pathname.startsWith('/api/')
   ) {
+    if (url.pathname.startsWith('/api/v1/auth/')) {
+      event.respondWith(fetch(request));
+      return;
+    }
+
     event.respondWith(_networkFirst(request, API_CACHE));
     return;
   }
