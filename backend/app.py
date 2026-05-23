@@ -14,7 +14,7 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
-from backend.spine_generator import create_spine
+from spine_generator import create_spine
 import os
 import requests
 import secrets
@@ -59,6 +59,8 @@ from backend.validators import (
     SyncLibraryRequest,
     RegisterRequest,
     LoginRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     SetGoalRequest,
     GetStatsRequest,
     CollectionRequest,
@@ -71,6 +73,11 @@ from backend.validators import (
     format_validation_errors,
     validate_jwt_secret,
     is_production_mode
+)
+from password_reset_service import (
+    FORGOT_PASSWORD_MESSAGE,
+    request_password_reset,
+    reset_password_with_token,
 )
 from collections import defaultdict, deque
 from math import ceil

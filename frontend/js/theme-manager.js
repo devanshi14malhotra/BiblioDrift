@@ -72,24 +72,24 @@ const THEMES = {
     },
     "cozy": {
         light: {
-            "--theme-bg": "#fcf9f2",
+            "--theme-bg": "#fdf5f3",
             "--theme-surface": "#ffffff",
-            "--theme-accent": "#b68d40",
-            "--theme-accent-light": "#d4a373",
-            "--theme-text": "#4a3728",
-            "--theme-text-muted": "#8b7355",
-            "--theme-border": "#e9e4d9",
-            "--theme-pill-bg": "#f7f3e9"
+            "--theme-accent": "#c24b22",
+            "--theme-accent-light": "#e07a5f",
+            "--theme-text": "#4a2e28",
+            "--theme-text-muted": "#8b5a50",
+            "--theme-border": "#e9d9d5",
+            "--theme-pill-bg": "#f7ebe8"
         },
         dark: {
-            "--theme-bg": "#1c140e",
-            "--theme-surface": "#2d2118",
-            "--theme-accent": "#d4a373",
-            "--theme-accent-light": "#faedcb",
-            "--theme-text": "#fcf9f2",
-            "--theme-text-muted": "#c8b09d",
-            "--theme-border": "#4a3728",
-            "--theme-pill-bg": "#3e2f23"
+            "--theme-bg": "#1c0f0a",
+            "--theme-surface": "#2d1812",
+            "--theme-accent": "#e07a5f",
+            "--theme-accent-light": "#f4a261",
+            "--theme-text": "#fdf5f3",
+            "--theme-text-muted": "#c89f95",
+            "--theme-border": "#4a2e28",
+            "--theme-pill-bg": "#3e2018"
         }
     },
     "dark-academia": {
@@ -135,9 +135,118 @@ const THEMES = {
             "--theme-border": "#4e342e",
             "--theme-pill-bg": "#3e2723"
         }
+    },
+    "space": {
+        light: {
+            "--theme-bg": "#f3e8ff",
+            "--theme-surface": "#ffffff",
+            "--theme-accent": "#7b2cbf",
+            "--theme-accent-light": "#9d4edd",
+            "--theme-text": "#240046",
+            "--theme-text-muted": "#5a189a",
+            "--theme-border": "#e0aaff",
+            "--theme-pill-bg": "#faf5ff"
+        },
+        dark: {
+            "--theme-bg": "#10002b",
+            "--theme-surface": "#240046",
+            "--theme-accent": "#9d4edd",
+            "--theme-accent-light": "#c77dff",
+            "--theme-text": "#e0aaff",
+            "--theme-text-muted": "#9d4edd",
+            "--theme-border": "#3c096c",
+            "--theme-pill-bg": "#240046"
+        }
+    },
+    "anime": {
+        light: {
+            "--theme-bg": "#fdf4ff",
+            "--theme-surface": "#ffffff",
+            "--theme-accent": "#d946ef",
+            "--theme-accent-light": "#e879f9",
+            "--theme-text": "#4a044e",
+            "--theme-text-muted": "#86198f",
+            "--theme-border": "#f5d0fe",
+            "--theme-pill-bg": "#faf5ff"
+        },
+        dark: {
+            "--theme-bg": "#2e1026",
+            "--theme-surface": "#4a044e",
+            "--theme-accent": "#e879f9",
+            "--theme-accent-light": "#f0abfc",
+            "--theme-text": "#fae8ff",
+            "--theme-text-muted": "#f5d0fe",
+            "--theme-border": "#701a75",
+            "--theme-pill-bg": "#4a044e"
+        }
+    },
+    "train": {
+        light: {
+            "--theme-bg": "#e0e7ff",
+            "--theme-surface": "#ffffff",
+            "--theme-accent": "#4f46e5",
+            "--theme-accent-light": "#6366f1",
+            "--theme-text": "#1e1b4b",
+            "--theme-text-muted": "#3730a3",
+            "--theme-border": "#c7d2fe",
+            "--theme-pill-bg": "#eef2ff"
+        },
+        dark: {
+            "--theme-bg": "#0f172a",
+            "--theme-surface": "#1e293b",
+            "--theme-accent": "#fbbf24",
+            "--theme-accent-light": "#fcd34d",
+            "--theme-text": "#f8fafc",
+            "--theme-text-muted": "#94a3b8",
+            "--theme-border": "#334155",
+            "--theme-pill-bg": "#1e293b"
+        }
+    },
+    "forest": {
+        light: {
+            "--theme-bg": "#ecfdf5",
+            "--theme-surface": "#ffffff",
+            "--theme-accent": "#059669",
+            "--theme-accent-light": "#10b981",
+            "--theme-text": "#022c22",
+            "--theme-text-muted": "#065f46",
+            "--theme-border": "#a7f3d0",
+            "--theme-pill-bg": "#f0fdf4"
+        },
+        dark: {
+            "--theme-bg": "#022c22",
+            "--theme-surface": "#064e3b",
+            "--theme-accent": "#34d399",
+            "--theme-accent-light": "#6ee7b7",
+            "--theme-text": "#ecfdf5",
+            "--theme-text-muted": "#a7f3d0",
+            "--theme-border": "#065f46",
+            "--theme-pill-bg": "#064e3b"
+        }
+    },
+    "magic": {
+        light: {
+            "--theme-bg": "#fcf5f5",
+            "--theme-surface": "#ffffff",
+            "--theme-accent": "#740001",
+            "--theme-accent-light": "#eeba30",
+            "--theme-text": "#1a0f0f",
+            "--theme-text-muted": "#5a4a4a",
+            "--theme-border": "#e8d8d8",
+            "--theme-pill-bg": "#f5e8e8"
+        },
+        dark: {
+            "--theme-bg": "#0a0f14",
+            "--theme-surface": "#121a22",
+            "--theme-accent": "#1a472a",
+            "--theme-accent-light": "#eeba30",
+            "--theme-text": "#f0f4f8",
+            "--theme-text-muted": "#8a9ba8",
+            "--theme-border": "#1c2a38",
+            "--theme-pill-bg": "#121a22"
+        }
     }
 };
-
 /**
  * Applies a specific theme to the UI by setting CSS variables on the root element.
  * @param {string} themeName - The key of the theme to apply.

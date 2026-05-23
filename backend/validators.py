@@ -202,6 +202,27 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1, description="Password")
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for POST /api/v1/auth/forgot-password."""
+    email: EmailStr = Field(..., description="Account email address")
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request schema for POST /api/v1/auth/reset-password."""
+    token: str = Field(..., min_length=16, max_length=256, description="Reset token from email link")
+    password: str = Field(..., min_length=8, max_length=100, description="New password (minimum 8 characters)")
+
+    @field_validator('token')
+    @classmethod
+    def strip_token(cls, v: str) -> str:
+        return v.strip()
+
+
 # ==================== READING STATS & GOALS ====================
 class SetGoalRequest(BaseModel):
     """Request schema for POST /api/v1/stats/goal endpoint."""

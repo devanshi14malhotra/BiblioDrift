@@ -131,6 +131,19 @@ class User(db.Model, SoftDeleteMixin):
             "is_deleted": self.is_deleted
         }
 
+
+class PasswordResetToken(db.Model):
+    """Single-use token for password reset (stores SHA-256 hash only)."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy='dynamic'))
+
+
 class Book(db.Model, SoftDeleteMixin):
     query_class = SoftDeleteQuery
     id = db.Column(db.Integer, primary_key=True)

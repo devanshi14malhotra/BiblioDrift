@@ -10,9 +10,49 @@
                 document.documentElement.setAttribute('data-theme', 'night');
             }
         })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('themeToggle');
+            if (!btn) return;
+            const icon = btn.querySelector('i');
+            const STORAGE_KEY = 'bibliodrift_theme';
+            
+            function applyTheme(theme) {
+                if (theme === 'night') {
+                    document.documentElement.setAttribute('data-theme', 'night');
+                    if (icon) icon.className = 'fa-solid fa-sun';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    if (icon) icon.className = 'fa-solid fa-moon';
+                }
+                localStorage.setItem(STORAGE_KEY, theme);
+            }
+            
+            btn.addEventListener('click', function () {
+                const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
+                applyTheme(current === 'night' ? 'light' : 'night');
+            });
+            
+            // Set initial icon state
+            const currentTheme = localStorage.getItem(STORAGE_KEY);
+            if (currentTheme === 'night' && icon) {
+                icon.className = 'fa-solid fa-sun';
+            }
+        });
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth | BiblioDrift</title>
+    <!-- SEO & Open Graph meta tags -->
+    <meta name="description"
+        content="Sign in or create your BiblioDrift account to start discovering books by mood, saving your favourites, and chatting with Elara, your AI reading companion." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/auth" />
+    <meta property="og:title" content="Sign In | BiblioDrift" />
+    <meta property="og:description"
+        content="Sign in or create your BiblioDrift account to start discovering books by mood, saving your favourites, and chatting with Elara, your AI reading companion." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
@@ -191,6 +231,26 @@
 
         .input-group {
             margin: 0;
+            position: relative;
+        }
+
+        .password-toggle-icon {
+            position: absolute;
+            right: 1.05rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+            z-index: 10;
+        }
+
+        .password-toggle-icon:hover {
+            color: var(--text-main);
+        }
+
+        .auth-input.password-input {
+            padding-right: 2.75rem;
         }
 
         .auth-input {
@@ -303,6 +363,38 @@
                 padding: 0.9rem 0.95rem;
             }
         }
+
+        #forgotPasswordPanel,
+        #resetPasswordPanel {
+            display: none;
+        }
+
+        .auth-panel-actions {
+            margin-top: 1rem;
+        }
+
+        .auth-hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        #forgotResetLinkBox {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f5f5f0;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        #forgotResetLinkBox a {
+            color: #2c2c2c;
+            font-weight: 600;
+        }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
@@ -315,43 +407,47 @@
 </head>
 
 <body class="auth-page">
-      <header>
-    <a href="index.html" class="logo">
-      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-    </a>
-    <div class="header-controls">
-      <div class="search-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
-      </div>
-      <nav class="nav-links">
-        <div class="tooltip">
-          <a href="index.html" >Discovery</a>
-          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+    <header>
+        <a href="app.html" class="logo">
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+        </a>
+        <div class="header-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+                <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+            </div>
+            <nav class="nav-links">
+                <div class="tooltip">
+                    <a href="app.html">Discovery</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+                </div>
+                <div class="tooltip">
+                    <a href="vault.html">My Vault</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+                </div>
+                <div class="tooltip">
+                    <a href="library.html">My Library</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+                </div>
+                <div class="tooltip">
+                    <a href="community-stories.html">Community</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+                </div>
+                <div class="tooltip">
+                    <a href="chat.html">Chat</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+                </div>
+                <!-- DYNAMIC AUTH LINK -->
+                <div class="tooltip">
+                    <a href="auth.html" id="navAuthLink" class="active">Sign In</a>
+                    <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+                </div>
+            </nav>
+            <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
         </div>
-        <div class="tooltip">
-          <a href="vault.html" >My Vault</a>
-          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
-        </div>
-        <div class="tooltip">
-          <a href="library.html" >My Library</a>
-          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-        </div>
-        <div class="tooltip">
-          <a href="chat.html" >Chat</a>
-          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-        </div>
-        <!-- DYNAMIC AUTH LINK -->
-        <div class="tooltip">
-          <a href="auth.html" id="navAuthLink" class="active">Sign In</a>
-          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
-        </div>
-      </nav>
-      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-    </div>
-  </header>
+    </header>
 
     <main class="auth-main">
         <section class="auth-shell">
@@ -374,58 +470,86 @@
                 <p class="auth-subtitle">Use your account to continue where you left off.</p>
 
                 <form id="authForm" data-mode="login" onsubmit="handleAuth(event)">
+                    <input type="hidden" id="csrf_token" name="csrf_token" value="">
+
+                    
                     <div id="nameField">
                         <input type="text" id="username" class="auth-input" placeholder="Full Name" autocomplete="name">
                     </div>
 
                     <div class="input-group">
-                        <input type="email" id="email" class="auth-input" placeholder="Email Address" value="demo@bibliodrift.com" required autocomplete="email">
+                        <input type="email" id="email" class="auth-input" placeholder="Email Address"
+                            value="demo@bibliodrift.com" required autocomplete="email">
                     </div>
 
                     <div class="input-group">
-                        <input type="password" id="password" class="auth-input" placeholder="Password" value="demo123" required autocomplete="current-password">
+                        <input type="password" id="password" class="auth-input password-input" placeholder="Password"
+                            value="demo123" required autocomplete="current-password">
+                        <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
+                            aria-label="Show password" role="button" tabindex="0"></i>
                     </div>
 
+                    <!-- 
+                        =============================================================
+                        SECURITY COMPLIANCE: CSRF TOKEN FIELD
+                        =============================================================
+                        This hidden input is dynamically populated with a one-time 
+                        security token provided by the backend. It protects against
+                        Cross-Site Request Forgery attacks by ensuring that the 
+                        form submission originated from this specific application 
+                        instance.
+                        =============================================================
+                    -->
+                    <input type="hidden" id="csrf_token" name="csrf_token" value="">
+
+                    <span id="forgotPasswordLink" class="toggle-link" style="display: block; margin: -0.25rem 0 1rem; font-size: 0.85rem;">
+                        Forgot password?
+                    </span>
+
+                    <!-- Primary Action Button -->
                     <button type="submit" id="submitBtn" class="auth-btn">
                         Sign In
                     </button>
+
+                    <!-- Google Authentication -->
+                    <button type="button" id="googleAuthBtn" class="google-auth-btn">
+                        <i class="fa-brands fa-google"></i>
+                        <span>Sign in with Google</span>
+                    </button>
                 </form>
 
-                <div class="auth-footer">
+                <div id="forgotPasswordPanel">
+                    <p class="auth-hint">
+                        No email is sent yet. In local development, a reset link appears below only if this address is already registered in your database.
+                    </p>
+                    <form id="forgotPasswordForm" action="#" method="post" novalidate>
+                        <input type="email" id="forgotEmail" class="auth-input" placeholder="Email address" required autocomplete="email">
+                        <button type="submit" id="forgotSubmitBtn" class="auth-btn">Send reset link</button>
+                    </form>
+                    <div id="forgotResetLinkBox" aria-live="polite"></div>
+                    
+                    <div class="auth-panel-actions">
+                        <span id="backToSignInFromForgot" class="toggle-link">Back to sign in</span>
+                    </div>
+                </div>
+
+                <div id="resetPasswordPanel">
+                    <form id="resetPasswordForm" action="#" method="post" novalidate>
+                        <input type="password" id="newPassword" class="auth-input" placeholder="New password (min 8 characters)" required minlength="8" autocomplete="new-password">
+                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
+                        <button type="submit" id="resetSubmitBtn" class="auth-btn">Reset password</button>
+                    </form>
+                    <div class="auth-panel-actions">
+                        <span id="backToSignInFromReset" class="toggle-link">Back to sign in</span>
+                    </div>
+                </div>
+
+                <!-- Mode Toggle Link -->
+                <div class="auth-footer" style="margin-top: 1.5rem;">
                     <span id="toggleText" class="toggle-link">
                         No account? Create one.
                     </span>
                 </div>
-                
-                <!-- 
-                    =============================================================
-                    SECURITY COMPLIANCE: CSRF TOKEN FIELD
-                    =============================================================
-                    This hidden input is dynamically populated with a one-time 
-                    security token provided by the backend. It protects against
-                    Cross-Site Request Forgery attacks by ensuring that the 
-                    form submission originated from this specific application 
-                    instance.
-                    =============================================================
-                -->
-                <input type="hidden" id="csrf_token" name="csrf_token" value="">
-                
-                <!-- Primary Action Button -->
-                <button type="submit" id="submitBtn" class="auth-btn">
-                    Sign In
-                </button>
-
-                <button type="button" id="googleAuthBtn" class="google-auth-btn">
-                    <i class="fa-brands fa-google"></i>
-                    <span>Sign in with Google</span>
-                </button>
-            </form>
-            
-            <!-- Mode Toggle Link -->
-            <div class="auth-footer" style="margin-top: 1.5rem;">
-                <span id="toggleText" class="toggle-link">
-                    No account? Create one.
-                </span>
             </div>
         </section>
     </main>
@@ -483,6 +607,7 @@
 
 
     <script src="../js/config.js"></script>
+    <script src="../js/auth-password-reset.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../js/app.js"></script>
     <script src="../script/header-scroll.js"></script>
@@ -503,6 +628,70 @@
             });
         }
         const passwordInput = document.getElementById('password');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const forgotPasswordPanel = document.getElementById('forgotPasswordPanel');
+        const resetPasswordPanel = document.getElementById('resetPasswordPanel');
+        const authFooter = document.querySelector('.auth-footer');
+        const emailInput = document.getElementById('email');
+        const forgotEmailInput = document.getElementById('forgotEmail');
+
+        function showAuthPanel(mode) {
+            const isSignIn = mode === 'signin';
+            authForm.style.display = isSignIn ? 'block' : 'none';
+            if (forgotPasswordPanel) {
+                forgotPasswordPanel.style.display = mode === 'forgot' ? 'block' : 'none';
+            }
+            if (resetPasswordPanel) {
+                resetPasswordPanel.style.display = mode === 'reset' ? 'block' : 'none';
+            }
+            if (authFooter) {
+                authFooter.style.display = isSignIn ? 'block' : 'none';
+            }
+            if (googleAuthBtn) {
+                googleAuthBtn.style.display = isSignIn ? 'flex' : 'none';
+            }
+            if (forgotPasswordLink) {
+                const isLoginMode = isSignIn && authForm.dataset.mode !== 'register';
+                forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none';
+            }
+            if (mode === 'forgot') {
+                authTitle.textContent = 'Reset your password';
+            } else if (mode === 'reset') {
+                authTitle.textContent = 'Choose a new password';
+            } else if (authForm.dataset.mode === 'register') {
+                authTitle.textContent = 'Create Account';
+            } else {
+                authTitle.textContent = 'Welcome Back';
+            }
+        }
+
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', () => {
+                if (forgotEmailInput && emailInput) {
+                    forgotEmailInput.value = emailInput.value;
+                }
+                const linkBox = document.getElementById('forgotResetLinkBox');
+                if (linkBox) {
+                    linkBox.style.display = 'none';
+                    linkBox.innerHTML = '';
+                }
+                showAuthPanel('forgot');
+            });
+        }
+
+        ['backToSignInFromForgot', 'backToSignInFromReset'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', () => {
+                    if (window.history.replaceState) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('token');
+                        window.history.replaceState({}, '', url.pathname);
+                    }
+                    showAuthPanel('signin');
+                });
+            }
+        });
 
         if (toggleText) {
             toggleText.addEventListener('click', () => {
@@ -524,7 +713,42 @@
                     toggleText.textContent = 'No account? Create one.';
                     passwordInput.autocomplete = 'current-password';
                 }
+                showAuthPanel('signin');
             });
+        }
+
+        const togglePassword = document.getElementById('togglePassword');
+        if (togglePassword && passwordInput) {
+            const toggleVisibility = () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                if (type === 'password') {
+                    togglePassword.classList.remove('fa-eye-slash');
+                    togglePassword.classList.add('fa-eye');
+                    togglePassword.setAttribute('title', 'Show Password');
+                    togglePassword.setAttribute('aria-label', 'Show password');
+                } else {
+                    togglePassword.classList.remove('fa-eye');
+                    togglePassword.classList.add('fa-eye-slash');
+                    togglePassword.setAttribute('title', 'Hide Password');
+                    togglePassword.setAttribute('aria-label', 'Hide password');
+                }
+            };
+
+            togglePassword.addEventListener('click', toggleVisibility);
+
+            togglePassword.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleVisibility();
+                }
+            });
+        }
+
+        const resetToken = new URLSearchParams(window.location.search).get('token');
+        if (resetToken) {
+            showAuthPanel('reset');
         }
     </script>
     <script src="../js/pwa.js"></script>
@@ -545,11 +769,11 @@
                     method: 'GET',
                     credentials: 'include'
                 });
-                
+
                 if (response.ok) {
                     const result = await response.json();
                     const token = result.data?.csrf_token;
-                    
+
                     if (token) {
                         const csrfInput = document.getElementById('csrf_token');
                         if (csrfInput) {

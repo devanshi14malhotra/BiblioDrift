@@ -81,6 +81,7 @@
 // Do NOT re-declare them here — use the globals from config.js directly.
 const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const moodAnalysisCache = new Map();
+const APP_ROUTE = window.location.pathname.endsWith('/app.html') ? 'app.html' : 'app.html';
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -323,9 +324,8 @@ async function verifyStoredAuthSession() {
             }
 
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                credentials: 'include',
-                headers,
                 method: 'GET',
+                headers,
                 credentials: 'include',
             });
 
@@ -344,7 +344,7 @@ async function verifyStoredAuthSession() {
             }
             return null;
         } catch (error) {
-            console.warn('Auth verification failed; using cached session state if available.', error);
+            console.warn('Auth verification failed (network error); using cached session state if available.', error);
             return storedUser;
         }
     })();
@@ -2981,7 +2981,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Only redirect to discovery search if we're not already on the library page 
             // where search is handled by the local library filter.
             if (!window.location.pathname.includes('library.html')) {
-                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+                window.location.href = `${APP_ROUTE}?q=${encodeURIComponent(searchInput.value.trim())}`;
             }
         }
     };
@@ -3032,7 +3032,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                  vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
                  fallbackQuery: 'subject:gothic fiction subject:campus'
             },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' }
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
         ];
         (async () => {
             try {
@@ -3232,6 +3233,204 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         loadExtendedStats();
 
+        // =====================================================================
+        // READER IDENTITY LOGIC
+        // Fetches reviews, determines archetype/mood/cluster, and renders states.
+        // =====================================================================
+        const renderErrorIdentityState = () => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted); background: rgba(229, 57, 53, 0.05); border: 1px solid rgba(229, 57, 53, 0.2); border-radius: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #e53935; margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin-bottom: 1rem;">Failed to load Reader Identity profile.</p>
+                    <button id="retry-identity-btn" class="action-btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">Retry</button>
+                </div>
+            `;
+
+            const retryBtn = document.getElementById('retry-identity-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    loadReaderIdentity();
+                });
+            }
+        };
+
+        const fetchAndRenderArchetype = async (genres, reviewsList) => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            const token = SafeStorage.get('bibliodrift_token');
+            const response = await fetch(`${MOOD_API_BASE}/reader-archetype`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ genres, reviews: reviewsList })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch archetype (Status: ${response.status})`);
+            }
+
+            const data = await response.json();
+            if (!data.success || !data.reader_profile) {
+                throw new Error('API returned unsuccessful profile generation');
+            }
+
+            const profile = data.reader_profile;
+            const archetype = profile.archetype || "Unknown Reader";
+            const mood = profile.reader_mood || "Balanced Analytical Reader";
+            const sentimentScore = typeof profile.sentiment_score === 'number' ? profile.sentiment_score.toFixed(2) : '0.00';
+            const cluster = typeof profile.reader_cluster === 'number' ? (profile.reader_cluster === -1 ? 'Unclassified' : `Group #${profile.reader_cluster}`) : 'Unclassified';
+
+            const archetypeDescriptions = {
+                "Deep Thinker": "Drawn to philosophy, existential questions, and reflective/psychological themes.",
+                "Emotional Reader": "Connects deeply with romance, relationships, emotional journeys, and human feelings.",
+                "Dark Reader": "Enjoys crime, violence, psychological thrillers, horror, and mystery.",
+                "Adventurous Reader": "Seeks sci-fi, fantasy, action-packed adventures, and exploration."
+            };
+            const desc = archetypeDescriptions[archetype] || "Based on your current reading habits and preferences.";
+
+            identityContent.innerHTML = `
+                <div class="reader-identity-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; text-align: left;">
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Archetype</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-brain" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-archetype">${archetype}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;" id="identity-archetype-desc">
+                            ${desc}
+                        </div>
+                    </div>
+                    
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Mood</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-masks-theater" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-mood">${mood}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Sentiment Score: <strong id="identity-sentiment">${sentimentScore}</strong>
+                        </div>
+                    </div>
+
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Group</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-people-group" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-cluster">${cluster}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Based on review text analysis.
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderEmptyIdentityState = (genres) => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="empty-state" style="padding: 1rem 0; text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-info" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin-bottom: 1.5rem;">We couldn't find any reviews in your profile yet. Add reviews to your finished books to unlock your reader identity!</p>
+                    <div style="max-width: 450px; margin: 0 auto; background: rgba(255, 255, 255, 0.02); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: left;">
+                        <h4 style="color: var(--text-main); margin-bottom: 0.5rem;">Or try a quick test right now:</h4>
+                        <p style="font-size: 0.85rem; margin-bottom: 1rem;">Write a brief summary of the kinds of books you love reading (e.g. "I love deep space adventures with complex characters"):</p>
+                        <textarea id="onboarding-review-text" placeholder="I love exploring dark mystery novels and fast-paced thrillers..." style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); margin-bottom: 1rem; font-family: inherit; font-size: 0.9rem; resize: none;"></textarea>
+                        <button id="submit-onboarding-btn" class="action-btn-primary" style="font-size: 0.85rem; padding: 6px 15px;">Analyze Mood & Archetype</button>
+                    </div>
+                </div>
+            `;
+
+            const submitBtn = document.getElementById('submit-onboarding-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async () => {
+                    const textInput = document.getElementById('onboarding-review-text').value.trim();
+                    if (!textInput) return;
+
+                    identityContent.innerHTML = `
+                        <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                            <p>Analyzing your custom input...</p>
+                        </div>
+                    `;
+
+                    try {
+                        await fetchAndRenderArchetype(genres, [textInput]);
+                    } catch (error) {
+                        console.error('Error analyzing custom onboarding input:', error);
+                        renderErrorIdentityState();
+                    }
+                });
+            }
+        };
+
+        const loadReaderIdentity = async () => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                    <p>Analyzing your reading profile and reviews...</p>
+                </div>
+            `;
+
+            const token = SafeStorage.get('bibliodrift_token');
+            if (!token) {
+                identityContent.innerHTML = `
+                    <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
+                        <p>Please log in to view your Reader Identity.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // 1. Fetch user reviews
+                const reviewsResponse = await fetch(`${MOOD_API_BASE}/users/${user.id}/reviews`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!reviewsResponse.ok) {
+                    throw new Error(`Failed to fetch reviews (Status: ${reviewsResponse.status})`);
+                }
+
+                const reviewsData = await reviewsResponse.json();
+                const reviewsList = (reviewsData.reviews || []).map(r => r.review_text).filter(Boolean);
+
+                // Derive genres
+                const allBooks = [
+                    ...(libManager.library.current || []),
+                    ...(libManager.library.want || []),
+                    ...(libManager.library.finished || [])
+                ];
+                const genres = Array.from(new Set(
+                    allBooks.flatMap(book => book.volumeInfo?.categories || [])
+                ));
+
+                // 2. Render empty/onboarding or loaded state
+                if (reviewsList.length === 0) {
+                    renderEmptyIdentityState(genres);
+                } else {
+                    await fetchAndRenderArchetype(genres, reviewsList);
+                }
+            } catch (error) {
+                console.error('Error loading reader identity:', error);
+                renderErrorIdentityState();
+            }
+        };
+
+        // Initialize reader identity loading
+        loadReaderIdentity();
+
         // Progress Bar Calculation
         const barFinished = document.getElementById('bar-finished');
         const barCurrent = document.getElementById('bar-current');
@@ -3371,7 +3570,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             SafeStorage.remove('bibliodrift_user');
             SafeStorage.remove('bibliodrift_token');
             SafeStorage.remove('isLoggedIn');
-            window.location.href = 'index.html';
+            window.location.href = APP_ROUTE;
         });
     }
     // Scroll Manager (Back to Top)
@@ -3437,7 +3636,7 @@ async function handleAuth(event) {
     const mode = form.dataset.mode || 'login';
 
     const email = document.getElementById("email").value;
-    const password = form.querySelector('input[type="password"]').value;
+    const password = document.getElementById("password").value;
     const usernameInput = document.getElementById("username");
 
     // Helper to reset button state on failure
@@ -3958,3 +4157,282 @@ window.addEventListener('offline', handleConnectivityChange);
 
 // Run a status check right away on startup in case the user loads the app while already disconnected
 document.addEventListener('DOMContentLoaded', handleConnectivityChange);
+
+// Reading Mood Quiz - manager-based implementation
+class ReadingMoodQuizManager {
+        constructor(libraryManager, renderer) {
+                this.libraryManager = libraryManager;
+                this.renderer = renderer;
+                this.section = null;
+                this.quizAnswers = {};
+        }
+
+        init() {
+                this.section = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!this.section) return;
+
+                this.quizOptionGroups = this.section.querySelectorAll('.quiz-options');
+                this.generateBtn = this.section.querySelector('#generateMoodTags');
+                this.results = this.section.querySelector('#quizResults');
+                this.moodTagsContainer = this.section.querySelector('#moodTags');
+                this.retakeBtn = this.section.querySelector('#retakeQuiz');
+
+                if (!this.quizOptionGroups.length || !this.generateBtn || !this.results || !this.moodTagsContainer || !this.retakeBtn) {
+                        return;
+                }
+
+                this._wireOptions();
+                this._wireButtons();
+                this.loadSavedMoodTags();
+                this._updateGenerateButtonState();
+        }
+
+        _wireOptions() {
+                this.quizOptionGroups.forEach(group => {
+                        const key = group.dataset.question;
+                        const buttons = group.querySelectorAll('button');
+                        buttons.forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                        buttons.forEach(b => b.classList.remove('selected'));
+                                        btn.classList.add('selected');
+                                        this.quizAnswers[key] = btn.dataset.value;
+                                        this._updateGenerateButtonState();
+                                });
+                        });
+                });
+        }
+
+        _wireButtons() {
+                this.generateBtn.addEventListener('click', async () => {
+                        const tags = Object.values(this.quizAnswers).filter(Boolean);
+                        this.renderMoodTags(tags);
+                        // Persist using SafeStorage wrapper
+                        try { SafeStorage.set('readingMoodTags', JSON.stringify(tags)); } catch (e) { localStorage.setItem('readingMoodTags', JSON.stringify(tags)); }
+
+                        // Compose a generated query from tags and render results
+                        const generatedMoodQuery = tags.join(' ');
+                        try {
+                                if (this.renderer && typeof this.renderer.renderCuratedSection === 'function') {
+                                        this.renderer.renderCuratedSection(generatedMoodQuery, 'mood-quiz-results-grid', 16);
+                                }
+                        } catch (e) {
+                                console.error('Mood quiz: failed to render curated section', e);
+                        }
+                });
+
+                this.retakeBtn.addEventListener('click', () => {
+                        this.quizAnswers = {};
+                        this.quizOptionGroups.forEach(group => {
+                                group.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                        });
+                        this.moodTagsContainer.innerHTML = '';
+                        this.results.hidden = true;
+                        try { SafeStorage.remove('readingMoodTags'); } catch (e) { localStorage.removeItem('readingMoodTags'); }
+                        this._updateGenerateButtonState();
+                });
+        }
+
+        _updateGenerateButtonState() {
+                const total = this.quizOptionGroups.length;
+                const answered = Object.keys(this.quizAnswers).length;
+                this.generateBtn.disabled = answered !== total;
+        }
+
+        renderMoodTags(tags) {
+                this.moodTagsContainer.innerHTML = '';
+                tags.forEach(tag => {
+                        const span = document.createElement('span');
+                        span.textContent = `#${tag}`;
+                        this.moodTagsContainer.appendChild(span);
+                });
+                this.results.hidden = false;
+        }
+
+        loadSavedMoodTags() {
+                let saved = null;
+                try { saved = SafeStorage.get('readingMoodTags'); } catch (e) { saved = localStorage.getItem('readingMoodTags'); }
+                if (saved) {
+                        try {
+                                const tags = JSON.parse(saved);
+                                if (Array.isArray(tags) && tags.length > 0) this.renderMoodTags(tags);
+                        } catch (e) { /* ignore */ }
+                }
+        }
+}
+
+// Initialize the manager if the page contains the quiz. Wait for library/renderer readiness.
+function _startReadingMoodQuiz() {
+        const startIfReady = () => {
+                const el = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!el) return;
+                if (window.libManager && window.renderer) {
+                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                        window.moodQuizManager.init();
+                } else {
+                        // Wait for library-manager-ready event
+                        window.addEventListener('bibliodrift:library-manager-ready', () => {
+                                if (window.libManager && window.renderer) {
+                                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                                        window.moodQuizManager.init();
+                                }
+                        }, { once: true });
+                }
+        };
+
+        if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startIfReady, { once: true });
+        } else {
+                startIfReady();
+        }
+}
+
+_startReadingMoodQuiz();
+
+function showForgotResetLink(resetUrl) {
+    const box = document.getElementById('forgotResetLinkBox');
+    if (!box || !resetUrl) return;
+    box.style.display = 'block';
+    box.innerHTML = `
+        <strong>Development reset link</strong> (no email was sent):<br>
+        <a href="${resetUrl}">Open link to set a new password</a>
+    `;
+}
+
+async function handleForgotPassword(event) {
+    if (event) event.preventDefault();
+    const btn = document.getElementById('forgotSubmitBtn');
+    const emailInput = document.getElementById('forgotEmail');
+    const linkBox = document.getElementById('forgotResetLinkBox');
+    const email = emailInput?.value?.trim() || '';
+    const originalText = btn ? btn.textContent : 'Send reset link';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        if (typeof showToast === 'function') showToast('Enter a valid email address', 'error');
+        else alert('Enter a valid email address');
+        return;
+    }
+
+    if (linkBox) {
+        linkBox.style.display = 'none';
+        linkBox.innerHTML = '';
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        const message = data.message
+            || 'If an account exists for that email, password reset instructions have been sent.';
+
+        if (res.ok) {
+            if (data.reset_url) {
+                showForgotResetLink(data.reset_url);
+                console.info('[Dev] Password reset link:', data.reset_url);
+                if (typeof showToast === 'function') {
+                    showToast('No email sent — use the reset link shown on this page.', 'info');
+                }
+            } else if (typeof showToast === 'function') {
+                showToast(message, 'success');
+            } else {
+                alert(message + '\n\n(No email is sent by the server yet.)');
+            }
+        } else {
+            const err = data.error || data.message || 'Unable to send reset link.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Forgot password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Use http://127.0.0.1:5500 (not file://) and ensure Flask is running.', 'error');
+        } else {
+            alert('Network error. Use http://127.0.0.1:5500 and ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleForgotPassword = handleForgotPassword;
+
+async function handleResetPassword(event) {
+    if (event) event.preventDefault();
+
+    const btn = document.getElementById('resetSubmitBtn');
+    const pwdInput = document.getElementById('resetNewPassword');
+    const originalText = btn ? btn.textContent : 'Reset password';
+    const newPassword = pwdInput?.value || '';
+
+    // Get the token from the URL e.g. auth.html?mode=reset&token=xxx
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        const err = 'Reset token is missing from the URL.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        const err = 'Password must be at least 6 characters long.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Resetting...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/reset-password/${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ new_password: newPassword }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast('Password reset successfully! You can now log in.', 'success');
+            else alert('Password reset successfully! You can now log in.');
+
+            setTimeout(() => {
+                window.location.href = 'auth.html?mode=login';
+            }, 2000);
+        } else {
+            const err = data.error || data.message || 'Failed to reset password.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Reset password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Ensure backend is running.', 'error');
+        } else {
+            alert('Network error. Ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleResetPassword = handleResetPassword;

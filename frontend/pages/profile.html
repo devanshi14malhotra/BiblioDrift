@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
+    <link rel="stylesheet" href="../css/pwa.css">
     <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#2c2420">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,7 +34,7 @@
 <body class="profile-page">
 
       <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -43,7 +44,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html" >Discovery</a>
+          <a href="app.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -54,6 +55,11 @@
           <a href="library.html" >My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
@@ -171,6 +177,15 @@
                     <div class="heatmap-cell" style="width: 12px; height: 12px; border-radius: 3px; background: rgba(139, 115, 85, 0.6);"></div>
                     <div class="heatmap-cell" style="width: 12px; height: 12px; border-radius: 3px; background: rgba(139, 115, 85, 0.9);"></div>
                     <span>More</span>
+                </div>
+            </div>
+
+            <!-- Reader Identity Section -->
+            <div class="reader-identity-section profile-stat-box" id="reader-identity-section" style="margin-bottom: 2rem; width: 100%;">
+                <h2 style="margin-bottom: 1rem;"><i class="fa-solid fa-compass"></i> Reader Identity</h2>
+                <div id="reader-identity-content"></div>
+            </div>
+
             <!-- Reading Progress Overview -->
             <div class="reading-progress-overview" id="reading-progress-overview">
                 <h2><i class="fa-solid fa-chart-line"></i> Reading Progress</h2>

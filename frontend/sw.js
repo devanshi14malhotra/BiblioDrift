@@ -44,6 +44,7 @@ const ALL_CACHES = [STATIC_CACHE, API_CACHE, FONT_CACHE];
 // Core app shell — pre-cached on install so the app works offline immediately
 const APP_SHELL = [
   '/frontend/pages/index.html',
+  '/frontend/pages/app.html',
   '/frontend/pages/library.html',
   '/frontend/pages/chat.html',
   '/frontend/pages/auth.html',

@@ -212,72 +212,125 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            dataCollection.forEach(file => {
-                const documentCard = document.createElement('div');
-                documentCard.className = 'genre-card';
-                documentCard.style.flexDirection = 'column';
-                documentCard.style.padding = '25px 20px';
-                documentCard.style.gap = '10px';
-                documentCard.style.position = 'relative';
+            let vaultJsRenderIndex = 0;
+            const vaultJsChunkSize = window.CONFIG?.CHUNK_SIZE || 20;
 
-                let iconTypeMap = 'fa-file-shield';
-                if (file.type.startsWith('image/')) iconTypeMap = 'fa-file-image';
-                else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) iconTypeMap = 'fa-file-pdf';
-                else if (file.type.startsWith('text/')) iconTypeMap = 'fa-file-lines';
+            if (vaultGrid._vaultObserver) {
+                vaultGrid._vaultObserver.disconnect();
+            }
 
-                let localizedObjectURL = "#";
-                if (file.binaryData instanceof Blob) {
-                    localizedObjectURL = URL.createObjectURL(file.binaryData);
-                    activeObjectUrlsPool.push(localizedObjectURL);
+            const sentinel = document.createElement('div');
+            sentinel.style.width = '100%';
+            sentinel.style.height = '20px';
+            sentinel.style.gridColumn = '1 / -1';
+
+            vaultGrid._vaultObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    renderChunk();
+                }
+            });
+
+            function renderChunk() {
+                const chunk = dataCollection.slice(vaultJsRenderIndex, vaultJsRenderIndex + vaultJsChunkSize);
+                if (chunk.length === 0) return;
+
+                if (sentinel.parentNode) {
+                    vaultGrid.removeChild(sentinel);
                 }
 
-                const computedSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-                const safeName = DOMPurify.sanitize(file.name);
-                const safeGenre = DOMPurify.sanitize(file.genre);
-                const safeDescription = DOMPurify.sanitize(file.description || 'No annotation summary log notes provided.');
-                const safeMetadataString = DOMPurify.sanitize(`${computedSizeInMB} MB • ${file.uploadedAt}`);
-                
-                const badgeClassMap = file.privacy === 'private' ? 'status-is-private' : 'status-is-public';
-                const iconClassMap = file.privacy === 'private' ? 'fa-user-lock' : 'fa-share-nodes';
+                chunk.forEach(file => {
+                    const documentCard = document.createElement('div');
+                    documentCard.className = 'genre-card';
+                    documentCard.style.flexDirection = 'column';
+                    documentCard.style.padding = '25px 20px';
+                    documentCard.style.gap = '10px';
+                    documentCard.style.position = 'relative';
 
-                documentCard.innerHTML = `
-                    <button class="purge-item-trigger" data-row-id="${file.id}" title="Delete document registry entry" 
-                            style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.1rem; opacity: 0.6; transition: opacity 0.2s;">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
+                    let iconTypeMap = 'fa-file-shield';
+                    if (file.type.startsWith('image/')) iconTypeMap = 'fa-file-image';
+                    else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) iconTypeMap = 'fa-file-pdf';
+                    else if (file.type.startsWith('text/')) iconTypeMap = 'fa-file-lines';
+
+                    let localizedObjectURL = "#";
+                    if (file.binaryData instanceof Blob) {
+                        localizedObjectURL = URL.createObjectURL(file.binaryData);
+                        activeObjectUrlsPool.push(localizedObjectURL);
+                    }
+
+                    const computedSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const safeName = DOMPurify.sanitize(file.name);
+                    const safeGenre = DOMPurify.sanitize(file.genre);
+                    const safeDescription = DOMPurify.sanitize(file.description || 'No annotation summary log notes provided.');
+                    const safeMetadataString = DOMPurify.sanitize(`${computedSizeInMB} MB • ${file.uploadedAt}`);
                     
-                    <i class="fa-solid ${iconTypeMap}" style="font-size: 2.6rem; color: var(--text-main); margin-bottom: 3px;"></i>
-                    
-                    <span style="font-weight: 600; text-align: center; word-break: break-word; font-family: 'Georgia', serif; font-size: 1.05rem;">${safeName}</span>
-                    
-                    <span style="font-size: 0.78rem; font-weight: 500; font-style: italic; opacity: 0.85; background: rgba(255,255,255,0.04); padding: 3px 10px; border-radius: 12px; display: inline-block;">
-                      Classification: ${safeGenre}
-                    </span>
+                    const badgeClassMap = file.privacy === 'private' ? 'status-is-private' : 'status-is-public';
+                    const iconClassMap = file.privacy === 'private' ? 'fa-user-lock' : 'fa-share-nodes';
 
-                    <p style="font-size: 0.85rem; opacity: 0.7; text-align: center; margin: 4px 0; max-height: 50px; overflow-y: auto; width: 100%; word-break: break-word; line-height: 1.35; padding: 0 4px;">
-                      ${safeDescription}
-                    </p>
+                    documentCard.innerHTML = `
+                        <button class="purge-item-trigger" data-row-id="${file.id}" title="Delete document registry entry" 
+                                style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.1rem; opacity: 0.6; transition: opacity 0.2s;">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                        
+                        <i class="fa-solid ${iconTypeMap}" style="font-size: 2.6rem; color: var(--text-main); margin-bottom: 3px;"></i>
+                        
+                        <span style="font-weight: 600; text-align: center; word-break: break-word; font-family: 'Georgia', serif; font-size: 1.05rem;">${safeName}</span>
+                        
+                        <span style="font-size: 0.78rem; font-weight: 500; font-style: italic; opacity: 0.85; background: rgba(255,255,255,0.04); padding: 3px 10px; border-radius: 12px; display: inline-block;">
+                          Classification: ${safeGenre}
+                        </span>
 
-                    <span style="font-size: 0.72rem; opacity: 0.45; text-align: center; letter-spacing: 0.3px;">${safeMetadataString}</span>
-                    
-                    <div>
-                      <span class="visibility-status-badge ${badgeClassMap}"><i class="fa-solid ${iconClassMap}"></i> Settings: ${file.privacy}</span>
-                    </div>
+                        <p style="font-size: 0.85rem; opacity: 0.7; text-align: center; margin: 4px 0; max-height: 50px; overflow-y: auto; width: 100%; word-break: break-word; line-height: 1.35; padding: 0 4px;">
+                          ${safeDescription}
+                        </p>
 
-                    <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
-                        <a href="${localizedObjectURL}" target="_blank" class="btn-preview" 
-                           style="flex: 1; text-align: center; font-size: 12px; padding: 8px 0; text-decoration: none; border-radius: 6px; display: inline-block; background: var(--border-focus, #9b59b6); color: white; font-weight: 500;">
-                           <i class="fa-solid fa-up-right-from-square"></i> Open
-                        </a>
-                        <a href="${localizedObjectURL}" download="${safeName}" class="btn-secondary" 
-                           style="flex: 1; text-align: center; font-size: 12px; padding: 8px 0; text-decoration: none; border-radius: 6px; border: 1px solid currentColor; display: inline-block;">
-                           <i class="fa-solid fa-download"></i> Extract
-                        </a>
-                    </div>
-                `;
+                        <span style="font-size: 0.72rem; opacity: 0.45; text-align: center; letter-spacing: 0.3px;">${safeMetadataString}</span>
+                        
+                        <div>
+                          <span class="visibility-status-badge ${badgeClassMap}"><i class="fa-solid ${iconClassMap}"></i> Settings: ${file.privacy}</span>
+                        </div>
 
-                vaultGrid.appendChild(documentCard);
-            });
+                        <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
+                            <a href="${localizedObjectURL}" target="_blank" class="btn-preview" 
+                               style="flex: 1; text-align: center; font-size: 12px; padding: 8px 0; text-decoration: none; border-radius: 6px; display: inline-block; background: var(--border-focus, #9b59b6); color: white; font-weight: 500;">
+                               <i class="fa-solid fa-up-right-from-square"></i> Open
+                            </a>
+                            <a href="${localizedObjectURL}" download="${safeName}" class="btn-secondary" 
+                               style="flex: 1; text-align: center; font-size: 12px; padding: 8px 0; text-decoration: none; border-radius: 6px; border: 1px solid currentColor; display: inline-block;">
+                               <i class="fa-solid fa-download"></i> Extract
+                            </a>
+                        </div>
+                    `;
+
+                    const dropBtn = documentCard.querySelector('.purge-item-trigger');
+                    if (dropBtn) {
+                        dropBtn.addEventListener('mouseover', () => dropBtn.style.opacity = '1');
+                        dropBtn.addEventListener('mouseout', () => dropBtn.style.opacity = '0.6');
+                        dropBtn.addEventListener('click', async (event) => {
+                            if (confirm("Confirm Deletion Action: This file tracking record will be cleared from your local storage system cache completely. Proceed?")) {
+                                try {
+                                    await vaultDb.securedFiles.delete(file.id);
+                                    displayVaultFiles(document.getElementById('vault-search-query') ? document.getElementById('vault-search-query').value : '');
+                                } catch (err) {
+                                    console.error("Dexie processing dropped during record destruction processing phase:", err);
+                                }
+                            }
+                        });
+                    }
+
+                    vaultGrid.appendChild(documentCard);
+                });
+
+                vaultJsRenderIndex += vaultJsChunkSize;
+                if (vaultJsRenderIndex < dataCollection.length) {
+                    vaultGrid.appendChild(sentinel);
+                    vaultGrid._vaultObserver.observe(sentinel);
+                } else if (vaultGrid._vaultObserver) {
+                    vaultGrid._vaultObserver.disconnect();
+                }
+            }
+
+            renderChunk();
 
             initializeDestructionTriggers();
 
@@ -346,25 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     function initializeDestructionTriggers() {
-        const dropButtons = document.querySelectorAll('.purge-item-trigger');
-        dropButtons.forEach(button => {
-            button.addEventListener('mouseover', () => button.style.opacity = '1');
-            button.addEventListener('mouseout', () => button.style.opacity = '0.6');
-            
-            button.addEventListener('click', async (event) => {
-                const elementTarget = event.target.closest('.purge-item-trigger');
-                const uniqueRowID = parseInt(elementTarget.getAttribute('data-row-id'), 10);
-
-                if (confirm("Confirm Deletion Action: This file tracking record will be cleared from your local storage system cache completely. Proceed?")) {
-                    try {
-                        await vaultDb.securedFiles.delete(uniqueRowID);
-                        displayVaultFiles(searchInput ? searchInput.value : '');
-                    } catch (err) {
-                        console.error("Dexie processing dropped during record destruction processing phase:", err);
-                    }
-                }
-            });
-        });
+        // Obsolete: event listeners are now attached per-element in displayVaultFiles
     }
 
     if (searchInput) {
