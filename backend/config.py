@@ -88,9 +88,15 @@ class RateLimitConfig:
     @classmethod
     def from_env(cls) -> 'RateLimitConfig':
         """Create rate limit config from environment variables."""
+        # Default rate limit differs by environment:
+        #   dev  → 30 req/window (relaxed, avoids friction during local testing)
+        #   prod → 20 req/window (stricter, reduces Google Books 429 burst risk)
+        # Override either direction via RATE_LIMIT_MAX_REQUESTS in your .env.
+        is_dev = os.getenv('APP_ENV', 'production').lower() in ('development', 'dev')
+        default_max = 30 if is_dev else 20
         return cls(
             window_seconds=int(os.getenv('RATE_LIMIT_WINDOW', '60')),
-            max_requests=int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '20')),
+            max_requests=int(os.getenv('RATE_LIMIT_MAX_REQUESTS', str(default_max))),
             enabled=os.getenv('RATE_LIMIT_ENABLED', 'True').lower() == 'true'
         )
 

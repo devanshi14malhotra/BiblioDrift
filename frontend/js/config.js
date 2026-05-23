@@ -48,13 +48,20 @@ if (typeof window !== 'undefined') {
     window.MOOD_API_BASE = MOOD_API_BASE;
     window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
-        // ─── In-memory response cache (survives page session) ──────────────
+        // ─── Bounded LRU cache (max 100 entries, 10-min TTL) ───────────────
+        // Using a Map so insertion order is preserved — oldest key is always
+        // map.keys().next().value, giving us free LRU eviction with no libs.
         _cache: new Map(),
-        _CACHE_TTL_MS: 10 * 60 * 1000, // 10 minutes
+        _CACHE_TTL_MS: 10 * 60 * 1000, // 10 minutes per entry
+        _CACHE_MAX:    100,              // evict oldest when this is exceeded
 
-        // ─── Sequential request queue with minimum inter-request delay ─────
-        _queue: Promise.resolve(),
-        _MIN_DELAY_MS: 300, // ms between outgoing requests
+        // ─── Token-bucket concurrency limiter ──────────────────────────────
+        // Allows up to _BUCKET_SIZE requests in flight simultaneously.
+        // Tokens refill at one per _REFILL_MS, preventing 429 bursts while
+        // not blocking unrelated searches behind each other in a queue.
+        _tokens:      3,    // max concurrent requests
+        _BUCKET_SIZE: 3,
+        _REFILL_MS:   300,  // one token back every 300 ms
 
         setKeys(keys) {
             CONFIG.GOOGLE_BOOKS_API_KEYS = Array.from(
@@ -65,6 +72,8 @@ if (typeof window !== 'undefined') {
         getKeys() {
             return CONFIG.GOOGLE_BOOKS_API_KEYS || [];
         },
+
+        // ─── Cache helpers ──────────────────────────────────────────────────
 
         /** Returns cached data if still fresh, otherwise null. */
         _getCache(cacheKey) {
@@ -77,15 +86,36 @@ if (typeof window !== 'undefined') {
             return entry.data;
         },
 
-        /** Stores a response in the in-memory cache. */
+        /** Stores a response, evicting the oldest entry when over the cap. */
         _setCache(cacheKey, data) {
+            // Evict oldest (first inserted) entry when at capacity
+            if (this._cache.size >= this._CACHE_MAX) {
+                const oldest = this._cache.keys().next().value;
+                this._cache.delete(oldest);
+            }
             this._cache.set(cacheKey, { data, timestamp: Date.now() });
         },
 
+        // ─── Token-bucket helpers ────────────────────────────────────────────
+
+        /** Waits until a token is available, then consumes one. */
+        async _acquireToken() {
+            while (this._tokens <= 0) {
+                await new Promise(r => setTimeout(r, this._REFILL_MS));
+            }
+            this._tokens -= 1;
+        },
+
+        /** Returns a token after a request finishes. */
+        _releaseToken() {
+            if (this._tokens < this._BUCKET_SIZE) this._tokens += 1;
+        },
+
         /**
-         * Public entry-point. Checks cache first, then serialises the real
-         * HTTP call through _queue so requests go out one-at-a-time with a
-         * minimum _MIN_DELAY_MS gap — preventing 429 burst errors.
+         * Public entry-point. Checks cache first, then uses the token bucket
+         * so at most _BUCKET_SIZE unrelated requests run simultaneously —
+         * preventing 429 bursts without forcing unrelated searches to queue
+         * behind each other.
          */
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
@@ -95,14 +125,16 @@ if (typeof window !== 'undefined') {
             const cached = this._getCache(cacheKey);
             if (cached) return cached;
 
-            // Chain onto the existing queue so calls are serialised.
-            const result = await (this._queue = this._queue.then(async () => {
-                await new Promise(r => setTimeout(r, this._MIN_DELAY_MS));
-                return this._doFetch(query, maxResults, extraParams);
-            }));
-
-            this._setCache(cacheKey, result);
-            return result;
+            await this._acquireToken();
+            try {
+                const result = await this._doFetch(query, maxResults, extraParams);
+                this._setCache(cacheKey, result);
+                return result;
+            } finally {
+                // Always release — even if _doFetch threw — so the bucket
+                // never permanently drains on errors.
+                this._releaseToken();
+            }
         },
 
         /** Internal: performs the actual fetch with key-rotation on 429/403/503. */
@@ -146,4 +178,3 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }
-

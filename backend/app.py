@@ -785,13 +785,12 @@ def handle_mood_tags():
         logger.error(f"Unexpected error in handle_mood_tags: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "handle_mood_tags")
 
-@app.route('/api/v1/mood-search', methods=['POST', 'OPTIONS'])
+@app.route('/api/v1/mood-search', methods=['POST'])
 @rate_limit('mood_search')
 def handle_mood_search():
     """Search for books based on mood/vibe with improved query parsing."""
-    # Handle CORS preflight request
-    if request.method == 'OPTIONS':
-        return '', 204
+    # Note: CORS preflight (OPTIONS) is handled globally by Flask-CORS —
+    # no manual OPTIONS check needed here.
 
     from exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,

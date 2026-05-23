@@ -32,3 +32,6 @@ instance/
 *.db
 # Virtual Environment
 venv/
+
+.claude/
+.refact/
