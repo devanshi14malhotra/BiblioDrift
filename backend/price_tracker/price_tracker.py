@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from validators import validate_google_books_id
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 # Configure logging
 logger = logging.getLogger(__name__)
