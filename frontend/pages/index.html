@@ -144,70 +144,6 @@
       <p>A curated sanctuary for those who read through emotions.</p>
     </section>
 
-    <!-- Reading mood quiz section -->
-    <section class="reading-mood-quiz" id="readingMoodQuiz">
-      <div class="quiz-container">
-        <h2>Reading Mood Quiz</h2>
-        <p>
-          Answer a few quick questions to discover mood tags for personalized book
-          recommendations.
-        </p>
-
-        <div class="quiz-question">
-          <h3>1. What is your current reading mood?</h3>
-          <div class="quiz-options" data-question="mood">
-            <button type="button" data-value="cozy">Cozy</button>
-            <button type="button" data-value="dark">Dark</button>
-            <button type="button" data-value="romantic">Romantic</button>
-            <button type="button" data-value="mysterious">Mysterious</button>
-            <button type="button" data-value="adventurous">Adventurous</button>
-          </div>
-        </div>
-
-        <div class="quiz-question">
-          <h3>2. Which genre do you prefer right now?</h3>
-          <div class="quiz-options" data-question="genre">
-            <button type="button" data-value="romance">Romance</button>
-            <button type="button" data-value="mystery">Mystery</button>
-            <button type="button" data-value="fantasy">Fantasy</button>
-            <button type="button" data-value="self-help">Self-help</button>
-            <button type="button" data-value="thriller">Thriller</button>
-          </div>
-        </div>
-
-        <div class="quiz-question">
-          <h3>3. What reading pace do you want?</h3>
-          <div class="quiz-options" data-question="pace">
-            <button type="button" data-value="quick-read">Quick read</button>
-            <button type="button" data-value="medium-paced">Medium paced</button>
-            <button type="button" data-value="slow-immersive">Slow immersive</button>
-          </div>
-        </div>
-
-        <div class="quiz-question">
-          <h3>4. What story vibe are you looking for?</h3>
-          <div class="quiz-options" data-question="vibe">
-            <button type="button" data-value="light-hearted">Light-hearted</button>
-            <button type="button" data-value="emotional">Emotional</button>
-            <button type="button" data-value="suspenseful">Suspenseful</button>
-            <button type="button" data-value="inspiring">Inspiring</button>
-            <button type="button" data-value="magical">Magical</button>
-          </div>
-        </div>
-
-        <button type="button" id="generateMoodTags" class="generate-tags-btn" disabled>
-          Generate Mood Tags
-        </button>
-
-        <div class="quiz-results" id="quizResults" hidden>
-          <h3>Your Reading Mood Tags</h3>
-          <div class="mood-tags" id="moodTags"></div>
-          <button type="button" id="retakeQuiz" class="retake-quiz-btn">
-            Retake Quiz
-          </button>
-        </div>
-      </div>
-    </section>
     <!-- SEARCH RESULTS SECTION (Initially Hidden) -->
     <section id="search-results-section" class="curated-section" hidden>
       <div class="section-header">
@@ -414,6 +350,71 @@
   </div>
 
 </section>
+
+    <!-- Reading mood quiz section -->
+    <section class="reading-mood-quiz" id="readingMoodQuiz">
+      <div class="quiz-container">
+        <h2>Reading Mood Quiz</h2>
+        <p>
+          Answer a few quick questions to discover mood tags for personalized book
+          recommendations.
+        </p>
+
+        <div class="quiz-question">
+          <h3>1. What is your current reading mood?</h3>
+          <div class="quiz-options" data-question="mood">
+            <button type="button" data-value="cozy">Cozy</button>
+            <button type="button" data-value="dark">Dark</button>
+            <button type="button" data-value="romantic">Romantic</button>
+            <button type="button" data-value="mysterious">Mysterious</button>
+            <button type="button" data-value="adventurous">Adventurous</button>
+          </div>
+        </div>
+
+        <div class="quiz-question">
+          <h3>2. Which genre do you prefer right now?</h3>
+          <div class="quiz-options" data-question="genre">
+            <button type="button" data-value="romance">Romance</button>
+            <button type="button" data-value="mystery">Mystery</button>
+            <button type="button" data-value="fantasy">Fantasy</button>
+            <button type="button" data-value="self-help">Self-help</button>
+            <button type="button" data-value="thriller">Thriller</button>
+          </div>
+        </div>
+
+        <div class="quiz-question">
+          <h3>3. What reading pace do you want?</h3>
+          <div class="quiz-options" data-question="pace">
+            <button type="button" data-value="quick-read">Quick read</button>
+            <button type="button" data-value="medium-paced">Medium paced</button>
+            <button type="button" data-value="slow-immersive">Slow immersive</button>
+          </div>
+        </div>
+
+        <div class="quiz-question">
+          <h3>4. What story vibe are you looking for?</h3>
+          <div class="quiz-options" data-question="vibe">
+            <button type="button" data-value="light-hearted">Light-hearted</button>
+            <button type="button" data-value="emotional">Emotional</button>
+            <button type="button" data-value="suspenseful">Suspenseful</button>
+            <button type="button" data-value="inspiring">Inspiring</button>
+            <button type="button" data-value="magical">Magical</button>
+          </div>
+        </div>
+
+        <button type="button" id="generateMoodTags" class="generate-tags-btn" disabled>
+          Generate Mood Tags
+        </button>
+
+        <div class="quiz-results" id="quizResults" hidden>
+          <h3>Your Reading Mood Tags</h3>
+          <div class="mood-tags" id="moodTags"></div>
+          <button type="button" id="retakeQuiz" class="retake-quiz-btn">
+            Retake Quiz
+          </button>
+        </div>
+      </div>
+    </section>
 
 
   <!--The footer is being called usingt footer.js.-->
