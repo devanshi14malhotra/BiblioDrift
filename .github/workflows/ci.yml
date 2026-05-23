@@ -84,6 +84,8 @@ jobs:
           OPENAI_API_KEY: "ci-fake-key"
           GROQ_API_KEY: "ci-fake-key"
           GEMINI_API_KEY: "ci-fake-key"
+          JWT_SECRET_KEY: "ci-fake-jwt-secret-key-that-is-at-least-32-bytes"
+          DATABASE_URL: "sqlite:///:memory:"
           FLASK_ENV: testing
           PYTHONPATH: ".:backend"
         run: |
@@ -91,7 +93,7 @@ jobs:
           sleep 5
           
       - name: Install frontend dependencies
-        run: npm ci || npm install
+        run: npm install
         
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
@@ -99,3 +101,7 @@ jobs:
           wait-on: 'http://127.0.0.1:5000'
           wait-on-timeout: 30
           browser: chrome
+
+      - name: Print backend logs on failure
+        if: failure()
+        run: cat backend.log

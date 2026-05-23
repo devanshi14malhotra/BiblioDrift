@@ -15,17 +15,19 @@ describe('Vault Interaction', () => {
     // Check if the dropzone exists
     cy.get('#dropZone').should('exist')
     
-    // Test the form details
-    // We can't easily mock file upload in a minimal test without a real file, 
-    // but we can verify the inputs are present when active
-    // The detailsRevealer has 'active' class when a file is selected
-    // We force show it to test inputs
-    cy.get('#detailsRevealer').invoke('addClass', 'active')
+    // Use selectFile for a real interaction
+    cy.writeFile('cypress/fixtures/testbook.pdf', 'dummy pdf content')
+    cy.get('#vaultFileInput').selectFile('cypress/fixtures/testbook.pdf', { force: true })
     
-    cy.get('#vaultBookTitle').should('be.visible').type('My Secret Book')
+    // Wait for the UI to update and show the fields
+    cy.get('#detailsRevealer').should('have.class', 'active')
+    
+    cy.get('#vaultBookTitle').should('have.value', 'testbook')
     cy.get('#vaultBookAuthor').should('be.visible').type('Jane Doe')
     cy.get('#vaultBookPrivacy').select('private')
     
-    cy.get('#uploadBtn').should('exist')
+    // Optionally trigger an upload and verify state changes
+    cy.get('#uploadBtn').click()
+    cy.get('#vault-shelf-row').should('exist') // Or any other post-upload assertion
   })
 })
