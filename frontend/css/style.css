@@ -460,7 +460,7 @@ textarea:focus {
 
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0 scale(1);
     }
 }
 
@@ -3392,7 +3392,7 @@ textarea:focus {
 }
 
 /* ========================================= */
-/*      BOOK SPINE VARIATIONS (#12)         */
+/* BOOK SPINE VARIATIONS (#12)          */
 /* ========================================= */
 
 /* --- Textures --- */
@@ -3980,11 +3980,11 @@ textarea:focus {
     }
 }
 
-\n
+
 /* ========================================= */
 
 /* ========================================= */
-/*      EXPANDED BOOK VIEW (#45)            */
+/* EXPANDED BOOK VIEW (#45)            */
 /* ========================================= */
 
 #book-detail-modal {
@@ -6082,167 +6082,6 @@ body { cursor: none; }
     transition: transform 360ms cubic-bezier(.2, 1, .22, 1);
 }
 
-/* ============================================================
-   AMBIENT VOLUME SLIDER — SINGLE SOURCE OF TRUTH
-   Replace ALL existing slider/range rules in style.css with this block.
-   Remove every other rule targeting:
-     - .ambient-panel input[type="range"]
-     - .library-page .ambient-panel input[type="range"]
-     - #profile-page .ambient-panel input[type="range"]
-     - .ambient-panel .volume-control .range-wrap ...
-     - Any block with margin-top on ::-webkit-slider-thumb inside ambient-panel
-   ============================================================ */
-
-/* 1. Volume control layout */
-.ambient-panel .volume-control {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 10px;
-}
-
-.ambient-panel .volume-control label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--text-main);
-    font-size: 0.95rem;
-    white-space: nowrap;
-}
-
-/* 2. The wrapper that stacks track, fill, and input */
-.ambient-panel .volume-control .range-wrap {
-    position: relative;
-    width: 100%;
-    height: 18px;
-    /* fixed height — track and thumb share this axis */
-    display: flex;
-    align-items: center;
-    /* vertically centers the <input> */
-}
-
-/* 3. Track and fill — absolutely positioned, vertically centred */
-.ambient-panel .volume-control .range-wrap .range-track,
-.ambient-panel .volume-control .range-wrap .range-fill {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 6px;
-    border-radius: 999px;
-    pointer-events: none;
-}
-
-.ambient-panel .volume-control .range-wrap .range-track {
-    right: 0;
-    background: rgba(0, 0, 0, 0.15);
-    z-index: 1;
-}
-
-.ambient-panel .volume-control .range-wrap .range-fill {
-    background: var(--accent-gold);
-    width: 50%;
-    /* JS will update this dynamically */
-    transition: width 240ms cubic-bezier(.2, 1, .22, 1);
-    z-index: 2;
-}
-
-/* 4. The actual <input> — transparent, sits on top */
-.ambient-panel .volume-control .range-wrap input[type="range"],
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"],
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"],
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"] {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    position: relative;
-    z-index: 3;
-    width: 100% !important;
-    height: 18px !important;
-    /* matches .range-wrap height */
-    min-height: 0 !important;
-    min-width: 0 !important;
-    background: transparent !important;
-    border-radius: 999px;
-    outline: none;
-    cursor: pointer;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 5. WebKit track — transparent (fill handled by .range-fill div) */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track {
-    height: 6px !important;
-    background: transparent !important;
-    border-radius: 999px;
-}
-
-/* 6. WebKit thumb — THE KEY FIX: margin-top centers it on the 6px track */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 50% !important;
-    background: var(--accent-gold) !important;
-    border: 3px solid rgba(255, 255, 255, 0.85) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    cursor: pointer !important;
-    margin-top: -6px !important;
-    /* (18px thumb - 6px track) / 2 = 6px */
-    transform: none !important;
-    /* kill any conflicting translateY */
-    transition: transform 260ms cubic-bezier(.2, 1, .22, 1),
-        box-shadow 260ms ease !important;
-}
-
-/* Thumb hover */
-.ambient-panel .volume-control .range-wrap input[type="range"]:hover::-webkit-slider-thumb {
-    transform: scale(1.15) !important;
-    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.5) !important;
-}
-
-/* Thumb pop animation (JS adds .volume-animate class) */
-.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-webkit-slider-thumb {
-    transform: scale(1.2) !important;
-    box-shadow: 0 0 14px rgba(212, 175, 55, 0.6) !important;
-}
-
-/* 7. Firefox track */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track {
-    height: 6px !important;
-    background: transparent !important;
-    border-radius: 999px;
-}
-
-/* 8. Firefox thumb */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 50% !important;
-    background: var(--accent-gold) !important;
-    border: 3px solid rgba(255, 255, 255, 0.85) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    cursor: pointer !important;
-    /* Firefox auto-centers the thumb — no margin-top needed */
-}
-
-.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-moz-range-thumb {
-    transform: scale(1.2);
-    transition: transform 360ms cubic-bezier(.2, 1, .22, 1);
-}
-
 /* --- Mood Sync Theme System Overrides --- */
 [data-mood] {
     --bg-color: var(--theme-bg) !important;
@@ -6530,8 +6369,8 @@ body.night-mode .tooltip-author {
 
 
 .footer-logo {
-  height: 40px;
-  width: auto;
+   height: 40px;
+   width: auto;
 }
 
 .logo {
@@ -6544,33 +6383,33 @@ body.night-mode .tooltip-author {
 
 .main-footer {
  
-  padding: 4rem 2rem 1rem;
+    padding: 4rem 2rem 1rem;
 }
 
 .footer-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem;
 }
 
 .footer-container a {
  
-  text-decoration: none;
-  transition: color 0.3s ease;
+    text-decoration: none;
+    transition: color 0.3s ease;
 }
 
 
 
 .social-icons {
-  display: flex;
-  gap: 1rem;
+    display: flex;
+    gap: 1rem;
 }
 
 .footer-bottom {
-  text-align: center;
-  margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: 1px solid #374151;
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid #374151;
 }
 /* =========================
    Reader Perspectives
@@ -6810,4 +6649,112 @@ body.night-mode .tooltip-author {
     border-color: var(--text-main);
 }
 
+/* ============================================================ */
+/* NEW COMPONENT - READING QUOTES GENERATOR SYSTEM (GSSoC #749) */
+/* ============================================================ */
 
+.quotes-generator-section {
+    text-align: center;
+    padding: 40px 20px;
+    animation: fadeIn 0.8s ease-out;
+}
+
+.quote-card-container {
+    max-width: 650px;
+    margin: 2rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.quote-card {
+    width: 100%;
+    padding: 45px;
+    border-radius: 24px;
+    background: var(--surface-soft, rgba(44, 36, 32, 0.4));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.quote-icon-top {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    font-size: 1.6rem;
+    opacity: 0.25;
+    color: var(--text-muted);
+}
+
+.quote-icon-bottom {
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    font-size: 1.6rem;
+    opacity: 0.25;
+    color: var(--text-muted);
+}
+
+.quote-text {
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    line-height: 1.65;
+    margin-bottom: 18px;
+    color: var(--text-main);
+}
+
+.quote-author {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent-gold);
+}
+
+/* Premium Rounded Button Overrides for Quotes System */
+.quotes-generator-section .inspire-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  padding: 14px 36px !important;
+  font-family: "Georgia", serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+  color: #ffffff !important;
+  
+  /* Futuristic Gradient Background */
+  background: linear-gradient(135deg, #4f46e5, #7c3aed, #ec4899) !important;
+  background-size: 200% auto !important;
+  
+  /* Proper 3D Button Shape and Dimensions */
+  border: none !important;
+  border-radius: 50px !important; /* Perfect capsule rounded shape */
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: 10 !important;
+  
+  /* Premium Shadow Lift and Smooth Animation */
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+/* Hover effect for standard button feel */
+.quotes-generator-section .inspire-btn:hover {
+  background-position: right center !important;
+  transform: translateY(-3px) scale(1.04) !important;
+  box-shadow: 0 10px 25px rgba(124, 58, 237, 0.6) !important;
+}
+
+/* Press effect to mimic real clicking */
+.quotes-generator-section .inspire-btn:active {
+  transform: translateY(-1px) scale(1.01) !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4) !important;
+}
