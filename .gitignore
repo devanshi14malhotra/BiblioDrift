@@ -33,3 +33,6 @@ instance/
 # Virtual Environment
 venv/
 .venv/
+
+# Local untracked scripts folder
+untracked/

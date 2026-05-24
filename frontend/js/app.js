@@ -81,6 +81,18 @@
 // Do NOT re-declare them here — use the globals from config.js directly.
 const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const moodAnalysisCache = new Map();
+const APP_ROUTE = window.location.pathname.endsWith('/app.html') ? 'app.html' : 'app.html';
+
+
+// ── No-results empty state helpers ──
+function showNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'flex';
+}
+function hideNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'none';
+}
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -329,6 +341,7 @@ async function verifyStoredAuthSession() {
 
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
                 method: 'GET',
+                headers,
                 credentials: 'include',
                 headers,
             });
@@ -350,7 +363,7 @@ async function verifyStoredAuthSession() {
 
             return verifiedUser;
         } catch (error) {
-            console.warn('Auth verification failed; using cached session state if available.', error);
+            console.warn('Auth verification failed (network error); using cached session state if available.', error);
             return storedUser;
         }
     })();
@@ -1441,8 +1454,10 @@ scene.innerHTML = `
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
                 const fallbackBooks = getFallbackBooks(query, maxResults);
-                if (fallbackBooks.length > 0) {
+                if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                     await this.renderBookCards(container, fallbackBooks);
+                } else if (container.id === 'search-results-grid') {
+                    showNoResults();
                 } else {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -1454,19 +1469,15 @@ scene.innerHTML = `
         } catch (err) {
             console.error("Failed to fetch books", err);
             const fallbackBooks = getFallbackBooks(query, maxResults);
-            if (fallbackBooks.length > 0) {
+            if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                 await this.renderBookCards(container, fallbackBooks);
                 return;
+            } else if (container.id === 'search-results-grid') {
+                showNoResults();
+                return;
             }
-
-            showToast("Failed to load bookshelf.", "error");
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>Bookshelf Empty (API connection failed)</p>
-                </div>`;
-        }
     }
+}
 
     async renderMoodCategorySection(categoryConfig, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
@@ -1550,6 +1561,11 @@ scene.innerHTML = `
 
     async renderBookCards(container, books) {
         if (container.id === 'search-results-grid') {
+            if (!books || books.length === 0) {
+                showNoResults();
+                return;
+            }
+            hideNoResults();
             window.searchFilterManager = new SearchFilterManager(container, books, this);
             return;
         }
@@ -1576,6 +1592,8 @@ scene.innerHTML = `
         if (container.children.length === 0) {
             container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
         }
+
+        
     }
 }
 
@@ -2710,6 +2728,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const genreManager = new GenreManager(libManager);
     genreManager.init();
+
+    // ── No-results suggestion tag clicks ──
+    document.querySelectorAll('.mood-suggestion-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (!input) return;
+        input.value = btn.dataset.mood;
+        window.location.href = `index.html?q=${encodeURIComponent(btn.dataset.mood)}`;
+    });
+    });
+
     const exportBtn = document.getElementById("export-library");
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
@@ -2762,7 +2791,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Only redirect to discovery search if we're not already on the library page 
             // where search is handled by the local library filter.
             if (!window.location.pathname.includes('library.html')) {
-                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+                window.location.href = `${APP_ROUTE}?q=${encodeURIComponent(searchInput.value.trim())}`;
             }
         }
     };
@@ -3148,7 +3177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             SafeStorage.remove('bibliodrift_user');
             SafeStorage.remove('bibliodrift_token');
             SafeStorage.remove('isLoggedIn');
-            window.location.href = 'index.html';
+            window.location.href = APP_ROUTE;
         });
     }
     // Scroll Manager (Back to Top)
@@ -3727,3 +3756,282 @@ window.addEventListener('offline', handleConnectivityChange);
 
 // Run a status check right away on startup in case the user loads the app while already disconnected
 document.addEventListener('DOMContentLoaded', handleConnectivityChange);
+
+// Reading Mood Quiz - manager-based implementation
+class ReadingMoodQuizManager {
+        constructor(libraryManager, renderer) {
+                this.libraryManager = libraryManager;
+                this.renderer = renderer;
+                this.section = null;
+                this.quizAnswers = {};
+        }
+
+        init() {
+                this.section = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!this.section) return;
+
+                this.quizOptionGroups = this.section.querySelectorAll('.quiz-options');
+                this.generateBtn = this.section.querySelector('#generateMoodTags');
+                this.results = this.section.querySelector('#quizResults');
+                this.moodTagsContainer = this.section.querySelector('#moodTags');
+                this.retakeBtn = this.section.querySelector('#retakeQuiz');
+
+                if (!this.quizOptionGroups.length || !this.generateBtn || !this.results || !this.moodTagsContainer || !this.retakeBtn) {
+                        return;
+                }
+
+                this._wireOptions();
+                this._wireButtons();
+                this.loadSavedMoodTags();
+                this._updateGenerateButtonState();
+        }
+
+        _wireOptions() {
+                this.quizOptionGroups.forEach(group => {
+                        const key = group.dataset.question;
+                        const buttons = group.querySelectorAll('button');
+                        buttons.forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                        buttons.forEach(b => b.classList.remove('selected'));
+                                        btn.classList.add('selected');
+                                        this.quizAnswers[key] = btn.dataset.value;
+                                        this._updateGenerateButtonState();
+                                });
+                        });
+                });
+        }
+
+        _wireButtons() {
+                this.generateBtn.addEventListener('click', async () => {
+                        const tags = Object.values(this.quizAnswers).filter(Boolean);
+                        this.renderMoodTags(tags);
+                        // Persist using SafeStorage wrapper
+                        try { SafeStorage.set('readingMoodTags', JSON.stringify(tags)); } catch (e) { localStorage.setItem('readingMoodTags', JSON.stringify(tags)); }
+
+                        // Compose a generated query from tags and render results
+                        const generatedMoodQuery = tags.join(' ');
+                        try {
+                                if (this.renderer && typeof this.renderer.renderCuratedSection === 'function') {
+                                        this.renderer.renderCuratedSection(generatedMoodQuery, 'mood-quiz-results-grid', 16);
+                                }
+                        } catch (e) {
+                                console.error('Mood quiz: failed to render curated section', e);
+                        }
+                });
+
+                this.retakeBtn.addEventListener('click', () => {
+                        this.quizAnswers = {};
+                        this.quizOptionGroups.forEach(group => {
+                                group.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                        });
+                        this.moodTagsContainer.innerHTML = '';
+                        this.results.hidden = true;
+                        try { SafeStorage.remove('readingMoodTags'); } catch (e) { localStorage.removeItem('readingMoodTags'); }
+                        this._updateGenerateButtonState();
+                });
+        }
+
+        _updateGenerateButtonState() {
+                const total = this.quizOptionGroups.length;
+                const answered = Object.keys(this.quizAnswers).length;
+                this.generateBtn.disabled = answered !== total;
+        }
+
+        renderMoodTags(tags) {
+                this.moodTagsContainer.innerHTML = '';
+                tags.forEach(tag => {
+                        const span = document.createElement('span');
+                        span.textContent = `#${tag}`;
+                        this.moodTagsContainer.appendChild(span);
+                });
+                this.results.hidden = false;
+        }
+
+        loadSavedMoodTags() {
+                let saved = null;
+                try { saved = SafeStorage.get('readingMoodTags'); } catch (e) { saved = localStorage.getItem('readingMoodTags'); }
+                if (saved) {
+                        try {
+                                const tags = JSON.parse(saved);
+                                if (Array.isArray(tags) && tags.length > 0) this.renderMoodTags(tags);
+                        } catch (e) { /* ignore */ }
+                }
+        }
+}
+
+// Initialize the manager if the page contains the quiz. Wait for library/renderer readiness.
+function _startReadingMoodQuiz() {
+        const startIfReady = () => {
+                const el = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!el) return;
+                if (window.libManager && window.renderer) {
+                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                        window.moodQuizManager.init();
+                } else {
+                        // Wait for library-manager-ready event
+                        window.addEventListener('bibliodrift:library-manager-ready', () => {
+                                if (window.libManager && window.renderer) {
+                                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                                        window.moodQuizManager.init();
+                                }
+                        }, { once: true });
+                }
+        };
+
+        if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startIfReady, { once: true });
+        } else {
+                startIfReady();
+        }
+}
+
+_startReadingMoodQuiz();
+
+function showForgotResetLink(resetUrl) {
+    const box = document.getElementById('forgotResetLinkBox');
+    if (!box || !resetUrl) return;
+    box.style.display = 'block';
+    box.innerHTML = `
+        <strong>Development reset link</strong> (no email was sent):<br>
+        <a href="${resetUrl}">Open link to set a new password</a>
+    `;
+}
+
+async function handleForgotPassword(event) {
+    if (event) event.preventDefault();
+    const btn = document.getElementById('forgotSubmitBtn');
+    const emailInput = document.getElementById('forgotEmail');
+    const linkBox = document.getElementById('forgotResetLinkBox');
+    const email = emailInput?.value?.trim() || '';
+    const originalText = btn ? btn.textContent : 'Send reset link';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        if (typeof showToast === 'function') showToast('Enter a valid email address', 'error');
+        else alert('Enter a valid email address');
+        return;
+    }
+
+    if (linkBox) {
+        linkBox.style.display = 'none';
+        linkBox.innerHTML = '';
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        const message = data.message
+            || 'If an account exists for that email, password reset instructions have been sent.';
+
+        if (res.ok) {
+            if (data.reset_url) {
+                showForgotResetLink(data.reset_url);
+                console.info('[Dev] Password reset link:', data.reset_url);
+                if (typeof showToast === 'function') {
+                    showToast('No email sent — use the reset link shown on this page.', 'info');
+                }
+            } else if (typeof showToast === 'function') {
+                showToast(message, 'success');
+            } else {
+                alert(message + '\n\n(No email is sent by the server yet.)');
+            }
+        } else {
+            const err = data.error || data.message || 'Unable to send reset link.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Forgot password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Use http://127.0.0.1:5500 (not file://) and ensure Flask is running.', 'error');
+        } else {
+            alert('Network error. Use http://127.0.0.1:5500 and ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleForgotPassword = handleForgotPassword;
+
+async function handleResetPassword(event) {
+    if (event) event.preventDefault();
+
+    const btn = document.getElementById('resetSubmitBtn');
+    const pwdInput = document.getElementById('resetNewPassword');
+    const originalText = btn ? btn.textContent : 'Reset password';
+    const newPassword = pwdInput?.value || '';
+
+    // Get the token from the URL e.g. auth.html?mode=reset&token=xxx
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        const err = 'Reset token is missing from the URL.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        const err = 'Password must be at least 6 characters long.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Resetting...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/reset-password/${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ new_password: newPassword }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast('Password reset successfully! You can now log in.', 'success');
+            else alert('Password reset successfully! You can now log in.');
+
+            setTimeout(() => {
+                window.location.href = 'auth.html?mode=login';
+            }, 2000);
+        } else {
+            const err = data.error || data.message || 'Failed to reset password.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Reset password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Ensure backend is running.', 'error');
+        } else {
+            alert('Network error. Ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleResetPassword = handleResetPassword;

@@ -11,13 +11,13 @@
             }
         })();
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
     <script src="../js/db.js"></script>
 
     <script src="../js/app.js"></script>
     <script src="../js/library-3d.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- SEO & Open Graph meta tags -->
     <meta name="description"
@@ -53,7 +53,7 @@
 <body class="library-page">
 
       <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -63,7 +63,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html" >Discovery</a>
+          <a href="app.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -74,6 +74,11 @@
           <a href="library.html" class="active">My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
@@ -185,7 +190,7 @@
                 </div>
                 
                 <!-- Call to Action -->
-                <a href="index.html" class="btn-primary library-empty-link">
+                <a href="app.html" class="btn-primary library-empty-link">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Discover Books
                 </a>
             </div>
