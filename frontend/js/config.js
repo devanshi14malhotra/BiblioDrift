@@ -100,3 +100,36 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }
 
+// =====================================================================
+// SECURITY COMPLIANCE UPDATE: SENTRY ERROR MONITORING
+// =====================================================================
+(function() {
+    const dsn = window.SENTRY_FRONTEND_DSN || (typeof localStorage !== 'undefined' ? localStorage.getItem('SENTRY_FRONTEND_DSN') : '');
+    if (dsn) {
+        const script = document.createElement('script');
+        script.src = 'https://browser.sentry-cdn.com/7.60.0/bundle.min.js';
+        script.crossOrigin = 'anonymous';
+        script.onload = () => {
+            if (typeof Sentry !== 'undefined') {
+                Sentry.init({
+                    dsn: dsn,
+                    tracesSampleRate: 1.0,
+                    beforeSend(event) {
+                        // Scrub sensitive data from request data
+                        if (event.request && event.request.data) {
+                            try {
+                                let data = typeof event.request.data === 'string' ? JSON.parse(event.request.data) : event.request.data;
+                                ['password', 'token', 'secret'].forEach(key => {
+                                    if (data[key]) data[key] = '[Filtered]';
+                                });
+                                event.request.data = typeof event.request.data === 'string' ? JSON.stringify(data) : data;
+                            } catch (e) {}
+                        }
+                        return event;
+                    }
+                });
+            }
+        };
+        document.head.appendChild(script);
+    }
+})();
