@@ -127,7 +127,7 @@ function isDemoSession() {
     return (
         SafeStorage.get('bibliodrift_token') === 'demo-token-12345' ||
         storedUser?.email === 'demo@bibliodrift.com' ||
-        storedUser?.username === 'Demo User'
+        storedUser?.isDemo === true
     );
 }
 
