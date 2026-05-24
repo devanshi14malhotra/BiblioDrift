@@ -83,6 +83,17 @@ const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].inclu
 const moodAnalysisCache = new Map();
 const APP_ROUTE = window.location.pathname.endsWith('/app.html') ? 'app.html' : 'app.html';
 
+
+// ── No-results empty state helpers ──
+function showNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'flex';
+}
+function hideNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'none';
+}
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 let GOOGLE_API_KEY = '';
@@ -1430,8 +1441,10 @@ class BookRenderer {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
                 const fallbackBooks = getFallbackBooks(query, maxResults);
-                if (fallbackBooks.length > 0) {
+                if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                     await this.renderBookCards(container, fallbackBooks);
+                } else if (container.id === 'search-results-grid') {
+                    showNoResults();
                 } else {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -1443,19 +1456,15 @@ class BookRenderer {
         } catch (err) {
             console.error("Failed to fetch books", err);
             const fallbackBooks = getFallbackBooks(query, maxResults);
-            if (fallbackBooks.length > 0) {
+            if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                 await this.renderBookCards(container, fallbackBooks);
                 return;
+            } else if (container.id === 'search-results-grid') {
+                showNoResults();
+                return;
             }
-
-            showToast("Failed to load bookshelf.", "error");
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>Bookshelf Empty (API connection failed)</p>
-                </div>`;
-        }
     }
+}
 
     async renderMoodCategorySection(categoryConfig, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
@@ -1539,6 +1548,11 @@ class BookRenderer {
 
     async renderBookCards(container, books) {
         if (container.id === 'search-results-grid') {
+            if (!books || books.length === 0) {
+                showNoResults();
+                return;
+            }
+            hideNoResults();
             window.searchFilterManager = new SearchFilterManager(container, books, this);
             return;
         }
@@ -1565,6 +1579,8 @@ class BookRenderer {
         if (container.children.length === 0) {
             container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
         }
+
+        
     }
 }
 
@@ -2902,6 +2918,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const genreManager = new GenreManager(libManager);
     genreManager.init();
+
+    // ── No-results suggestion tag clicks ──
+    document.querySelectorAll('.mood-suggestion-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (!input) return;
+        input.value = btn.dataset.mood;
+        window.location.href = `index.html?q=${encodeURIComponent(btn.dataset.mood)}`;
+    });
+    });
+
     const exportBtn = document.getElementById("export-library");
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
