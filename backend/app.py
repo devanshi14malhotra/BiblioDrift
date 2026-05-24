@@ -170,8 +170,54 @@ ALLOWED_CORS_HEADERS = [
     "Accept",
 ]
 
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: STRICT CORS ORIGIN RESOLUTION
+# =====================================================================
+# This function enforces strict Cross-Origin Resource Sharing (CORS) 
+# policies, which is a critical security measure to prevent malicious
+# third-party websites from making unauthorized requests on behalf
+# of an authenticated user.
+#
+# The previous implementation was overly permissive, potentially
+# allowing wildcard ('*') origins in production environments.
+# A wildcard policy (Access-Control-Allow-Origin: *) exposes all
+# API endpoints to cross-origin requests from any domain on the
+# internet, severely undermining security and leaving the application
+# vulnerable to various attacks, including CSRF (Cross-Site Request Forgery)
+# and data exfiltration.
+#
+# To mitigate these risks, this updated function dynamically checks
+# the application's current environment. When operating in production
+# mode (as determined by `is_production_mode()`), it implements a
+# strict allowlist approach:
+#
+# 1. It attempts to read the `FRONTEND_URL` environment variable.
+#    If absent, it defaults to the known production domain 
+#    ('https://bibliodrift.com').
+# 2. It then checks the `ALLOWED_ORIGINS` environment variable,
+#    which allows for multiple comma-separated origins.
+# 3. CRITICAL: It actively parses the provided origins and strips out
+#    any wildcard ('*') entries, ensuring they cannot be used to
+#    bypass the strict policy.
+# 4. Empty strings and purely whitespace entries are also removed.
+# 5. If the resulting list of safe origins is empty (e.g., if the
+#    only provided origin was a wildcard), it forcefully falls back
+#    to the safe `FRONTEND_URL` default.
+#
+# In non-production environments (like local development), the rules
+# are slightly relaxed to facilitate testing and debugging, falling
+# back to a set of predefined `DEFAULT_CORS_ORIGINS` if no explicit
+# configuration is provided in the environment variables.
+# =====================================================================
 def _load_cors_origins() -> list[str]:
     """Load an explicit CORS allowlist from the environment or defaults."""
+    if is_production_mode():
+        frontend_url = os.getenv("FRONTEND_URL", "https://bibliodrift.com")
+        raw_origins = os.getenv("ALLOWED_ORIGINS", frontend_url)
+        # Prevent wildcard in production
+        origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip() and origin.strip() != "*"]
+        return origins if origins else [frontend_url]
+
     raw_origins = os.getenv("ALLOWED_ORIGINS", "")
     if raw_origins.strip():
         return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
