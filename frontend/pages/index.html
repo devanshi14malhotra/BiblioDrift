@@ -2671,4 +2671,80 @@
     <script src="../js/ambient.js"></script>
 </body>
 
+<!-- Background Theme Selector -->
+<div class="bg-theme-selector">
+    <button class="bg-theme-btn" id="bgThemeBtn" title="Change Background">
+        <i class="fa-solid fa-image"></i>
+    </button>
+    <div class="bg-theme-panel" id="bgThemePanel">
+        <h4><i class="fa-solid fa-paintbrush"></i> Background</h4>
+        <div class="bg-option" data-bg="none">
+            <div class="bg-option-preview" style="background:#f9f7f2;"></div>
+            None
+        </div>
+        <div class="bg-option" data-bg="default">
+            <div class="bg-option-preview" style="background-image:url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=100');background-size:cover;"></div>
+            Cozy Library
+        </div>
+        <div class="bg-option" data-bg="library">
+            <div class="bg-option-preview" style="background-image:url('https://images.unsplash.com/photo-1524578271613-d550eacf6090?w=100');background-size:cover;"></div>
+            Dark Library
+        </div>
+        <div class="bg-option" data-bg="parchment">
+            <div class="bg-option-preview" style="background-color:#f5f0e6;"></div>
+            Parchment
+        </div>
+        <div class="bg-option" data-bg="linen">
+            <div class="bg-option-preview" style="background-color:#f0e9dd;"></div>
+            Linen
+        </div>
+        <div class="bg-option" data-bg="oldbooks">
+            <div class="bg-option-preview" style="background:radial-gradient(ellipse at center,#f0e7d4,#cfc3a4);"></div>
+            Old Books
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) {
+        console.error('themeToggle button not found');
+        return;
+    }
+
+    const icon = btn.querySelector('i');
+    const STORAGE_KEY = 'bibliodrift_theme';
+
+    function applyTheme(theme) {
+        if (theme === 'night') {
+            document.documentElement.setAttribute('data-theme', 'night');
+            if (icon) icon.className = 'fa-solid fa-sun';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (icon) icon.className = 'fa-solid fa-moon';
+        }
+
+        localStorage.setItem(STORAGE_KEY, theme);
+        if (typeof restoreTheme === 'function') restoreTheme();
+        console.log('Theme applied:', theme);
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+    applyTheme(savedTheme);
+
+    // Toggle on click
+    btn.addEventListener('click', function () {
+        const current =
+            document.documentElement.getAttribute('data-theme') === 'night'
+                ? 'night'
+                : 'light';
+
+        const next = current === 'night' ? 'light' : 'night';
+        applyTheme(next);
+    });
+});
+</script>
+</body>
+</html>
 </html>
