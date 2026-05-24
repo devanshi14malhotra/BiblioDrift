@@ -8,6 +8,7 @@ from flask_jwt_extended import (
     get_jwt_identity, set_access_cookies, unset_jwt_cookies
 )
 from flask_limiter import Limiter
+from flask_limiter.errors import RateLimitExceeded
 from flask_limiter.util import get_remote_address
 from sqlalchemy.orm import joinedload
 from flask_migrate import Migrate
@@ -167,6 +168,38 @@ CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://l
 # Initialize cache service
 cache_service.init_app(app)
 
+
+def _resolve_rate_limit_principal() -> str:
+    """Resolve a stable principal for per-user/session throttling."""
+    try:
+        user_id = get_jwt_identity()
+        if user_id:
+            return f"user:{user_id}"
+    except Exception:
+        # JWT may be absent on public endpoints.
+        pass
+
+    session_hint = (
+        request.cookies.get("access_token_cookie")
+        or request.cookies.get("csrf_access_token")
+        or request.cookies.get("session")
+    )
+    if session_hint:
+        return f"session:{session_hint[:24]}"
+
+    return "anon"
+
+
+def rate_limit_key_func() -> str:
+    """Composite key: IP + principal + endpoint."""
+    endpoint = request.endpoint or request.path
+    return f"{get_remote_address()}|{_resolve_rate_limit_principal()}|{endpoint}"
+
+
+def _handle_rate_limit_exceeded(e: RateLimitExceeded):
+    retry_after = int(getattr(e, "retry_after", 1) or 1)
+    return rate_limit_error(retry_after)
+
 # =====================================================================
 # SECURITY COMPLIANCE UPDATE: RATE LIMITING
 # Implementing Flask-Limiter to enforce strict request limits on
@@ -176,11 +209,12 @@ cache_service.init_app(app)
 # We set generic defaults but override them on specific high-risk routes.
 # =====================================================================
 limiter = Limiter(
-    get_remote_address,
+    rate_limit_key_func,
     app=app,
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"
 )
+app.register_error_handler(RateLimitExceeded, _handle_rate_limit_exceeded)
 
 
 
@@ -729,7 +763,7 @@ def index():
     return jsonify(endpoints_info)
 
 @app.route('/api/v1/analyze-mood', methods=['POST'])
-@rate_limit('analyze_mood')
+@limiter.limit("10 per minute")
 def handle_analyze_mood():
     """Analyze book mood using GoodReads reviews."""
     if not MOOD_ANALYSIS_AVAILABLE:
@@ -757,7 +791,7 @@ def handle_analyze_mood():
         return internal_error(str(e))
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
-@rate_limit('mood_tags')
+@limiter.limit("10 per minute")
 def handle_mood_tags():
     """Get mood tags for a book."""
     from exceptions import (
@@ -792,7 +826,7 @@ def handle_mood_tags():
         return handle_exception(e, "handle_mood_tags")
 
 @app.route('/api/v1/mood-search', methods=['POST'])
-@rate_limit('mood_search')
+@limiter.limit("10 per minute")
 def handle_mood_search():
     """Search for books based on mood/vibe with improved query parsing."""
     from exceptions import (
@@ -848,7 +882,7 @@ def handle_mood_search():
 
 
 @app.route('/api/v1/category-books', methods=['POST'])
-@rate_limit('category_books')
+@limiter.limit("10 per minute")
 def handle_category_books():
     """
     Return AI-generated, category-specific book recommendations.
@@ -914,7 +948,7 @@ def handle_category_books():
 
 
 @app.route('/api/v1/books/purchase-links', methods=['GET'])
-@rate_limit('purchase_links')
+@limiter.limit("20 per minute")
 def handle_purchase_links():
     """Get purchase links for a book."""
     try:
@@ -937,7 +971,7 @@ def handle_purchase_links():
         return internal_error(str(e))
 
 @app.route('/api/v1/generate-note', methods=['POST'])
-@rate_limit('generate_note')
+@limiter.limit("10 per minute")
 def handle_generate_note():
     """Generate AI-powered book recommendation with vibe support."""
     from exceptions import (
@@ -994,7 +1028,7 @@ def handle_generate_note():
         return handle_exception(e, "handle_generate_note")
 
 @app.route('/api/v1/chat', methods=['POST'])
-@rate_limit('chat')
+@limiter.limit("10 per minute")
 def handle_chat():
     """Handle chat messages and generate bookseller responses."""
     from exceptions import (
@@ -1088,6 +1122,7 @@ def health_check():
 #    attributes like shelf type and read progress.
 # =========================================================================
 @app.route('/api/v1/library', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def add_to_library():
     """Add a book to the user's shelf."""
@@ -1363,6 +1398,7 @@ price_tracker = get_price_tracker(db)
 #    the client when the server's record is strictly newer.
 # =========================================================================
 @app.route('/api/v1/library/sync', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def sync_library():
     """Sync a list of books from local storage to the user's account."""
@@ -1493,7 +1529,7 @@ def sync_library():
 # immediately responds with an active session ready to go.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per 10 seconds")
 def register():
     """Register a new user and return JWT token."""
     try:
@@ -1544,7 +1580,7 @@ def register():
 
 
 @app.route('/api/v1/login', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per 10 seconds")
 def login():
     """Authenticate user and return JWT token."""
     from exceptions import DatabaseQueryError, ValidationException
@@ -2340,6 +2376,7 @@ def delete_review(review_id):
 # ==================== PRICE ALERT ENDPOINTS ====================
 
 @app.route('/api/v1/books/<book_id>/alert', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def create_price_alert(book_id):
     """Create a price alert for a book (requires JWT)."""
@@ -2624,6 +2661,8 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
+limiter.init_app(app)
+app.register_error_handler(RateLimitExceeded, _handle_rate_limit_exceeded)
 
 # Initialize JWT Manager
 jwt = JWTManager(app)
@@ -2880,7 +2919,7 @@ def index():
     return jsonify(endpoints_info)
 
 @app.route('/api/v1/analyze-mood', methods=['POST'])
-@rate_limit('analyze_mood')
+@limiter.limit("10 per minute")
 def handle_analyze_mood():
     """Analyze book mood using GoodReads reviews."""
     if not MOOD_ANALYSIS_AVAILABLE:
@@ -2908,7 +2947,7 @@ def handle_analyze_mood():
         return internal_error(str(e))
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
-@rate_limit('mood_tags')
+@limiter.limit("10 per minute")
 def handle_mood_tags():
     """Get mood tags for a book."""
     from exceptions import (
@@ -2943,7 +2982,7 @@ def handle_mood_tags():
         return handle_exception(e, "handle_mood_tags")
 
 @app.route('/api/v1/mood-search', methods=['POST'])
-@rate_limit('mood_search')
+@limiter.limit("10 per minute")
 def handle_mood_search():
     """Search for books based on mood/vibe."""
     from exceptions import (
@@ -2978,7 +3017,7 @@ def handle_mood_search():
 
 
 @app.route('/api/v1/category-books', methods=['POST'])
-@rate_limit('category_books')
+@limiter.limit("10 per minute")
 def handle_category_books():
     """
     Return AI-generated, category-specific book recommendations.
@@ -3044,7 +3083,7 @@ def handle_category_books():
 
 
 @app.route('/api/v1/generate-note', methods=['POST'])
-@rate_limit('generate_note')
+@limiter.limit("10 per minute")
 def handle_generate_note():
     """Generate AI-powered book recommendation with vibe support."""
     from exceptions import (
@@ -3102,7 +3141,7 @@ def handle_generate_note():
         return handle_exception(e, "handle_generate_note")
 
 @app.route('/api/v1/chat', methods=['POST'])
-@rate_limit('chat')
+@limiter.limit("10 per minute")
 def handle_chat():
     """Handle chat messages and generate bookseller responses."""
     from exceptions import (
@@ -3197,6 +3236,7 @@ def health_check():
 #    attributes like shelf type and read progress.
 # =========================================================================
 @app.route('/api/v1/library', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def add_to_library():
     """Add a book to the user's shelf."""
@@ -4533,6 +4573,7 @@ price_tracker = get_price_tracker(db)
 #    the client when the server's record is strictly newer.
 # =========================================================================
 @app.route('/api/v1/library/sync', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def sync_library():
     """Sync a list of books from local storage to the user's account."""
@@ -4658,7 +4699,7 @@ def sync_library():
 # Finally, JWT access cookies are locked and loaded on the response object.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per 10 seconds")
 def register():
     """Register a new user and return JWT token."""
     from sqlalchemy.exc import IntegrityError
@@ -4704,7 +4745,7 @@ def register():
         return internal_error(str(e))
 
 @app.route('/api/v1/login', methods=['POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per 10 seconds")
 def login():
     """Authenticate user and return JWT token."""
     from exceptions import DatabaseQueryError, ValidationException
@@ -5501,6 +5542,7 @@ def delete_review(review_id):
 # ==================== PRICE ALERT ENDPOINTS ====================
 
 @app.route('/api/v1/books/<book_id>/alert', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def create_price_alert(book_id):
     """Create a price alert for a book (requires JWT)."""
