@@ -6886,23 +6886,25 @@ body.night-mode .tooltip-author {
 /* ============================================================ */
 
 /* Backdrop overlay â€” hidden by default, shown via .active */
-.book-preview-modal {
+dialog.book-preview-modal {
     display: none;
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
+    padding: 0;
+    border: none;
+    background: transparent;
+    margin: auto;
+    overflow: visible;
+}
+
+dialog.book-preview-modal[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+dialog.book-preview-modal::backdrop {
     background: rgba(0, 0, 0, 0.78);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    z-index: 30000;   /* above all other modals */
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.book-preview-modal.active {
-    display: flex;
 }
 
 /* Inner panel */

@@ -100,7 +100,7 @@ const BookPreview = (() => {
         let el = document.getElementById('book-preview-modal');
         if (el) return el;
 
-        el = document.createElement('div');
+        el = document.createElement('dialog');
         el.id        = 'book-preview-modal';
         el.className = 'book-preview-modal';
         el.setAttribute('role', 'dialog');
@@ -155,16 +155,7 @@ const BookPreview = (() => {
                         <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                         Previews show a sample (~20%) of the book. Full content requires purchase.
                     </p>
-                    <button id="download-card-btn" style="
-                        margin-top: 12px;
-                        padding: 8px 20px;
-                        background: #4f46e5;
-                        color: white;
-                        border: none;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-size: 14px;
-                    ">
+                    <button id="download-card-btn" class="btn-secondary modal-share-btn" style="margin-top: 12px;">
                         <i class="fa-solid fa-download"></i> Download Card
                     </button>
                 </div>
@@ -209,7 +200,7 @@ const BookPreview = (() => {
 
         // ESC key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && el.classList.contains('active')) {
+            if (e.key === 'Escape' && el.hasAttribute('open')) {
                 e.stopPropagation();
                 _close();
             }
@@ -265,7 +256,7 @@ const BookPreview = (() => {
         const modal     = document.getElementById('book-preview-modal');
         const container = document.getElementById('preview-viewer-container');
         if (container) container.innerHTML = '';  // destroy iframe
-        if (modal) modal.classList.remove('active');
+        if (modal && modal.hasAttribute('open')) modal.close();
         document.body.style.overflow = '';
     }
 
@@ -329,7 +320,7 @@ const BookPreview = (() => {
         populateBookCard(title, author, rating, genre);
 
         _setLoading();
-        modal.classList.add('active');
+        modal.showModal();
         document.body.style.overflow = 'hidden';
 
         try {
