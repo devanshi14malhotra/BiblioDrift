@@ -59,6 +59,8 @@ window.renderHeatmap = function () {
         console.error("Failed to parse activity log:", e);
     }
 
+    const totalActivities = Object.values(log).reduce((sum, activities) => sum + activities.length, 0);
+
     const today = new Date();
     // Move to Sunday to align weeks
     const startDate = new Date(today);
@@ -120,6 +122,13 @@ window.renderHeatmap = function () {
     }
 
     container.appendChild(grid);
+
+    if (totalActivities === 0) {
+        const emptyNote = document.createElement('p');
+        emptyNote.className = 'heatmap-empty-note';
+        emptyNote.textContent = 'No reading activity yet. Add books to your shelves to light up the heatmap.';
+        container.appendChild(emptyNote);
+    }
     
     // Scroll heatmap to the right (latest activity)
     const scrollContainer = document.querySelector('.heatmap-scroll-container');

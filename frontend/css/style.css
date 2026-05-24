@@ -968,6 +968,123 @@ textarea:focus {
     display: none !important;
 }
 
+/* --- Reading Heatmap --- */
+.reading-heatmap-section {
+    padding: 1.5rem;
+}
+
+.reading-heatmap-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.heatmap-scroll-container {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.75rem;
+}
+
+.heatmap-grid {
+    display: flex;
+    gap: 0.35rem;
+    align-items: flex-start;
+    width: max-content;
+}
+
+.heatmap-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.heatmap-cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: rgba(139, 115, 85, 0.1);
+    border: 1px solid rgba(139, 115, 85, 0.08);
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.heatmap-cell.intensity-1 {
+    background: rgba(139, 115, 85, 0.28);
+}
+
+.heatmap-cell.intensity-2 {
+    background: rgba(139, 115, 85, 0.48);
+}
+
+.heatmap-cell.intensity-3 {
+    background: rgba(139, 115, 85, 0.68);
+}
+
+.heatmap-cell.intensity-4 {
+    background: rgba(139, 115, 85, 0.95);
+}
+
+.heatmap-empty-note {
+    margin-top: 0.85rem;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.heatmap-tooltip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%) translateY(4px);
+    min-width: 150px;
+    max-width: 240px;
+    padding: 0.7rem 0.8rem;
+    border-radius: 12px;
+    background: var(--surface-elevated);
+    color: var(--text-main);
+    border: 1px solid var(--control-border);
+    box-shadow: var(--shadow-panel);
+    font-size: 0.78rem;
+    line-height: 1.45;
+    white-space: normal;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+}
+
+.heatmap-tooltip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 10px;
+    height: 10px;
+    transform: translateX(-50%) rotate(45deg);
+    background: var(--surface-elevated);
+    border-right: 1px solid var(--control-border);
+    border-bottom: 1px solid var(--control-border);
+}
+
+.heatmap-cell:hover .heatmap-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.heatmap-tooltip strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.8rem;
+}
+
+.heatmap-tooltip br {
+    display: block;
+    content: "";
+    margin-bottom: 0.15rem;
+}
+
 /* --- Constellation View --- */
 .constellation-container {
     width: 100%;

@@ -108,6 +108,29 @@ function getCookie(name) {
     return null;
 }
 
+function buildCookieAuthHeaders(includeJson = false) {
+    const headers = {};
+    if (includeJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    const csrf = getCookie('csrf_access_token');
+    if (csrf) {
+        headers['X-CSRF-TOKEN'] = csrf;
+    }
+
+    return headers;
+}
+
+function isDemoSession() {
+    const storedUser = parseStoredUser();
+    return (
+        SafeStorage.get('bibliodrift_token') === 'demo-token-12345' ||
+        storedUser?.email === 'demo@bibliodrift.com' ||
+        storedUser?.username === 'Demo User'
+    );
+}
+
 async function loadConfig() {
     try {
         const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
@@ -315,7 +338,7 @@ async function verifyStoredAuthSession() {
         const storedUser = parseStoredUser();
         const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
 
-        if (token === 'demo-token-12345') {
+        if (isDemoSession()) {
             return storedUser;
         }
 
@@ -396,7 +419,7 @@ const SafeStorage = {
      */
     async _openDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this._dbName, 1);
+            const request = indexedDB.open(this._dbName, 21);
             request.onupgradeneeded = (e) => {
                 const db = e.target.result;
                 if (!db.objectStoreNames.contains(this._storeName)) {
@@ -664,7 +687,7 @@ class BookRenderer {
 
         // Load flip sound
         const flipSound = new Audio('../assets/sounds/page-flip.mp3');
-        flipSound.preload = 'auto';
+        flipSound.preload = 'none';
         flipSound.volume = 0.5;
 
         const escapeHTML = (str) => {
@@ -1882,9 +1905,11 @@ class LibraryManager {
         }
 
         // 4. Sync with backend if available (Full Refresh)
-        await this.syncWithBackend();
-        if (navigator.onLine) {
-            await this.flushPendingLibraryMutations();
+        if (!isDemoSession()) {
+            await this.syncWithBackend();
+            if (navigator.onLine) {
+                await this.flushPendingLibraryMutations();
+            }
         }
         await this.updateSyncStatus();
     }
@@ -2969,7 +2994,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    if (verifiedUser) {
+    if (verifiedUser && !isDemoSession()) {
         await libManager.syncWithBackend();
     }
 
@@ -3117,13 +3142,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const loadExtendedStats = async () => {
-            const token = SafeStorage.get('bibliodrift_token');
-            if (!token) return;
+            if (isDemoSession()) return;
 
             try {
                 // Fetch Stats & Goals
                 const statsResponse = await fetch(`${MOOD_API_BASE}/stats?user_id=${user.id}&year=${currentYear}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: buildCookieAuthHeaders(),
+                    credentials: 'include'
                 });
                 
                 if (statsResponse.ok) {
@@ -3158,7 +3183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Fetch Leaderboard
                 const lbResponse = await fetch(`${MOOD_API_BASE}/stats/leaderboard?year=${currentYear}&limit=5`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: buildCookieAuthHeaders(),
+                    credentials: 'include'
                 });
 
                 if (lbResponse.ok) {
@@ -3260,13 +3286,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const identityContent = document.getElementById('reader-identity-content');
             if (!identityContent) return;
 
-            const token = SafeStorage.get('bibliodrift_token');
             const response = await fetch(`${MOOD_API_BASE}/reader-archetype`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: buildCookieAuthHeaders(true),
+                credentials: 'include',
                 body: JSON.stringify({ genres, reviews: reviewsList })
             });
 
@@ -3375,6 +3398,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const identityContent = document.getElementById('reader-identity-content');
             if (!identityContent) return;
 
+            const allBooks = [
+                ...(libManager.library.current || []),
+                ...(libManager.library.want || []),
+                ...(libManager.library.finished || [])
+            ];
+            const genres = Array.from(new Set(
+                allBooks.flatMap(book => book.volumeInfo?.categories || [])
+            ));
+
             identityContent.innerHTML = `
                 <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
                     <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
@@ -3382,38 +3414,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
 
-            const token = SafeStorage.get('bibliodrift_token');
-            if (!token) {
-                identityContent.innerHTML = `
-                    <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
-                        <p>Please log in to view your Reader Identity.</p>
-                    </div>
-                `;
+            if (isDemoSession()) {
+                renderEmptyIdentityState(genres);
                 return;
             }
 
             try {
                 // 1. Fetch user reviews
                 const reviewsResponse = await fetch(`${MOOD_API_BASE}/users/${user.id}/reviews`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: buildCookieAuthHeaders(),
+                    credentials: 'include'
                 });
 
                 if (!reviewsResponse.ok) {
-                    throw new Error(`Failed to fetch reviews (Status: ${reviewsResponse.status})`);
+                    console.warn(`Reader Identity reviews request returned ${reviewsResponse.status}; showing empty state.`);
+                    renderEmptyIdentityState(genres);
+                    return;
                 }
 
                 const reviewsData = await reviewsResponse.json();
                 const reviewsList = (reviewsData.reviews || []).map(r => r.review_text).filter(Boolean);
-
-                // Derive genres
-                const allBooks = [
-                    ...(libManager.library.current || []),
-                    ...(libManager.library.want || []),
-                    ...(libManager.library.finished || [])
-                ];
-                const genres = Array.from(new Set(
-                    allBooks.flatMap(book => book.volumeInfo?.categories || [])
-                ));
 
                 // 2. Render empty/onboarding or loaded state
                 if (reviewsList.length === 0) {
@@ -3423,7 +3443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } catch (error) {
                 console.error('Error loading reader identity:', error);
-                renderErrorIdentityState();
+                renderEmptyIdentityState(genres);
             }
         };
 
@@ -3667,7 +3687,7 @@ async function handleAuth(event) {
 
         // Keep button disabled during redirect delay
         setTimeout(() => {
-            window.location.href = "library.html";
+            window.location.href = "profile.html";
         }, 1000);
         return;
     }
@@ -3735,7 +3755,7 @@ async function handleAuth(event) {
 
             // Redirect - Button remains disabled
             setTimeout(() => {
-                window.location.href = "library.html";
+                window.location.href = "profile.html";
             }, 1000);
         } else {
             // Authentication failed - re-enable button
@@ -3794,7 +3814,7 @@ enableTapEffects();
 
 // --- creak and page flip effects ---
 const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
-pageFlipSound.preload = 'auto';
+pageFlipSound.preload = 'none';
 pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
 
@@ -4079,14 +4099,6 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => KeyboardShortcuts.init());
 } else {
     KeyboardShortcuts.init();
-}
-// Register Service Worker for offline asset caching
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('BiblioDrift Service Worker registered successfully!', reg))
-            .catch(err => console.error('Service Worker registration failed:', err));
-    });
 }
 // --- Connection Management & Offline Fallback Fallback Hooks ---
 
