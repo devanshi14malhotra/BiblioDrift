@@ -208,10 +208,21 @@ This ensures discovery stays organic, scalable, and aligned with BiblioDrift’s
    bash
    git clone https://github.com/devanshi14malhotra/bibliodrift.git
    
-2. Open index.html in your browser.
-   - That's it! No build steps required for the vanilla frontend.
+2. Serve the frontend using a local HTTP server (do NOT open HTML files directly in the browser):
+```bash
+   cd frontend
+   python -m http.server 8080
+```
+3. Start the backend:
+```bash
+   cd backend
+   python app.py
+```
+4. Open `http://localhost:8080/pages/auth.html` in your browser.
 
-### Backend
+> ⚠️ **Important:** Opening HTML files directly via `file:///` URLs will cause a CORS error (`TypeError: Failed to fetch`) because the browser blocks all fetch requests from a `null` origin. Always use a local server.
+
+### Backend 
 The Flask backend powers authentication, library sync, AI blurbs, chat, mood analysis, and other API flows.
 
 ## 🚢 Deployment Notes
