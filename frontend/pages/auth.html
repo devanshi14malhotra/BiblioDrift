@@ -395,6 +395,75 @@
             color: #2c2c2c;
             font-weight: 600;
         }
+
+        /* Password Strength Styles */
+        .password-strength-container {
+            margin-top: 1rem;
+            padding: 0 0.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .password-strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .password-criteria {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .password-criteria li {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .password-criteria li i {
+            font-size: 0.95rem;
+            width: 16px;
+            text-align: center;
+        }
+
+        .criterion-met {
+            color: #4ade80 !important;
+        }
+        .criterion-met i {
+            color: #4ade80;
+        }
+        .criterion-unmet {
+            color: #f87171 !important;
+        }
+        .criterion-unmet i {
+            color: #f87171;
+        }
+
+        .strength-weak { background-color: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.4); }
+        .strength-fair { background-color: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.4); }
+        .strength-good { background-color: #a3e635; box-shadow: 0 0 8px rgba(163,230,53,0.4); }
+        .strength-strong { background-color: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.4); }
+
+        @keyframes inputShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); border-color: #f87171; }
+            40%, 80% { transform: translateX(5px); border-color: #f87171; }
+        }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
@@ -487,6 +556,18 @@
                             value="demo123" required autocomplete="current-password">
                         <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
                             aria-label="Show password" role="button" tabindex="0"></i>
+                            
+                        <!-- Client-side Password Strength Validation UI -->
+                        <div id="passwordStrengthContainer" style="display: none;" class="password-strength-container">
+                            <div class="password-strength-bar">
+                                <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                            </div>
+                            <ul class="password-criteria" id="passwordCriteria">
+                                <li id="criterion-length" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 8 characters</li>
+                                <li id="criterion-number" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 1 number</li>
+                                <li id="criterion-special" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 1 special character</li>
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- 
@@ -704,6 +785,13 @@
                     googleAuthBtn.querySelector('span').textContent = 'Sign up with Google';
                     toggleText.textContent = 'Already have an account? Sign in.';
                     passwordInput.autocomplete = 'new-password';
+                    passwordInput.value = ''; // Reset password field on switch to register
+                    if (document.getElementById('passwordStrengthContainer')) {
+                        document.getElementById('passwordStrengthContainer').style.display = 'block';
+                        if (typeof updatePasswordStrengthMeter === 'function') {
+                            updatePasswordStrengthMeter();
+                        }
+                    }
                 } else {
                     authForm.dataset.mode = 'login';
                     authTitle.textContent = 'Welcome Back';
@@ -712,6 +800,9 @@
                     googleAuthBtn.querySelector('span').textContent = 'Sign in with Google';
                     toggleText.textContent = 'No account? Create one.';
                     passwordInput.autocomplete = 'current-password';
+                    if (document.getElementById('passwordStrengthContainer')) {
+                        document.getElementById('passwordStrengthContainer').style.display = 'none';
+                    }
                 }
                 showAuthPanel('signin');
             });
@@ -744,6 +835,104 @@
                     toggleVisibility();
                 }
             });
+        }
+
+        // ==============================================================================
+        // PASSWORD STRENGTH VALIDATION LOGIC
+        // ==============================================================================
+        const passwordStrengthContainer = document.getElementById('passwordStrengthContainer');
+        const passwordStrengthFill = document.getElementById('passwordStrengthFill');
+        const criteriaNodes = {
+            length: document.getElementById('criterion-length'),
+            number: document.getElementById('criterion-number'),
+            special: document.getElementById('criterion-special')
+        };
+
+        function validatePasswordCriteria(password) {
+            const hasLength = password.length >= 8;
+            const hasNumber = /\d/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>\-_\+=\/\[\]\\';`~]/.test(password);
+            
+            return {
+                length: hasLength,
+                number: hasNumber,
+                special: hasSpecial,
+                score: (hasLength ? 1 : 0) + (hasNumber ? 1 : 0) + (hasSpecial ? 1 : 0)
+            };
+        }
+
+        function updateCriterionNode(node, isMet) {
+            if (!node) return;
+            const icon = node.querySelector('i');
+            if (isMet) {
+                node.classList.add('criterion-met');
+                node.classList.remove('criterion-unmet');
+                icon.className = 'fa-solid fa-circle-check';
+            } else {
+                node.classList.remove('criterion-met');
+                node.classList.add('criterion-unmet');
+                icon.className = 'fa-solid fa-circle-xmark';
+            }
+        }
+
+        function updatePasswordStrengthMeter() {
+            if (!passwordInput || authForm.dataset.mode !== 'register') return;
+
+            const password = passwordInput.value;
+            const validation = validatePasswordCriteria(password);
+            
+            updateCriterionNode(criteriaNodes.length, validation.length);
+            updateCriterionNode(criteriaNodes.number, validation.number);
+            updateCriterionNode(criteriaNodes.special, validation.special);
+            
+            let fillWidth = '0%';
+            let fillClass = 'strength-weak';
+            
+            if (password.length > 0) {
+                if (validation.score === 1) {
+                    fillWidth = '33%';
+                    fillClass = 'strength-weak';
+                } else if (validation.score === 2) {
+                    fillWidth = '66%';
+                    fillClass = 'strength-fair';
+                } else if (validation.score === 3) {
+                    fillWidth = '100%';
+                    fillClass = password.length >= 12 ? 'strength-strong' : 'strength-good';
+                }
+            }
+            
+            if (passwordStrengthFill) {
+                passwordStrengthFill.style.width = fillWidth;
+                passwordStrengthFill.className = `password-strength-fill ${fillClass}`;
+            }
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', updatePasswordStrengthMeter);
+        }
+
+        // Intercept form submission to enforce validation on register
+        if (authForm) {
+            const originalOnSubmit = authForm.onsubmit;
+            authForm.onsubmit = function(event) {
+                if (authForm.dataset.mode === 'register') {
+                    const validation = validatePasswordCriteria(passwordInput.value);
+                    if (validation.score < 3) {
+                        event.preventDefault();
+                        
+                        passwordInput.style.animation = 'inputShake 0.4s ease-in-out 0s 1';
+                        setTimeout(() => {
+                            passwordInput.style.animation = 'none';
+                        }, 400);
+                        
+                        passwordInput.focus();
+                        return false; // Stop submission
+                    }
+                }
+                if (originalOnSubmit) {
+                    return originalOnSubmit.call(this, event);
+                }
+            };
         }
 
         const resetToken = new URLSearchParams(window.location.search).get('token');
