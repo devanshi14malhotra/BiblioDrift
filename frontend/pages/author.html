@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Author Profile | BiblioDrift</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+  
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <nav class="nav-links">
+        <div class="tooltip"><a href="index.html">Discovery</a></div>
+        <div class="tooltip"><a href="vault.html">My Vault</a></div>
+        <div class="tooltip"><a href="library.html">My Library</a></div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="author-profile-banner" style="width: 100%; height: 260px; background: linear-gradient(135deg, #3d2b24 0%, #1a120f 100%); border-bottom: 1px solid var(--glass-border); position: relative; z-index: 1;">
+    <div style="position: absolute; right: 40px; bottom: 20px; opacity: 0.15; font-size: 5rem; color: var(--accent-gold);">
+      <i class="fa-solid fa-book-open-reader"></i>
+    </div>
+  </div>
+
+  <main class="author-profile-container" style="padding: 0 2rem 4rem 2rem; max-width: 1000px; margin: -100px auto 0 auto; position: relative; z-index: 10;">
+    
+    <div class="author-hero glass-panel" style="background: var(--surface-elevated, #1c1816); border: 1px solid var(--glass-border); padding: 3rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: flex-start; text-align: left;">
+      
+      <div style="display: flex; gap: 30px; align-items: center; width: 100%; flex-wrap: wrap;">
+        <div style="position: relative; display: inline-block;">
+          <div style="width: 130px; height: 130px; border-radius: 50%; border: 3px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; background: rgba(212, 175, 55, 0.05);">
+            <div style="width: 110px; height: 110px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+              <img id="author-img" src="../assets/images/biblioDrift_favicon.png" alt="Author Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+          </div>
+          <div style="position: absolute; bottom: 8px; right: 8px; width: 16px; height: 16px; background: #2eb85c; border: 2px solid #1c1816; border-radius: 50%;"></div>
+        </div>
+
+        <div style="flex: 1; min-width: 250px;">
+          <h1 style="font-family: 'Playfair Display', serif; font-size: 2.5rem; margin: 0 0 5px 0;">
+            <a id="author-name-link" href="#" style="color: var(--text-main); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--accent-gold)'" onmouseout="this.style.color='var(--text-main)'">@loading...</a>
+          </h1>
+          <p id="author-bio" style="color: var(--text-muted); line-height: 1.6; font-size: 1.05rem; margin: 10px 0 0 0; word-wrap: break-word; max-width: 650px;">Fetching dynamic logs...</p>
+        </div>
+      </div>
+      
+      <div class="author-stats-row" style="display: flex; gap: 40px; margin-top: 2rem; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.05); width: 100%; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">
+        <div><span style="display:block; font-size:1.6rem; font-family:'Playfair Display', serif; font-weight:bold; color:var(--text-main);" id="stat-works">0</span> Works</div>
+        <div><span style="display:block; font-size:1.6rem; font-family:'Playfair Display', serif; font-weight:bold; color:var(--text-main);" id="stat-followers">0</span> Followers</div>
+        <div><span style="display:block; font-size:1.6rem; font-family:'Playfair Display', serif; font-weight:bold; color:var(--text-main);" id="stat-genres">0</span> Genres</div>
+        <div><span style="display:block; font-size:1.6rem; font-family:'Playfair Display', serif; font-weight:bold; color:var(--text-main);" id="stat-since">2026</span> Since</div>
+      </div>
+
+      <div class="author-meta" style="display: flex; flex-direction: column; gap: 12px; margin-top: 1.5rem; width: 100%;">
+        <div id="author-genres" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"></div>
+        <div id="author-joined" style="display: flex; gap: 15px; font-size: 0.88rem; color: var(--text-muted); margin-top: 5px;"></div>
+      </div>
+    </div>
+
+    <section class="published-content" style="margin-top: 2.5rem;">
+      <h2 class="section-title" style="font-family: 'Playfair Display', serif; margin-bottom: 1.5rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+        <i class="fa-solid fa-book" style="color: var(--accent-gold); font-size: 1.3rem;"></i> Publications Archive
+      </h2>
+      <div class="genre-books-grid" id="author-works-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2rem;">
+        </div>
+    </section>
+
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Connect directly to vault database
+        const db = new Dexie("BiblioDriftPrivateVault");
+        db.version(7).stores({
+          vaultBooks: "++id, title, author, uploader, genre, desc, privacy, elaraScanStatus, filename, timestamp, coverColor, coverUrl, fileBlob"
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let authorParam = urlParams.get('author');
+        let uploaderParam = urlParams.get('user');
+        let role = urlParams.get('role') || 'creator';
+
+        // STRICTLY DYNAMIC: Fetch whatever the user typed during login. NO PRE-ASSUMPTIONS.
+        let sessionUser = localStorage.getItem("bibliodrift_username");
+        if (!sessionUser || sessionUser.trim() === "") {
+            sessionUser = "Unknown User"; 
+        }
+
+        let targetLookupName = "";
+
+        // Route logic: resolve exact target name dynamically based on role
+        if (role === 'uploader') {
+            targetLookupName = (uploaderParam && uploaderParam.trim() !== "") ? decodeURIComponent(uploaderParam) : sessionUser;
+        } else {
+            targetLookupName = (authorParam && authorParam.trim() !== "") ? decodeURIComponent(authorParam) : "Unknown Author";
+        }
+
+        let recordsArray = await db.vaultBooks.toArray();
+        let filteredBooks = [];
+        let finalBio = "";
+        let finalBadge = "";
+
+        if (role === 'uploader') {
+            filteredBooks = recordsArray.filter(b => b.uploader && b.uploader.toLowerCase().trim() === targetLookupName.toLowerCase().trim());
+            finalBadge = "BiblioDrift Vault Contributor";
+            finalBio = `${targetLookupName} is an active archivist on BiblioDrift, managing a refined personal sanctuary of ${filteredBooks.length} data assets inside the secure registry stack.`;
+        } else {
+            filteredBooks = recordsArray.filter(b => b.author && b.author.toLowerCase().trim() === targetLookupName.toLowerCase().trim());
+            finalBadge = "BiblioDrift Vault Creator";
+            
+            if (filteredBooks.length > 0 && filteredBooks[0].desc && filteredBooks[0].desc.trim() !== "") {
+                finalBio = filteredBooks[0].desc;
+            } else {
+                finalBio = `This profile showcases the artistic identity of original creator: ${targetLookupName}. Preserved cleanly by community contributors inside the sanctuary vault.`;
+            }
+        }
+
+        let genreSet = new Set();
+        filteredBooks.forEach(b => {
+            if(b.genre) b.genre.split(',').forEach(g => {
+                const cleanedGenre = g.trim();
+                if(cleanedGenre) genreSet.add(cleanedGenre);
+            });
+        });
+        if(genreSet.size === 0 && filteredBooks.length > 0) genreSet.add("Literature");
+
+        // Inject Data securely
+        document.getElementById('stat-works').textContent = filteredBooks.length;
+        document.getElementById('stat-followers').textContent = "0"; 
+        document.getElementById('stat-genres').textContent = genreSet.size;
+
+        const nameLink = document.getElementById('author-name-link');
+        if(nameLink) {
+            nameLink.textContent = targetLookupName.toLowerCase().includes('@') ? targetLookupName : `@${targetLookupName.toLowerCase().replace(/\s+/g, '_')}`;
+            nameLink.href = `?${role === 'uploader' ? 'user' : 'author'}=${encodeURIComponent(targetLookupName)}&role=${role}`;
+        }
+
+        document.getElementById('author-bio').textContent = DOMPurify.sanitize(finalBio);
+        document.getElementById('author-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(targetLookupName)}&background=2c2420&color=d4af37&size=110&bold=true`;
+        
+        document.getElementById('author-joined').innerHTML = `
+          <span><i class="fa-solid fa-calendar-days" style="color: var(--accent-gold); margin-right: 5px;"></i> System Session: 2026</span>
+          <span><i class="fa-solid fa-id-card-clip" style="color: var(--accent-gold); margin-right: 5px;"></i> ${finalBadge}</span>
+        `;
+
+        const genreTagsEl = document.getElementById('author-genres');
+        genreTagsEl.innerHTML = '';
+        genreSet.forEach(genre => {
+            const tag = document.createElement('span');
+            tag.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted); font-family: "Georgia", serif; font-style: italic; margin-right: 6px;';
+            tag.textContent = genre;
+            genreTagsEl.appendChild(tag);
+        });
+
+        const worksGrid = document.getElementById('author-works-grid');
+        worksGrid.innerHTML = '';
+
+        if (filteredBooks.length === 0) {
+            worksGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-style: italic; opacity: 0.7; padding: 20px 0;">No active vault tracking elements allocated under this signature entity loop.</div>`;
+            return;
+        }
+
+        filteredBooks.forEach(book => {
+            const card = document.createElement('div');
+            const cardColor = book.coverColor || '#4a2810';
+            const hasCoverImage = book.coverUrl && book.coverUrl.trim() !== "";
+            const coverStyle = hasCoverImage 
+                ? `background-image: url('${encodeURI(book.coverUrl)}'); background-size: cover; background-position: center;` 
+                : `background: ${cardColor};`;
+
+            // GRID BLOWOUT FIX: Strict flex, min-width: 0, and max-width checks
+            card.style.cssText = `
+                background: var(--surface-soft, #1e1a18); 
+                border: 1px solid var(--glass-border); 
+                border-radius: 12px; 
+                padding: 15px; 
+                text-align: center; 
+                box-shadow: var(--shadow-soft); 
+                transition: transform 0.3s; 
+                cursor: pointer; 
+                display: flex; 
+                flex-direction: column; 
+                gap: 12px;
+                min-width: 0; 
+                width: 100%;
+                box-sizing: border-box;
+                overflow: hidden;
+            `;
+            card.onmouseover = () => card.style.transform = 'translateY(-5px)';
+            card.onmouseout = () => card.style.transform = 'translateY(0)';
+            
+            card.innerHTML = `
+                <div style="width: 100%; height: 220px; ${coverStyle} border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.2); text-align: left; position: relative; box-shadow: inset 3px 0 5px rgba(255,255,255,0.05), 3px 5px 15px rgba(0,0,0,0.3); overflow: hidden;">
+                    ${!hasCoverImage ? `<div style="font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #fff; font-weight: 700; word-break: break-all; overflow-wrap: break-word; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;">${DOMPurify.sanitize(book.title)}</div>` : ''}
+                    ${!hasCoverImage ? `<div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-family: sans-serif; letter-spacing: 1px; font-weight: bold; margin-top: auto; padding-top: 10px;">BiblioDrift Archive</div>` : ''}
+                </div>
+                <div style="font-size: 0.95rem; color: var(--text-main); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 100%; width: 100%; display: block;" title="${DOMPurify.sanitize(book.title)}">
+                    ${DOMPurify.sanitize(book.title)}
+                </div>
+            `;
+            worksGrid.appendChild(card);
+        });
+    });
+  </script>
+</body>
+</html>
