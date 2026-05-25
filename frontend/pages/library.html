@@ -17,9 +17,7 @@
 
     <script src="../js/app.js"></script>
     <script src="../js/library-3d.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- SEO & Open Graph meta tags -->
     <meta name="description"
         content="My Library on BiblioDrift — View your saved books, track your reading progress, and revisit your personal reading journey all in one place." />
     <meta property="og:type" content="website" />
@@ -39,15 +37,14 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
-    <!-- PWA -->
     <link rel="stylesheet" href="../css/pwa.css">
     <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#2c2420">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BiblioDrift">
-    <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 </head>
 
 <body class="library-page">
@@ -78,7 +75,6 @@
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
-        <!-- DYNAMIC AUTH LINK -->
         <div class="tooltip">
           <a href="auth.html" id="navAuthLink" >Sign In</a>
           <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
@@ -138,29 +134,17 @@
         </section>
 
 
-        <!-- 3D Bookshelf Container -->
         <div class="bookshelf-3d-container" id="library-shelves" role="main" aria-label="3D bookshelf library">
 
-            <!-- Empty State Placeholder (Visible when filter returns no books) -->
             <div id="library-empty-state" class="library-empty-state" hidden>
-                <!-- Animated SVG Illustration -->
                 <div class="empty-state-illustration">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" class="empty-shelf-svg">
-                        <!-- Empty bookshelf illustration -->
                         <rect x="20" y="140" width="160" height="8" fill="var(--accent-gold)" opacity="0.3" rx="2"/>
                         <rect x="25" y="148" width="150" height="4" fill="var(--accent-gold)" opacity="0.2" rx="1"/>
-                        
-                        <!-- Open book in center -->
                         <g class="floating-book">
                             <path d="M70 80 L70 120 L100 115 L130 120 L130 80 L100 85 Z" 
-                                  fill="var(--card-bg)" 
-                                  stroke="var(--accent-gold)" 
-                                  stroke-width="2"/>
-                            <line x1="100" y1="85" x2="100" y2="115" 
-                                  stroke="var(--accent-gold)" 
-                                  stroke-width="1.5" 
-                                  opacity="0.5"/>
-                            <!-- Pages -->
+                                  fill="var(--card-bg)" stroke="var(--accent-gold)" stroke-width="2"/>
+                            <line x1="100" y1="85" x2="100" y2="115" stroke="var(--accent-gold)" stroke-width="1.5" opacity="0.5"/>
                             <path d="M75 90 L95 92" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
                             <path d="M75 95 L92 97" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
                             <path d="M75 100 L90 102" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
@@ -168,93 +152,86 @@
                             <path d="M108 97 L125 95" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
                             <path d="M110 102 L125 100" stroke="var(--text-muted)" opacity="0.3" stroke-width="1"/>
                         </g>
-                        
-                        <!-- Sparkles -->
                         <circle cx="50" cy="60" r="2" fill="var(--accent-gold)" class="sparkle sparkle-1"/>
                         <circle cx="150" cy="70" r="2" fill="var(--accent-gold)" class="sparkle sparkle-2"/>
                         <circle cx="100" cy="50" r="1.5" fill="var(--accent-gold)" class="sparkle sparkle-3"/>
                     </svg>
                 </div>
                 
-                <!-- Enhanced Typography -->
                 <div class="empty-state-content">
                     <h2 class="empty-state-title">Your library awaits its first chapter</h2>
-                    <p class="empty-state-description">
-                        No books found here. Start your reading journey by discovering stories that speak to your soul.
-                    </p>
+                    <p class="empty-state-description">No books found here. Start your reading journey by discovering stories that speak to your soul.</p>
                 </div>
                 
-                <!-- Call to Action -->
                 <a href="index.html" class="btn-primary library-empty-link">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Discover Books
                 </a>
             </div>
 
-            <!-- Currently Reading Shelf -->
+            <div class="shelf-section-3d" id="public-vault-wrapper" style="display: none; border-bottom: 1px dashed var(--glass-border); padding-bottom: 2rem; margin-bottom: 2rem;">
+                <span class="shelf-label">
+                    <i class="fa-solid fa-globe" style="color: var(--accent-gold); margin-right: 8px;"></i>
+                    Public Community Vault
+                </span>
+                <div class="bookshelf-3d">
+                    <div class="books-row-3d" id="shelf-public-3d" role="list" aria-label="Public community books">
+                        </div>
+                </div>
+            </div>
+
             <div class="shelf-section-3d">
                 <span class="shelf-label">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="lucide lucide-book-open-icon lucide-book-open">
                         <path d="M12 7v14" />
-                        <path
-                            d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                        <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
                     </svg>
                     Currently Immersed
                 </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-current-3d" role="list" aria-label="Books currently being read">
-                        <!-- Books will be injected via JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- Want to Read Shelf -->
             <div class="shelf-section-3d">
                 <span class="shelf-label">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="lucide lucide-book-marked-icon lucide-book-marked">
                         <path d="M10 2v8l3-3 3 3V2" />
-                        <path
-                            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                     </svg>
                     Anticipated Journeys
                 </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-want-3d" role="list" aria-label="Books to read">
-                        <!-- Books will be injected via JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- Finished Reading Shelf -->
             <div class="shelf-section-3d">
                 <span class="shelf-label">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="lucide lucide-book-check-icon lucide-book-check">
-                        <path
-                            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
                         <path d="m9 9.5 2 2 4-4" />
                     </svg>
                     Lifetime Favorites
                 </span>
                 <div class="bookshelf-3d">
                     <div class="books-row-3d" id="shelf-finished-3d" role="list" aria-label="Books already read">
-                        <!-- Books will be injected via JS -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Constellation Container (Hidden by default) -->
         <div id="constellation-container" class="constellation-container hidden">
-            <!-- D3 SVG will be injected here -->
-        </div>
+            </div>
 
-        <!-- Custom Collections Container (Hidden by default) -->
         <div id="collections-container" class="collections-container hidden" style="padding: 2rem 0; width: 100%;">
             <div class="collections-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                 <h2 style="font-family: 'Playfair Display', serif; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.8rem;">
@@ -265,14 +242,11 @@
                 </button>
             </div>
 
-            <!-- Collections Grid (List View) -->
             <div id="collections-grid-view" style="width: 100%;">
                 <div id="collections-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-                    <!-- Collections populated via JS -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Selected Collection View (Detail View - Hidden by default) -->
             <div id="collection-detail-view" class="hidden" style="margin-top: 1rem; width: 100%;">
                 <div class="collection-detail-header" style="background: var(--glass-bg); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid var(--glass-border); width: 100%; box-sizing: border-box;">
                     <button id="back-to-collections-btn" class="btn-secondary" style="border-radius: 20px; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1rem;">
@@ -290,22 +264,18 @@
                         </div>
                     </div>
                 </div>
-                <!-- Grid for books inside this collection -->
                 <div class="shelf-section-3d" style="margin-top: 1rem; padding-top: 2rem;">
                     <span class="shelf-label" id="collection-books-shelf-label">
                         <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold); margin-right: 6px;"></i> Books in Collection
                     </span>
                     <div class="bookshelf-3d">
                         <div class="books-row-3d" id="collection-books-row-3d" role="list" aria-label="Books in this collection">
-                            <!-- 3D Book Spines injected here! -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
         </div>
 
-
-        <!-- Book Tooltip (positioned dynamically) -->
         <div class="book-tooltip" id="book-tooltip" role="region" aria-label="Book preview tooltip" aria-live="polite">
             <div class="tooltip-header">
                 <img class="tooltip-cover" id="tooltip-cover" src="" alt="Book cover">
@@ -316,7 +286,6 @@
                         <span class="tooltip-stars" id="tooltip-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
                         <span class="tooltip-rating-text" id="tooltip-rating-text">4.2</span>
                     </div>
-                    <!-- Reading progress shown in tooltip for currently-reading books -->
                     <div class="tooltip-progress" id="tooltip-progress" style="display:none;">
                         <div class="tooltip-progress-bar-track">
                             <div class="tooltip-progress-bar-fill" id="tooltip-progress-fill"></div>
@@ -329,41 +298,30 @@
             <div class="tooltip-hint">Click to see full details</div>
         </div>
 
-        <!-- Book Detail Modal -->
         <div class="book-detail-modal" id="book-detail-modal">
             <button class="modal-close-btn" id="modal-close-btn" aria-label="Close details" title="Close details">
                 <i class="fa-solid fa-xmark"></i>
             </button>
             <div class="book-detail-content">
                 <div class="book-expanded-layout">
-                    <!-- Left Column: Interactive 3D Book -->
                     <div class="book-stage">
                         <div class="book-3d-scene">
-                            <!-- Click on the book to flip it -->
                             <div class="book-object" id="book-3d-object" role="button" tabindex="0"
                                 aria-label="Book 3D object. Press Enter or Space to flip the book.">
-                                <!-- Front Face -->
                                 <div class="book-face face-front" aria-hidden="true">
                                     <img id="modal-cover" src="" alt="Book Cover">
                                     <div class="spine-overlay" aria-hidden="true"></div>
                                     <div class="lighting-sheen" aria-hidden="true"></div>
                                 </div>
-
-                                <!-- Spine Face -->
                                 <div class="book-face face-spine"></div>
-
-                                <!-- Back Face -->
                                 <div class="book-face face-back">
                                     <div class="back-paper-texture">
                                         <div class="back-content-scroll" id="modal-back-cover">
-                                            <!-- Description injected here -->
                                             <h3 class="synopsis-title">Synopsis</h3>
                                             <p id="modal-description" class="book-description-text"></p>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Paper Edges -->
                                 <div class="book-face face-right"></div>
                                 <div class="book-face face-top"></div>
                                 <div class="book-face face-bottom"></div>
@@ -374,14 +332,13 @@
                         </div>
                     </div>
 
-                    <!-- Right Column: Info & Details -->
                     <div class="book-info-panel">
                         <div class="book-header">
                             <h1 class="book-title-large" id="modal-title"></h1>
-                            <p class="book-author-large" id="modal-author"></p>
+                            <div class="book-author-large" id="modal-author"></div>
                         </div>
 
-                        <div class="book-stats-row">
+                        <div class="book-stats-row" id="modal-stats-row">
                             <div class="stat-item">
                                 <div class="book-rating-large">
                                     <span class="rating-stars-large"
@@ -395,8 +352,7 @@
                             </div>
                         </div>
 
-                        <!-- AI Insight Box -->
-                        <div class="ai-insight-box" style="margin-bottom: 1.5rem;">
+                        <div class="ai-insight-box" id="modal-ai-box" style="margin-bottom: 1.5rem;">
                             <div class="ai-header">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                                 <span>AI Insight</span>
@@ -407,8 +363,7 @@
                             </div>
                         </div>
 
-                        <!-- Where to Buy section -->
-                        <div class="purchase-links-box" style="margin-bottom: 1.5rem;">
+                        <div class="purchase-links-box" id="modal-buy-box" style="margin-bottom: 1.5rem;">
                             <div class="purchase-header">
                                 <i class="fa-solid fa-cart-shopping"></i>
                                 <span>Where to Buy</span>
@@ -420,7 +375,6 @@
 
                         <div class="book-actions-section">
                             <div class="library-actions-group">
-                                <!-- Issue #23: Remove from Library button UI -->
                                 <button class="action-btn-primary remove-from-library library-remove-btn"
                                     id="modal-remove-btn" title="Remove from library">
                                     <i class="fa-solid fa-trash"></i>
@@ -435,23 +389,18 @@
                                 </button>
                             </div>
 
-                            <!-- Reading Progress Tracker -->
                             <div class="reading-progress-tracker" id="modal-progress-section" style="display:none;">
                                 <div class="progress-tracker-header">
                                     <i class="fa-solid fa-book-open-reader"></i>
                                     <span class="progress-tracker-title">Reading Progress</span>
                                     <span class="progress-percent-badge" id="modal-progress-badge">0%</span>
                                 </div>
-
-                                <!-- Mode toggle: percentage vs pages -->
                                 <div class="progress-mode-toggle">
                                     <button class="progress-mode-btn active" id="progress-mode-pct"
                                         data-mode="percent">% Done</button>
                                     <button class="progress-mode-btn" id="progress-mode-pages"
                                         data-mode="pages">Pages</button>
                                 </div>
-
-                                <!-- Percentage mode -->
                                 <div class="progress-input-group" id="progress-pct-group">
                                     <input type="range" min="0" max="100" value="0" class="progress-range-slider"
                                         id="modal-progress-slider" aria-label="Reading progress percentage">
@@ -464,8 +413,6 @@
                                         <span>100%</span>
                                     </div>
                                 </div>
-
-                                <!-- Pages mode -->
                                 <div class="progress-input-group" id="progress-pages-group" style="display:none;">
                                     <div class="pages-input-row">
                                         <div class="pages-field">
@@ -484,13 +431,12 @@
                                         <div class="progress-bar-fill" id="modal-pages-bar"></div>
                                     </div>
                                 </div>
-
                                 <button class="progress-save-btn" id="modal-progress-save">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Progress
                                 </button>
                             </div>
 
-                            <div class="shelf-selection-row" style="margin-top: 10px;">
+                            <div class="shelf-selection-row" id="modal-shelf-row" style="margin-top: 10px;">
                                 <label for="modal-shelf-select" class="library-select-label">Move to Shelf:</label>
                                 <select id="modal-shelf-select" class="shelf-select library-shelf-select"
                                     aria-label="Move book to shelf" title="Move book to shelf">
@@ -499,40 +445,12 @@
                                     <option value="finished">Lifetime Favorites</option>
                                 </select>
                             </div>
-
-                            <!-- Price Tracker UI -->
-                            <div class="price-tracker-section" id="modal-price-tracker-section" style="display:none; margin-top: 15px;">
-                                <div class="price-tracker-header">
-                                    <div>
-                                        <i class="fa-solid fa-tag" style="color: var(--accent-gold);"></i>
-                                        <span style="font-weight: 600; color: var(--text-main); margin-left: 5px;">Watch Price</span>
-                                    </div>
-                                    <div id="modal-price-latest" style="font-size: 0.9rem; font-weight: bold; color: var(--accent-gold);"></div>
-                                </div>
-                                <div id="modal-price-auth-prompt" style="display: none; font-size: 0.85rem; color: var(--text-muted); background: var(--glass-bg); padding: 10px; border-radius: 8px;">
-                                    <a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to set a price alert for this book.
-                                </div>
-                                <div id="modal-price-controls" style="display: none;">
-                                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                        <div style="position: relative; flex: 1;">
-                                            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">$</span>
-                                            <input type="number" id="modal-price-target" min="0.01" step="0.01" placeholder="Target price" aria-label="Target price" style="width: 100%; padding: 8px 8px 8px 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); background: rgba(255,255,255,0.8); color: var(--text-main);">
-                                        </div>
-                                        <button id="modal-price-set-btn" class="action-btn-secondary" style="white-space: nowrap; padding: 8px 15px;"><i class="fa-solid fa-bell"></i> Set Alert</button>
-                                    </div>
-                                    <div id="modal-price-active-alert" style="display:none; align-items: center; justify-content: space-between; font-size: 0.85rem; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 8px; border-radius: 4px; color: var(--text-main);">
-                                        <div><i class="fa-solid fa-bell" style="color: #4CAF50;"></i> Alert set for <strong id="modal-price-active-target"></strong></div>
-                                        <button id="modal-price-remove-btn" title="Remove alert" style="background: none; border: none; color: #e53935; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
-                        <div class="book-reviews-section">
+                        <div class="book-reviews-section" id="modal-reviews-section">
                             <h3>Reader Reviews</h3>
                             <div id="modal-reviews" class="reviews-scroll-container">
-                                <!-- Reviews injected via JS -->
-                            </div>
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -548,8 +466,6 @@
     <script src="../js/footer.js"></script>
     <script src="../script/header-scroll.js"></script>
 
-
-    <!-- Ambient Sanctuary UI -->
     <div class="ambient-sanctuary">
         <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
             <i class="fa-solid fa-leaf"></i>
@@ -598,7 +514,6 @@
         </div>
     </div>
 
-    <!-- Collection Create/Edit Modal -->
     <dialog id="collection-modal" class="glass-modal" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 15px; color: var(--text-main); padding: 0;">
       <div class="modal-content" style="max-width: 450px; background: none; border: none; box-shadow: none;">
         <button class="close-modal-btn" id="closeCollectionModalBtn" style="position: absolute; right: 15px; top: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;"><i class="fa-solid fa-xmark"></i></button>
@@ -626,7 +541,6 @@
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
-  <!-- AI Chatbot Widget -->
   <div id="ai-chatbot-widget" class="chatbot-widget">
     <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" title="Chat with Elara">
       <i class="fa-solid fa-robot"></i>
@@ -654,6 +568,110 @@
     </div>
   </div>
   <script src="../js/chatbot.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Wait slightly so existing library JS finishes rendering before we inject
+            setTimeout(async () => {
+                const vaultDb = new Dexie("BiblioDriftPrivateVault");
+                vaultDb.version(7).stores({
+                    vaultBooks: "++id, title, author, uploader, genre, desc, privacy, elaraScanStatus, filename, timestamp, coverColor, coverUrl, fileBlob"
+                });
+
+                const publicShelf = document.getElementById('shelf-public-3d');
+                const publicWrapper = document.getElementById('public-vault-wrapper');
+                
+                const allBooks = await vaultDb.vaultBooks.toArray();
+                const publicBooks = allBooks.filter(b => b.privacy === 'public');
+
+                if (publicBooks.length > 0) {
+                    publicWrapper.style.display = 'block'; // Make public shelf visible
+                    publicShelf.innerHTML = '';
+
+                    publicBooks.forEach(book => {
+                        const spine = document.createElement("div");
+                        spine.className = "book-spine-3d"; 
+                        
+                        // Fallback styles matching aesthetic if CSS class is missing
+                        spine.style.cssText = `
+                            width: 48px; height: 230px; 
+                            background: ${book.coverUrl ? `url('${encodeURI(book.coverUrl)}') center/cover` : (book.coverColor || '#4a2810')};
+                            border-radius: 4px 2px 2px 4px;
+                            position: relative; cursor: pointer;
+                            display: flex; align-items: center; justify-content: center;
+                            box-shadow: inset 4px 0 10px rgba(0,0,0,0.4), -5px 5px 15px rgba(0,0,0,0.4);
+                            transition: transform 0.3s; margin: 0 6px; z-index: 2;
+                        `;
+
+                        spine.onmouseover = () => spine.style.transform = 'translateY(-15px) scale(1.05)';
+                        spine.onmouseout = () => spine.style.transform = 'translateY(0) scale(1)';
+
+                        spine.innerHTML = `
+                            <div style="writing-mode: vertical-rl; transform: rotate(180deg); color: #fff; font-family: 'Georgia', serif; font-size: 0.85rem; font-weight: bold; padding: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 200px;">
+                                ${DOMPurify.sanitize(book.title)}
+                            </div>
+                        `;
+
+                        // 🌟 DUAL IDENTITY MODAL LOGIC 🌟
+                        spine.addEventListener('click', () => {
+                            const modal = document.getElementById('book-detail-modal');
+                            if(!modal) return;
+
+                            const sTitle = DOMPurify.sanitize(book.title);
+                            const sAuthor = DOMPurify.sanitize(book.author || "Unknown Author");
+                            const sUploader = DOMPurify.sanitize(book.uploader || "Unknown User");
+                            
+                            document.getElementById('modal-title').textContent = sTitle;
+                            document.getElementById('modal-description').textContent = DOMPurify.sanitize(book.desc || "No description provided in the vault.");
+                            
+                            // Inject strictly clickable profile links
+                            document.getElementById('modal-author').innerHTML = `
+                                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 12px 18px; border-radius: 8px; border: 1px dashed var(--glass-border);">
+                                    <div style="font-size: 1.05rem; color: var(--text-main);">
+                                        <i class="fa-solid fa-pen-nib" style="color: var(--accent-gold); margin-right: 6px;"></i> Creator: 
+                                        <a href="author.html?author=${encodeURIComponent(sAuthor)}&role=creator" style="color: var(--accent-gold); text-decoration: none; font-weight: 600; transition: 0.2s;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${sAuthor}</a>
+                                    </div>
+                                    <div style="font-size: 0.9rem; color: var(--text-muted);">
+                                        <i class="fa-solid fa-upload" style="margin-right: 6px;"></i> Vault Archiver: 
+                                        <a href="author.html?user=${encodeURIComponent(sUploader)}&role=uploader" style="color: #fff; text-decoration: none; font-weight: 500; transition: 0.2s;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${sUploader}</a>
+                                    </div>
+                                </div>
+                            `;
+
+                            // Handle Cover Update Safely
+                            const coverFace = document.querySelector('.face-front');
+                            const img = document.getElementById('modal-cover');
+                            if (book.coverUrl) {
+                                img.src = encodeURI(book.coverUrl);
+                                img.style.display = 'block';
+                                if(coverFace) coverFace.style.background = 'transparent';
+                            } else {
+                                img.style.display = 'none';
+                                if(coverFace) {
+                                    coverFace.style.background = book.coverColor || '#4a2810';
+                                    coverFace.innerHTML = `<div style="padding:20px; color:#fff; font-family:'Playfair Display', serif; font-size:1.5rem; font-weight:bold; height:100%; box-sizing:border-box;">${sTitle}</div>`;
+                                }
+                            }
+
+                            // Clean up unneeded UI elements for Public Books
+                            ['modal-progress-section', 'modal-remove-btn', 'modal-stats-row', 'modal-ai-box', 'modal-buy-box', 'modal-shelf-row', 'modal-reviews-section'].forEach(id => {
+                                const el = document.getElementById(id);
+                                if(el) el.style.display = 'none';
+                            });
+
+                            modal.classList.add('active');
+                        });
+
+                        publicShelf.appendChild(spine);
+                    });
+                }
+            }, 500); // 500ms delay to ensure library.js finishes its original rendering
+        } catch (error) {
+            console.error("Public Vault Render Error:", error);
+        }
+    });
+  </script>
 
 </body>
 
