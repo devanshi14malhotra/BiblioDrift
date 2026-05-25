@@ -20,6 +20,8 @@ import os
 import requests
 import secrets
 from urllib.parse import urlencode
+from werkzeug.utils import secure_filename
+import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -1902,6 +1904,75 @@ def logout():
     resp, status = success_response(message="Logout successful")
     unset_jwt_cookies(resp)
     return resp, status
+
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'avatars')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/v1/users/<int:user_id>/avatar', methods=['POST'])
+@jwt_required()
+def upload_avatar(user_id):
+    """Upload and update user avatar with MIME type and magic number validation."""
+    current_user_id = get_jwt_identity()
+    
+    if str(user_id) != str(current_user_id):
+        return forbidden_error("Unauthorized access to another user's profile")
+        
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "No file selected for uploading"}), 400
+        
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Allowed file types are png, jpg, jpeg, gif"}), 400
+        
+    # Validate Content-Type header
+    file_content_type = file.content_type
+    if file_content_type not in ALLOWED_MIME_TYPES:
+        return jsonify({"error": "Invalid Content-Type"}), 400
+        
+    # Verify file magic numbers
+    file_bytes = file.read(2048)
+    file.seek(0) # Reset file pointer after reading
+    
+    try:
+        mime = magic.Magic(mime=True)
+        file_mime = mime.from_buffer(file_bytes)
+        
+        if file_mime not in ALLOWED_MIME_TYPES:
+            return jsonify({"error": "Invalid file content (magic number mismatch)"}), 400
+    except Exception as e:
+        logger.error(f"Error validating file magic numbers: {e}")
+        return jsonify({"error": "Could not validate file format"}), 500
+        
+    filename = secure_filename(file.filename)
+    unique_filename = f"user_{user_id}_{filename}"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+    
+    try:
+        file.save(filepath)
+        
+        user = User.query.get(user_id)
+        if user:
+            user.profile_picture = f"/uploads/avatars/{unique_filename}"
+            db.session.commit()
+            
+        return jsonify({
+            "message": "Avatar uploaded successfully", 
+            "profile_picture": f"/uploads/avatars/{unique_filename}"
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to save avatar: {e}")
+        return jsonify({"error": "Failed to save file"}), 500
 
 
 @app.route('/api/v1/auth/forgot-password', methods=['POST'])
