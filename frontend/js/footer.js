@@ -25,14 +25,14 @@ const createFooter = () => {
         <nav class="footer-nav" aria-label="Footer Navigation">
           <h3>Explore</h3>
           <ul>
-            <li><a href="${pagePath('index')}">Discovery</a></li>
+            <li><a href="${pagePath('app')}">Discovery</a></li>
             <li><a href="${pagePath('vault')}">My Vault</a></li>
             <li><a href="${pagePath('library')}">My Library</a></li>
             <li><a href="${pagePath('chat')}">Literary Chat</a></li>
             <li><a href="${pagePath('auth')}">Account</a></li>
             <li>
-              <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank" rel="noopener noreferrer">
-                Repository
+              <a href="${pagePath('index')}">
+                Home Page
               </a>
             </li>
           </ul>

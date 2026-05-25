@@ -5,7 +5,7 @@
   "start_url": "/frontend/pages/index.html",
   "scope": "/frontend/",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#f9f7f2",
   "theme_color": "#2c2420",
   "lang": "en",
@@ -28,12 +28,6 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "/frontend/pages/index.html",
-  "background_color": "#1a1a1a",
-  "theme_color": "#2c3e50",
-  "display": "standalone",
-  "orientation": "portrait",
-
   "screenshots": [],
   "shortcuts": [
     {
@@ -51,5 +45,4 @@
       "icons": [{ "src": "assets/images/biblioDrift_favicon.png", "sizes": "any" }]
     }
   ]
-
 }

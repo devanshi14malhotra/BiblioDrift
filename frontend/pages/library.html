@@ -11,8 +11,8 @@
             }
         })();
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-
     <script src="../js/db.js"></script>
 
     <script src="../js/app.js"></script>
@@ -50,7 +50,7 @@
 <body class="library-page">
 
       <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -60,7 +60,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html" >Discovery</a>
+          <a href="app.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -71,6 +71,11 @@
           <a href="library.html" class="active">My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
@@ -94,7 +99,8 @@
             <button id="export-library" class="btn-icon library-export-btn" title="Export Library">
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
-            <div id="library-sync-status" hidden aria-live="polite" style="margin: 0.75rem auto 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: rgba(44, 36, 32, 0.08); color: var(--text-secondary);">
+            <div id="library-sync-status" hidden aria-live="polite"
+                style="margin: 0.75rem auto 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: rgba(44, 36, 32, 0.08); color: var(--text-secondary);">
                 Synced
             </div>
             <div class="view-toggles" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
@@ -106,7 +112,8 @@
                     style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-chart-nodes"></i> Constellation
                 </button>
-                <button id="view-collections-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                <button id="view-collections-btn" class="btn-secondary"
+                    style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-folder-open"></i> Custom Collections
                 </button>
             </div>
@@ -233,11 +240,14 @@
             </div>
 
         <div id="collections-container" class="collections-container hidden" style="padding: 2rem 0; width: 100%;">
-            <div class="collections-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-                <h2 style="font-family: 'Playfair Display', serif; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.8rem;">
+            <div class="collections-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h2
+                    style="font-family: 'Playfair Display', serif; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.8rem;">
                     <i class="fa-solid fa-folder-open" style="color: var(--accent-gold);"></i> Custom Collections
                 </h2>
-                <button id="create-collection-btn" class="btn-primary" style="border-radius: 20px; display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.25rem;">
+                <button id="create-collection-btn" class="btn-primary"
+                    style="border-radius: 20px; display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.25rem;">
                     <i class="fa-solid fa-plus"></i> New Collection
                 </button>
             </div>
@@ -248,25 +258,37 @@
             </div>
 
             <div id="collection-detail-view" class="hidden" style="margin-top: 1rem; width: 100%;">
-                <div class="collection-detail-header" style="background: var(--glass-bg); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid var(--glass-border); width: 100%; box-sizing: border-box;">
-                    <button id="back-to-collections-btn" class="btn-secondary" style="border-radius: 20px; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1rem;">
+                <div class="collection-detail-header"
+                    style="background: var(--glass-bg); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid var(--glass-border); width: 100%; box-sizing: border-box;">
+                    <button id="back-to-collections-btn" class="btn-secondary"
+                        style="border-radius: 20px; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1rem;">
                         <i class="fa-solid fa-arrow-left"></i> Back to Collections
                     </button>
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                         <div>
-                            <h1 id="selected-collection-name" style="font-family: 'Playfair Display', serif; margin: 0 0 0.5rem 0; color: var(--text-main); font-size: 2rem;">Collection Name</h1>
-                            <p id="selected-collection-desc" style="color: var(--text-secondary); margin: 0 0 1rem 0;">Collection description goes here...</p>
-                            <span id="selected-collection-status" class="collection-badge" style="background: var(--accent-gold); color: #000; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Public</span>
+                            <h1 id="selected-collection-name"
+                                style="font-family: 'Playfair Display', serif; margin: 0 0 0.5rem 0; color: var(--text-main); font-size: 2rem;">
+                                Collection Name</h1>
+                            <p id="selected-collection-desc" style="color: var(--text-secondary); margin: 0 0 1rem 0;">
+                                Collection description goes here...</p>
+                            <span id="selected-collection-status" class="collection-badge"
+                                style="background: var(--accent-gold); color: #000; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Public</span>
                         </div>
                         <div class="collection-actions-group" style="display: flex; gap: 0.5rem;">
-                            <button id="edit-collection-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-pen"></i> Edit</button>
-                            <button id="delete-collection-btn" class="library-remove-btn" style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-trash"></i> Delete</button>
+                            <button id="edit-collection-btn" class="btn-secondary"
+                                style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-pen"></i>
+                                Edit</button>
+                            <button id="delete-collection-btn" class="library-remove-btn"
+                                style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-trash"></i>
+                                Delete</button>
                         </div>
                     </div>
                 </div>
                 <div class="shelf-section-3d" style="margin-top: 1rem; padding-top: 2rem;">
                     <span class="shelf-label" id="collection-books-shelf-label">
-                        <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold); margin-right: 6px;"></i> Books in Collection
+                        <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold); margin-right: 6px;"></i>
+                        Books in Collection
                     </span>
                     <div class="bookshelf-3d">
                         <div class="books-row-3d" id="collection-books-row-3d" role="list" aria-label="Books in this collection">
@@ -373,6 +395,17 @@
                             </div>
                         </div>
 
+                        <!-- Related in Library (Dynamic) -->
+                        <div id="modal-related-books-lib" class="related-books-box" style="margin-bottom: 1.5rem;">
+                            <div class="related-header">
+                                <i class="fa-solid fa-link"></i>
+                                <span>Related in your Library</span>
+                            </div>
+                            <div id="related-books-container" class="related-books-container">
+                                <div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>
+                            </div>
+                        </div>
+
                         <div class="book-actions-section">
                             <div class="library-actions-group">
                                 <button class="action-btn-primary remove-from-library library-remove-btn"
@@ -384,7 +417,7 @@
                                     title="Share book">
                                     <i class="fa-solid fa-share-nodes"></i> Share
                                 </button>
-                                <button class="btn-preview" id="modal-preview-btn-lib" title="Preview this book">
+                                <button class="btn-secondary" id="modal-preview-btn-lib" title="Preview this book">
                                     <i class="fa-solid fa-book-open"></i> Preview
                                 </button>
                             </div>
@@ -462,6 +495,7 @@
     <script src="../js/config.js"></script>
     <script src="../js/library-3d.js"></script>
     <script src="../js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../js/book-preview.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../script/header-scroll.js"></script>
@@ -532,14 +566,11 @@
               <input type="checkbox" id="collection-public-input" style="cursor: pointer; width: 18px; height: 18px;">
               <label for="collection-public-input" style="cursor: pointer; color: var(--text-main); font-size: 0.9rem;">Make this collection public</label>
             </div>
-            <button id="collection-submit-btn" class="btn-primary" style="width: 100%; border-radius: 8px; padding: 0.75rem; font-weight: bold; cursor: pointer; border: none; margin-top: 0.5rem;">Save Collection</button>
-          </form>
         </div>
-      </div>
     </dialog>
 
     <script src="../js/theme-manager.js"></script>
-  <script src="../js/ambient.js"></script>
+    <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
   <div id="ai-chatbot-widget" class="chatbot-widget">
     <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" title="Chat with Elara">
