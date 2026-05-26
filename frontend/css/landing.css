@@ -1944,3 +1944,25 @@ html[data-theme='night'] .hero-book-stack::before {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
 }
+.daily-quote-card {
+    display: grid;
+    gap: 1rem;
+    text-align: center;
+    padding: 2rem;
+}
+
+#daily-quote-text {
+    font-size: 1.2rem;
+    font-style: italic;
+    color: var(--landing-ink);
+    line-height: 1.8;
+}
+
+#daily-quote-author {
+    font-weight: 700;
+    color: var(--landing-muted);
+}
+
+#daily-quote-link {
+    justify-self: center;
+}
