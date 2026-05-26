@@ -1944,7 +1944,7 @@ display: grid;
 }
 
 /* Science Fiction: Light Blue */
-.genre-card[data-genre="science fiction"] {
+.genre-card[data-genre="science-fiction"] {
     background: linear-gradient(90deg, #115764 0%, #267f8f 40%, #1a5661 100%);
 }
 
