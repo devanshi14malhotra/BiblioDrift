@@ -2003,6 +2003,26 @@
                     </div>
                 </div>
             </section>
+            <section class="landing-section reveal" id="daily-quote-section">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">Quote of the Day</span>
+            <h2>Daily inspiration for readers.</h2>
+        </div>
+    </div>
+
+    <div class="quote-card daily-quote-card">
+        <p id="daily-quote-text"></p>
+
+        <span id="daily-quote-author"></span>
+
+        <a id="daily-quote-link"
+           class="btn-ghost"
+           href="#">
+            Explore related books
+        </a>
+    </div>
+</section>
             <!-- 
       <nav class="landing-section landing-anchors reveal" aria-label="Landing page sections">
         <a href="#about-project">About</a>
@@ -2669,6 +2689,43 @@
     <script src="../js/theme-manager.js"></script>
     <script src="../js/landing-interactions.js"></script>
     <script src="../js/ambient.js"></script>
+    <script>
+const quotes = [
+    {
+        text: "A reader lives a thousand lives before he dies.",
+        author: "George R. R. Martin",
+        link: "app.html"
+    },
+    {
+        text: "So many books, so little time.",
+        author: "Frank Zappa",
+        link: "app.html"
+    },
+    {
+        text: "Books are a uniquely portable magic.",
+        author: "Stephen King",
+        link: "app.html"
+    },
+    {
+        text: "There is no friend as loyal as a book.",
+        author: "Ernest Hemingway",
+        link: "app.html"
+    }
+];
+
+const today = new Date().getDate();
+
+const selectedQuote = quotes[today % quotes.length];
+
+document.getElementById("daily-quote-text").textContent =
+    `"${selectedQuote.text}"`;
+
+document.getElementById("daily-quote-author").textContent =
+    `— ${selectedQuote.author}`;
+
+document.getElementById("daily-quote-link").href =
+    selectedQuote.link;
+</script>
 </body>
 
 </html>
