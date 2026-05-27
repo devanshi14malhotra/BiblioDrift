@@ -464,6 +464,7 @@
             20%, 60% { transform: translateX(-5px); border-color: #f87171; }
             40%, 80% { transform: translateX(5px); border-color: #f87171; }
         }
+        .auth-input::placeholder { color: transparent !important; }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
@@ -547,11 +548,13 @@
                     </div>
 
                     <div class="input-group">
+                        <label for="email" style="display: block; margin-bottom: 6px;">Email</label>
                         <input type="email" id="email" class="auth-input" placeholder="Email Address"
                             value="demo@bibliodrift.com" required autocomplete="email">
                     </div>
 
                     <div class="input-group">
+                        <label for="password" style="display: block; margin-bottom: 6px;">Password</label>
                         <input type="password" id="password" class="auth-input password-input" placeholder="Password"
                             value="demo123" required autocomplete="current-password">
                         <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
