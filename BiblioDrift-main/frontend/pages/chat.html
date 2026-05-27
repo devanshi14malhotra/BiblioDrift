@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('bibliodrift_theme');
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
+        })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('themeToggle');
+            if (!btn) return;
+
+            const icon = btn.querySelector('i');
+            const STORAGE_KEY = 'bibliodrift_theme';
+
+            function applyTheme(theme) {
+                if (theme === 'night') {
+                    document.documentElement.setAttribute('data-theme', 'night');
+                    if (icon) icon.className = 'fa-solid fa-sun';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    if (icon) icon.className = 'fa-solid fa-moon';
+                }
+
+                localStorage.setItem(STORAGE_KEY, theme);
+                if (typeof restoreTheme === 'function') restoreTheme();
+            }
+
+            const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+            applyTheme(savedTheme);
+
+            btn.addEventListener('click', function () {
+                const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
+                const next = current === 'night' ? 'light' : 'night';
+                applyTheme(next);
+            });
+        });
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Elara | BiblioDrift</title>
+    <!-- SEO & Open Graph meta tags -->
+    <meta name="description"
+        content="Chat with Elara, your AI-powered reading companion on BiblioDrift. Get personalised book recommendations, discuss stories, and discover your next great read." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bibliodrift-dm.netlify.app/chat" />
+    <meta property="og:title" content="Chat with Elara | BiblioDrift" />
+    <meta property="og:description"
+        content="Chat with Elara, your AI-powered reading companion on BiblioDrift. Get personalised book recommendations, discuss stories, and discover your next great read." />
+    <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/pwa.css">
+    <!-- Unified Font Imports -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Georgia:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- Security: DOMPurify for XSS prevention -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+    <style>
+        .chat-messages {
+            background: rgba(255, 248, 235, 0.45);
+            border: 1px solid rgba(139, 69, 19, 0.12);
+            border-radius: 22px;
+            padding: 1.25rem;
+            margin: 0.75rem 0;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+
+        .message-bubble {
+            line-height: 1.7;
+        }
+
+        .chat-input-wrapper {
+            background: rgba(255, 248, 235, 0.8);
+            border: 1px solid rgba(139, 69, 19, 0.18);
+            border-radius: 18px;
+            padding: 0.4rem;
+        }
+
+        .send-btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-header {
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .bookseller-info {
+                align-items: flex-start;
+            }
+
+            .chat-actions {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+
+            .suggestions-list {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-messages {
+                padding: 1rem;
+                border-radius: 18px;
+            }
+        }
+
+        /* Full height layout - No double scroll */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            /* ALLOW SCROLL */
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            font-family: 'Georgia', serif;
+        }
+
+        /* Navigation */
+        nav.nav-container {
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+
+        /* Main Content */
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1rem;
+            min-height: 0;
+        }
+
+        /* Chat Sections */
+        .chat-header {
+            flex-shrink: 0;
+            padding: 1rem 0;
+        }
+
+        .chat-messages {
+            /* Allow messages to take up space naturally */
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .quick-suggestions {
+            flex-shrink: 0;
+            padding: 1rem 0 0.5rem 0;
+        }
+
+        .chat-input-container {
+            flex-shrink: 0;
+            padding-bottom: 1rem;
+        }
+
+        /* Compact Footer */
+        .footer {
+            flex-shrink: 0;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .footer-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .social_icons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .social_icons a {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .logo-small {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .quick-links a {
+            color: inherit;
+            text-decoration: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .footer-info {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .chat-container {
+                padding: 0.5rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            .social_icons {
+                justify-content: center;
+            }
+
+            .quick-links {
+                justify-content: center;
+            }
+        }
+
+        /* Typing indicator label */
+        .typing-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            font-style: italic;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Elara’s avatar gets a warm amber tint vs the default */
+        .bookseller-message .message-avatar,
+        .typing-indicator .message-avatar {
+            background: linear-gradient(135deg, #b8860b, #8b4513);
+        }
+
+        /* Override global ambient panel position for chat header */
+        .chat-actions .ambient-panel {
+            top: 100%;
+            bottom: auto;
+            margin-top: 10px;
+        }
+    </style>
+    <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+    <!-- PWA -->
+    <link rel="stylesheet" href="../css/pwa.css">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#2c2420">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BiblioDrift">
+    <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+</head>
+
+<body>
+      <header>
+    <a href="app.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="app.html" >Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="vault.html" >My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" >My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+
+        <div class="tooltip">
+          <a href="chat.html" class="active">Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+    <!-- Main Content -->
+    <main style="padding-top: 2rem;">
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="bookseller-info">
+                    <div class="bookseller-avatar">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div class="bookseller-details">
+                        <h2 style="font-family: 'Playfair Display', serif;">Elara, the Wise Bookseller</h2>
+                        <p class="status">
+                            <span class="status-dot"></span>
+                            Reading the room &amp; finding your next great story
+                        </p>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <div class="ambient-controls" id="ambientControls">
+                        <button class="action-btn" id="ambientToggle" title="Atmosphere (Rain/Fire)">
+                            <i class="fa-solid fa-cloud-showers-heavy"></i>
+                        </button>
+                        <div class="ambient-panel" id="ambientPanel">
+                            <h3>Ambient Sanctuary</h3>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-cloud-rain"></i> Rain</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="rainToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-fire"></i> Fireplace</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="fireToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-water"></i> Ocean Waves</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="oceanToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="ambient-option">
+                                <span><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="stormToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="volume-control">
+                                <label for="ambientVolume"><i class="fa-solid fa-volume-high"></i> Volume</label>
+                                <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5">
+                            </div>
+                        </div>
+                    </div>
+                    <button class="action-btn" onclick="clearChat()" title="Clear conversation">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <button class="action-btn" onclick="exportChat()" title="Export conversation">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages - Only scrollable area -->
+            <div class="chat-messages" id="chatMessages">
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div class="quick-suggestions" id="quickSuggestions">
+                <div class="suggestions-header">
+                    <span>What mood are you in?</span>
+                </div>
+                <div class="suggestions-list">
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('It\'s raining outside and I want something melancholy and beautiful')">
+                        <i class="fa-solid fa-cloud-rain"></i>
+                        Rainy &amp; Melancholy
+                    </button>
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I need to escape reality completely — take me to another world')">
+                        <i class="fa-solid fa-wand-sparkles"></i>
+                        Escape Reality
+                    </button>
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('My heart is a little heavy today, I need something that understands grief')">
+                        <i class="fa-solid fa-heart"></i>
+                        Something Healing
+                    </button>
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I want a thriller that keeps me up at night, unable to put it down')">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Can’t-Put-Down Thriller
+                    </button>
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I want something cozy, like tea and blankets on a Sunday morning')">
+                        <i class="fa-solid fa-mug-hot"></i>
+                        Cozy &amp; Comforting
+                    </button>
+                    <button class="suggestion-btn"
+                        onclick="sendQuickMessage('I want a book that completely changed how someone sees the world')">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        Mind-Expanding
+                    </button>
+                </div>
+
+                <!-- Ambient Playlist Prompts -->
+                <div class="suggestions-header" style="margin-top: 1.25rem;">
+                    <span><i class="fa-solid fa-music" style="margin-right: 0.4rem; opacity: 0.8;"></i>Create your ambient reading playlist</span>
+                </div>
+                <div class="suggestions-list">
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m about to read a dark gothic novel by candlelight. Which ambient sounds from the sanctuary should I layer together, and how loud?')">
+                        <i class="fa-solid fa-moon"></i>
+                        Gothic Candlelight
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m curled up with a cozy mystery and chamomile tea. Help me build the perfect ambient atmosphere — rain, fireplace, or both?')">
+                        <i class="fa-solid fa-fire"></i>
+                        Cozy Mystery Nook
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m reading a sweeping ocean adventure. What ambient soundscape from the sanctuary would put me right on the high seas?')">
+                        <i class="fa-solid fa-water"></i>
+                        Ocean Adventure
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('Build me an ambient reading sanctuary for late-night literary fiction — hushed, contemplative, a little melancholy. Which sounds suit this best?')">
+                        <i class="fa-solid fa-star"></i>
+                        Late-Night Literary
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I\'m diving into a fantasy epic with ancient forests and magic. What ambient layers from the sanctuary would bring that world alive?')">
+                        <i class="fa-solid fa-leaf"></i>
+                        Forest &amp; Magic
+                    </button>
+                    <button class="suggestion-btn" onclick="sendQuickMessage('I want a stormy, tense atmosphere for the thriller I\'m reading. Should I use the stormy rain sound? Help me set the scene.')">
+                        <i class="fa-solid fa-bolt"></i>
+                        Stormy Thriller
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea id="chatInput" placeholder="Tell me what kind of book you're in the mood for..." rows="1"
+                        onkeydown="handleKeyDown(event)" oninput="adjustTextareaHeight(this)"></textarea>
+                    <button class="send-btn" id="sendBtn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-hint">
+                    <i class="fa-solid fa-feather"></i>
+                    Try: "I want something that feels like a letter from a friend"
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const link = document.getElementById('navAuthLink');
+            const tooltip = document.getElementById('navAuthTooltip');
+
+            if (typeof window.verifyStoredAuthSession === 'function' && typeof window.renderAuthNavigation === 'function') {
+                window.verifyStoredAuthSession().then((user) => {
+                    window.renderAuthNavigation(link, tooltip, Boolean(user));
+                });
+                return;
+            }
+
+            window.renderAuthNavigation?.(link, tooltip, false);
+        });
+    </script>
+    <script src="../js/config.js"></script>
+    <script src="../js/theme-manager.js"></script>
+  <script src="../js/ambient.js"></script>
+    <script src="../js/chat.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../script/header-scroll.js"></script>
+    <script src="../js/pwa.js"></script>
+</body>
+
+</html>
