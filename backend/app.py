@@ -1,7 +1,7 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
-from flask import Flask, request, jsonify, redirect, url_for
+from flask import Flask, request, jsonify, redirect, url_for, Blueprint
 from flask_cors import CORS
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
@@ -30,6 +30,50 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.sanitizer import sanitize_payload
 from backend.reader_identity.routes import reader_identity_bp
+
+# Create an isolated endpoint module route rule
+autocomplete_bp = Blueprint('autocomplete', __name__)
+
+GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
+
+@autocomplete_bp.route('/api/v1/books/autocomplete', methods=['GET'])
+def get_book_autocomplete_suggestions():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify([]), 200
+
+    try:
+        # Requesting lightweight projection parameter sets from Google Books Engine
+        params = {
+            'q': f'intitle:{query}',
+            'maxResults': 5,
+            'fields': 'items(volumeInfo(title,authors))'
+        }
+        response = requests.get(GOOGLE_BOOKS_URL, params=params, timeout=5)
+        
+        if response.status_code != 200:
+            return jsonify([]), 200
+            
+        data = response.json()
+        suggestions = []
+        
+        if 'items' in data:
+            for item in data['items']:
+                v_info = item.get('volumeInfo', {})
+                title = v_info.get('title')
+                authors = v_info.get('authors', ['Unknown Author'])
+                
+                if title:
+                    suggestions.append({
+                        'title': title,
+                        'author': authors[0] if isinstance(authors, list) else authors
+                    })
+                    
+        return jsonify(suggestions), 200
+
+    except requests.exceptions.RequestException as e:
+        # Graceful handling so client experience stays stable during downtime
+        return jsonify([]), 200
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -123,6 +167,7 @@ except ImportError:
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.register_blueprint(reader_identity_bp)
+app.register_blueprint(autocomplete_bp)
 
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
