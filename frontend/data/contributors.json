@@ -19,7 +19,7 @@
     "type": "User",
     "user_view_type": "public",
     "site_admin": false,
-    "contributions": 431
+    "contributions": 433
   },
   {
     "login": "aniket866",
@@ -154,28 +154,6 @@
     "contributions": 29
   },
   {
-    "login": "Tushar15769",
-    "id": 233286261,
-    "node_id": "U_kgDODeeqdQ",
-    "avatar_url": "https://avatars.githubusercontent.com/u/233286261?v=4",
-    "gravatar_id": "",
-    "url": "https://api.github.com/users/Tushar15769",
-    "html_url": "https://github.com/Tushar15769",
-    "followers_url": "https://api.github.com/users/Tushar15769/followers",
-    "following_url": "https://api.github.com/users/Tushar15769/following{/other_user}",
-    "gists_url": "https://api.github.com/users/Tushar15769/gists{/gist_id}",
-    "starred_url": "https://api.github.com/users/Tushar15769/starred{/owner}{/repo}",
-    "subscriptions_url": "https://api.github.com/users/Tushar15769/subscriptions",
-    "organizations_url": "https://api.github.com/users/Tushar15769/orgs",
-    "repos_url": "https://api.github.com/users/Tushar15769/repos",
-    "events_url": "https://api.github.com/users/Tushar15769/events{/privacy}",
-    "received_events_url": "https://api.github.com/users/Tushar15769/received_events",
-    "type": "User",
-    "user_view_type": "public",
-    "site_admin": false,
-    "contributions": 26
-  },
-  {
     "login": "github-actions[bot]",
     "id": 41898282,
     "node_id": "MDM6Qm90NDE4OTgyODI=",
@@ -193,6 +171,28 @@
     "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
     "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
     "type": "Bot",
+    "user_view_type": "public",
+    "site_admin": false,
+    "contributions": 27
+  },
+  {
+    "login": "Tushar15769",
+    "id": 233286261,
+    "node_id": "U_kgDODeeqdQ",
+    "avatar_url": "https://avatars.githubusercontent.com/u/233286261?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/Tushar15769",
+    "html_url": "https://github.com/Tushar15769",
+    "followers_url": "https://api.github.com/users/Tushar15769/followers",
+    "following_url": "https://api.github.com/users/Tushar15769/following{/other_user}",
+    "gists_url": "https://api.github.com/users/Tushar15769/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/Tushar15769/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/Tushar15769/subscriptions",
+    "organizations_url": "https://api.github.com/users/Tushar15769/orgs",
+    "repos_url": "https://api.github.com/users/Tushar15769/repos",
+    "events_url": "https://api.github.com/users/Tushar15769/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/Tushar15769/received_events",
+    "type": "User",
     "user_view_type": "public",
     "site_admin": false,
     "contributions": 26
