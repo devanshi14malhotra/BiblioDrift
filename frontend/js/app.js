@@ -77,6 +77,20 @@
  * ==============================================================================
  */
 
+(function initializeTheme(){
+    //1. Check if a theme choice is already stored locally
+    const savedTheme = localStorage.getItem('bibliodrift_theme');
+
+    //2. If it's dark mode, apply the class configuration immediately to the document root
+    if(savedTheme == 'dark'){
+        document.documentElement.classList.add('dark-theme');
+        document.body.classList.add('dark-theme');
+    }else{
+        document.documentElement.classList.remove('dark-theme')
+    }
+
+})();
+
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
 if (typeof window.IS_DEV === 'undefined') {

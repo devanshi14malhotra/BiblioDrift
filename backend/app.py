@@ -74,6 +74,19 @@ def get_book_autocomplete_suggestions():
     except requests.exceptions.RequestException as e:
         # Graceful handling so client experience stays stable during downtime
         return jsonify([]), 200
+    
+@autocomplete_bp.route('/auth/callback',methods=['GET'])
+def google_auth_callback():
+    auth_code = request.args.get('code')
+
+    if not auth_code:
+        #redirect back to home with an error parameter if the handshake failed
+        return redirect('http://localhost:5000/?error=auth_failed')
+    try:
+        #redirect the user back to the home page
+        return redirect('http://localhost:5000/')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
