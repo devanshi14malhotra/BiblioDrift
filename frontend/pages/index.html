@@ -1103,7 +1103,6 @@
             pointer-events: none;
         }
 
-        /* Staggered entrance for the four feature cards */
         #key-features .feature-card:nth-child(1){ animation-delay: 120ms; }
         #key-features .feature-card:nth-child(2){ animation-delay: 240ms; }
         #key-features .feature-card:nth-child(3){ animation-delay: 360ms; }
@@ -1164,7 +1163,6 @@
                 linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 252, 246, 0.84));
         }
 
-        /* Carousel styles for community section */
         .community-carousel { display:flex; align-items:center; gap:12px; max-width:980px; margin:0 auto; }
         .community-track { display:flex; width:100%; overflow:hidden; scroll-behavior:smooth; }
         .community-track .contributor-card { flex:0 0 100%; box-sizing:border-box; padding:1.15rem; border-radius:16px; }
@@ -1179,7 +1177,6 @@
             .carousel-btn { width:34px; height:34px; }
         }
 
-        /* Live contributors list */
         .contributors-list { display:block; max-width:980px; margin:0 auto; padding:0.6rem 0; }
         .contributors-loading { color: var(--landing-muted); padding:0.8rem 0; text-align:center; }
         .contributors-grid { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; align-items:center; }
@@ -1214,21 +1211,10 @@
             place-items: center;
         }
 
-        .avatar-amber {
-            background: linear-gradient(135deg, #5d4037, #d4af37);
-        }
-
-        .avatar-rose {
-            background: linear-gradient(135deg, #8d5f58, #dba09c);
-        }
-
-        .avatar-forest {
-            background: linear-gradient(135deg, #547161, #6e8b74);
-        }
-
-        .avatar-mist {
-            background: linear-gradient(135deg, #6f7f88, #a9bcc3);
-        }
+        .avatar-amber { background: linear-gradient(135deg, #5d4037, #d4af37); }
+        .avatar-rose { background: linear-gradient(135deg, #8d5f58, #dba09c); }
+        .avatar-forest { background: linear-gradient(135deg, #547161, #6e8b74); }
+        .avatar-mist { background: linear-gradient(135deg, #6f7f88, #a9bcc3); }
 
         .testimonial-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1320,6 +1306,29 @@
             gap: 0.95rem;
         }
 
+        /* ── footer-banner-kicker: dark-mode fix ─────────────────── */
+        .footer-banner-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.45rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            /* light mode */
+            background: rgba(212,175,55,0.12);
+            color: var(--landing-wood);
+            border: 1px solid rgba(212,175,55,0.18);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* dark mode: make badge clearly visible */
+        [data-theme="night"] .footer-banner-kicker {
+            background: rgba(212,175,55,0.18);
+            color: #f6d67b;
+            border-color: rgba(212,175,55,0.30);
+        }
+
         .footer-banner {
             display: flex;
             align-items: center;
@@ -1354,19 +1363,6 @@
             flex-wrap: wrap;
         }
 
-        .footer-banner-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            margin-bottom: 0.45rem;
-            padding: 0.35rem 0.65rem;
-            border-radius: 999px;
-            background: rgba(212,175,55,0.12);
-            color: var(--landing-wood);
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
         .footer-pill {
             display: inline-flex;
             align-items: center;
@@ -1387,6 +1383,7 @@
             outline: none;
         }
 
+        /* ── footer-grid: 4-col layout preserved ─────────────────── */
         .footer-grid {
             grid-template-columns: minmax(0, 1.1fr) repeat(3, minmax(0, 0.75fr));
             gap: 1rem;
@@ -1535,17 +1532,9 @@
             transform: translateY(0);
         }
 
-        .reveal[data-delay="1"] {
-            transition-delay: 90ms;
-        }
-
-        .reveal[data-delay="2"] {
-            transition-delay: 180ms;
-        }
-
-        .reveal[data-delay="3"] {
-            transition-delay: 260ms;
-        }
+        .reveal[data-delay="1"] { transition-delay: 90ms; }
+        .reveal[data-delay="2"] { transition-delay: 180ms; }
+        .reveal[data-delay="3"] { transition-delay: 260ms; }
 
         body.is-leaving {
             opacity: 0;
@@ -1553,75 +1542,172 @@
         }
 
         @keyframes floatOrb {
-
-            0%,
-            100% {
-                transform: translateY(0px) scale(1);
-            }
-
-            50% {
-                transform: translateY(-12px) scale(1.03);
-            }
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-12px) scale(1.03); }
         }
 
         @keyframes floatCard {
-
-            0%,
-            100% {
-                transform: translateY(0px) rotate(0deg);
-            }
-
-            50% {
-                transform: translateY(-10px) rotate(0.8deg);
-            }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(0.8deg); }
         }
 
         @keyframes blossom-glow {
-            0%, 100% {
-                transform: scale(1);
-                opacity: 0.42;
-            }
-            50% {
-                transform: scale(1.04);
-                opacity: 0.68;
-            }
+            0%, 100% { transform: scale(1); opacity: 0.42; }
+            50% { transform: scale(1.04); opacity: 0.68; }
         }
 
         @keyframes blossom-fall {
-            0% {
-                opacity: 0;
-                transform: translate3d(0, 0, 0) rotate(0deg) scale(0.88);
-            }
-            12% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: translate3d(var(--petal-dx, 0px), var(--petal-dy, -140px), 0) rotate(var(--petal-rotation, 220deg)) scale(0.72);
-            }
+            0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(0.88); }
+            12% { opacity: 1; }
+            100% { opacity: 0; transform: translate3d(var(--petal-dx, 0px), var(--petal-dy, -140px), 0) rotate(var(--petal-rotation, 220deg)) scale(0.72); }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            html {
-                scroll-behavior: auto;
-            }
+        /* ── Notebook quote widget ────────────────────────────────── */
+        .nb-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 
-            *,
-            *::before,
-            *::after {
+        .nb-card {
+            position: relative;
+            padding: 0.9rem 1rem 0.8rem 1.15rem;
+            border-radius: 12px;
+            /* light */
+            background: linear-gradient(170deg, rgba(255,253,247,0.97) 0%, rgba(255,250,240,0.93) 100%);
+            border: 1px solid rgba(93,64,55,0.10);
+            box-shadow: 0 2px 0 rgba(93,64,55,0.04), 0 6px 16px rgba(44,36,32,0.06);
+            overflow: hidden;
+            min-height: 5rem;
+        }
+
+        /* spine */
+        .nb-spine {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #d4af37 0%, #b08060 100%);
+            border-radius: 3px 0 0 3px;
+        }
+
+        /* ruled lines */
+        .nb-ruled {
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent 1.4rem,
+                rgba(93,64,55,0.05) 1.4rem,
+                rgba(93,64,55,0.05) calc(1.4rem + 1px)
+            );
+            background-position: 0 1.75rem;
+            pointer-events: none;
+        }
+
+        .nb-quote {
+            position: relative;
+            z-index: 1;
+            display: block;
+            margin: 0 0 0.35rem;
+            font-family: "Fraunces", serif;
+            font-size: 0.88rem;
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1.7;
+            color: var(--landing-ink);
+            transition: opacity 0.28s ease, transform 0.28s ease;
+        }
+
+        .nb-quote.is-leaving {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+
+        @keyframes nb-enter {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0);   }
+        }
+
+        .nb-quote.is-entering {
+            animation: nb-enter 0.34s cubic-bezier(.2,.8,.2,1) both;
+        }
+
+        .nb-source {
+            position: relative;
+            z-index: 1;
+            display: block;
+            font-style: normal;
+            font-size: 0.75rem;
+            letter-spacing: 0.03em;
+            color: var(--landing-muted);
+            opacity: 0.85;
+            transition: opacity 0.28s ease;
+        }
+
+        .nb-source.is-leaving { opacity: 0; }
+
+        .nb-dots {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            padding-left: 0.1rem;
+        }
+
+        .nb-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            background: rgba(93,64,55,0.18);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .nb-dot:hover { background: rgba(93,64,55,0.38); transform: scale(1.25); }
+
+        .nb-dot[aria-selected="true"] {
+            background: var(--landing-gold);
+            transform: scale(1.15);
+            box-shadow: 0 0 0 2px rgba(212,175,55,0.22);
+        }
+
+        /* dark-mode overrides */
+        [data-theme="night"] .nb-card {
+            background: linear-gradient(170deg, rgba(48,38,32,0.82) 0%, rgba(38,30,26,0.88) 100%);
+            border-color: rgba(212,175,55,0.14);
+        }
+
+        [data-theme="night"] .nb-ruled {
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent 1.4rem,
+                rgba(212,175,55,0.07) 1.4rem,
+                rgba(212,175,55,0.07) calc(1.4rem + 1px)
+            );
+        }
+
+        [data-theme="night"] .nb-quote  { color: #f2ece4; }
+        [data-theme="night"] .nb-source { color: #a89080; }
+        [data-theme="night"] .nb-dot    { background: rgba(255,250,240,0.22); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .nb-quote, .nb-source { transition: none !important; animation: none !important; }
+        }
+        /* ── /Notebook quote widget ──────────────────────────────── */
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after {
                 animation-duration: 0.01ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
                 scroll-behavior: auto !important;
             }
-
-            .blossom-toggle {
-                pointer-events: none;
-            }
+            .blossom-toggle { pointer-events: none; }
         }
 
         @media (max-width: 1080px) {
-
             .landing-hero,
             .about-grid,
             .feature-grid,
@@ -1631,285 +1717,69 @@
             .footer-grid {
                 grid-template-columns: 1fr 1fr;
             }
-
-            .landing-hero {
-                gap: 1.25rem;
-            }
+            .landing-hero { gap: 1.25rem; }
         }
 
         @media (max-width: 860px) {
-            body.landing-page .landing-shell {
-                width: min(100%, calc(100% - 1rem));
-            }
-
-            .landing-header {
-                top: 0.5rem;
-                border-radius: 20px;
-            }
-
+            body.landing-page .landing-shell { width: min(100%, calc(100% - 1rem)); }
+            .landing-header { top: 0.5rem; border-radius: 20px; }
             .landing-hero,
             .about-grid,
             .feature-grid,
             .community-grid,
             .testimonial-grid,
             .workflow-grid,
-            .footer-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .landing-hero h1 {
-                max-width: 12ch;
-            }
-
-            .hero-visual {
-                min-height: 28rem;
-            }
-
-            .hero-metrics {
-                grid-template-columns: 1fr;
-                max-width: none;
-            }
-
-            .footer-bottom {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .footer-banner {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .footer-banner-actions {
-                width: 100%;
-            }
-
-            .footer-pill {
-                flex: 1;
-                justify-content: center;
-            }
-
-            .footer-grid {
-                padding: 0.9rem;
-            }
-
-            .footer-bottom {
-                padding-inline: 0.35rem;
-            }
+            .footer-grid { grid-template-columns: 1fr; }
+            .landing-hero h1 { max-width: 12ch; }
+            .hero-visual { min-height: 28rem; }
+            .hero-metrics { grid-template-columns: 1fr; max-width: none; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; }
+            .footer-banner { flex-direction: column; align-items: flex-start; }
+            .footer-banner-actions { width: 100%; }
+            .footer-pill { flex: 1; justify-content: center; }
+            .footer-grid { padding: 0.9rem; }
+            .footer-bottom { padding-inline: 0.35rem; }
         }
 
         @media (max-width: 640px) {
-            .landing-header {
-                padding: 0.85rem;
-            }
-
-            .landing-brand span {
-                display: none;
-            }
-
-            .landing-nav {
-                justify-content: flex-start;
-            }
-
-            .landing-nav a {
-                padding: 0.45rem 0.7rem;
-                font-size: 0.92rem;
-            }
-
-            .landing-header-actions {
-                gap: 0.45rem;
-            }
-
-            .blossom-toggle {
-                right: 0.75rem;
-                bottom: 0.75rem;
-                padding: 0.7rem 0.9rem;
-            }
-
-            .btn-ghost,
-            .btn-primary.landing-cta-primary {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .hero-copy {
-                gap: 1rem;
-            }
-
-            .hero-note {
-                position: static;
-                margin-top: 0.25rem;
-            }
-
-            .hero-book-stack {
-                min-height: 25rem;
-            }
-
-            .book-large {
-                width: 13rem;
-                height: 19rem;
-            }
-
-            .book-small-top {
-                width: 7.2rem;
-                height: 10.5rem;
-            }
-
-            .book-small-bottom {
-                width: 6.9rem;
-                height: 10.1rem;
-            }
+            .landing-header { padding: 0.85rem; }
+            .landing-brand span { display: none; }
+            .landing-nav { justify-content: flex-start; }
+            .landing-nav a { padding: 0.45rem 0.7rem; font-size: 0.92rem; }
+            .landing-header-actions { gap: 0.45rem; }
+            .blossom-toggle { right: 0.75rem; bottom: 0.75rem; padding: 0.7rem 0.9rem; }
+            .btn-ghost, .btn-primary.landing-cta-primary { width: 100%; justify-content: center; }
+            .hero-copy { gap: 1rem; }
+            .hero-note { position: static; margin-top: 0.25rem; }
+            .hero-book-stack { min-height: 25rem; }
+            .book-large { width: 13rem; height: 19rem; }
+            .book-small-top { width: 7.2rem; height: 10.5rem; }
+            .book-small-bottom { width: 6.9rem; height: 10.1rem; }
         }
 
         /* Contributors panel styles */
-        .contributors-list {
-            margin-top: 0.9rem;
-        }
-
-        .contributors-intro {
-            text-align: center;
-            max-width: 46rem;
-            margin: 0.7rem auto 0;
-        }
-
-        .contributors-actions-row {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-            margin: 1rem auto 0;
-            align-items: center;
-        }
-
-        .contributors-refresh-note {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            color: var(--landing-muted);
-            font-size: 0.92rem;
-            padding: 0.45rem 0.8rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(93, 64, 55, 0.08);
-        }
-
-        .contributors-panel {
-            position: relative;
-            overflow: hidden;
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 28px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 244, 0.9));
-            border: 1px solid rgba(93, 64, 55, 0.08);
-            box-shadow: 0 22px 44px rgba(44, 36, 32, 0.08);
-        }
-
-        .contributors-panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 38%),
-                radial-gradient(circle at bottom right, rgba(127, 150, 160, 0.10), transparent 34%);
-            pointer-events: none;
-        }
-
-        .contributors-slider {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 0.45rem 0.25rem 0.7rem;
-            overflow: hidden;
-            position: relative;
-            z-index: 1;
-        }
-
-        .slider-track {
-            display: flex;
-            gap: 1.1rem;
-            align-items: center;
-            will-change: transform;
-        }
-
-        .slide {
-            display: flex;
-            flex: 0 0 auto;
-            align-items: center;
-        }
-
-        .contributors-grid-view {
-            display: none;
-            position: relative;
-            z-index: 1;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 0.9rem;
-            margin-top: 0.5rem;
-        }
-
-        .contributors-list.is-expanded .contributors-slider {
-            display: none;
-        }
-
-        .contributors-list.is-expanded .contributors-grid-view {
-            display: grid;
-            animation: feature-fade-up 0.45s ease both;
-        }
-
-        .contributor-item {
-            display: flex;
-            gap: 0.85rem;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
-            padding: 0.45rem 0.7rem;
-            border-radius: 999px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,243,0.9));
-            border: 1px solid rgba(93,64,55,0.06);
-            box-shadow: 0 10px 22px rgba(44,36,32,0.04);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .contributors-grid-view .contributor-item {
-            border-radius: 22px;
-            align-items: flex-start;
-            min-height: 100%;
-            padding: 0.95rem;
-            display: grid;
-            justify-items: center;
-            text-align: center;
-            gap: 0.7rem;
-        }
-
-        .contributor-item:hover,
-        .contributor-item:focus-visible {
-            transform: translateY(-4px);
-            box-shadow: 0 18px 34px rgba(44,36,32,0.09);
-            border-color: rgba(212, 175, 55, 0.18);
-            outline: none;
-        }
-
-        .contributor-avatar-img {
-            width: 64px;
-            height: 64px;
-            border-radius: 999px;
-            object-fit: cover;
-            display: block;
-            box-shadow: 0 8px 20px rgba(44,36,32,0.08);
-            border: 3px solid rgba(255,255,255,0.88);
-        }
-
-        .contributors-grid-view .contributor-avatar-img {
-            width: 78px;
-            height: 78px;
-        }
-
+        .contributors-list { margin-top: 0.9rem; }
+        .contributors-intro { text-align: center; max-width: 46rem; margin: 0.7rem auto 0; }
+        .contributors-actions-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.8rem; margin: 1rem auto 0; align-items: center; }
+        .contributors-refresh-note { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--landing-muted); font-size: 0.92rem; padding: 0.45rem 0.8rem; border-radius: 999px; background: rgba(255, 255, 255, 0.72); border: 1px solid rgba(93, 64, 55, 0.08); }
+        .contributors-panel { position: relative; overflow: hidden; margin-top: 1rem; padding: 1rem; border-radius: 28px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 244, 0.9)); border: 1px solid rgba(93, 64, 55, 0.08); box-shadow: 0 22px 44px rgba(44, 36, 32, 0.08); }
+        .contributors-panel::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 38%), radial-gradient(circle at bottom right, rgba(127, 150, 160, 0.10), transparent 34%); pointer-events: none; }
+        .contributors-slider { width: 100%; box-sizing: border-box; padding: 0.45rem 0.25rem 0.7rem; overflow: hidden; position: relative; z-index: 1; }
+        .slider-track { display: flex; gap: 1.1rem; align-items: center; will-change: transform; }
+        .slide { display: flex; flex: 0 0 auto; align-items: center; }
+        .contributors-grid-view { display: none; position: relative; z-index: 1; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.9rem; margin-top: 0.5rem; }
+        .contributors-list.is-expanded .contributors-slider { display: none; }
+        .contributors-list.is-expanded .contributors-grid-view { display: grid; animation: feature-fade-up 0.45s ease both; }
+        .contributor-item { display: flex; gap: 0.85rem; align-items: center; text-decoration: none; color: inherit; padding: 0.45rem 0.7rem; border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,243,0.9)); border: 1px solid rgba(93,64,55,0.06); box-shadow: 0 10px 22px rgba(44,36,32,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+        .contributors-grid-view .contributor-item { border-radius: 22px; align-items: flex-start; min-height: 100%; padding: 0.95rem; display: grid; justify-items: center; text-align: center; gap: 0.7rem; }
+        .contributor-item:hover, .contributor-item:focus-visible { transform: translateY(-4px); box-shadow: 0 18px 34px rgba(44,36,32,0.09); border-color: rgba(212, 175, 55, 0.18); outline: none; }
+        .contributor-avatar-img { width: 64px; height: 64px; border-radius: 999px; object-fit: cover; display: block; box-shadow: 0 8px 20px rgba(44,36,32,0.08); border: 3px solid rgba(255,255,255,0.88); }
+        .contributors-grid-view .contributor-avatar-img { width: 78px; height: 78px; }
         .contributor-meta { display: flex; flex-direction: column; }
         .contributors-grid-view .contributor-meta { align-items: center; }
         .contributor-name { font-family: "Fraunces", serif; font-weight:600; color:var(--landing-ink); }
         .contrib-count { color:var(--landing-muted); font-size:0.88rem; }
-
-        .contributors-list.is-expanded .contributor-item {
-            animation: feature-fade-up 0.35s ease both;
-        }
-
+        .contributors-list.is-expanded .contributor-item { animation: feature-fade-up 0.35s ease both; }
         @media (max-width: 640px){
             .contributor-avatar-img { width:48px; height:48px; }
             .contributor-item { padding: 0.35rem 0.55rem; }
@@ -2003,150 +1873,74 @@
                     </div>
                 </div>
             </section>
-            <!-- 
-      <nav class="landing-section landing-anchors reveal" aria-label="Landing page sections">
-        <a href="#about-project">About</a>
-        <a href="#key-features">Features</a>
-        <a href="#community">Community</a>
-        <a href="#reader-experience">Reader notes</a>
-        <a href="#contribute">Contribute</a>
-        <a href="#footer">Footer</a>
-      </nav> -->
 
             <section class="landing-section reveal ambient-about-section" id="about-project">
-
-    <div class="ambient-blur ambient-blur-left"></div>
-    <div class="ambient-blur ambient-blur-right"></div>
-
-    <div class="section-header about-header">
-
-        <div class="about-heading-content">
-            <p class="section-kicker">About the project</p>
-
-            <h2>
-                A reading room you want to
-                return to.
-            </h2>
-
-            <p class="about-subtext">
-                BiblioDrift turns book discovery into a slower ritual with
-                mood-first browsing, ambient exploration, and a tactile
-                interface that keeps the atmosphere warm and personal.
-            </p>
-
-            <div class="about-cta-row">
-                <a href="#library" class="primary-about-btn">
-                    Enter Library
-                </a>
-
-                <a href="#community" class="secondary-about-btn">
-                    Meet Contributors
-                </a>
-            </div>
-        </div>
-
-        <div class="about-floating-chip">
-            <i class="fa-solid fa-book-open"></i>
-            Mood-first discovery
-        </div>
-
-    </div>
-
-    <div class="about-grid">
-
-        <article class="about-card">
-
-            <div class="card-icon-wrap">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </div>
-
-            <div>
-                <p class="section-kicker">Reading sanctuary</p>
-
-                <p class="about-lede">
-                    A softer way to discover books, built around
-                    atmosphere first.
-                </p>
-
-                <p class="section-copy">
-                    The experience blends mood-based discovery with a quiet,
-                    editorial interface that keeps books centered while making
-                    exploration feel calm, cinematic, and personal.
-                </p>
-
-                <div class="about-mood-row" aria-label="Project highlights">
-
-                    <span class="about-mood-pill">
-                        <i class="fa-solid fa-fire"></i>
-                        Cozy
-                    </span>
-
-                    <span class="about-mood-pill">
-                        <i class="fa-solid fa-sparkles"></i>
-                        Curated
-                    </span>
-
-                    <span class="about-mood-pill">
-                        <i class="fa-solid fa-users"></i>
-                        Community
-                    </span>
-
+                <div class="ambient-blur ambient-blur-left"></div>
+                <div class="ambient-blur ambient-blur-right"></div>
+                <div class="section-header about-header">
+                    <div class="about-heading-content">
+                        <p class="section-kicker">About the project</p>
+                        <h2>A reading room you want to return to.</h2>
+                        <p class="about-subtext">
+                            BiblioDrift turns book discovery into a slower ritual with
+                            mood-first browsing, ambient exploration, and a tactile
+                            interface that keeps the atmosphere warm and personal.
+                        </p>
+                        <div class="about-cta-row">
+                            <a href="#library" class="primary-about-btn">Enter Library</a>
+                            <a href="#community" class="secondary-about-btn">Meet Contributors</a>
+                        </div>
+                    </div>
+                    <div class="about-floating-chip">
+                        <i class="fa-solid fa-book-open"></i>
+                        Mood-first discovery
+                    </div>
                 </div>
-            </div>
-        </article>
-
-        <div class="about-feature-stack">
-
-            <article class="mini-feature-card">
-                <div class="mini-feature-icon">
-                    <i class="fa-solid fa-brain"></i>
+                <div class="about-grid">
+                    <article class="about-card">
+                        <div class="card-icon-wrap">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div>
+                            <p class="section-kicker">Reading sanctuary</p>
+                            <p class="about-lede">A softer way to discover books, built around atmosphere first.</p>
+                            <p class="section-copy">
+                                The experience blends mood-based discovery with a quiet,
+                                editorial interface that keeps books centered while making
+                                exploration feel calm, cinematic, and personal.
+                            </p>
+                            <div class="about-mood-row" aria-label="Project highlights">
+                                <span class="about-mood-pill"><i class="fa-solid fa-fire"></i> Cozy</span>
+                                <span class="about-mood-pill"><i class="fa-solid fa-sparkles"></i> Curated</span>
+                                <span class="about-mood-pill"><i class="fa-solid fa-users"></i> Community</span>
+                            </div>
+                        </div>
+                    </article>
+                    <div class="about-feature-stack">
+                        <article class="mini-feature-card">
+                            <div class="mini-feature-icon"><i class="fa-solid fa-brain"></i></div>
+                            <div>
+                                <h3>AI-guided discovery</h3>
+                                <p>Explore books through emotion, tone, weather, and atmosphere.</p>
+                            </div>
+                        </article>
+                        <article class="mini-feature-card">
+                            <div class="mini-feature-icon"><i class="fa-solid fa-cloud-rain"></i></div>
+                            <div>
+                                <h3>Ambient sanctuary</h3>
+                                <p>Layer rain, storms, fireplace, and ocean sounds while reading.</p>
+                            </div>
+                        </article>
+                        <article class="mini-feature-card">
+                            <div class="mini-feature-icon"><i class="fa-solid fa-heart"></i></div>
+                            <div>
+                                <h3>Built with community</h3>
+                                <p>Crafted by readers, contributors, and open-source collaborators.</p>
+                            </div>
+                        </article>
+                    </div>
                 </div>
-
-                <div>
-                    <h3>AI-guided discovery</h3>
-
-                    <p>
-                        Explore books through emotion, tone,
-                        weather, and atmosphere.
-                    </p>
-                </div>
-            </article>
-
-            <article class="mini-feature-card">
-                <div class="mini-feature-icon">
-                    <i class="fa-solid fa-cloud-rain"></i>
-                </div>
-
-                <div>
-                    <h3>Ambient sanctuary</h3>
-
-                    <p>
-                        Layer rain, storms, fireplace,
-                        and ocean sounds while reading.
-                    </p>
-                </div>
-            </article>
-
-            <article class="mini-feature-card">
-                <div class="mini-feature-icon">
-                    <i class="fa-solid fa-heart"></i>
-                </div>
-
-                <div>
-                    <h3>Built with community</h3>
-
-                    <p>
-                        Crafted by readers, contributors,
-                        and open-source collaborators.
-                    </p>
-                </div>
-            </article>
-
-        </div>
-
-    </div>
-
-</section>
+            </section>
 
             <section class="landing-section reveal" id="key-features">
                 <div class="section-header">
@@ -2188,15 +1982,12 @@
                     </div>
                     <span class="section-chip"><i class="fa-solid fa-users"></i> open-source and community-driven</span>
                 </div>
-                <!-- <p class="section-copy contributors-intro">We welcome readers, designers, reviewers, and contributors. This roster updates from GitHub and expands on demand.</p> -->
-
                 <div class="contributors-actions-row">
                     <a class="btn-ghost contributors-view-all" href="contributors.html">
                         <i class="fa-solid fa-users"></i> View all contributors
                     </a>
                     <span class="contributors-refresh-note"><i class="fa-solid fa-rotate"></i> Refreshes up to 3 times a day</span>
                 </div>
-
                 <div class="contributors-list" data-owner="devanshi14malhotra" data-repo="BiblioDrift" aria-live="polite">
                     <div class="contributors-loading">Loading contributors…</div>
                 </div>
@@ -2208,21 +1999,20 @@
                         <p class="section-kicker">Reader experience</p>
                         <h2>What it feels like to stay a while.</h2>
                     </div>
-                    <span class="section-chip"><i class="fa-solid fa-quote-left"></i> gentle, tactile, and
-                        immersive</span>
+                    <span class="section-chip"><i class="fa-solid fa-quote-left"></i> gentle, tactile, and immersive</span>
                 </div>
                 <p class="reader-experience-intro">BiblioDrift is designed to feel calm, readable, and responsive, so the interface fades into the background and the books, sounds, and moods stay in focus.</p>
                 <div class="testimonial-grid">
                     <article class="quote-card">
-                        <p>“It feels like stepping into a quiet bookstore where the shelves respond to the mood you brought with you.”</p>
+                        <p>"It feels like stepping into a quiet bookstore where the shelves respond to the mood you brought with you."</p>
                         <span>Discovery stays intimate instead of mechanical.</span>
                     </article>
                     <article class="quote-card">
-                        <p>“The interface knows when to be present and when to get out of the way, which makes reading feel unhurried.”</p>
+                        <p>"The interface knows when to be present and when to get out of the way, which makes reading feel unhurried."</p>
                         <span>Motion stays calm, useful, and atmospheric.</span>
                     </article>
                     <article class="quote-card">
-                        <p>“Every section belongs to the same room, so the page feels like one place instead of a stack of screens.”</p>
+                        <p>"Every section belongs to the same room, so the page feels like one place instead of a stack of screens."</p>
                         <span>Typography, spacing, and warmth stay consistent.</span>
                     </article>
                 </div>
@@ -2234,8 +2024,7 @@
                         <p class="section-kicker">Contribution workflow</p>
                         <h2>There is room for your next pull request here.</h2>
                     </div>
-                    <span class="section-chip"><i class="fa-solid fa-code-pull-request"></i> easy to join, easy to
-                        improve</span>
+                    <span class="section-chip"><i class="fa-solid fa-code-pull-request"></i> easy to join, easy to improve</span>
                 </div>
                 <div class="workflow-grid">
                     <article class="workflow-step">
@@ -2258,8 +2047,7 @@
                     <a class="btn-primary landing-cta-primary"
                         href="https://github.com/devanshi14malhotra/BiblioDrift/issues" target="_blank"
                         rel="noopener noreferrer"><i class="fa-brands fa-github"></i> Find an issue</a>
-                    <a class="btn-ghost" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Read
-                        contributing guide</a>
+                    <a class="btn-ghost" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Read contributing guide</a>
                 </div>
             </section>
 
@@ -2291,7 +2079,6 @@
                     const owner = container.dataset.owner || 'devanshi14malhotra';
                     const repo = container.dataset.repo || 'BiblioDrift';
                     const loading = container.querySelector('.contributors-loading');
-                    const section = container.closest('.landing-section');
                     const cacheKey = `biblioDrift.contributors.${owner}.${repo}`;
                     const cacheTimeKey = `${cacheKey}.fetchedAt`;
 
@@ -2348,9 +2135,7 @@
                     }
 
                     function startTicker(track, slider, version){
-                        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-                            return;
-                        }
+                        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ return; }
 
                         const originals = Array.from(track.children);
                         let singleWidth = 0;
@@ -2362,20 +2147,14 @@
 
                         const compute = ()=>{
                             let width = track.scrollWidth ? track.scrollWidth / 2 : 0;
-                            if(!width){
-                                width = originals.reduce((sum, el)=> sum + el.getBoundingClientRect().width, 0);
-                            }
-                            if(!width){
-                                width = originals.reduce((sum, el)=> sum + el.offsetWidth, 0);
-                            }
+                            if(!width){ width = originals.reduce((sum, el)=> sum + el.getBoundingClientRect().width, 0); }
+                            if(!width){ width = originals.reduce((sum, el)=> sum + el.offsetWidth, 0); }
                             singleWidth = Math.max(0, width);
                             track.style.width = `${Math.max(singleWidth * 2, track.scrollWidth)}px`;
                         };
 
                         const run = ()=>{
-                            if(started){
-                                return;
-                            }
+                            if(started){ return; }
                             started = true;
                             track.style.display = 'flex';
                             track.style.transition = 'none';
@@ -2399,12 +2178,9 @@
 
                             function frame(now){
                                 if(container.dataset.renderVersion !== String(version)){
-                                    if(resizeObserver){
-                                        resizeObserver.disconnect();
-                                    }
+                                    if(resizeObserver){ resizeObserver.disconnect(); }
                                     return;
                                 }
-
                                 const dt = (now - last) / 1000;
                                 last = now;
                                 if(singleWidth > 0){
@@ -2418,40 +2194,16 @@
                         };
 
                         const boot = ()=>{
-                            if(container.dataset.renderVersion !== String(version)){
-                                return;
-                            }
-
+                            if(container.dataset.renderVersion !== String(version)){ return; }
                             compute();
-
-                            if(singleWidth > 0){
-                                run();
-                                return;
-                            }
-
-                            if(bootAttempts < 45){
-                                bootAttempts += 1;
-                                requestAnimationFrame(boot);
-                                return;
-                            }
-
+                            if(singleWidth > 0){ run(); return; }
+                            if(bootAttempts < 45){ bootAttempts += 1; requestAnimationFrame(boot); return; }
                             run();
                         };
 
                         imgs.forEach(img => {
-                            const retry = ()=> {
-                                if(!started){
-                                    boot();
-                                } else {
-                                    compute();
-                                }
-                            };
-
-                            if(img.complete){
-                                retry();
-                                return;
-                            }
-
+                            const retry = ()=>{ if(!started){ boot(); } else { compute(); } };
+                            if(img.complete){ retry(); return; }
                             img.addEventListener('load', retry, { once: true });
                             img.addEventListener('error', retry, { once: true });
                         });
@@ -2468,9 +2220,7 @@
 
                         contributors = data;
                         container.dataset.renderVersion = String(renderVersion += 1);
-                        if(loading && loading.parentNode){
-                            loading.remove();
-                        }
+                        if(loading && loading.parentNode){ loading.remove(); }
 
                         container.innerHTML = '';
                         const panel = document.createElement('div');
@@ -2494,9 +2244,7 @@
 
                         const grid = document.createElement('div');
                         grid.className = 'contributors-grid-view';
-                        data.forEach(user => {
-                            grid.appendChild(createContributorCard(user));
-                        });
+                        data.forEach(user => { grid.appendChild(createContributorCard(user)); });
                         panel.appendChild(grid);
 
                         container.appendChild(panel);
@@ -2512,12 +2260,8 @@
                                 const res = await fetch(path);
                                 if(!res.ok) continue;
                                 const data = await res.json();
-                                if(Array.isArray(data) && data.length){
-                                    return data;
-                                }
-                            }catch(e){
-                                continue;
-                            }
+                                if(Array.isArray(data) && data.length){ return data; }
+                            }catch(e){ continue; }
                         }
                         return [];
                     }
@@ -2536,19 +2280,12 @@
                                 }
                             });
 
-                            if(!res.ok){
-                                throw new Error(`GitHub returned ${res.status}`);
-                            }
+                            if(!res.ok){ throw new Error(`GitHub returned ${res.status}`); }
 
                             const data = await res.json();
-                            if(!Array.isArray(data) || !data.length){
-                                break;
-                            }
-
+                            if(!Array.isArray(data) || !data.length){ break; }
                             all.push(...data);
-                            if(data.length < perPage){
-                                break;
-                            }
+                            if(data.length < perPage){ break; }
                         }
 
                         return Array.from(new Map(all.filter(user => user && user.login).map(user => [user.login, user])).values());
@@ -2562,22 +2299,13 @@
                         }
 
                         const staticData = await fetchStaticContributors();
-                        if(staticData.length){
-                            renderContributors(staticData);
-                        } else if(cached.length){
-                            renderContributors(cached);
-                        }
+                        if(staticData.length){ renderContributors(staticData); }
+                        else if(cached.length){ renderContributors(cached); }
 
                         try{
-                            if(!force && cached.length && cacheAgeMs() < REFRESH_INTERVAL_MS){
-                                return;
-                            }
-
+                            if(!force && cached.length && cacheAgeMs() < REFRESH_INTERVAL_MS){ return; }
                             const liveData = await fetchGitHubContributors();
-                            if(liveData.length){
-                                writeCachedContributors(liveData);
-                                renderContributors(liveData);
-                            }
+                            if(liveData.length){ writeCachedContributors(liveData); renderContributors(liveData); }
                         }catch(e){
                             if(!staticData.length && !cached.length){
                                 if(loading){
@@ -2613,17 +2341,33 @@
                         <a class="footer-pill" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Contribute</a>
                     </div>
                 </div>
+
                 <div class="footer-grid">
+
+                    <!-- Col 1: Brand + notebook widget -->
                     <div class="footer-block">
                         <a class="landing-brand" href="#top" aria-label="Back to top">
                             <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift logo" />
                             <span>BiblioDrift</span>
                         </a>
                         <p>
-                            A cozy reading sanctuary for mood-based discovery, community contributions, and thoughtful
-                            book exploration.
+                            A cozy reading sanctuary for mood-based discovery,
+                            community contributions, and thoughtful book exploration.
                         </p>
+
+                        <!-- Notebook quote widget -->
+                        <div class="nb-widget" role="region" aria-label="Reading quotes" aria-live="polite">
+                            <div class="nb-card">
+                                <div class="nb-ruled" aria-hidden="true"></div>
+                                <div class="nb-spine" aria-hidden="true"></div>
+                                <blockquote class="nb-quote" id="nb-quote">&ldquo;Some books you read. Some books read you.&rdquo;</blockquote>
+                                <cite class="nb-source" id="nb-source">&mdash; F. Scott Fitzgerald</cite>
+                            </div>
+                            <div class="nb-dots" id="nb-dots" role="tablist" aria-label="Quote navigation"></div>
+                        </div>
                     </div>
+
+                    <!-- Col 2: Explore -->
                     <div class="footer-block">
                         <h3>Explore</h3>
                         <div class="footer-links">
@@ -2633,6 +2377,8 @@
                             <a class="app-link" href="app.html">Open App</a>
                         </div>
                     </div>
+
+                    <!-- Col 3: App pages -->
                     <div class="footer-block">
                         <h3>App pages</h3>
                         <div class="footer-links">
@@ -2642,6 +2388,8 @@
                             <a class="app-link" href="app.html">Account</a>
                         </div>
                     </div>
+
+                    <!-- Col 4: Connect -->
                     <div class="footer-block">
                         <h3>Connect</h3>
                         <div class="social-links">
@@ -2649,22 +2397,128 @@
                                 rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
                             <a href="https://www.linkedin.com/in/devanshi5malhotra/" target="_blank"
                                 rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                                <a href="contributing.html" aria-label="Contributing guide"><i
-                                    class="fa-solid fa-file-lines"></i></a>
+                            <a href="contributing.html" aria-label="Contributing guide"><i class="fa-solid fa-file-lines"></i></a>
                         </div>
                     </div>
+
                 </div>
+
                 <div class="footer-bottom">
                     <p class="footer-meta"><strong>&copy; <span id="currentYear"></span> BiblioDrift</strong> <span>Curated with <i class="fa-solid fa-heart"></i> for book lovers.</span></p>
-                    <p class="footer-link-row"><a class="app-link" href="app.html">Enter the app</a><span>·</span><a href="#top">Back to top</a></p>
+                    <p class="footer-link-row"><a class="app-link" href="app.html">Enter the app</a><span>&middot;</span><a href="#top">Back to top</a></p>
                 </div>
             </footer>
+
             <button id="blossomToggle" class="blossom-toggle" type="button" aria-pressed="false" aria-label="Start cherry blossom effect">
                 <i class="fa-solid fa-spa"></i>
                 <span class="blossom-toggle-label">Bloom</span>
             </button>
         </main>
     </div>
+
+    <!-- Notebook quote widget script -->
+    <script>
+    (function () {
+        var ENTRIES = [
+            { q: '\u201cSome books you read. Some books read you.\u201d',                                          s: '\u2014 F. Scott Fitzgerald'      },
+            { q: '\u201cA reader lives a thousand lives before he dies.\u201d',                                    s: '\u2014 George R.R. Martin'        },
+            { q: '\u201cI am not afraid of storms, for I am learning how to sail my ship.\u201d',                  s: '\u2014 Louisa May Alcott'         },
+            { q: '\u201cThere is no friend as loyal as a book.\u201d',                                             s: '\u2014 Ernest Hemingway'          },
+            { q: '\u201cUntil I feared I would lose it, I never loved to read. One does not love breathing.\u201d',s: '\u2014 Harper Lee'                },
+        ];
+
+        var AUTO_MS  = 5000;
+        var PAUSE_MS = 12000;
+
+        var quoteEl  = document.getElementById('nb-quote');
+        var sourceEl = document.getElementById('nb-source');
+        var dotsEl   = document.getElementById('nb-dots');
+
+        if (!quoteEl || !sourceEl || !dotsEl) return;
+
+        var cur       = 0;
+        var autoTimer = null;
+        var pauseTimer= null;
+        var animating = false;
+
+        function buildDots() {
+            dotsEl.innerHTML = '';
+            ENTRIES.forEach(function (_, i) {
+                var btn = document.createElement('button');
+                btn.className = 'nb-dot';
+                btn.setAttribute('role', 'tab');
+                btn.setAttribute('aria-label', 'Quote ' + (i + 1));
+                btn.setAttribute('aria-selected', String(i === cur));
+                btn.addEventListener('click', function () {
+                    if (i === cur || animating) return;
+                    pauseAuto();
+                    goTo(i);
+                });
+                dotsEl.appendChild(btn);
+            });
+        }
+
+        function goTo(idx) {
+            if (animating) return;
+            animating = true;
+
+            quoteEl.classList.add('is-leaving');
+            sourceEl.classList.add('is-leaving');
+
+            setTimeout(function () {
+                cur = (idx + ENTRIES.length) % ENTRIES.length;
+                quoteEl.textContent  = ENTRIES[cur].q;
+                sourceEl.textContent = ENTRIES[cur].s;
+
+                quoteEl.classList.remove('is-leaving');
+                sourceEl.classList.remove('is-leaving');
+                quoteEl.classList.add('is-entering');
+
+                dotsEl.querySelectorAll('.nb-dot').forEach(function (d, i) {
+                    d.setAttribute('aria-selected', String(i === cur));
+                });
+
+                setTimeout(function () {
+                    quoteEl.classList.remove('is-entering');
+                    animating = false;
+                }, 380);
+            }, 280);
+        }
+
+        function startAuto() {
+            if (autoTimer) return;
+            autoTimer = setInterval(function () { goTo(cur + 1); }, AUTO_MS);
+        }
+
+        function stopAuto() {
+            if (!autoTimer) return;
+            clearInterval(autoTimer);
+            autoTimer = null;
+        }
+
+        function pauseAuto() {
+            stopAuto();
+            if (pauseTimer) clearTimeout(pauseTimer);
+            pauseTimer = setTimeout(startAuto, PAUSE_MS);
+        }
+
+        var widget = quoteEl.closest('.nb-widget');
+        if (widget) {
+            widget.addEventListener('mouseenter', stopAuto);
+            widget.addEventListener('mouseleave', startAuto);
+            widget.addEventListener('focusin',    stopAuto);
+            widget.addEventListener('focusout',   startAuto);
+        }
+
+        dotsEl.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowRight') { pauseAuto(); goTo(cur + 1); }
+            if (e.key === 'ArrowLeft')  { pauseAuto(); goTo(cur - 1); }
+        });
+
+        buildDots();
+        startAuto();
+    })();
+    </script>
 
     <script src="../js/theme-manager.js"></script>
     <script src="../js/landing-interactions.js"></script>
