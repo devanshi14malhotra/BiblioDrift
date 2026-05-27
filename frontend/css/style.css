@@ -54,9 +54,18 @@
 .book-tooltip,
 .book-detail-modal,
 [class*="glass"] {
-    background: rgba(0, 0, 0, 0.45) !important;
+    background: rgba(255, 255, 255, 0.65); 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="night"] .glass-panel,
+[data-theme="night"] .book-tooltip,
+[data-theme="night"] .book-detail-modal,
+[data-theme="night"] [class*="glass"] {
+    background: rgba(30, 26, 24, 0.92) !important; /* Enhanced canvas contrast */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 [data-theme="night"] {
@@ -87,6 +96,11 @@
     --control-border: rgba(255, 255, 255, 0.1);
     --control-focus-ring: rgba(252, 203, 78, 0.24);
     --control-hover: rgba(255, 255, 255, 0.1);
+    
+    /* ADDING THESE THREE LINES FOR PROPER TEXT CASCADE */
+    --theme-text-muted-secondary: #c5b8ad;
+    --paper-page-fill: #3a332e;
+    --paper-page-line: #2d2723;
 }
 
 * {
@@ -144,7 +158,7 @@ main {
 html[data-theme="night"],
 html[data-theme="night"] body {
     background-color: #1e1a18 !important;
-    color: #fff5f5 !important;
+    color: var(--text-main) !important; /* Fixed: Prevents collision with forced white rules */
 }
 
 [data-theme="night"] header {
@@ -551,15 +565,43 @@ textarea:focus {
     /* Half thickness */
 }
 
+/* Update 3D Book Base Components */
 .book__face--right {
-    /* Pages */
-    width: 40px;
+    width: var(--book-thick);
     height: 100%;
-    background: linear-gradient(to right, #fff, #f0f0f0 20%, #fff 40%);
-    transform: rotateY(90deg) translateZ(140px);
-    /* Width - half thickness */
+    top: 0;
+    right: 0;
     left: auto;
-    right: -20px;
+    transform: rotateY(90deg) translateZ(calc(var(--book-thick) * 0.5));
+    background: repeating-linear-gradient(to right, #fdfbf7 0px, #fdfbf7 2px, #dfd8c8 3px);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="night"] .book__face--right,
+[data-theme="night"] .book__face--top,
+[data-theme="night"] .book__face--bottom {
+    background: repeating-linear-gradient(to right, var(--paper-page-line) 0px, var(--paper-page-line) 1px, var(--paper-page-fill) 1px, var(--paper-page-fill) 3px) !important;
+}
+
+/* Update Expanded Book Component Layout */
+.face-right {
+    width: 48px;
+    height: 98%;
+    background: #fdfaf5;
+    transform: rotateY(90deg) translateZ(168px);
+    margin-left: -24px;
+    left: 50%;
+    top: 1%;
+    background-image: repeating-linear-gradient(to right, #e8e4db 0px, #e8e4db 1px, #fdfaf5 1px, #fdfaf5 3px);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="night"] .face-right,
+[data-theme="night"] .face-top,
+[data-theme="night"] .face-bottom {
+    background-color: var(--paper-page-fill) !important;
+    background-image: repeating-linear-gradient(to right, var(--paper-page-line) 0px, var(--paper-page-line) 1px, var(--paper-page-fill) 1px, var(--paper-page-fill) 3px) !important;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* Hover Effect: Pull out */
@@ -729,7 +771,7 @@ textarea:focus {
 
 /* Mood Tags on Book Covers */
 .mood-tags {
-    position: absolute;
+    position: relative;
     top: 5px;
     left: 5px;
     display: flex;
@@ -1403,9 +1445,29 @@ textarea:focus {
     color: var(--text-main);
 }
 
-[data-theme="night"] .modal-content {
-    background: rgba(30, 26, 24, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+[data-theme="night"] .modal-content,
+[data-theme="night"] .book-info-panel,
+[data-theme="night"] .preview-modal-inner {
+    background: var(--surface-elevated) !important; /* Dynamic structural inheritance mapping */
+    color: var(--text-main) !important;
+    border: 1px solid var(--glass-border) !important;
+}
+
+/* Update your insight block right below it */
+.ai-insight-box {
+    background: #fdfaf5;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-left: 4px solid var(--accent-gold);
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="night"] .ai-insight-box {
+    background: rgba(212, 175, 55, 0.05) !important;
+    border: 1px solid rgba(212, 175, 55, 0.25) !important;
+    border-left: 4px solid var(--accent-gold) !important;
 }
 
 @keyframes modalIn {
@@ -1489,17 +1551,6 @@ textarea:focus {
     margin-top: -1rem;
 }
 
-/* AI Insight Box */
-.ai-insight-box {
-    background: #fdfaf5;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    border-left: 4px solid var(--accent-gold);
-    padding: 1.2rem 1.5rem;
-    border-radius: 12px;
-    margin-top: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
 #modal-ai-note {
     font-family: "Georgia", serif;
     font-style: italic;
@@ -1507,12 +1558,6 @@ textarea:focus {
     line-height: 1.6;
     font-size: 1.05rem;
     display: block;
-}
-
-[data-theme="night"] .ai-insight-box {
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.05),
-            rgba(0, 0, 0, 0.2));
 }
 
 .ai-insight-box::before {
@@ -1802,15 +1847,10 @@ textarea:focus {
     animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.5;
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
     }
 }
 
@@ -2264,14 +2304,10 @@ textarea:focus {
 }
 
 @keyframes typing {
-
-    0%,
-    60%,
-    100% {
+    0%, 60%, 100% {
         transform: translateY(0);
         opacity: 0.4;
     }
-
     30% {
         transform: translateY(-10px);
         opacity: 1;
@@ -2347,13 +2383,11 @@ textarea:focus {
 /* ===== GENRE SECTION STYLES ===== */
 .genre-grid {
     display: grid;
-
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1.25rem;
-    padding: 2rem 0.5rem
+    padding: 2rem 0.5rem;
 }
 
-/* Genre Card - Vintage Book Spine Look */
 /* Genre Card - Compact Vintage Rectangular Look */
 .genre-card {
     display: flex;
@@ -2472,8 +2506,6 @@ textarea:focus {
 .genre-card[data-genre="history"] {
     background: linear-gradient(90deg, #382e1c 0%, #594a2e 40%, #453923 100%);
 }
-
-/* Genre Modal Start */
 
 /* Genre Modal */
 .genre-modal {
@@ -3659,7 +3691,12 @@ textarea:focus {
     align-items: center;
     gap: 10px;
     border-left: 4px solid var(--accent-gold);
-    animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .toast-notification {
+        animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
+    }
 }
 
 .toast-notification.error {
@@ -3693,7 +3730,7 @@ textarea:focus {
 }
 
 /* ========================================= */
-/*      BOOK SPINE VARIATIONS (#12)         */
+/* BOOK SPINE VARIATIONS (#12)         */
 /* ========================================= */
 
 /* --- Textures --- */
@@ -3766,7 +3803,7 @@ textarea:focus {
 }
 
 .spine-pattern-ornament::before {
-    content: '?';
+    content: '❦';
     /* Floral heart ornament */
     position: absolute;
     bottom: 25%;
@@ -4254,15 +4291,8 @@ textarea:focus {
 }
 
 @keyframes heartbeat {
-
-    0%,
-    100% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.1);
-    }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
 @media (max-width: 768px) {
@@ -4281,11 +4311,8 @@ textarea:focus {
     }
 }
 
-\n
 /* ========================================= */
-
-/* ========================================= */
-/*      EXPANDED BOOK VIEW (#45)            */
+/* EXPANDED BOOK VIEW (#45)            */
 /* ========================================= */
 
 #book-detail-modal {
@@ -4539,23 +4566,6 @@ textarea:focus {
     font-weight: 300;
 }
 
-@keyframes pulse {
-    0% {
-        opacity: 0.6;
-        transform: translateY(0);
-    }
-
-    50% {
-        opacity: 1;
-        transform: translateY(-3px);
-    }
-
-    100% {
-        opacity: 0.6;
-        transform: translateY(0);
-    }
-}
-
 /* --- Right Column: Info Panel --- */
 .book-info-panel {
     flex: 1;
@@ -4685,7 +4695,6 @@ textarea:focus {
     background-color: var(--wood-dark);
     color: white;
     border: 2px solid transparent;
-    /* Maintain alignment with bordered button */
 }
 
 .add-to-library:hover {
@@ -4739,11 +4748,8 @@ textarea:focus {
         width: 100vw;
         max-width: none;
         overflow-y: auto;
-        /* Allow scrolling entire modal on mobile */
         pointer-events: auto;
-        /* Enable scrolling */
         display: block;
-        /* Stack */
     }
 
     .book-stage {
@@ -4764,7 +4770,6 @@ textarea:focus {
         transform: rotateY(-90deg) translateZ(120px);
     }
 
-    /* 240/2 */
     .face-right {
         transform: rotateY(90deg) translateZ(118px);
         margin-left: -24px;
@@ -4792,8 +4797,6 @@ textarea:focus {
     .reviews-scroll-container {
         max-height: 300px;
     }
-
-
 }
 
 /* 404 Page Styles */
@@ -4833,20 +4836,6 @@ textarea:focus {
     animation: float 6s ease-in-out infinite;
 }
 
-@keyframes float {
-    0% {
-        transform: translateY(0px);
-    }
-
-    50% {
-        transform: translateY(-10px);
-    }
-
-    100% {
-        transform: translateY(0px);
-    }
-}
-
 .error-heading {
     font-size: 2.5rem;
     color: var(--text-main);
@@ -4865,20 +4854,6 @@ textarea:focus {
 .error-actions {
     display: flex;
     gap: 1rem;
-}
-
-.btn-primary {
-    background-color: var(--wood-dark);
-    color: #fff;
-    padding: 0.8rem 1.5rem;
-    border-radius: 4px;
-    font-family: 'Playfair Display', serif;
-    text-decoration: none;
-    transition: background-color 0.3s;
-}
-
-.btn-primary:hover {
-    background-color: var(--wood-light);
 }
 
 .btn-outline {
@@ -4914,7 +4889,6 @@ textarea:focus {
     position: relative;
     transform-style: preserve-3d;
     transform-origin: center center;
-    /* Move whole book back by half its thickness so it sits flush when flipped */
     transform: translateZ(calc(var(--book-thick) * -0.5));
     transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s, z-index 0.6s;
     animation: floatIn 0.8s ease-out backwards;
@@ -4923,7 +4897,6 @@ textarea:focus {
 .book__face {
     position: absolute;
     backface-visibility: hidden;
-    /* Default rounded corners just in case */
     border-radius: 4px;
 }
 
@@ -4963,15 +4936,32 @@ textarea:focus {
     color: #2c2420;
 }
 
+[data-theme="night"] .book__face--back,
+[data-theme="night"] .face-back,
+[data-theme="night"] .back-paper-texture {
+    background-color: var(--book-bg) !important;
+    color: var(--text-main) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="night"] .back-content-scroll {
+    color: var(--text-main) !important;
+}
+
+/* Keep your handwritten notes cleanly distinguished on the dark back page */
+[data-theme="night"] .handwritten-note {
+    background: #3a322d !important;
+    color: #fff2df !important;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
 .book__face--spine {
     width: var(--book-thick);
     height: 100%;
     top: 0;
     left: 0;
-    /* Center connects at X = half thickness */
     transform: rotateY(-90deg) translateZ(calc(var(--book-thick) * 0.5));
     background: #333;
-    /* Override randomly via JS inline style */
     box-shadow: inset -3px 0 6px rgba(0, 0, 0, 0.3), inset 3px 0 6px rgba(255, 255, 255, 0.1);
 }
 
@@ -4980,7 +4970,6 @@ textarea:focus {
     height: 100%;
     top: 0;
     right: 0;
-    /* Placed at the right edge */
     left: auto;
     transform: rotateY(90deg) translateZ(calc(var(--book-thick) * 0.5));
     background: repeating-linear-gradient(to right, #fdfbf7 0px, #fdfbf7 2px, #dfd8c8 3px);
@@ -5010,7 +4999,6 @@ textarea:focus {
 /* Enhancing Interactivity: Better 3D Spin and Popup on Hover */
 .book-scene:hover {
     z-index: 50;
-    /* Bring scene forward immediately */
 }
 
 .book-scene:hover .book:not(.flipped) {
@@ -5019,12 +5007,6 @@ textarea:focus {
 }
 
 /* Enhanced Flipped State with 3D Pop */
-.book.flipped {
-    transform: rotateY(180deg) scale(1.3) translateZ(80px);
-    z-index: 100;
-}
-
-/* Fixing Flipped Transform */
 .book.flipped {
     transform: translateY(-20px) translateZ(100px) rotateY(180deg) scale(1.1) !important;
     z-index: 100 !important;
@@ -5052,16 +5034,12 @@ textarea:focus {
     gap: 0.6rem;
     position: relative;
     min-width: 220px;
-
     background: var(--surface-soft);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
-
     border: 1px solid var(--control-border);
     border-radius: var(--radius-control);
-
     padding: 0.85rem 1rem;
-
     box-shadow: var(--shadow-soft);
     transition: all 0.3s ease;
 }
@@ -5096,11 +5074,9 @@ textarea:focus {
     background: transparent;
     border: none;
     outline: none;
-
     font-family: "Georgia", serif;
     font-size: 14px;
     color: var(--text-main);
-
     cursor: pointer;
     width: 100%;
     padding-right: 1.5rem;
@@ -5248,19 +5224,14 @@ textarea:focus {
     position: absolute;
     top: 30px;
     right: 0;
-
     background: linear-gradient(135deg, var(--wood-dark), var(--wood-light));
     color: #fff;
-
     border: none;
     border-radius: 12px;
-
     padding: 10px 16px;
     font-family: "Georgia", serif;
     font-size: 13px;
-
     cursor: pointer;
-
     box-shadow: var(--shadow-soft);
     transition: all 0.3s ease;
 }
@@ -5289,7 +5260,6 @@ textarea:focus {
 .back-to-top {
     position: fixed !important;
     bottom: 6.5rem !important;
-    /* Slightly adjusted to fit leaf below */
     right: 2rem !important;
     width: 3.5rem !important;
     height: 3.5rem !important;
@@ -5311,13 +5281,11 @@ textarea:focus {
     position: fixed !important;
     bottom: 2.5rem !important;
     right: 2.35rem !important;
-    /* Centered relative to arrow */
     z-index: 10001 !important;
 }
 
 #ambientToggle {
     width: 2.8rem !important;
-    /* Slightly smaller than arrow (3.5rem) */
     height: 2.8rem !important;
     border-radius: 50% !important;
     background: var(--header-bg) !important;
@@ -5329,17 +5297,13 @@ textarea:focus {
     cursor: pointer !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     transition: all 0.3s ease !important;
+    will-change: transform;
 }
 
 #ambientToggle:hover {
     background: var(--accent-gold) !important;
     color: white !important;
     transform: scale(1.05);
-}
-
-/* Animated active state for the sanctuary toggle button */
-#ambientToggle {
-    will-change: transform;
 }
 
 #ambientToggle.active {
@@ -5356,7 +5320,6 @@ textarea:focus {
     bottom: 60px;
     right: 0;
     width: 260px;
-    background: #1e1a18 !important;
     background: var(--header-bg) !important;
     backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border) !important;
@@ -5366,7 +5329,6 @@ textarea:focus {
     display: none;
     flex-direction: column;
     gap: 1rem;
-    /* Prepare for animated entrance */
     opacity: 0;
     transform: translateY(8px) scale(0.995);
     transition: opacity 260ms cubic-bezier(.2, .9, .3, 1), transform 260ms cubic-bezier(.2, .9, .3, 1);
@@ -5377,20 +5339,6 @@ textarea:focus {
     display: flex !important;
     opacity: 1 !important;
     transform: translateY(0) scale(1) !important;
-}
-
-.ambient-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.ambient-option span {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.95rem;
 }
 
 /* Improved alignment: use a two-column grid so labels line up and controls align consistently */
@@ -5446,7 +5394,6 @@ textarea:focus {
 .library-page .ambient-panel .volume-control .range-wrap .range-fill,
 #profile-page .ambient-panel .volume-control .range-wrap .range-track,
 #profile-page .ambient-panel .volume-control .range-wrap .range-fill {
-    /* keep track centered */
     top: 50% !important;
     transform: translateY(-50%) !important;
 }
@@ -5486,7 +5433,6 @@ textarea:focus {
 /* Profile-specific nudge: align the track/fill and thumb better on profile layout */
 .profile-page .ambient-panel .volume-control .range-wrap {
     padding-top: 2px;
-    /* small spacing to shift input area down slightly */
 }
 
 .profile-page .ambient-panel .volume-control .range-wrap .range-track,
@@ -5539,6 +5485,7 @@ textarea:focus {
 .slider {
     border-radius: 999px;
     background-color: rgba(68, 68, 68, 0.9);
+    transition: background-color 200ms cubic-bezier(.2, .9, .3, 1);
 }
 
 .slider:before {
@@ -5546,14 +5493,6 @@ textarea:focus {
     width: 18px;
     left: 4px;
     bottom: 4px;
-}
-
-/* Smooth transitions for switches */
-.slider {
-    transition: background-color 200ms cubic-bezier(.2, .9, .3, 1);
-}
-
-.slider:before {
     transition: transform 200ms cubic-bezier(.2, .9, .3, 1), box-shadow 200ms;
 }
 
@@ -5571,17 +5510,9 @@ input:checked+.slider {
 }
 
 @keyframes togglePop {
-    0% {
-        transform: scale(0.96);
-    }
-
-    60% {
-        transform: scale(1.04);
-    }
-
-    100% {
-        transform: scale(1);
-    }
+    0% { transform: scale(0.96); }
+    60% { transform: scale(1.04); }
+    100% { transform: scale(1); }
 }
 
 /* Staggered fade-in for options when panel opens */
@@ -5592,25 +5523,11 @@ input:checked+.slider {
     animation: optionFade 360ms cubic-bezier(.2, .9, .3, 1) forwards;
 }
 
-.ambient-panel.active .ambient-option:nth-child(1) {
-    animation-delay: 0.06s;
-}
-
-.ambient-panel.active .ambient-option:nth-child(2) {
-    animation-delay: 0.12s;
-}
-
-.ambient-panel.active .ambient-option:nth-child(3) {
-    animation-delay: 0.18s;
-}
-
-.ambient-panel.active .ambient-option:nth-child(4) {
-    animation-delay: 0.24s;
-}
-
-.ambient-panel.active .volume-control {
-    animation-delay: 0.3s;
-}
+.ambient-panel.active .ambient-option:nth-child(1) { animation-delay: 0.06s; }
+.ambient-panel.active .ambient-option:nth-child(2) { animation-delay: 0.12s; }
+.ambient-panel.active .ambient-option:nth-child(3) { animation-delay: 0.18s; }
+.ambient-panel.active .ambient-option:nth-child(4) { animation-delay: 0.24s; }
+.ambient-panel.active .volume-control { animation-delay: 0.3s; }
 
 @keyframes optionFade {
     to {
@@ -5639,7 +5556,6 @@ input:checked+.slider {
     width: 130px;
     height: 6px;
     background-color: rgba(0, 0, 0, 0.12);
-    /* Use a solid gold background-image and size it with --ambient-fill for reliable Chrome rendering */
     background-image: linear-gradient(to right, var(--accent-gold), var(--accent-gold));
     background-size: calc(var(--ambient-fill, 50) * 1%) 100%;
     background-repeat: no-repeat;
@@ -5655,10 +5571,6 @@ input:checked+.slider {
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     cursor: pointer;
-}
-
-/* Ensure base thumb has a transition so scaling animates smoothly on all pages */
-.ambient-panel input[type="range"]::-webkit-slider-thumb {
     transition: transform 260ms cubic-bezier(.2, 1, .22, 1), box-shadow 260ms ease !important;
     transform-origin: center center;
     transform: scale(1) !important;
@@ -5730,7 +5642,6 @@ input:checked+.slider {
     -webkit-appearance: none;
     appearance: none;
     margin-top: -6px;
-    /* center the larger thumb */
     width: 18px;
     height: 18px;
     background: var(--accent-gold);
@@ -5920,17 +5831,13 @@ input:checked+.slider:before {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(14px);
-    box-shadow:
-        0 8px 30px rgba(0, 0, 0, 0.12);
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .bookseller-note-card:hover {
     transform: translateY(-2px);
-    box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
 }
 
 .bookseller-note-header {
@@ -5955,7 +5862,6 @@ input:checked+.slider:before {
     font-size: 0.97rem;
     font-style: italic;
 }
-
 
 .bookseller-context-hint {
     margin-top: 1rem;
@@ -5987,7 +5893,6 @@ input:checked+.slider:before {
         opacity: 0;
         transform: translateY(12px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -6069,7 +5974,6 @@ body {
 }
 
 @media (hover: none) {
-
     #sc-glow-outer,
     #sc-glow-mid,
     #sc-glow-inner,
@@ -6091,11 +5995,7 @@ body {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
     }
-
-    60% {
-        opacity: 0.7;
-    }
-
+    60% { opacity: 0.7; }
     100% {
         opacity: 0;
         transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.15);
@@ -6111,9 +6011,6 @@ body {
         cursor: auto;
     }
 }
-
-body { cursor: none; }
-@media (hover: none) { body { cursor: auto; } }
 
 /* Enhanced Empty State */
 .library-empty-state {
@@ -6222,15 +6119,9 @@ body { cursor: none; }
         height: 150px;
     }
 }
+
 /* ============================================================
    AMBIENT VOLUME SLIDER — SINGLE SOURCE OF TRUTH
-   Replace ALL existing slider/range rules in style.css with this block.
-   Remove every other rule targeting:
-     - .ambient-panel input[type="range"]
-     - .library-page .ambient-panel input[type="range"]
-     - #profile-page .ambient-panel input[type="range"]
-     - .ambient-panel .volume-control .range-wrap ...
-     - Any block with margin-top on ::-webkit-slider-thumb inside ambient-panel
    ============================================================ */
 
 /* 1. Volume control layout */
@@ -6255,10 +6146,8 @@ body { cursor: none; }
     position: relative;
     width: 100%;
     height: 18px;
-    /* fixed height — track and thumb share this axis */
     display: flex;
     align-items: center;
-    /* vertically centers the <input> */
 }
 
 /* 3. Track and fill — absolutely positioned, vertically centred */
@@ -6282,7 +6171,6 @@ body { cursor: none; }
 .ambient-panel .volume-control .range-wrap .range-fill {
     background: var(--accent-gold);
     width: 50%;
-    /* JS will update this dynamically */
     transition: width 240ms cubic-bezier(.2, 1, .22, 1);
     z-index: 2;
 }
@@ -6298,9 +6186,6 @@ body { cursor: none; }
     z-index: 3;
     width: 100% !important;
     height: 18px !important;
-    /* matches .range-wrap height */
-    min-height: 0 !important;
-    min-width: 0 !important;
     background: transparent !important;
     border-radius: 999px;
     outline: none;
@@ -6334,11 +6219,8 @@ body { cursor: none; }
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     cursor: pointer !important;
     margin-top: -6px !important;
-    /* (18px thumb - 6px track) / 2 = 6px */
     transform: none !important;
-    /* kill any conflicting translateY */
-    transition: transform 260ms cubic-bezier(.2, 1, .22, 1),
-        box-shadow 260ms ease !important;
+    transition: transform 260ms cubic-bezier(.2, 1, .22, 1), box-shadow 260ms ease !important;
 }
 
 /* Thumb hover */
@@ -6375,168 +6257,6 @@ body { cursor: none; }
     border: 3px solid rgba(255, 255, 255, 0.85) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     cursor: pointer !important;
-    /* Firefox auto-centers the thumb — no margin-top needed */
-}
-
-.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-moz-range-thumb {
-    transform: scale(1.2);
-    transition: transform 360ms cubic-bezier(.2, 1, .22, 1);
-}
-
-/* ============================================================
-   AMBIENT VOLUME SLIDER — SINGLE SOURCE OF TRUTH
-   Replace ALL existing slider/range rules in style.css with this block.
-   Remove every other rule targeting:
-     - .ambient-panel input[type="range"]
-     - .library-page .ambient-panel input[type="range"]
-     - #profile-page .ambient-panel input[type="range"]
-     - .ambient-panel .volume-control .range-wrap ...
-     - Any block with margin-top on ::-webkit-slider-thumb inside ambient-panel
-   ============================================================ */
-
-/* 1. Volume control layout */
-.ambient-panel .volume-control {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 10px;
-}
-
-.ambient-panel .volume-control label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--text-main);
-    font-size: 0.95rem;
-    white-space: nowrap;
-}
-
-/* 2. The wrapper that stacks track, fill, and input */
-.ambient-panel .volume-control .range-wrap {
-    position: relative;
-    width: 100%;
-    height: 18px;
-    /* fixed height — track and thumb share this axis */
-    display: flex;
-    align-items: center;
-    /* vertically centers the <input> */
-}
-
-/* 3. Track and fill — absolutely positioned, vertically centred */
-.ambient-panel .volume-control .range-wrap .range-track,
-.ambient-panel .volume-control .range-wrap .range-fill {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 6px;
-    border-radius: 999px;
-    pointer-events: none;
-}
-
-.ambient-panel .volume-control .range-wrap .range-track {
-    right: 0;
-    background: rgba(0, 0, 0, 0.15);
-    z-index: 1;
-}
-
-.ambient-panel .volume-control .range-wrap .range-fill {
-    background: var(--accent-gold);
-    width: 50%;
-    /* JS will update this dynamically */
-    transition: width 240ms cubic-bezier(.2, 1, .22, 1);
-    z-index: 2;
-}
-
-/* 4. The actual <input> — transparent, sits on top */
-.ambient-panel .volume-control .range-wrap input[type="range"],
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"],
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"],
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"] {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    position: relative;
-    z-index: 3;
-    width: 100% !important;
-    height: 18px !important;
-    /* matches .range-wrap height */
-    min-height: 0 !important;
-    min-width: 0 !important;
-    background: transparent !important;
-    border-radius: 999px;
-    outline: none;
-    cursor: pointer;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 5. WebKit track — transparent (fill handled by .range-fill div) */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-runnable-track {
-    height: 6px !important;
-    background: transparent !important;
-    border-radius: 999px;
-}
-
-/* 6. WebKit thumb — THE KEY FIX: margin-top centers it on the 6px track */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 50% !important;
-    background: var(--accent-gold) !important;
-    border: 3px solid rgba(255, 255, 255, 0.85) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    cursor: pointer !important;
-    margin-top: -6px !important;
-    /* (18px thumb - 6px track) / 2 = 6px */
-    transform: none !important;
-    /* kill any conflicting translateY */
-    transition: transform 260ms cubic-bezier(.2, 1, .22, 1),
-        box-shadow 260ms ease !important;
-}
-
-/* Thumb hover */
-.ambient-panel .volume-control .range-wrap input[type="range"]:hover::-webkit-slider-thumb {
-    transform: scale(1.15) !important;
-    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.5) !important;
-}
-
-/* Thumb pop animation (JS adds .volume-animate class) */
-.ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-webkit-slider-thumb {
-    transform: scale(1.2) !important;
-    box-shadow: 0 0 14px rgba(212, 175, 55, 0.6) !important;
-}
-
-/* 7. Firefox track */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-track {
-    height: 6px !important;
-    background: transparent !important;
-    border-radius: 999px;
-}
-
-/* 8. Firefox thumb */
-.ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
-.library-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
-.profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb,
-#profile-page .ambient-panel .volume-control .range-wrap input[type="range"]::-moz-range-thumb {
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 50% !important;
-    background: var(--accent-gold) !important;
-    border: 3px solid rgba(255, 255, 255, 0.85) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-    cursor: pointer !important;
-    /* Firefox auto-centers the thumb — no margin-top needed */
 }
 
 .ambient-panel .volume-control .range-wrap input[type="range"].volume-animate::-moz-range-thumb {
@@ -6560,7 +6280,6 @@ body { cursor: none; }
     position: fixed;
     bottom: 30px;
     left: 30px;
-    /* Moved to bottom-left to avoid overlap with back-to-top and ambient sanctuary */
     z-index: 10000;
     font-family: "Georgia", serif;
 }
@@ -6762,9 +6481,7 @@ body { cursor: none; }
     gap: 0.75rem;
     background: var(--glass-bg);
     border: 1px solid rgba(0, 0, 0, 0.15);
-    /* Match new navbar border */
     border-radius: 12px;
-    /* Soft border radii */
     padding: 0.5rem 1rem;
     box-shadow: var(--shadow-soft);
     backdrop-filter: blur(10px);
@@ -6805,10 +6522,12 @@ body { cursor: none; }
     background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e0d5cb%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
 }
 
-.sort-select option {
-    background: var(--bg-color);
+.sort-select option,
+.library-shelf-select option {
+    background: var(--surface-elevated); 
     color: var(--text-main);
 }
+
 .custom-auth-bg {
     background: linear-gradient(to bottom right, #f8fafc, #dbeafe);
     min-height: 100vh;
@@ -6825,8 +6544,13 @@ body { cursor: none; }
 }
 
 html[data-theme="night"] .tooltip-author,
-body.night-mode .tooltip-author {
-    color: #cccccc !important;
+body.night-mode .tooltip-author,
+[data-theme="night"] .tooltip-description,
+[data-theme="night"] .book-author-large,
+[data-theme="night"] .book-description-text,
+[data-theme="night"] .stat-label,
+[data-theme="night"] .review-text {
+    color: var(--theme-text-muted-secondary) !important;
 }
 
 
@@ -6844,7 +6568,6 @@ body.night-mode .tooltip-author {
 }
 
 .main-footer {
- 
   padding: 4rem 2rem 1rem;
 }
 
@@ -6855,12 +6578,9 @@ body.night-mode .tooltip-author {
 }
 
 .footer-container a {
- 
   text-decoration: none;
   transition: color 0.3s ease;
 }
-
-
 
 .social-icons {
   display: flex;
@@ -6873,6 +6593,7 @@ body.night-mode .tooltip-author {
   padding-top: 1rem;
   border-top: 1px solid #374151;
 }
+
 /* =========================
    Reader Perspectives
 ========================= */
@@ -7181,12 +6902,10 @@ body.night-mode .tooltip-author {
   transform: translateY(-2px);
 }
 
-
 /* ============================================================ */
-/* IN-APP BOOK PREVIEW MODAL (Google Books Embedded Viewer)    */
+/* IN-APP BOOK PREVIEW MODAL (Google Books Embedded Viewer)     */
 /* ============================================================ */
 
-/* Backdrop overlay â€” hidden by default, shown via .active */
 dialog.book-preview-modal {
     display: none;
     padding: 0;
@@ -7348,7 +7067,7 @@ dialog.book-preview-modal::backdrop {
     to { transform: rotate(360deg); }
 }
 
-/* Viewer container â€” Google injects its iframe here */
+/* Viewer container */
 .preview-viewer-container {
     width: 100%;
     height: 100%;
