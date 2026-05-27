@@ -1,0 +1,129 @@
+# Contributing to BiblioDrift 📚☕
+
+Thanks for taking the time to contribute.
+
+BiblioDrift is a cozy, visual-first book discovery platform. Contributions should improve the calm, shelf-based browsing experience without breaking the existing mood-driven flow.
+
+## What You Can Contribute
+
+- Bug fixes
+- UI and accessibility improvements
+- Better mood or search logic
+- AI note and recommendation refinements
+- Documentation updates
+- Test coverage for important flows
+
+## Getting Started
+
+Before you begin, make sure you are familiar with the current stack:
+
+- **Frontend:** HTML5, CSS3, Vanilla JavaScript
+- **Backend:** Python
+- **API Source:** Google Books API
+
+### Prerequisites
+
+1. Python 3.9+ if you plan to run the backend
+2. A modern web browser
+3. Git
+
+### Local Setup
+
+1. Fork the repository if you plan to contribute from your own account.
+2. Clone your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/BiblioDrift.git
+   cd BiblioDrift
+   ```
+3. Setting up upstream (recommended to keep your fork synchronized):
+   ```bash
+   git remote add upstream https://github.com/devanshi14malhotra/BiblioDrift
+   ```
+   Keeping your fork up-to-date:
+   ```bash
+   git checkout main
+   git fetch upstream
+   git merge upstream/main
+   ```
+   **Important** to do before any contribution.
+
+3. Setup your python environment:
+   ```bash
+   python -m venv .venv
+   ```
+4. Activate your virtual environment:
+   ```bash
+   #Windows
+   .venv\Scripts\activate
+
+   #Linux
+   source .venv/bin/activate
+   ```
+   Verify virtual environment is active:
+   ```bash
+   python --version
+   ```
+   Your terminal should now show `(.venv)` at the beginning.
+5. Setting up pip:
+   ```bash
+   python -m ensurepip --upgrade
+   python -m pip install --upgrade pip
+   ```
+6. Verify pip:
+   ```bash
+   python -m pip --version
+   ```
+7. Install backend dependencies if needed:
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
+8. Run the app or open the frontend directly:
+   ```bash
+   python app.py
+   ```
+   Or open `index.html` in your browser for frontend-only changes.
+
+## Bug Reports
+
+When opening an issue, include:
+
+- A clear title
+- The page or flow affected
+- Exact steps to reproduce
+- What you expected to happen
+- What actually happened
+
+## Feature Suggestions
+
+When proposing an enhancement, describe:
+
+- The user problem you are solving
+- Why the change fits BiblioDrift
+- Any relevant screenshots or examples
+
+## Pull Request Process
+
+1. Keep changes focused and easy to review.
+2. Test your changes locally before submitting.
+3. Update documentation if behavior or setup changes.
+4. Include screenshots for visible UI changes.
+5. Reference the related issue if one exists.
+
+If label automation is enabled in the repository, `gssoc:approved` is added when the PR has an approval on its current head commit and is removed again if that approval becomes stale after new commits.
+
+## Code Style
+
+- Keep the frontend vanilla unless a change explicitly needs otherwise.
+- Preserve the calm, tactile visual style.
+- For frontend UI changes, edit the source files under `frontend/`. Do not edit generated `dist/` files unless a maintainer explicitly asks for a built output update.
+- When changing navigation or shared UI states, verify the active, hover, and keyboard-focus states on each affected page.
+- Follow existing Python style and naming patterns.
+
+## Notes on Documentation
+
+- The main project overview lives in [README.md](../README.md).
+- If you need to explain setup or workflows, update this file or the README.
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the project’s MIT License.

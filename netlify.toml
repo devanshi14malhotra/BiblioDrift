@@ -1,0 +1,22 @@
+[build]
+command = "cd frontend && npm install && npm run build"
+publish = "frontend/dist"
+functions = "netlify/functions"
+
+[build.environment]
+PYTHON_VERSION = "3.10"
+
+[[headers]]
+  for = "/*.gltf"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.obj"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
