@@ -45,7 +45,7 @@ else:
 # Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
 from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service, get_vibe_recommendations
-from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
+from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user
 from price_tracker import get_price_tracker
 from cache_service import cache_service
 from validators import (
@@ -1256,28 +1256,6 @@ def handle_chat(validated_data):
         logger.error(f"Unexpected error in handle_chat: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "handle_chat")
 
-@app.route('/api/v1/health', methods=['GET'])
-def health_check():
-    """Health check endpoint with cache statistics."""
-    cache_stats = cache_service.get_stats()
-    
-    return jsonify({
-        "status": "healthy",
-        "service": "BiblioDrift AI Service",
-        "version": "2.0.0",
-        "features": {
-            "mood_analysis_available": MOOD_ANALYSIS_AVAILABLE,
-            "llm_service_available": llm_service.is_available(),
-            "openai_configured": llm_service.openai_client is not None,
-            "groq_configured": llm_service.groq_client is not None,
-            "gemini_configured": llm_service.gemini_client is not None,
-            "preferred_llm": llm_service.preferred_llm,
-            "caching_enabled": cache_stats.get('cache_type') != 'null'
-        },
-        "cache": cache_stats
-    })
-
-
 # =========================================================================
 # ENDPOINT: Add Book to Library
 # This endpoint allows authenticated users to add a new book to their
@@ -1300,6 +1278,7 @@ def add_to_library(validated_data):
     from error_responses import handle_exception
     
     try:
+        current_user_id = get_jwt_identity()
         
         if str(validated_data.user_id) != str(current_user_id):
             return unauthorized_access_error("Cannot access another user's library")
@@ -1461,7 +1440,9 @@ def _get_yearly_stats(user_id, year):
     
     total_books = sum(s.books_completed for s in stats)
     total_pages = sum(s.pages_read for s in stats)
-    monthly = {s.month: s.books_completed for s in stats}
+    monthly = {m: 0 for m in range(1, 13)}
+    for s in stats:
+        monthly[s.month] = s.books_completed
     
     return {"total_books": total_books, "total_pages": total_pages, "monthly": monthly}
 
@@ -1473,6 +1454,7 @@ def _get_yearly_stats(user_id, year):
 def update_library_item(item_id, validated_data):
     """Update a library item (e.g. move to different shelf)."""
     try:
+        current_user_id = get_jwt_identity()
         
         item = ShelfItem.query.with_for_update().get(item_id)
         if not item:
@@ -1683,6 +1665,7 @@ def sync_library(validated_data):
 # immediately responds with an active session ready to go.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
+@csrf.exempt
 @limiter.limit("5 per 10 seconds")
 @validate_schema(RegisterRequest)
 def register(validated_data):
@@ -1721,6 +1704,7 @@ def register(validated_data):
 
 
 @app.route('/api/v1/login', methods=['POST'])
+@csrf.exempt
 @limiter.limit("5 per 10 seconds")
 @validate_schema(LoginRequest)
 def login(validated_data):
@@ -1890,20 +1874,8 @@ def google_oauth_callback():
         return internal_error("Google authentication failed.")
 
 
-@app.route('/api/v1/auth/verify', methods=['GET'])
-@jwt_required()
-def verify_auth():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
-    print(user)
-
-    if not user:
-        return auth_error("Invalid or expired session.")
-
-    return jsonify({"user": user.to_dict()}), 200
-
-
 @app.route('/api/v1/logout', methods=['POST'])
+@csrf.exempt
 def logout():
     """Clear JWT cookies for logout."""
     resp, status = success_response(message="Logout successful")
@@ -2059,6 +2031,7 @@ def verify_auth_session():
 @validate_schema(SetGoalRequest)
 def set_reading_goal(validated_data):
     """Set or update annual reading goal."""
+    current_user_id = get_jwt_identity()
     
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
@@ -2177,6 +2150,7 @@ def get_leaderboard():
 @validate_schema(CollectionRequest)
 def create_collection(validated_data):
     """Create a new collection."""
+    current_user_id = get_jwt_identity()
     
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
@@ -2247,6 +2221,7 @@ def update_collection(collection_id, validated_data):
     """Update a collection."""
     
     try:
+        current_user_id = get_jwt_identity()
         collection = Collection.query.get(collection_id)
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
@@ -2300,10 +2275,12 @@ def delete_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/books', methods=['POST'])
 @jwt_required()
-def add_book_to_collection(collection_id):
+@validate_schema(AddToCollectionRequest)
+def add_book_to_collection(collection_id, validated_data):
     """Add a book to a collection."""
     
     try:
+        current_user_id = get_jwt_identity()
         collection = Collection.query.get(collection_id)
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
@@ -2419,7 +2396,7 @@ def create_or_update_review():
     if not is_valid:
         return jsonify(validated_data), 400
     
-    if str(data['user_id']) != str(current_user_id):
+    if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized access to another user's reviews")
     
     try:

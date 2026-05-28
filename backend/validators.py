@@ -100,16 +100,17 @@ class MoodSearchRequest(BaseModel):
 # ==================== VIBE CHECK ====================
 class VibeCheckRequest(BaseModel):
     """Request schema for /api/v1/vibe-check endpoint."""
-    vibe_prompt: str = Field(..., min_length=1, max_length=1000, description="Vibe description prompt")
-    count: Optional[int] = Field(default=3, ge=1, le=10, description="Number of recommendations to return")
+    category: str = Field(..., min_length=1, max_length=100, description="Shelf category name e.g. 'Rainy Evening Reads'")
+    vibe_description: str = Field(..., min_length=1, max_length=500, description="Emotional description of the category vibe")
+    count: Optional[int] = Field(default=5, ge=1, le=20, description="Number of recommendations to return")
 
-    @field_validator('vibe_prompt')
+    @field_validator('category', 'vibe_description')
     @classmethod
-    def sanitize_prompt(cls, v: str) -> str:
-        """Sanitize vibe prompt for AI."""
+    def must_not_be_empty(cls, v: str) -> str:
+        """Ensure fields are not blank and sanitize for AI."""
         if not v or not v.strip():
-            raise ValueError('Vibe prompt cannot be empty or whitespace')
-        return sanitize_for_ai(v)
+            raise ValueError('Field must not be empty or whitespace')
+        return sanitize_for_ai(v.strip())
 
 
 # ==================== GENERATE NOTE ====================

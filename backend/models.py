@@ -116,6 +116,8 @@ class User(db.Model, SoftDeleteMixin):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
+        if self.password_hash is None:
+            return False
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
@@ -575,20 +577,6 @@ def register_user(username, email, password):
         logger.error(f"Unexpected error registering user {username}: {e}")
         raise
 
-def login_user(identifier, password):
-    # Try finding by username first
-    user = User.query.filter_by(username=identifier).first()
-    
-    # If not found, try finding by email
-    if not user:
-        user = User.query.filter_by(email=identifier).first()
-
-    if user and user.check_password(password):
-        logger.info("Login successful")
-        return user
-    logger.warning("Invalid username/email or password")
-    return None
-
 
 # ==================== PRICE TRACKING MODELS ====================
 
@@ -697,6 +685,7 @@ class Review(db.Model, SoftDeleteMixin):
     
     __table_args__ = (
         db.UniqueConstraint('user_id', 'book_id', name='uq_user_book_review'),
+        db.CheckConstraint('rating >= 1 AND rating <= 5', name='check_review_rating'),
         db.Index('idx_review_book_id', 'book_id'),
         db.Index('idx_review_user_id', 'user_id'),
     )
