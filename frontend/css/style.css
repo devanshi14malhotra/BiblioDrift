@@ -7501,3 +7501,41 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+/* ==========================================================================
+   Book Club Discussion Forum Styles
+   ========================================================================== */
+.discussion-container { max-width: 800px; margin: 40px auto; }
+.create-post-section {
+    background: var(--card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    padding: 25px; border-radius: 12px; margin-bottom: 40px; backdrop-filter: blur(10px);
+}
+.styled-input {
+    width: 100%; padding: 12px 15px; margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--control-border, rgba(255, 255, 255, 0.1));
+    border-radius: 8px; color: var(--text-main, #fff); font-family: inherit; transition: 0.3s;
+}
+.styled-input:focus { outline: none; border-color: var(--accent-gold, #d4af37); }
+textarea.styled-input { min-height: 100px; resize: vertical; }
+.post-card {
+    background: var(--card-bg, rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    padding: 20px; border-radius: 10px; margin-bottom: 25px;
+}
+.post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: var(--text-muted, #a0a0a0); }
+.avatar-icon {
+    width: 35px; height: 35px; background: var(--wood-dark, #3E2723); color: var(--accent-gold, #d4af37);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.post-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 10px; color: var(--text-main, #fff); }
+.post-text { line-height: 1.6; color: var(--text-muted, #ccc); margin-bottom: 20px; }
+.like-btn {
+    background: none; border: 1px solid #ff4d4d; color: #ff4d4d;
+    padding: 6px 12px; border-radius: 20px; cursor: pointer; margin-bottom: 15px; font-weight: bold;
+}
+.like-btn:hover { background: #ff4d4d; color: white; }
+.comments-section { background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 8px; }
+.comment { font-size: 0.9rem; color: var(--text-muted, #bbb); margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.comment i { color: var(--accent-gold, #d4af37); margin-right: 8px; }
+.add-comment { display: flex; gap: 10px; margin-top: 15px; }
