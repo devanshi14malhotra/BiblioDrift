@@ -132,7 +132,15 @@ app.register_blueprint(reader_identity_bp)
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
 validate_required_env_vars()
+from flask_limiter import Limiter
+from flask import jsonify
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    response = jsonify(error="rate limit exceeded")
+    response.status_code = 429
+    response.headers['Retry-After'] = e.description  # or a fixed int like '10'
+    return response
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
 @app.route('/forgot-password', methods=['GET', 'POST'])  # add POST
