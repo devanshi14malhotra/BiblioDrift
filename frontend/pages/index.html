@@ -21,7 +21,7 @@
             const btn = document.getElementById('themeToggle');
             if (!btn) return;
             const icon = btn.querySelector('i');
-            const STORAGE_KEY = 'bibliodrift_theme';
+            const STORAGE_KEY = STORAGE_KEYS.THEME;
             
             function applyTheme(theme) {
                 if (theme === 'night') {
@@ -44,7 +44,8 @@
         content="BiblioDrift is a cozy, community-driven reading sanctuary for discovering books by mood, collecting favorites, and exploring with AI-guided discovery." />
     <meta name="theme-color" content="#2c2420" />
     <title>BiblioDrift | A cozy reading sanctuary</title>
-    <script>
+    <script type="module">
+         import { getStorageData, STORAGE_KEYS } from '../js/storage-manager.js';
         (function () {
             const theme = getStorageData(STORAGE_KEYS.THEME);
             if (theme === 'night') {

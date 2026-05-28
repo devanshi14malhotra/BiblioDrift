@@ -17,10 +17,10 @@
   <link rel="icon" href="/assets/images/biblioDrift_favicon.png" type="image/png">
 
   <script type="module">
-    import { getStorageData } from '../js/storage-manager.js';
+    import { getStorageData, STORAGE_KEYS } from '../js/storage-manager.js';
 
     (function () {
-      const theme = (STORAGE_KEYS.THEME);
+      const theme = getStorageData(STORAGE_KEYS.THEME);
       if (theme === 'night') {
         document.documentElement.setAttribute('data-theme', 'night');
       }

@@ -4,6 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <script type="module">
+        import {
+            getStorageData,
+            saveStorageData,
+            STORAGE_KEYS
+        } from '../js/storage-manager.js';
         (function () {
             const theme = getStorageData(STORAGE_KEYS.THEME);
             if (theme === 'night') {
