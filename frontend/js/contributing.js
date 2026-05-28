@@ -91,3 +91,28 @@
 
     handleScroll();
 })();
+
+// Theme Toggle Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        const icon = themeToggle.querySelector('i');
+        // Initial icon state
+        if (document.documentElement.getAttribute('data-theme') === 'night') {
+            icon.className = 'fa-solid fa-sun';
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            const isNight = document.documentElement.getAttribute('data-theme') === 'night';
+            if (isNight) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('bibliodrift_theme', 'light');
+                icon.className = 'fa-solid fa-moon';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'night');
+                localStorage.setItem('bibliodrift_theme', 'night');
+                icon.className = 'fa-solid fa-sun';
+            }
+        });
+    }
+});

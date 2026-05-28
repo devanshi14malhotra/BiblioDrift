@@ -59,6 +59,7 @@
   <script src="../js/db.js"></script>
 
   <!-- <script src="../js/app.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="../js/library-3d.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- SEO & Open Graph meta tags -->
@@ -76,6 +77,7 @@
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
   <link rel="stylesheet" href="../css/pwa.css">
+  <link rel="stylesheet" href="../css/app-page.css" />
   <link rel="manifest" href="../manifest.json">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,6 +130,10 @@
            <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
         </div>
         <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
           <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
@@ -146,8 +152,12 @@
 
   <main>
     <section class="hero">
-      <h1>Find yourself in the pages.</h1>
-      <p>A curated sanctuary for those who read through emotions.</p>
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <span class="hero-kicker">Mood-led discovery</span>
+        <h1 class="hero-title">Find yourself in the pages.</h1>
+        <p>A curated sanctuary for those who read through emotions.</p>
+      </div>
     </section>
 
     <!-- SEARCH RESULTS SECTION (Initially Hidden) -->
@@ -165,6 +175,22 @@
       </div>
       <div class="curated-row" id="search-results-grid">
         <!-- Dynamically Appended Books -->
+      </div>
+      <!-- NO-RESULTS EMPTY STATE -->
+      <div id="no-results-state" role="status" aria-live="polite" style="display:none;">
+        <div class="no-results-inner">
+          <div class="no-results-icon-wrap">📭</div>
+          <h3 class="no-results-title">No books found for this vibe.</h3>
+          <p class="no-results-subtitle">The shelves came up empty — try drifting somewhere else.</p>
+          <p class="no-results-label">Try one of these vibes</p>
+          <div class="no-results-tags">
+            <button class="mood-suggestion-tag" data-mood="rainy mystery">🌧️ rainy mystery</button>
+            <button class="mood-suggestion-tag" data-mood="cozy fantasy">🍂 cozy fantasy</button>
+            <button class="mood-suggestion-tag" data-mood="hopeful adventure">✨ hopeful adventure</button>
+            <button class="mood-suggestion-tag" data-mood="quiet heartbreak">🌙 quiet heartbreak</button>
+            <button class="mood-suggestion-tag" data-mood="dark academia">🕯️ dark academia</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -284,7 +310,7 @@
             </div>
             <div class="modal-actions">
               <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
-              <button id="modal-preview-btn" class="btn-preview"><i class="fa-solid fa-book-open"></i> Preview</button>
+              <button id="modal-preview-btn" class="btn-secondary modal-preview-btn"><i class="fa-solid fa-book-open"></i> Preview</button>
               <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i>
                 Share</button>
               <button id="modal-mood-btn" class="btn-secondary"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore
@@ -424,9 +450,23 @@
 
 
   <!--The footer is being called usingt footer.js.-->
+    <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
   <script src="../js/config.js"></script>
   <script src="../js/security.js"></script>
   <script src="../js/app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="../js/book-preview.js"></script>
   <script src="../js/pwa.js"></script>
   <script src="../js/footer.js"></script>
@@ -566,3 +606,4 @@
 </body>
 
 </html>
+
