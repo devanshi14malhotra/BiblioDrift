@@ -31,7 +31,7 @@ const createFooter = () => {
             <li><a href="${pagePath('chat')}">Literary Chat</a></li>
             <li><a href="${pagePath('auth')}">Account</a></li>
             <li>
-              <a href="${pagePath('index')}" target="_blank" rel="noopener noreferrer">
+              <a href="${pagePath('index')}">
                 Home Page
               </a>
             </li>
