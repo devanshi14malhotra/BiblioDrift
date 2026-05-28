@@ -25,7 +25,7 @@
     // The SW must be registered from a path at or above the pages it controls.
     // All pages live in /frontend/pages/, so registering from /frontend/sw.js
     // with scope /frontend/ covers all of them.
-    const SW_URL   = '/frontend/sw.js';
+    const SW_URL = '/frontend/sw.js';
     const SW_SCOPE = '/frontend/';
 
     let _swRegistration = null;
@@ -121,20 +121,21 @@
     // ── Install Banner UI ──────────────────────────────────────────────────────
 
     function _showInstallBanner() {
-        let banner = document.getElementById('pwa-install-banner');
-        if (!banner) {
-            banner = document.createElement('div');
-            banner.id = 'pwa-install-banner';
-            banner.setAttribute('role', 'banner');
-            banner.setAttribute('aria-label', 'Install BiblioDrift app');
-            banner.innerHTML = `
-                <div class="pwa-banner-content">
-                    <img src="../assets/images/biblioDrift_favicon.png"
-                         alt="BiblioDrift icon" class="pwa-banner-icon">
-                    <div class="pwa-banner-text">
-                        <strong>Install BiblioDrift.</strong>
-                        <span>Read offline, anytime.</span>
-                    </div>
+        if (document.getElementById('pwa-install-banner')) return; // already shown
+
+        const banner = document.createElement('div');
+        banner.id = 'pwa-install-banner';
+        banner.className = 'pwa-install-banner';
+        banner.setAttribute('role', 'banner');
+        banner.setAttribute('aria-label', 'Install BiblioDrift app');
+        banner.innerHTML = `
+            <div class="pwa-banner-content">
+                <img src="../assets/images/biblioDrift_favicon.png"
+                     alt="BiblioDrift icon" class="pwa-banner-icon">
+                <div class="pwa-banner-text">
+                    <strong>Install BiblioDrift.</strong>
+                    <span>Read offline, anytime.</span>
+
                 </div>
                 <div class="pwa-banner-actions">
                     <button class="pwa-install-btn" id="pwa-install-btn"
@@ -156,7 +157,6 @@
                 if (main) main.appendChild(banner);
                 else document.body.appendChild(banner);
             }
-        }
 
         // Animate in
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));
@@ -247,7 +247,7 @@
     }
 
     window.addEventListener('offline', _showOfflineIndicator);
-    window.addEventListener('online',  _hideOfflineIndicator);
+    window.addEventListener('online', _hideOfflineIndicator);
 
     // Show immediately if already offline when the page loads
     if (!navigator.onLine) _showOfflineIndicator();
