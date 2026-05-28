@@ -2,6 +2,111 @@
 <html lang="en">
 
 <head>
+
+  <meta charset="UTF-8" />
+  <div class="search-bar">
+    <input
+        type="text"
+        id="aiSearchInput"
+        class="search-input"
+        placeholder="Ask AI for books..."
+    />
+
+    <button id="aiSearchBtn" class="ai-search-btn">
+        🔍 AI Search
+    </button>
+</div>
+
+<div id="aiSearchResults" class="ai-results-container"></div>
+<script src="ai-search.js"></script>
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+    document.addEventListener('DOMContentLoaded', function () {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) {
+        console.error('themeToggle button not found');
+        return;
+      }
+
+      const icon = btn.querySelector('i');
+      const STORAGE_KEY = 'bibliodrift_theme';
+
+      function applyTheme(theme) {
+        if (theme === 'night') {
+          document.documentElement.setAttribute('data-theme', 'night');
+          if (icon) icon.className = 'fa-solid fa-sun';
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          if (icon) icon.className = 'fa-solid fa-moon';
+        }
+
+        localStorage.setItem(STORAGE_KEY, theme);
+        if (typeof restoreTheme === 'function') restoreTheme();
+        console.log('Theme applied:', theme);
+      }
+
+      // Load saved theme
+      const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+      applyTheme(savedTheme);
+
+      // Toggle on click
+      btn.addEventListener('click', function () {
+        const current =
+          document.documentElement.getAttribute('data-theme') === 'night'
+            ? 'night'
+            : 'light';
+
+        const next = current === 'night' ? 'light' : 'night';
+        applyTheme(next);
+      });
+    });
+  </script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="../js/db.js"></script>
+
+  <!-- <script src="../js/app.js"></script> -->
+  <script src="../js/library-3d.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- SEO & Open Graph meta tags -->
+  <meta name="description"
+    content="BiblioDrift — Your mood-based book discovery app. Find your next read by how you feel, track your journey, and get AI-powered recommendations." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bibliodrift-dm.netlify.app/" />
+  <meta property="og:title" content="BiblioDrift | Find yourself in the pages" />
+  <meta property="og:description"
+    content="BiblioDrift — Your mood-based book discovery app. Find your next read by how you feel, track your journey, and get AI-powered recommendations." />
+  <meta property="og:image" content="https://bibliodrift-dm.netlify.app/assets/images/og-banner.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <title>BiblioDrift | Find yourself in the pages</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+  <link rel="stylesheet" href="../css/pwa.css">
+  <link rel="manifest" href="../manifest.json">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <!-- Security: DOMPurify for XSS prevention -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+  <!-- PWA -->
+  <meta name="theme-color" content="#2c2420">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BiblioDrift">
+  <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+  
+=======
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
@@ -1919,6 +2024,7 @@
     </style>
     <link rel="manifest" href="../manifest.json">
     <link rel="stylesheet" href="../css/pwa.css">
+
 </head>
 
 <body class="landing-page">

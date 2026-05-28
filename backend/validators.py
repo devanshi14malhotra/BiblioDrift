@@ -8,9 +8,37 @@ import re
 from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 from typing import Optional, List, Dict, Any, Literal
 from enum import Enum
+
+from pydantic import BaseModel, Field, validator
 from functools import wraps
 from flask import request, jsonify
 
+
+class BookmarkRequest(BaseModel):
+    book_id: int = Field(..., gt=0, description="Book ID to bookmark")
+    page_number: int = Field(None, ge=1, description="Optional page number")
+    notes: str = Field(None, max_length=500, description="Optional bookmark notes")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "book_id": 1,
+                "page_number": 42,
+                "notes": "Great quote about philosophy"
+            }
+        }
+
+class UpdateBookmarkRequest(BaseModel):
+    page_number: int = Field(None, ge=1)
+    notes: str = Field(None, max_length=500)
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "page_number": 50,
+                "notes": "Updated notes"
+            }
+        }
 # Handle both absolute and relative imports
 try:
     from .sanitizer import sanitize_string, sanitize_for_ai
