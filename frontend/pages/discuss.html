@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Club Discussion - BiblioDrift</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Georgia&display=swap" rel="stylesheet" />
+    
+    <!-- Icons & Styling -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css"> <!-- Make sure path is correct -->
+</head>
+<body data-theme="night"> <!-- Defaulting to night mode for that BiblioDrift vibe -->
+    
+    <!-- Background Glow Effects from index.html -->
+    <div id="sc-glow-outer"></div>
+    <div id="sc-glow-mid"></div>
+    <div id="sc-glow-inner"></div>
+
+    <!-- Header from BiblioDrift -->
+    <header>
+        <a href="index.html" class="logo">
+            <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+        </a>
+        <div class="header-controls">
+            <nav class="nav-links">
+                <a href="index.html">Discovery</a>
+                <a href="library.html">My Library</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- Discussion Section -->
+        <section class="curated-section discussion-container">
+            <div class="section-header">
+                <h2>Book Club Discussion Forum</h2>
+                <span><i class="fa-solid fa-comments"></i> Reader theories and reviews</span>
+            </div>
+            
+            <!-- Create Post Form -->
+            <div class="create-post-section">
+                <h3 style="color: var(--accent-gold, #d4af37); font-family: 'Playfair Display', serif; margin-bottom: 15px;">Start a Discussion</h3>
+                <form id="post-form">
+                    <input type="text" id="post-title" class="styled-input" placeholder="Book Title or Topic" required>
+                    <textarea id="post-content" class="styled-input" placeholder="Share your thoughts, theories, or reviews..." required></textarea>
+                    <button type="submit" class="btn-primary" style="margin-top: 10px;">
+                        <i class="fa-solid fa-paper-plane"></i> Post
+                    </button>
+                </form>
+            </div>
+
+            <!-- Posts Container -->
+            <div id="posts-container">
+                <!-- JS will render posts here -->
+            </div>
+        </section>
+    </main>
+
+    <script src="discussion.js"></script>
+</body>
+</html>
