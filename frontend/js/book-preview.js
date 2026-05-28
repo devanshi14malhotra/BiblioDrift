@@ -27,14 +27,27 @@ const BookPreview = (() => {
 
     if (el) return el;
 
+<<<<<<< main
     el = document.createElement("div");
+=======
+    // ── Modal ──────────────────────────────────────────────────────────────────
+>>>>>>> main
 
     el.id = "book-preview-modal";
     el.className = "book-preview-modal";
 
+<<<<<<< main
     el.setAttribute("role", "dialog");
     el.setAttribute("aria-modal", "true");
     el.setAttribute("aria-label", "Book preview");
+=======
+        el = document.createElement('dialog');
+        el.id        = 'book-preview-modal';
+        el.className = 'book-preview-modal';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        el.setAttribute('aria-label', 'Book preview');
+>>>>>>> main
 
     el.innerHTML = `
             <div class="preview-modal-inner">
@@ -120,7 +133,36 @@ const BookPreview = (() => {
                         Previews show limited pages provided by Google Books.
 
                     </p>
+<<<<<<< main
 
+=======
+                    <button id="download-card-btn" class="btn-secondary modal-share-btn" style="margin-top: 12px;">
+                        <i class="fa-solid fa-download"></i> Download Card
+                    </button>
+                </div>
+
+                <!--  Book card div for image capture -->
+                <div id="book-card" style="
+                    position: absolute;
+                    left: -9999px;
+                    width: 380px;
+                    padding: 32px;
+                    background: #F5F0E8;
+                    border-radius: 16px;
+                    font-family: Georgia, 'Times New Roman', serif;
+                    color: #2C1810;
+                    border: 1px solid #D4C4A8;
+                ">
+                    <p style="font-size:11px;color:#8B6F47;margin:0 0 16px;letter-spacing:2px;text-transform:uppercase;">📚 BiblioDrift</p>
+                    <h2 id="card-title" style="margin:0 0 8px;font-size:26px;font-weight:normal;font-style:italic;color:#1a0f0a;line-height:1.3;"></h2>
+                    <p id="card-author" style="margin:0 0 16px;color:#6B4F35;font-size:14px;letter-spacing:0.5px;"></p>
+                    <div style="width:40px;height:1px;background:#C4A882;margin-bottom:16px;"></div>
+                    <p id="card-rating" style="margin:0 0 12px;font-size:22px;color:#C4902A;"></p>
+                    <p id="card-genre" style="margin:0;font-size:12px;color:#8B6F47;letter-spacing:1.5px;text-transform:uppercase;"></p>
+                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #D4C4A8;">
+                        <p style="margin:0;font-size:10px;color:#A89070;letter-spacing:1px;font-style:italic;">Currently Reading</p>
+                    </div>
+>>>>>>> main
                 </div>
 
             </div>
@@ -162,7 +204,27 @@ const BookPreview = (() => {
 
     const fallback = document.getElementById("preview-fallback");
 
+<<<<<<< main
     const msgEl = document.getElementById("preview-fallback-msg");
+=======
+        // ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && el.hasAttribute('open')) {
+                e.stopPropagation();
+                _close();
+            }
+        });
+        
+        el.querySelector('#download-card-btn').addEventListener('click', () => {
+            const card = document.getElementById('book-card');
+            html2canvas(card).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'book-card.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+>>>>>>> main
 
     const link = document.getElementById("preview-external-link");
 
@@ -195,8 +257,17 @@ const BookPreview = (() => {
       container.innerHTML = "";
     }
 
+<<<<<<< main
     if (modal) {
       modal.classList.remove("active");
+=======
+    function _close() {
+        const modal     = document.getElementById('book-preview-modal');
+        const container = document.getElementById('preview-viewer-container');
+        if (container) container.innerHTML = '';  // destroy iframe
+        if (modal && modal.hasAttribute('open')) modal.close();
+        document.body.style.overflow = '';
+>>>>>>> main
     }
 
     document.body.style.overflow = "";
@@ -244,6 +315,7 @@ function _renderViewer(id) {
       return;
     }
 
+<<<<<<< main
     const modal = _getOrCreateModal();
 
     const titleEl = document.getElementById("preview-modal-title");
@@ -264,6 +336,63 @@ function _renderViewer(id) {
       _showFallback(googleBooksId, "Something went wrong loading the preview.");
     }
   }
+=======
+    // ── Public API ─────────────────────────────────────────────────────────────
+
+    /**
+     * Open the in-app preview modal.
+     * @param {string} googleBooksId
+     * @param {string} [title]
+     * @param {string} [author]   
+     * @param {number} [rating]   
+     * @param {string} [genre]    
+     */
+    
+    async function open(googleBooksId, title, author, rating, genre) {
+        if (!_isValidId(googleBooksId)) {
+            console.warn('[BookPreview] Invalid Google Books ID:', googleBooksId);
+            return;
+        }
+
+        const modal = _getOrCreateModal();
+
+        // Set title
+        const titleEl = document.getElementById('preview-modal-title');
+        if (titleEl) titleEl.textContent = title || 'Book Preview';
+
+        // populate the book card with real data after modal exists ──
+        populateBookCard(title, author, rating, genre);
+
+        _setLoading();
+        modal.showModal();
+        document.body.style.overflow = 'hidden';
+
+        try {
+            await _loadAPI();
+            _renderViewer(googleBooksId);
+        } catch (err) {
+            console.error('[BookPreview] Error:', err);
+            _showFallback(
+                googleBooksId,
+                'Something went wrong loading the preview. You can view this book on Google Books instead.'
+            );
+        }
+    }
+
+    //  populate hidden book card with current book's data 
+    function populateBookCard(title, author, rating, genre) {
+        const titleEl  = document.getElementById('card-title');
+        const authorEl = document.getElementById('card-author');
+        const ratingEl = document.getElementById('card-rating');
+        const genreEl  = document.getElementById('card-genre');
+        if (titleEl)  titleEl.textContent  = title  || '';
+        if (authorEl) authorEl.textContent = author ? 'by ' + author : '';
+        if (ratingEl) ratingEl.textContent = rating ? '★'.repeat(rating) + '☆'.repeat(5 - rating) : '';
+        if (genreEl)  genreEl.textContent  = genre  || '';
+    }
+
+    return { open, populateBookCard };
+>>>>>>> main
 
   return { open };
 })();

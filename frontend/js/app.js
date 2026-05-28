@@ -79,9 +79,23 @@
 
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
-const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+if (typeof window.IS_DEV === 'undefined') {
+    window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+const IS_DEV = window.IS_DEV;
 const moodAnalysisCache = new Map();
 const APP_ROUTE = window.location.pathname.endsWith('/app.html') ? 'app.html' : 'app.html';
+
+
+// ── No-results empty state helpers ──
+function showNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'flex';
+}
+function hideNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'none';
+}
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -233,7 +247,7 @@ window.CollectionAPI = CollectionAPI;
 // Example click handler for your custom "Save for Offline" icon
 async function handleDownloadToggle(bookCard, bookData) {
     const isAlreadyDownloaded = await window.db.downloadedBooks.get(bookData.id);
-    
+
     if (isAlreadyDownloaded) {
         const success = await window.removeOfflineBook(bookData.id);
         if (success) bookCard.classList.remove('is-downloaded');
@@ -316,7 +330,7 @@ async function verifyStoredAuthSession() {
 
         try {
             const headers = {
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             };
             const csrf = getCookie('csrf_access_token');
             if (csrf) {
@@ -476,7 +490,7 @@ const SafeStorage = {
                     // Try to restore to LocalStorage for future sync calls
                     try {
                         localStorage.setItem(key, val);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             } catch (e) {
                 console.warn('Backup retrieval failed', e);
@@ -923,7 +937,7 @@ class BookRenderer {
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
-        
+
         const summaryEl = document.getElementById('modal-summary');
         if (summaryEl) {
             // Show skeletons while AI is "thinking"
@@ -1001,7 +1015,10 @@ class BookRenderer {
         if (previewBtn) {
             previewBtn.onclick = () => {
                 if (window.BookPreview && book.id) {
-                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview');
+                    const author = book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author';
+                    const rating = book.volumeInfo.averageRating || 0;
+                    const genre = book.volumeInfo.categories ? book.volumeInfo.categories[0] : 'Fiction';
+                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview', author, rating, genre);
                 }
             };
         }
@@ -1010,7 +1027,7 @@ class BookRenderer {
         const purchaseLinksEl = document.getElementById('modal-purchase-links');
         if (purchaseLinksEl) {
             purchaseLinksEl.innerHTML = '<div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>';
-            
+
             const title = encodeURIComponent(book.volumeInfo.title || '');
             const author = encodeURIComponent(book.volumeInfo.authors ? book.volumeInfo.authors[0] : '');
             let isbn = '';
@@ -1018,7 +1035,7 @@ class BookRenderer {
                 const identifier = book.volumeInfo.industryIdentifiers.find(i => i.type === 'ISBN_13' || i.type === 'ISBN_10');
                 if (identifier) isbn = encodeURIComponent(identifier.identifier);
             }
-            
+
             fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
                 .then(res => res.json())
                 .then(data => {
@@ -1047,88 +1064,88 @@ class BookRenderer {
             };
         }
 
-        modal.showModal();
-        document.getElementById('closeModalBtn').onclick = () => modal.close();
+            modal.showModal();
+            document.getElementById('closeModalBtn').onclick = () => modal.close();
 
-        // Emotion Tagging UI
-        const emotionContainer = document.createElement('div');
-        emotionContainer.className = 'emotion-tagging-section';
-        emotionContainer.innerHTML = `
-            <h3 class="modal-section-title" style="color: var(--text-main); font-family: 'Playfair Display', serif; font-size: 1rem; margin-bottom: 10px;">How does this book make you feel?</h3>
+            // Emotion Tagging UI
+            const emotionContainer = document.createElement('div');
+            emotionContainer.className = 'emotion-tagging-section';
+            emotionContainer.innerHTML = `
+            <h3 class="modal-section-title">How does this book make you feel?</h3>
             <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
             const isActive = book.moods && book.moods.includes(mood);
             return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="color: var(--text-main); border-color: var(--control-border);">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
-        }).join('')}
+            }).join('')}
             </div>
         `;
-        // Insert before the buttons
-        const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
-        const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
-        
-        if (actions) {
-            // Remove existing tagging section if re-opening
-            const existing = actions.parentNode.querySelector('.emotion-tagging-section');
-            if (existing) existing.remove();
-            
-            actions.parentNode.insertBefore(emotionContainer, actions);
-        } else if (modalBody) {
-            // Fallback
-            const existing = modalBody.querySelector('.emotion-tagging-section');
-            if (existing) existing.remove();
-            modalBody.appendChild(emotionContainer);
-        }
+            // Insert before the buttons
+            const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
+            const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
 
-        // Add tag toggle listeners
-        emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
-            tag.onclick = async () => {
-                const mood = tag.dataset.mood;
-                if (!book.moods) book.moods = [];
+            if (actions) {
+                // Remove existing tagging section if re-opening
+                const existing = actions.parentNode.querySelector('.emotion-tagging-section');
+                if (existing) existing.remove();
 
-                const index = book.moods.indexOf(mood);
-                if (index > -1) {
-                    book.moods.splice(index, 1);
-                    tag.classList.remove('active');
-                } else {
-                    book.moods.push(mood);
-                    tag.classList.add('active');
-                }
+                actions.parentNode.insertBefore(emotionContainer, actions);
+            } else if (modalBody) {
+                // Fallback
+                const existing = modalBody.querySelector('.emotion-tagging-section');
+                if (existing) existing.remove();
+                modalBody.appendChild(emotionContainer);
+            }
 
-                if (this.libraryManager) {
-                    await this.libraryManager.updateBook(book.id, { moods: book.moods });
-                }
-            };
-        });
+            // Add tag toggle listeners
+            emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
+                tag.onclick = async () => {
+                    const mood = tag.dataset.mood;
+                    if (!book.moods) book.moods = [];
 
-        // Custom Collections Section
-        let collectionsSection = document.getElementById('modal-discovery-collections-tagging');
-        if (!collectionsSection) {
-            collectionsSection = document.createElement('div');
-            collectionsSection.id = 'modal-discovery-collections-tagging';
-            collectionsSection.className = 'collections-tagging-section';
-            collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
-        }
-        
-        if (actions) {
-            const existing = actions.parentNode.querySelector('#modal-discovery-collections-tagging');
-            if (existing) existing.remove();
-            actions.parentNode.insertBefore(collectionsSection, actions);
-        } else if (modalBody) {
-            const existing = modalBody.querySelector('#modal-discovery-collections-tagging');
-            if (existing) existing.remove();
-            modalBody.appendChild(collectionsSection);
-        }
+                    const index = book.moods.indexOf(mood);
+                    if (index > -1) {
+                        book.moods.splice(index, 1);
+                        tag.classList.remove('active');
+                    } else {
+                        book.moods.push(mood);
+                        tag.classList.add('active');
+                    }
 
-        const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
-        if (!userObj) {
-            collectionsSection.innerHTML = `
+                    if (this.libraryManager) {
+                        await this.libraryManager.updateBook(book.id, { moods: book.moods });
+                    }
+                };
+            });
+
+            // Custom Collections Section
+            let collectionsSection = document.getElementById('modal-discovery-collections-tagging');
+            if (!collectionsSection) {
+                collectionsSection = document.createElement('div');
+                collectionsSection.id = 'modal-discovery-collections-tagging';
+                collectionsSection.className = 'collections-tagging-section';
+                collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+            }
+
+            if (actions) {
+                const existing = actions.parentNode.querySelector('#modal-discovery-collections-tagging');
+                if (existing) existing.remove();
+                actions.parentNode.insertBefore(collectionsSection, actions);
+            } else if (modalBody) {
+                const existing = modalBody.querySelector('#modal-discovery-collections-tagging');
+                if (existing) existing.remove();
+                modalBody.appendChild(collectionsSection);
+            }
+
+            const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+            if (!userObj) {
+                collectionsSection.innerHTML = `
                 <h4 style="margin: 0 0 5px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem;">Save in Custom Collections</h4>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;"><a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to save this book in custom shelves.</p>
             `;
-        } else {
-            collectionsSection.innerHTML = `
+            } else {
+                collectionsSection.innerHTML = `
                 <h4 style="margin: 0 0 8px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
                 </h4>
@@ -1136,99 +1153,100 @@ class BookRenderer {
                     <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
                 </div>
             `;
-            
-            (async () => {
-                try {
-                    const cols = await window.CollectionAPI.getCollections(userObj.id);
-                    const listEl = document.getElementById('modal-discovery-collections-list');
-                    if (!listEl) return;
-                    
-                    if (cols.length === 0) {
-                        listEl.innerHTML = `
+
+                (async () => {
+                    try {
+                        const cols = await window.CollectionAPI.getCollections(userObj.id);
+                        const listEl = document.getElementById('modal-discovery-collections-list');
+                        if (!listEl) return;
+
+                        if (cols.length === 0) {
+                            listEl.innerHTML = `
                             <span style="font-size: 0.8rem; color: var(--text-muted);">No custom collections created yet. Go to Custom Collections view to create one!</span>
                         `;
-                        return;
-                    }
-                    
-                    const colsWithItems = await Promise.all(
-                        cols.map(async (c) => {
-                            try {
-                                return await window.CollectionAPI.getCollection(c.id);
-                            } catch (e) {
-                                return { id: c.id, name: c.name, items: [] };
-                            }
-                        })
-                    );
-                    
-                    listEl.innerHTML = '';
-                    colsWithItems.forEach(col => {
-                        const existingItem = col.items.find(item => item.google_books_id === book.id);
-                        const isChecked = !!existingItem;
-                        const label = document.createElement('label');
-                        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
-                        
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.checked = isChecked;
-                        checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
-                        
-                        if (isChecked) {
-                            checkbox.dataset.bookId = existingItem.book_id;
+                            return;
                         }
-                        
-                        checkbox.onchange = async () => {
-                            checkbox.disabled = true;
-                            try {
-                                if (checkbox.checked) {
-                                    const authorStr = Array.isArray(book.volumeInfo.authors) ? book.volumeInfo.authors.join(', ') : (book.volumeInfo.authors || 'Unknown Author');
-                                    const res = await window.CollectionAPI.addBookToCollection(
-                                        col.id,
-                                        userObj.id,
-                                        book.id,
-                                        book.volumeInfo.title,
-                                        authorStr,
-                                        book.volumeInfo.imageLinks?.thumbnail || ''
-                                    );
-                                    checkbox.dataset.bookId = res.item.book_id;
-                                    showToast(`Added to "${col.name}"`, 'success');
-                                } else {
-                                    const bookId = checkbox.dataset.bookId;
-                                    if (bookId) {
-                                        await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
-                                        delete checkbox.dataset.bookId;
-                                        showToast(`Removed from "${col.name}"`, 'success');
-                                    }
+
+                        const colsWithItems = await Promise.all(
+                            cols.map(async (c) => {
+                                try {
+                                    return await window.CollectionAPI.getCollection(c.id);
+                                } catch (e) {
+                                    return { id: c.id, name: c.name, items: [] };
                                 }
-                            } catch (err) {
-                                checkbox.checked = !checkbox.checked; // Revert
-                                showToast(err.message, 'error');
-                            } finally {
-                                checkbox.disabled = false;
+                            })
+                        );
+
+                        listEl.innerHTML = '';
+                        colsWithItems.forEach(col => {
+                            const existingItem = col.items.find(item => item.google_books_id === book.id);
+                            const isChecked = !!existingItem;
+                            const label = document.createElement('label');
+                            label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = isChecked;
+                            checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
+
+                            if (isChecked) {
+                                checkbox.dataset.bookId = existingItem.book_id;
                             }
-                        };
-                        
-                        label.appendChild(checkbox);
-                        
-                        const textSpan = document.createElement('span');
-                        textSpan.textContent = col.name;
-                        label.appendChild(textSpan);
-                        
-                        listEl.appendChild(label);
-                    });
-                } catch (e) {
-                    console.error('Modal collections load failed', e);
-                    const listEl = document.getElementById('modal-discovery-collections-list');
-                    if (listEl) {
-                        listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+
+                            checkbox.onchange = async () => {
+                                checkbox.disabled = true;
+                                try {
+                                    if (checkbox.checked) {
+                                        const authorStr = Array.isArray(book.volumeInfo.authors) ? book.volumeInfo.authors.join(', ') : (book.volumeInfo.authors || 'Unknown Author');
+                                        const res = await window.CollectionAPI.addBookToCollection(
+                                            col.id,
+                                            userObj.id,
+                                            book.id,
+                                            book.volumeInfo.title,
+                                            authorStr,
+                                            book.volumeInfo.imageLinks?.thumbnail || ''
+                                        );
+                                        checkbox.dataset.bookId = res.item.book_id;
+                                        showToast(`Added to "${col.name}"`, 'success');
+                                    } else {
+                                        const bookId = checkbox.dataset.bookId;
+                                        if (bookId) {
+                                            await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
+                                            delete checkbox.dataset.bookId;
+                                            showToast(`Removed from "${col.name}"`, 'success');
+                                        }
+                                    }
+                                } catch (err) {
+                                    checkbox.checked = !checkbox.checked; // Revert
+                                    showToast(err.message, 'error');
+                                } finally {
+                                    checkbox.disabled = false;
+                                }
+                            };
+
+                            label.appendChild(checkbox);
+
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = col.name;
+                            label.appendChild(textSpan);
+
+                            listEl.appendChild(label);
+                        });
+                    } catch (e) {
+                        console.error('Modal collections load failed', e);
+                        const listEl = document.getElementById('modal-discovery-collections-list');
+                        if (listEl) {
+                            listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+                        }
                     }
-                }
-            })();
+                })();
+            }
         }
     }
 
     async exploreBookMood(title, author) {
         const cacheKey = `${title.toLowerCase().trim()}|${(author || '').toLowerCase().trim()}`;
-        
+
         // 1. Create and show the mood modal dynamically
         let modal = document.getElementById('mood-analysis-modal');
         if (!modal) {
@@ -1456,6 +1474,8 @@ class BookRenderer {
                 const fallbackBooks = await getFallbackBooks(query, maxResults);
                 if (fallbackBooks.length > 0) {
                     await this.renderBookCards(container, fallbackBooks);
+                } else if (container.id === 'search-results-grid') {
+                    showNoResults();
                 } else {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -1470,16 +1490,12 @@ class BookRenderer {
             if (fallbackBooks.length > 0) {
                 await this.renderBookCards(container, fallbackBooks);
                 return;
+            } else if (container.id === 'search-results-grid') {
+                showNoResults();
+                return;
             }
-
-            showToast("Failed to load bookshelf.", "error");
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>Bookshelf Empty (API connection failed)</p>
-                </div>`;
-        }
     }
+}
 
     async renderMoodCategorySection(categoryConfig, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
@@ -1566,6 +1582,11 @@ class BookRenderer {
 
     async renderBookCards(container, books) {
         if (container.id === 'search-results-grid') {
+            if (!books || books.length === 0) {
+                showNoResults();
+                return;
+            }
+            hideNoResults();
             window.searchFilterManager = new SearchFilterManager(container, books, this);
             return;
         }
@@ -1592,6 +1613,8 @@ class BookRenderer {
         if (container.children.length === 0) {
             container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
         }
+
+        
     }
 }
 
@@ -1607,7 +1630,7 @@ class SearchFilterManager {
         // Initialize UI elements
         this.filterBar = document.getElementById('mood-filter-bar');
         this.chipsContainer = document.getElementById('filter-chips');
-        
+
         if (this.filterBar && this.chipsContainer) {
             this.filterBar.hidden = false;
             this.chipsContainer.innerHTML = '';
@@ -1623,7 +1646,7 @@ class SearchFilterManager {
     async init() {
         // Clear previous grid
         this.container.innerHTML = '';
-        
+
         // Render all books first
         for (const book of this.books) {
             try {
@@ -1757,7 +1780,7 @@ class SearchFilterManager {
         if (mood) {
             this.activeFilter = mood.toLowerCase();
             sessionStorage.setItem('active_mood_filter', this.activeFilter);
-            
+
             // Update URL query parameters without reloading the page
             const url = new URL(window.location);
             url.searchParams.set('mood', this.activeFilter);
@@ -1765,7 +1788,7 @@ class SearchFilterManager {
         } else {
             this.activeFilter = null;
             sessionStorage.removeItem('active_mood_filter');
-            
+
             // Remove mood query param
             const url = new URL(window.location);
             url.searchParams.delete('mood');
@@ -1803,7 +1826,7 @@ class SearchFilterManager {
 
     applyFilter() {
         let visibleCount = 0;
-        
+
         for (const [bookId, element] of this.bookElements.entries()) {
             const book = this.books.find(b => b.id === bookId);
             if (!book) continue;
@@ -1834,7 +1857,7 @@ class SearchFilterManager {
             const emptyState = document.createElement('div');
             emptyState.className = 'empty-filter-state';
             emptyState.id = 'empty-filter-state';
-            
+
             const activeMoodName = this.activeFilter.charAt(0).toUpperCase() + this.activeFilter.slice(1);
             emptyState.innerHTML = `
                 <i class="fa-solid ${this.renderer.getMoodIcon(this.activeFilter)}"></i>
@@ -2908,7 +2931,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
-            
+
             if (!isLogin) {
                 // Switch to Register Mode
                 authForm.dataset.mode = 'register';
@@ -2929,6 +2952,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const genreManager = new GenreManager(libManager);
     genreManager.init();
+
+    // ── No-results suggestion tag clicks ──
+    document.querySelectorAll('.mood-suggestion-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (!input) return;
+        input.value = btn.dataset.mood;
+        window.location.href = `index.html?q=${encodeURIComponent(btn.dataset.mood)}`;
+    });
+    });
+
     const exportBtn = document.getElementById("export-library");
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
@@ -3008,10 +3042,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (query && document.getElementById('search-results-section')) {
         const searchSection = document.getElementById('search-results-section');
         const queryDisplay = document.getElementById('search-query-display');
-        
+
         queryDisplay.textContent = `Results for "${query}"`;
         searchSection.removeAttribute('hidden');
-        
+
         // Hide other main content to focus on search without destroying modals
         document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
             el.style.display = 'none';
@@ -3087,7 +3121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ...(libManager.library.want || []),
             ...(libManager.library.finished || [])
         ];
-        
+
         const categoryCounts = {};
         allBooks.forEach(book => {
             const categories = book.volumeInfo?.categories || [];
@@ -3095,7 +3129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             });
         });
-        
+
         let topVibe = 'Mystery'; // Fallback
         if (Object.keys(categoryCounts).length > 0) {
             topVibe = Object.keys(categoryCounts).reduce((a, b) => categoryCounts[a] > categoryCounts[b] ? a : b);
@@ -3106,7 +3140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const statTotalEl = document.getElementById('stat-total');
         const statWantDashEl = document.getElementById('stat-want-dash');
         const statVibeEl = document.getElementById('stat-vibe');
-        
+
         if (statTotalEl) statTotalEl.textContent = totalBooks;
         if (statWantDashEl) statWantDashEl.textContent = wantCount;
         if (statVibeEl) statVibeEl.textContent = topVibe;
@@ -3126,10 +3160,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const statsResponse = await fetch(`${MOOD_API_BASE}/stats?user_id=${user.id}&year=${currentYear}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
+
                 if (statsResponse.ok) {
                     const stats = await statsResponse.json();
-                    
+
                     // Update Streak
                     if (stats.current_streak > 0) {
                         const streakBadge = document.getElementById('streak-badge');
@@ -3166,7 +3200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const leaderboard = await lbResponse.json();
                     const lbSection = document.getElementById('leaderboard-section');
                     const lbList = document.getElementById('leaderboard-list');
-                    
+
                     if (leaderboard && leaderboard.length > 0 && lbSection && lbList) {
                         lbSection.style.display = 'block';
                         lbList.innerHTML = leaderboard.map((entry, index) => `
@@ -3435,15 +3469,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const barFinished = document.getElementById('bar-finished');
         const barCurrent = document.getElementById('bar-current');
         const barWant = document.getElementById('bar-want');
-        
+
         const countFinishedEl = document.getElementById('count-finished');
         const countCurrentEl = document.getElementById('count-current');
         const countWantEl = document.getElementById('count-want');
-        
+
         if (countFinishedEl) countFinishedEl.textContent = finishedCount;
         if (countCurrentEl) countCurrentEl.textContent = currentCount;
         if (countWantEl) countWantEl.textContent = wantCount;
-        
+
         if (totalBooks > 0) {
             setTimeout(() => {
                 if (barFinished) barFinished.style.width = `${(finishedCount / totalBooks) * 100}%`;
@@ -3662,7 +3696,7 @@ async function handleAuth(event) {
         SafeStorage.set('bibliodrift_user', JSON.stringify(demoUser));
         SafeStorage.set('isLoggedIn', 'true');
         SafeStorage.set('bibliodrift_token', 'demo-token-12345');
-        
+
         if (typeof showToast === 'function')
             showToast(`Welcome, Demo User!`, "success");
 
@@ -3785,7 +3819,7 @@ pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
 
 document.addEventListener('click', () => {
-    pageFlipSound.play().catch(() => {});
+    pageFlipSound.play().catch(() => { });
 }, { once: true });
 
 
@@ -4066,28 +4100,21 @@ if (document.readyState === 'loading') {
 } else {
     KeyboardShortcuts.init();
 }
-// Register Service Worker for offline asset caching
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('BiblioDrift Service Worker registered successfully!', reg))
-            .catch(err => console.error('Service Worker registration failed:', err));
-    });
-}
+
 // --- Connection Management & Offline Fallback Fallback Hooks ---
 
 // Function to automatically track network status changes
 function handleConnectivityChange() {
     const offlineIndicator = document.getElementById('offline-indicator');
-    
+
     if (!navigator.onLine) {
         console.warn("🌐 Connection dropped. Switching to local sanctuary archives...");
-        
+
         // Show an elegant banner to let the user know they are reading offline
         if (offlineIndicator) {
             offlineIndicator.style.display = 'block';
         }
-        
+
         // Fall back to loading cached books from IndexedDB
         triggerOfflineLibraryView();
     } else {
@@ -4095,7 +4122,7 @@ function handleConnectivityChange() {
         if (offlineIndicator) {
             offlineIndicator.style.display = 'none';
         }
-        
+
         // Reload live API content if the user comes back online
         if (typeof loadDiscoverBooks === 'function') {
             loadDiscoverBooks();
@@ -4115,7 +4142,7 @@ async function triggerOfflineLibraryView() {
         const savedBooks = await window.db.books.toArray();
         // Target your bookshelf or matching layout grid element from the page markup
         const libraryContainer = document.getElementById('search-results-grid') || document.querySelector('.bookshelf');
-        
+
         if (!libraryContainer) return;
 
         if (savedBooks.length === 0) {
@@ -4127,7 +4154,7 @@ async function triggerOfflineLibraryView() {
                 </div>`;
         } else {
             libraryContainer.innerHTML = ""; // Wipe standard layout containers
-            
+
             // Render cached items back onto the UI shelf
             savedBooks.forEach(book => {
                 const bookCard = document.createElement('div');

@@ -72,12 +72,15 @@
                 || 'If an account exists for that email, password reset instructions have been sent.';
 
             if (res.ok) {
+                const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
                 if (data.reset_url) {
                     showForgotResetLink(data.reset_url);
                     console.info('[Dev] Password reset link:', data.reset_url);
                     notify('Use the reset link shown below.', 'info');
-                } else {
+                } else if (isLocalDev) {
                     showForgotResetLinkMissing();
+                    notify(message, 'success');
+                } else {
                     notify(message, 'success');
                 }
             } else {
