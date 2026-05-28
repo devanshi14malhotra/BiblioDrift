@@ -677,7 +677,7 @@
                     </button>
                 </form>
 
-                <div id="forgotPasswordPanel">
+                <div id="forgotPasswordPanel" style="display: none;">
                     <p class="auth-hint">
                         No email is sent yet. In local development, a reset link appears below only if this address is already registered in your database.
                     </p>
@@ -692,7 +692,7 @@
                     </div>
                 </div>
 
-                <div id="resetPasswordPanel">
+                <div id="resetPasswordPanel" style="display: none;">
                     <form id="resetPasswordForm" action="#" method="post" novalidate>
                         <input type="password" id="newPassword" class="auth-input" placeholder="New password (min 8 characters)" required minlength="8" autocomplete="new-password">
                         <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
