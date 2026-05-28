@@ -135,7 +135,8 @@ validate_required_env_vars()
 
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
-
+@app.route('/forgot-password', methods=['GET', 'POST'])  # add POST
+def forgot_password():
 # =====================================================================
 # SECURITY COMPLIANCE UPDATE: CSRF PROTECTION (FLASK-WTF)
 # =====================================================================
