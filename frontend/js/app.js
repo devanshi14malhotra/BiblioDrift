@@ -3452,8 +3452,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const card = document.createElement('div');
                     card.className = 'progress-overview-card';
                     card.innerHTML = `
-                        <div class="progress-card-cover">
-                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                        <div class="book-cover-wrapper cover-skeleton">
+                             <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img book-cover-fade" onload="this.parentElement.classList.remove('cover-skeleton'); this.classList.add('loaded');" onerror="this.parentElement.classList.remove('cover-skeleton'); this.classList.add('loaded');" />
                         </div>
                         <div class="progress-card-info">
                             <div class="progress-card-title">${title}</div>

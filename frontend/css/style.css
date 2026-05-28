@@ -8152,3 +8152,42 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+
+/* ==========================================
+   AI Book Discovery Skeleton & Fade-In UX
+   ========================================== */
+
+/* 1. Base Skeleton Pulse Layout */
+.cover-skeleton {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px; /* Smooth corners for book thumbnails */
+  position: relative;
+  overflow: hidden;
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+/* 2. Pulsing Animation Effect */
+@keyframes skeleton-pulse {
+  0% {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+  100% {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* 3. Smooth Fade-In Effect */
+.book-cover-fade {
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+}
+
+.book-cover-fade.loaded {
+  opacity: 1;
+}
