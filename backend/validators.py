@@ -8,7 +8,11 @@ import re
 from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 from typing import Optional, List, Dict, Any, Literal
 from enum import Enum
+
 from pydantic import BaseModel, Field, validator
+from functools import wraps
+from flask import request, jsonify
+
 
 class BookmarkRequest(BaseModel):
     book_id: int = Field(..., gt=0, description="Book ID to bookmark")
@@ -121,6 +125,21 @@ class MoodSearchRequest(BaseModel):
         return sanitize_for_ai(v)
 
 
+# ==================== VIBE CHECK ====================
+class VibeCheckRequest(BaseModel):
+    """Request schema for /api/v1/vibe-check endpoint."""
+    vibe_prompt: str = Field(..., min_length=1, max_length=1000, description="Vibe description prompt")
+    count: Optional[int] = Field(default=3, ge=1, le=10, description="Number of recommendations to return")
+
+    @field_validator('vibe_prompt')
+    @classmethod
+    def sanitize_prompt(cls, v: str) -> str:
+        """Sanitize vibe prompt for AI."""
+        if not v or not v.strip():
+            raise ValueError('Vibe prompt cannot be empty or whitespace')
+        return sanitize_for_ai(v)
+
+
 # ==================== GENERATE NOTE ====================
 class GenerateNoteRequest(BaseModel):
     """Request schema for /api/v1/generate-note endpoint."""
@@ -226,6 +245,27 @@ class LoginRequest(BaseModel):
     """Request schema for POST /api/v1/login endpoint."""
     username: str = Field(..., min_length=1, description="Username or email")
     password: str = Field(..., min_length=1, description="Password")
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Request schema for POST /api/v1/auth/forgot-password."""
+    email: EmailStr = Field(..., description="Account email address")
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request schema for POST /api/v1/auth/reset-password."""
+    token: str = Field(..., min_length=16, max_length=256, description="Reset token from email link")
+    password: str = Field(..., min_length=8, max_length=100, description="New password (minimum 8 characters)")
+
+    @field_validator('token')
+    @classmethod
+    def strip_token(cls, v: str) -> str:
+        return v.strip()
 
 
 # ==================== READING STATS & GOALS ====================
@@ -342,6 +382,29 @@ def validate_request(schema_class, data: Optional[Dict[str, Any]]) -> tuple[bool
                 'error': str(e),
                 'validation_errors': []
             }
+
+
+def validate_schema(schema_class):
+    """
+    Decorator to automatically validate incoming JSON payloads against a Pydantic schema.
+    If valid, it injects the validated data as a keyword argument `validated_data`.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            try:
+                data = request.get_json(silent=True)
+            except Exception:
+                data = None
+                
+            is_valid, validated_data_or_error = validate_request(schema_class, data)
+            if not is_valid:
+                return jsonify(validated_data_or_error), 400
+            
+            kwargs['validated_data'] = validated_data_or_error
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 # ==================== JWT SECRET VALIDATION ====================

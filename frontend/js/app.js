@@ -79,8 +79,23 @@
 
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
-const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+if (typeof window.IS_DEV === 'undefined') {
+    window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+const IS_DEV = window.IS_DEV;
 const moodAnalysisCache = new Map();
+const APP_ROUTE = window.location.pathname.endsWith('/app.html') ? 'app.html' : 'app.html';
+
+
+// ── No-results empty state helpers ──
+function showNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'flex';
+}
+function hideNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'none';
+}
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -94,27 +109,6 @@ function getCookie(name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
-}
-
-async function loadConfig() {
-    try {
-        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            GOOGLE_API_KEY = data.google_books_key || '';
-            if (window.GoogleBooksClient) {
-                window.GoogleBooksClient.setKeys([
-                    data.google_books_key,
-                    data.google_books_key_secondary,
-                ]);
-            }
-            if (IS_DEV) {
-                console.log('Config loaded');
-            }
-        }
-    } catch (e) {
-        console.warn('Failed to load backend config', e);
-    }
 }
 
 const CollectionAPI = {
@@ -232,7 +226,7 @@ window.CollectionAPI = CollectionAPI;
 // Example click handler for your custom "Save for Offline" icon
 async function handleDownloadToggle(bookCard, bookData) {
     const isAlreadyDownloaded = await window.db.downloadedBooks.get(bookData.id);
-    
+
     if (isAlreadyDownloaded) {
         const success = await window.removeOfflineBook(bookData.id);
         if (success) bookCard.classList.remove('is-downloaded');
@@ -315,7 +309,7 @@ async function verifyStoredAuthSession() {
 
         try {
             const headers = {
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             };
             const csrf = getCookie('csrf_access_token');
             if (csrf) {
@@ -323,9 +317,8 @@ async function verifyStoredAuthSession() {
             }
 
             const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
-                credentials: 'include',
-                headers,
                 method: 'GET',
+                headers,
                 credentials: 'include',
             });
 
@@ -344,7 +337,7 @@ async function verifyStoredAuthSession() {
             }
             return null;
         } catch (error) {
-            console.warn('Auth verification failed; using cached session state if available.', error);
+            console.warn('Auth verification failed (network error); using cached session state if available.', error);
             return storedUser;
         }
     })();
@@ -476,7 +469,7 @@ const SafeStorage = {
                     // Try to restore to LocalStorage for future sync calls
                     try {
                         localStorage.setItem(key, val);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             } catch (e) {
                 console.warn('Backup retrieval failed', e);
@@ -912,7 +905,7 @@ class BookRenderer {
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
-        
+
         const summaryEl = document.getElementById('modal-summary');
         if (summaryEl) {
             // Show skeletons while AI is "thinking"
@@ -978,7 +971,10 @@ class BookRenderer {
         if (previewBtn) {
             previewBtn.onclick = () => {
                 if (window.BookPreview && book.id) {
-                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview');
+                    const author = book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author';
+                    const rating = book.volumeInfo.averageRating || 0;
+                    const genre = book.volumeInfo.categories ? book.volumeInfo.categories[0] : 'Fiction';
+                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview', author, rating, genre);
                 }
             };
         }
@@ -987,7 +983,7 @@ class BookRenderer {
         const purchaseLinksEl = document.getElementById('modal-purchase-links');
         if (purchaseLinksEl) {
             purchaseLinksEl.innerHTML = '<div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>';
-            
+
             const title = encodeURIComponent(book.volumeInfo.title || '');
             const author = encodeURIComponent(book.volumeInfo.authors ? book.volumeInfo.authors[0] : '');
             let isbn = '';
@@ -995,7 +991,7 @@ class BookRenderer {
                 const identifier = book.volumeInfo.industryIdentifiers.find(i => i.type === 'ISBN_13' || i.type === 'ISBN_10');
                 if (identifier) isbn = encodeURIComponent(identifier.identifier);
             }
-            
+
             fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
                 .then(res => res.json())
                 .then(data => {
@@ -1014,96 +1010,96 @@ class BookRenderer {
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
-        // Explore Mood Button
-        const moodBtnModal = document.getElementById('modal-mood-btn');
-        if (moodBtnModal) {
-            moodBtnModal.onclick = () => {
-                this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
-            };
-        }
+            // Explore Mood Button
+            const moodBtnModal = document.getElementById('modal-mood-btn');
+            if (moodBtnModal) {
+                moodBtnModal.onclick = () => {
+                    this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
+                };
+            }
 
-        modal.showModal();
-        document.getElementById('closeModalBtn').onclick = () => modal.close();
+            modal.showModal();
+            document.getElementById('closeModalBtn').onclick = () => modal.close();
 
-        // Emotion Tagging UI
-        const emotionContainer = document.createElement('div');
-        emotionContainer.className = 'emotion-tagging-section';
-        emotionContainer.innerHTML = `
-            <h3 class="modal-section-title" style="color: var(--text-main); font-family: 'Playfair Display', serif; font-size: 1rem; margin-bottom: 10px;">How does this book make you feel?</h3>
+            // Emotion Tagging UI
+            const emotionContainer = document.createElement('div');
+            emotionContainer.className = 'emotion-tagging-section';
+            emotionContainer.innerHTML = `
+            <h3 class="modal-section-title">How does this book make you feel?</h3>
             <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
             const isActive = book.moods && book.moods.includes(mood);
             return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="color: var(--text-main); border-color: var(--control-border);">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
-        }).join('')}
+            }).join('')}
             </div>
         `;
-        // Insert before the buttons
-        const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
-        const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
-        
-        if (actions) {
-            // Remove existing tagging section if re-opening
-            const existing = actions.parentNode.querySelector('.emotion-tagging-section');
-            if (existing) existing.remove();
-            
-            actions.parentNode.insertBefore(emotionContainer, actions);
-        } else if (modalBody) {
-            // Fallback
-            const existing = modalBody.querySelector('.emotion-tagging-section');
-            if (existing) existing.remove();
-            modalBody.appendChild(emotionContainer);
-        }
+            // Insert before the buttons
+            const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
+            const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
 
-        // Add tag toggle listeners
-        emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
-            tag.onclick = async () => {
-                const mood = tag.dataset.mood;
-                if (!book.moods) book.moods = [];
+            if (actions) {
+                // Remove existing tagging section if re-opening
+                const existing = actions.parentNode.querySelector('.emotion-tagging-section');
+                if (existing) existing.remove();
 
-                const index = book.moods.indexOf(mood);
-                if (index > -1) {
-                    book.moods.splice(index, 1);
-                    tag.classList.remove('active');
-                } else {
-                    book.moods.push(mood);
-                    tag.classList.add('active');
-                }
+                actions.parentNode.insertBefore(emotionContainer, actions);
+            } else if (modalBody) {
+                // Fallback
+                const existing = modalBody.querySelector('.emotion-tagging-section');
+                if (existing) existing.remove();
+                modalBody.appendChild(emotionContainer);
+            }
 
-                if (this.libraryManager) {
-                    await this.libraryManager.updateBook(book.id, { moods: book.moods });
-                }
-            };
-        });
+            // Add tag toggle listeners
+            emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
+                tag.onclick = async () => {
+                    const mood = tag.dataset.mood;
+                    if (!book.moods) book.moods = [];
 
-        // Custom Collections Section
-        let collectionsSection = document.getElementById('modal-discovery-collections-tagging');
-        if (!collectionsSection) {
-            collectionsSection = document.createElement('div');
-            collectionsSection.id = 'modal-discovery-collections-tagging';
-            collectionsSection.className = 'collections-tagging-section';
-            collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
-        }
-        
-        if (actions) {
-            const existing = actions.parentNode.querySelector('#modal-discovery-collections-tagging');
-            if (existing) existing.remove();
-            actions.parentNode.insertBefore(collectionsSection, actions);
-        } else if (modalBody) {
-            const existing = modalBody.querySelector('#modal-discovery-collections-tagging');
-            if (existing) existing.remove();
-            modalBody.appendChild(collectionsSection);
-        }
+                    const index = book.moods.indexOf(mood);
+                    if (index > -1) {
+                        book.moods.splice(index, 1);
+                        tag.classList.remove('active');
+                    } else {
+                        book.moods.push(mood);
+                        tag.classList.add('active');
+                    }
 
-        const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
-        if (!userObj) {
-            collectionsSection.innerHTML = `
+                    if (this.libraryManager) {
+                        await this.libraryManager.updateBook(book.id, { moods: book.moods });
+                    }
+                };
+            });
+
+            // Custom Collections Section
+            let collectionsSection = document.getElementById('modal-discovery-collections-tagging');
+            if (!collectionsSection) {
+                collectionsSection = document.createElement('div');
+                collectionsSection.id = 'modal-discovery-collections-tagging';
+                collectionsSection.className = 'collections-tagging-section';
+                collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+            }
+
+            if (actions) {
+                const existing = actions.parentNode.querySelector('#modal-discovery-collections-tagging');
+                if (existing) existing.remove();
+                actions.parentNode.insertBefore(collectionsSection, actions);
+            } else if (modalBody) {
+                const existing = modalBody.querySelector('#modal-discovery-collections-tagging');
+                if (existing) existing.remove();
+                modalBody.appendChild(collectionsSection);
+            }
+
+            const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+            if (!userObj) {
+                collectionsSection.innerHTML = `
                 <h4 style="margin: 0 0 5px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem;">Save in Custom Collections</h4>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;"><a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to save this book in custom shelves.</p>
             `;
-        } else {
-            collectionsSection.innerHTML = `
+            } else {
+                collectionsSection.innerHTML = `
                 <h4 style="margin: 0 0 8px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
                 </h4>
@@ -1111,100 +1107,100 @@ class BookRenderer {
                     <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
                 </div>
             `;
-            
-            (async () => {
-                try {
-                    const cols = await window.CollectionAPI.getCollections(userObj.id);
-                    const listEl = document.getElementById('modal-discovery-collections-list');
-                    if (!listEl) return;
-                    
-                    if (cols.length === 0) {
-                        listEl.innerHTML = `
+
+                (async () => {
+                    try {
+                        const cols = await window.CollectionAPI.getCollections(userObj.id);
+                        const listEl = document.getElementById('modal-discovery-collections-list');
+                        if (!listEl) return;
+
+                        if (cols.length === 0) {
+                            listEl.innerHTML = `
                             <span style="font-size: 0.8rem; color: var(--text-muted);">No custom collections created yet. Go to Custom Collections view to create one!</span>
                         `;
-                        return;
-                    }
-                    
-                    const colsWithItems = await Promise.all(
-                        cols.map(async (c) => {
-                            try {
-                                return await window.CollectionAPI.getCollection(c.id);
-                            } catch (e) {
-                                return { id: c.id, name: c.name, items: [] };
-                            }
-                        })
-                    );
-                    
-                    listEl.innerHTML = '';
-                    colsWithItems.forEach(col => {
-                        const existingItem = col.items.find(item => item.google_books_id === book.id);
-                        const isChecked = !!existingItem;
-                        const label = document.createElement('label');
-                        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
-                        
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.checked = isChecked;
-                        checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
-                        
-                        if (isChecked) {
-                            checkbox.dataset.bookId = existingItem.book_id;
+                            return;
                         }
-                        
-                        checkbox.onchange = async () => {
-                            checkbox.disabled = true;
-                            try {
-                                if (checkbox.checked) {
-                                    const authorStr = Array.isArray(book.volumeInfo.authors) ? book.volumeInfo.authors.join(', ') : (book.volumeInfo.authors || 'Unknown Author');
-                                    const res = await window.CollectionAPI.addBookToCollection(
-                                        col.id,
-                                        userObj.id,
-                                        book.id,
-                                        book.volumeInfo.title,
-                                        authorStr,
-                                        book.volumeInfo.imageLinks?.thumbnail || ''
-                                    );
-                                    checkbox.dataset.bookId = res.item.book_id;
-                                    showToast(`Added to "${col.name}"`, 'success');
-                                } else {
-                                    const bookId = checkbox.dataset.bookId;
-                                    if (bookId) {
-                                        await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
-                                        delete checkbox.dataset.bookId;
-                                        showToast(`Removed from "${col.name}"`, 'success');
-                                    }
+
+                        const colsWithItems = await Promise.all(
+                            cols.map(async (c) => {
+                                try {
+                                    return await window.CollectionAPI.getCollection(c.id);
+                                } catch (e) {
+                                    return { id: c.id, name: c.name, items: [] };
                                 }
-                            } catch (err) {
-                                checkbox.checked = !checkbox.checked; // Revert
-                                showToast(err.message, 'error');
-                            } finally {
-                                checkbox.disabled = false;
+                            })
+                        );
+
+                        listEl.innerHTML = '';
+                        colsWithItems.forEach(col => {
+                            const existingItem = col.items.find(item => item.google_books_id === book.id);
+                            const isChecked = !!existingItem;
+                            const label = document.createElement('label');
+                            label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = isChecked;
+                            checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
+
+                            if (isChecked) {
+                                checkbox.dataset.bookId = existingItem.book_id;
                             }
-                        };
-                        
-                        label.appendChild(checkbox);
-                        
-                        const textSpan = document.createElement('span');
-                        textSpan.textContent = col.name;
-                        label.appendChild(textSpan);
-                        
-                        listEl.appendChild(label);
-                    });
-                } catch (e) {
-                    console.error('Modal collections load failed', e);
-                    const listEl = document.getElementById('modal-discovery-collections-list');
-                    if (listEl) {
-                        listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+
+                            checkbox.onchange = async () => {
+                                checkbox.disabled = true;
+                                try {
+                                    if (checkbox.checked) {
+                                        const authorStr = Array.isArray(book.volumeInfo.authors) ? book.volumeInfo.authors.join(', ') : (book.volumeInfo.authors || 'Unknown Author');
+                                        const res = await window.CollectionAPI.addBookToCollection(
+                                            col.id,
+                                            userObj.id,
+                                            book.id,
+                                            book.volumeInfo.title,
+                                            authorStr,
+                                            book.volumeInfo.imageLinks?.thumbnail || ''
+                                        );
+                                        checkbox.dataset.bookId = res.item.book_id;
+                                        showToast(`Added to "${col.name}"`, 'success');
+                                    } else {
+                                        const bookId = checkbox.dataset.bookId;
+                                        if (bookId) {
+                                            await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
+                                            delete checkbox.dataset.bookId;
+                                            showToast(`Removed from "${col.name}"`, 'success');
+                                        }
+                                    }
+                                } catch (err) {
+                                    checkbox.checked = !checkbox.checked; // Revert
+                                    showToast(err.message, 'error');
+                                } finally {
+                                    checkbox.disabled = false;
+                                }
+                            };
+
+                            label.appendChild(checkbox);
+
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = col.name;
+                            label.appendChild(textSpan);
+
+                            listEl.appendChild(label);
+                        });
+                    } catch (e) {
+                        console.error('Modal collections load failed', e);
+                        const listEl = document.getElementById('modal-discovery-collections-list');
+                        if (listEl) {
+                            listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+                        }
                     }
-                }
-            })();
+                })();
+            }
         }
-    }
     }
 
     async exploreBookMood(title, author) {
         const cacheKey = `${title.toLowerCase().trim()}|${(author || '').toLowerCase().trim()}`;
-        
+
         // 1. Create and show the mood modal dynamically
         let modal = document.getElementById('mood-analysis-modal');
         if (!modal) {
@@ -1430,8 +1426,10 @@ class BookRenderer {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
                 const fallbackBooks = getFallbackBooks(query, maxResults);
-                if (fallbackBooks.length > 0) {
+                if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                     await this.renderBookCards(container, fallbackBooks);
+                } else if (container.id === 'search-results-grid') {
+                    showNoResults();
                 } else {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -1443,19 +1441,15 @@ class BookRenderer {
         } catch (err) {
             console.error("Failed to fetch books", err);
             const fallbackBooks = getFallbackBooks(query, maxResults);
-            if (fallbackBooks.length > 0) {
+            if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                 await this.renderBookCards(container, fallbackBooks);
                 return;
+            } else if (container.id === 'search-results-grid') {
+                showNoResults();
+                return;
             }
-
-            showToast("Failed to load bookshelf.", "error");
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>Bookshelf Empty (API connection failed)</p>
-                </div>`;
-        }
     }
+}
 
     async renderMoodCategorySection(categoryConfig, elementId, maxResults = 5) {
         const container = document.getElementById(elementId);
@@ -1539,6 +1533,11 @@ class BookRenderer {
 
     async renderBookCards(container, books) {
         if (container.id === 'search-results-grid') {
+            if (!books || books.length === 0) {
+                showNoResults();
+                return;
+            }
+            hideNoResults();
             window.searchFilterManager = new SearchFilterManager(container, books, this);
             return;
         }
@@ -1565,6 +1564,8 @@ class BookRenderer {
         if (container.children.length === 0) {
             container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
         }
+
+        
     }
 }
 
@@ -1580,7 +1581,7 @@ class SearchFilterManager {
         // Initialize UI elements
         this.filterBar = document.getElementById('mood-filter-bar');
         this.chipsContainer = document.getElementById('filter-chips');
-        
+
         if (this.filterBar && this.chipsContainer) {
             this.filterBar.hidden = false;
             this.chipsContainer.innerHTML = '';
@@ -1596,7 +1597,7 @@ class SearchFilterManager {
     async init() {
         // Clear previous grid
         this.container.innerHTML = '';
-        
+
         // Render all books first
         for (const book of this.books) {
             try {
@@ -1730,7 +1731,7 @@ class SearchFilterManager {
         if (mood) {
             this.activeFilter = mood.toLowerCase();
             sessionStorage.setItem('active_mood_filter', this.activeFilter);
-            
+
             // Update URL query parameters without reloading the page
             const url = new URL(window.location);
             url.searchParams.set('mood', this.activeFilter);
@@ -1738,7 +1739,7 @@ class SearchFilterManager {
         } else {
             this.activeFilter = null;
             sessionStorage.removeItem('active_mood_filter');
-            
+
             // Remove mood query param
             const url = new URL(window.location);
             url.searchParams.delete('mood');
@@ -1776,7 +1777,7 @@ class SearchFilterManager {
 
     applyFilter() {
         let visibleCount = 0;
-        
+
         for (const [bookId, element] of this.bookElements.entries()) {
             const book = this.books.find(b => b.id === bookId);
             if (!book) continue;
@@ -1807,7 +1808,7 @@ class SearchFilterManager {
             const emptyState = document.createElement('div');
             emptyState.className = 'empty-filter-state';
             emptyState.id = 'empty-filter-state';
-            
+
             const activeMoodName = this.activeFilter.charAt(0).toUpperCase() + this.activeFilter.slice(1);
             emptyState.innerHTML = `
                 <i class="fa-solid ${this.renderer.getMoodIcon(this.activeFilter)}"></i>
@@ -2864,10 +2865,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const themeManager = new ThemeManager();
 
     // 2. Load Config (Non-blocking)
-    loadConfig();
-
-
-
     // --- AUTH LOGIC ---
     const toggleLink = document.getElementById('toggleText');
     const authTitle = document.getElementById('authTitle');
@@ -2881,7 +2878,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
-            
+
             if (!isLogin) {
                 // Switch to Register Mode
                 authForm.dataset.mode = 'register';
@@ -2902,6 +2899,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const genreManager = new GenreManager(libManager);
     genreManager.init();
+
+    // ── No-results suggestion tag clicks ──
+    document.querySelectorAll('.mood-suggestion-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (!input) return;
+        input.value = btn.dataset.mood;
+        window.location.href = `index.html?q=${encodeURIComponent(btn.dataset.mood)}`;
+    });
+    });
+
     const exportBtn = document.getElementById("export-library");
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
@@ -2954,7 +2962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Only redirect to discovery search if we're not already on the library page 
             // where search is handled by the local library filter.
             if (!window.location.pathname.includes('library.html')) {
-                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+                window.location.href = `${APP_ROUTE}?q=${encodeURIComponent(searchInput.value.trim())}`;
             }
         }
     };
@@ -2981,10 +2989,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (query && document.getElementById('search-results-section')) {
         const searchSection = document.getElementById('search-results-section');
         const queryDisplay = document.getElementById('search-query-display');
-        
+
         queryDisplay.textContent = `Results for "${query}"`;
         searchSection.removeAttribute('hidden');
-        
+
         // Hide other main content to focus on search without destroying modals
         document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
             el.style.display = 'none';
@@ -2997,12 +3005,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy' },
             { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
             { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
-           {
-                 type: 'query',
-                 query: 'subject:gothic fiction subject:dark academia subject:campus',
-                 elementId: 'row-dark-academia',
-                 vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
-                 fallbackQuery: 'subject:gothic fiction subject:campus'
+            {
+                type: 'query',
+                query: 'subject:gothic fiction subject:dark academia subject:campus',
+                elementId: 'row-dark-academia',
+                vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
+                fallbackQuery: 'subject:gothic fiction subject:campus'
             },
             { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
             { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
@@ -3059,7 +3067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ...(libManager.library.want || []),
             ...(libManager.library.finished || [])
         ];
-        
+
         const categoryCounts = {};
         allBooks.forEach(book => {
             const categories = book.volumeInfo?.categories || [];
@@ -3067,7 +3075,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             });
         });
-        
+
         let topVibe = 'Mystery'; // Fallback
         if (Object.keys(categoryCounts).length > 0) {
             topVibe = Object.keys(categoryCounts).reduce((a, b) => categoryCounts[a] > categoryCounts[b] ? a : b);
@@ -3078,7 +3086,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const statTotalEl = document.getElementById('stat-total');
         const statWantDashEl = document.getElementById('stat-want-dash');
         const statVibeEl = document.getElementById('stat-vibe');
-        
+
         if (statTotalEl) statTotalEl.textContent = totalBooks;
         if (statWantDashEl) statWantDashEl.textContent = wantCount;
         if (statVibeEl) statVibeEl.textContent = topVibe;
@@ -3098,10 +3106,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const statsResponse = await fetch(`${MOOD_API_BASE}/stats?user_id=${user.id}&year=${currentYear}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
+
                 if (statsResponse.ok) {
                     const stats = await statsResponse.json();
-                    
+
                     // Update Streak
                     if (stats.current_streak > 0) {
                         const streakBadge = document.getElementById('streak-badge');
@@ -3138,7 +3146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const leaderboard = await lbResponse.json();
                     const lbSection = document.getElementById('leaderboard-section');
                     const lbList = document.getElementById('leaderboard-list');
-                    
+
                     if (leaderboard && leaderboard.length > 0 && lbSection && lbList) {
                         lbSection.style.display = 'block';
                         lbList.innerHTML = leaderboard.map((entry, index) => `
@@ -3205,19 +3213,217 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         loadExtendedStats();
 
+        // =====================================================================
+        // READER IDENTITY LOGIC
+        // Fetches reviews, determines archetype/mood/cluster, and renders states.
+        // =====================================================================
+        const renderErrorIdentityState = () => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted); background: rgba(229, 57, 53, 0.05); border: 1px solid rgba(229, 57, 53, 0.2); border-radius: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #e53935; margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin-bottom: 1rem;">Failed to load Reader Identity profile.</p>
+                    <button id="retry-identity-btn" class="action-btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">Retry</button>
+                </div>
+            `;
+
+            const retryBtn = document.getElementById('retry-identity-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    loadReaderIdentity();
+                });
+            }
+        };
+
+        const fetchAndRenderArchetype = async (genres, reviewsList) => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            const token = SafeStorage.get('bibliodrift_token');
+            const response = await fetch(`${MOOD_API_BASE}/reader-archetype`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ genres, reviews: reviewsList })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch archetype (Status: ${response.status})`);
+            }
+
+            const data = await response.json();
+            if (!data.success || !data.reader_profile) {
+                throw new Error('API returned unsuccessful profile generation');
+            }
+
+            const profile = data.reader_profile;
+            const archetype = profile.archetype || "Unknown Reader";
+            const mood = profile.reader_mood || "Balanced Analytical Reader";
+            const sentimentScore = typeof profile.sentiment_score === 'number' ? profile.sentiment_score.toFixed(2) : '0.00';
+            const cluster = typeof profile.reader_cluster === 'number' ? (profile.reader_cluster === -1 ? 'Unclassified' : `Group #${profile.reader_cluster}`) : 'Unclassified';
+
+            const archetypeDescriptions = {
+                "Deep Thinker": "Drawn to philosophy, existential questions, and reflective/psychological themes.",
+                "Emotional Reader": "Connects deeply with romance, relationships, emotional journeys, and human feelings.",
+                "Dark Reader": "Enjoys crime, violence, psychological thrillers, horror, and mystery.",
+                "Adventurous Reader": "Seeks sci-fi, fantasy, action-packed adventures, and exploration."
+            };
+            const desc = archetypeDescriptions[archetype] || "Based on your current reading habits and preferences.";
+
+            identityContent.innerHTML = `
+                <div class="reader-identity-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; text-align: left;">
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Archetype</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-brain" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-archetype">${archetype}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;" id="identity-archetype-desc">
+                            ${desc}
+                        </div>
+                    </div>
+                    
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Mood</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-masks-theater" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-mood">${mood}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Sentiment Score: <strong id="identity-sentiment">${sentimentScore}</strong>
+                        </div>
+                    </div>
+
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Group</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-people-group" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-cluster">${cluster}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Based on review text analysis.
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderEmptyIdentityState = (genres) => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="empty-state" style="padding: 1rem 0; text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-info" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin-bottom: 1.5rem;">We couldn't find any reviews in your profile yet. Add reviews to your finished books to unlock your reader identity!</p>
+                    <div style="max-width: 450px; margin: 0 auto; background: rgba(255, 255, 255, 0.02); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: left;">
+                        <h4 style="color: var(--text-main); margin-bottom: 0.5rem;">Or try a quick test right now:</h4>
+                        <p style="font-size: 0.85rem; margin-bottom: 1rem;">Write a brief summary of the kinds of books you love reading (e.g. "I love deep space adventures with complex characters"):</p>
+                        <textarea id="onboarding-review-text" placeholder="I love exploring dark mystery novels and fast-paced thrillers..." style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); margin-bottom: 1rem; font-family: inherit; font-size: 0.9rem; resize: none;"></textarea>
+                        <button id="submit-onboarding-btn" class="action-btn-primary" style="font-size: 0.85rem; padding: 6px 15px;">Analyze Mood & Archetype</button>
+                    </div>
+                </div>
+            `;
+
+            const submitBtn = document.getElementById('submit-onboarding-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async () => {
+                    const textInput = document.getElementById('onboarding-review-text').value.trim();
+                    if (!textInput) return;
+
+                    identityContent.innerHTML = `
+                        <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                            <p>Analyzing your custom input...</p>
+                        </div>
+                    `;
+
+                    try {
+                        await fetchAndRenderArchetype(genres, [textInput]);
+                    } catch (error) {
+                        console.error('Error analyzing custom onboarding input:', error);
+                        renderErrorIdentityState();
+                    }
+                });
+            }
+        };
+
+        const loadReaderIdentity = async () => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                    <p>Analyzing your reading profile and reviews...</p>
+                </div>
+            `;
+
+            const token = SafeStorage.get('bibliodrift_token');
+            if (!token) {
+                identityContent.innerHTML = `
+                    <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
+                        <p>Please log in to view your Reader Identity.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // 1. Fetch user reviews
+                const reviewsResponse = await fetch(`${MOOD_API_BASE}/users/${user.id}/reviews`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!reviewsResponse.ok) {
+                    throw new Error(`Failed to fetch reviews (Status: ${reviewsResponse.status})`);
+                }
+
+                const reviewsData = await reviewsResponse.json();
+                const reviewsList = (reviewsData.reviews || []).map(r => r.review_text).filter(Boolean);
+
+                // Derive genres
+                const allBooks = [
+                    ...(libManager.library.current || []),
+                    ...(libManager.library.want || []),
+                    ...(libManager.library.finished || [])
+                ];
+                const genres = Array.from(new Set(
+                    allBooks.flatMap(book => book.volumeInfo?.categories || [])
+                ));
+
+                // 2. Render empty/onboarding or loaded state
+                if (reviewsList.length === 0) {
+                    renderEmptyIdentityState(genres);
+                } else {
+                    await fetchAndRenderArchetype(genres, reviewsList);
+                }
+            } catch (error) {
+                console.error('Error loading reader identity:', error);
+                renderErrorIdentityState();
+            }
+        };
+
+        // Initialize reader identity loading
+        loadReaderIdentity();
+
         // Progress Bar Calculation
         const barFinished = document.getElementById('bar-finished');
         const barCurrent = document.getElementById('bar-current');
         const barWant = document.getElementById('bar-want');
-        
+
         const countFinishedEl = document.getElementById('count-finished');
         const countCurrentEl = document.getElementById('count-current');
         const countWantEl = document.getElementById('count-want');
-        
+
         if (countFinishedEl) countFinishedEl.textContent = finishedCount;
         if (countCurrentEl) countCurrentEl.textContent = currentCount;
         if (countWantEl) countWantEl.textContent = wantCount;
-        
+
         if (totalBooks > 0) {
             setTimeout(() => {
                 if (barFinished) barFinished.style.width = `${(finishedCount / totalBooks) * 100}%`;
@@ -3316,17 +3522,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         achievementsGrid.innerHTML = '';
 
         const achievements = [
-            { id: 'reader', icon: 'fa-book', title: 'Avid Reader', desc: 'Finished 5 books', condition: finishedCount >= 5 },
-            { id: 'collector', icon: 'fa-layer-group', title: 'Curator', desc: 'Added 10 books', condition: (currentCount + wantCount + finishedCount) >= 10 },
-            { id: 'critic', icon: 'fa-pen-fancy', title: 'Critic', desc: 'Saved 3 reviews', condition: false }, // Mock
-            { id: 'focused', icon: 'fa-glasses', title: 'Focused', desc: 'Reading 3 at once', condition: currentCount >= 3 }
+            {
+                id: 'reader',
+                badge: 'badge--gold',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M3 6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6z"></path>
+                        <path fill="currentColor" d="M21 6h-2v12h2V6z" opacity="0.18"></path>
+                    </svg>`,
+                title: 'Avid Reader',
+                desc: 'Finished 5 books',
+                condition: finishedCount >= 5
+            },
+            {
+                id: 'collector',
+                badge: 'badge--teal',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <rect x="3" y="4" width="18" height="3" rx="1" fill="currentColor"></rect>
+                        <rect x="5" y="9" width="14" height="3" rx="1" fill="currentColor" opacity="0.9"></rect>
+                        <rect x="7" y="14" width="10" height="3" rx="1" fill="currentColor" opacity="0.7"></rect>
+                    </svg>`,
+                title: 'Curator',
+                desc: 'Added 10 books',
+                condition: (currentCount + wantCount + finishedCount) >= 10
+            },
+            {
+                id: 'critic',
+                badge: 'badge--purple',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12.3 2.3l2.4 2.4-8.5 8.5-2.4-2.4L12.3 2.3zM3 21l6-1 10.7-10.7 1.3 1.3L10.3 22 3 21z"></path>
+                    </svg>`,
+                title: 'Critic',
+                desc: 'Saved 3 reviews',
+                condition: false
+            },
+            {
+                id: 'focused',
+                badge: 'badge--gray',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M4 10a3 3 0 0 1 6 0 1 1 0 0 0 2 0 3 3 0 0 1 6 0v2h-2v6H4v-6H2v-2h2zM8 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+                    </svg>`,
+                title: 'Focused',
+                desc: 'Reading 3 at once',
+                condition: currentCount >= 3
+            }
         ];
 
         achievements.forEach(ach => {
             const card = document.createElement('div');
             card.className = `achievement-card ${ach.condition ? 'unlocked' : 'locked'}`;
             card.innerHTML = `
-                <i class="fa-solid ${ach.icon}"></i>
+                <span class="achievement-badge ${ach.badge}" aria-hidden="true"></span>
+                ${ach.icon}
                 <h4>${ach.title}</h4>
                 <p>${ach.desc}</p>
             `;
@@ -3344,7 +3594,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             SafeStorage.remove('bibliodrift_user');
             SafeStorage.remove('bibliodrift_token');
             SafeStorage.remove('isLoggedIn');
-            window.location.href = 'index.html';
+            window.location.href = APP_ROUTE;
         });
     }
     // Scroll Manager (Back to Top)
@@ -3410,7 +3660,7 @@ async function handleAuth(event) {
     const mode = form.dataset.mode || 'login';
 
     const email = document.getElementById("email").value;
-    const password = form.querySelector('input[type="password"]').value;
+    const password = document.getElementById("password").value;
     const usernameInput = document.getElementById("username");
 
     // Helper to reset button state on failure
@@ -3436,7 +3686,7 @@ async function handleAuth(event) {
         SafeStorage.set('bibliodrift_user', JSON.stringify(demoUser));
         SafeStorage.set('isLoggedIn', 'true');
         SafeStorage.set('bibliodrift_token', 'demo-token-12345');
-        
+
         if (typeof showToast === 'function')
             showToast(`Welcome, Demo User!`, "success");
 
@@ -3475,7 +3725,7 @@ async function handleAuth(event) {
     try {
         const fetchOptions = {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json'
             },
             credentials: 'include',
@@ -3574,7 +3824,7 @@ pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
 
 document.addEventListener('click', () => {
-    pageFlipSound.play().catch(() => {});
+    pageFlipSound.play().catch(() => { });
 }, { once: true });
 
 
@@ -3855,28 +4105,21 @@ if (document.readyState === 'loading') {
 } else {
     KeyboardShortcuts.init();
 }
-// Register Service Worker for offline asset caching
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('BiblioDrift Service Worker registered successfully!', reg))
-            .catch(err => console.error('Service Worker registration failed:', err));
-    });
-}
+
 // --- Connection Management & Offline Fallback Fallback Hooks ---
 
 // Function to automatically track network status changes
 function handleConnectivityChange() {
     const offlineIndicator = document.getElementById('offline-indicator');
-    
+
     if (!navigator.onLine) {
         console.warn("🌐 Connection dropped. Switching to local sanctuary archives...");
-        
+
         // Show an elegant banner to let the user know they are reading offline
         if (offlineIndicator) {
             offlineIndicator.style.display = 'block';
         }
-        
+
         // Fall back to loading cached books from IndexedDB
         triggerOfflineLibraryView();
     } else {
@@ -3884,7 +4127,7 @@ function handleConnectivityChange() {
         if (offlineIndicator) {
             offlineIndicator.style.display = 'none';
         }
-        
+
         // Reload live API content if the user comes back online
         if (typeof loadDiscoverBooks === 'function') {
             loadDiscoverBooks();
@@ -3904,7 +4147,7 @@ async function triggerOfflineLibraryView() {
         const savedBooks = await window.db.books.toArray();
         // Target your bookshelf or matching layout grid element from the page markup
         const libraryContainer = document.getElementById('search-results-grid') || document.querySelector('.bookshelf');
-        
+
         if (!libraryContainer) return;
 
         if (savedBooks.length === 0) {
@@ -3916,7 +4159,7 @@ async function triggerOfflineLibraryView() {
                 </div>`;
         } else {
             libraryContainer.innerHTML = ""; // Wipe standard layout containers
-            
+
             // Render cached items back onto the UI shelf
             savedBooks.forEach(book => {
                 const bookCard = document.createElement('div');
@@ -3946,3 +4189,282 @@ window.addEventListener('offline', handleConnectivityChange);
 
 // Run a status check right away on startup in case the user loads the app while already disconnected
 document.addEventListener('DOMContentLoaded', handleConnectivityChange);
+
+// Reading Mood Quiz - manager-based implementation
+class ReadingMoodQuizManager {
+        constructor(libraryManager, renderer) {
+                this.libraryManager = libraryManager;
+                this.renderer = renderer;
+                this.section = null;
+                this.quizAnswers = {};
+        }
+
+        init() {
+                this.section = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!this.section) return;
+
+                this.quizOptionGroups = this.section.querySelectorAll('.quiz-options');
+                this.generateBtn = this.section.querySelector('#generateMoodTags');
+                this.results = this.section.querySelector('#quizResults');
+                this.moodTagsContainer = this.section.querySelector('#moodTags');
+                this.retakeBtn = this.section.querySelector('#retakeQuiz');
+
+                if (!this.quizOptionGroups.length || !this.generateBtn || !this.results || !this.moodTagsContainer || !this.retakeBtn) {
+                        return;
+                }
+
+                this._wireOptions();
+                this._wireButtons();
+                this.loadSavedMoodTags();
+                this._updateGenerateButtonState();
+        }
+
+        _wireOptions() {
+                this.quizOptionGroups.forEach(group => {
+                        const key = group.dataset.question;
+                        const buttons = group.querySelectorAll('button');
+                        buttons.forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                        buttons.forEach(b => b.classList.remove('selected'));
+                                        btn.classList.add('selected');
+                                        this.quizAnswers[key] = btn.dataset.value;
+                                        this._updateGenerateButtonState();
+                                });
+                        });
+                });
+        }
+
+        _wireButtons() {
+                this.generateBtn.addEventListener('click', async () => {
+                        const tags = Object.values(this.quizAnswers).filter(Boolean);
+                        this.renderMoodTags(tags);
+                        // Persist using SafeStorage wrapper
+                        try { SafeStorage.set('readingMoodTags', JSON.stringify(tags)); } catch (e) { localStorage.setItem('readingMoodTags', JSON.stringify(tags)); }
+
+                        // Compose a generated query from tags and render results
+                        const generatedMoodQuery = tags.join(' ');
+                        try {
+                                if (this.renderer && typeof this.renderer.renderCuratedSection === 'function') {
+                                        this.renderer.renderCuratedSection(generatedMoodQuery, 'mood-quiz-results-grid', 16);
+                                }
+                        } catch (e) {
+                                console.error('Mood quiz: failed to render curated section', e);
+                        }
+                });
+
+                this.retakeBtn.addEventListener('click', () => {
+                        this.quizAnswers = {};
+                        this.quizOptionGroups.forEach(group => {
+                                group.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                        });
+                        this.moodTagsContainer.innerHTML = '';
+                        this.results.hidden = true;
+                        try { SafeStorage.remove('readingMoodTags'); } catch (e) { localStorage.removeItem('readingMoodTags'); }
+                        this._updateGenerateButtonState();
+                });
+        }
+
+        _updateGenerateButtonState() {
+                const total = this.quizOptionGroups.length;
+                const answered = Object.keys(this.quizAnswers).length;
+                this.generateBtn.disabled = answered !== total;
+        }
+
+        renderMoodTags(tags) {
+                this.moodTagsContainer.innerHTML = '';
+                tags.forEach(tag => {
+                        const span = document.createElement('span');
+                        span.textContent = `#${tag}`;
+                        this.moodTagsContainer.appendChild(span);
+                });
+                this.results.hidden = false;
+        }
+
+        loadSavedMoodTags() {
+                let saved = null;
+                try { saved = SafeStorage.get('readingMoodTags'); } catch (e) { saved = localStorage.getItem('readingMoodTags'); }
+                if (saved) {
+                        try {
+                                const tags = JSON.parse(saved);
+                                if (Array.isArray(tags) && tags.length > 0) this.renderMoodTags(tags);
+                        } catch (e) { /* ignore */ }
+                }
+        }
+}
+
+// Initialize the manager if the page contains the quiz. Wait for library/renderer readiness.
+function _startReadingMoodQuiz() {
+        const startIfReady = () => {
+                const el = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!el) return;
+                if (window.libManager && window.renderer) {
+                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                        window.moodQuizManager.init();
+                } else {
+                        // Wait for library-manager-ready event
+                        window.addEventListener('bibliodrift:library-manager-ready', () => {
+                                if (window.libManager && window.renderer) {
+                                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                                        window.moodQuizManager.init();
+                                }
+                        }, { once: true });
+                }
+        };
+
+        if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startIfReady, { once: true });
+        } else {
+                startIfReady();
+        }
+}
+
+_startReadingMoodQuiz();
+
+function showForgotResetLink(resetUrl) {
+    const box = document.getElementById('forgotResetLinkBox');
+    if (!box || !resetUrl) return;
+    box.style.display = 'block';
+    box.innerHTML = `
+        <strong>Development reset link</strong> (no email was sent):<br>
+        <a href="${resetUrl}">Open link to set a new password</a>
+    `;
+}
+
+async function handleForgotPassword(event) {
+    if (event) event.preventDefault();
+    const btn = document.getElementById('forgotSubmitBtn');
+    const emailInput = document.getElementById('forgotEmail');
+    const linkBox = document.getElementById('forgotResetLinkBox');
+    const email = emailInput?.value?.trim() || '';
+    const originalText = btn ? btn.textContent : 'Send reset link';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        if (typeof showToast === 'function') showToast('Enter a valid email address', 'error');
+        else alert('Enter a valid email address');
+        return;
+    }
+
+    if (linkBox) {
+        linkBox.style.display = 'none';
+        linkBox.innerHTML = '';
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        const message = data.message
+            || 'If an account exists for that email, password reset instructions have been sent.';
+
+        if (res.ok) {
+            if (data.reset_url) {
+                showForgotResetLink(data.reset_url);
+                console.info('[Dev] Password reset link:', data.reset_url);
+                if (typeof showToast === 'function') {
+                    showToast('No email sent — use the reset link shown on this page.', 'info');
+                }
+            } else if (typeof showToast === 'function') {
+                showToast(message, 'success');
+            } else {
+                alert(message + '\n\n(No email is sent by the server yet.)');
+            }
+        } else {
+            const err = data.error || data.message || 'Unable to send reset link.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Forgot password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Use http://127.0.0.1:5500 (not file://) and ensure Flask is running.', 'error');
+        } else {
+            alert('Network error. Use http://127.0.0.1:5500 and ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleForgotPassword = handleForgotPassword;
+
+async function handleResetPassword(event) {
+    if (event) event.preventDefault();
+
+    const btn = document.getElementById('resetSubmitBtn');
+    const pwdInput = document.getElementById('resetNewPassword');
+    const originalText = btn ? btn.textContent : 'Reset password';
+    const newPassword = pwdInput?.value || '';
+
+    // Get the token from the URL e.g. auth.html?mode=reset&token=xxx
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        const err = 'Reset token is missing from the URL.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        const err = 'Password must be at least 6 characters long.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Resetting...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/reset-password/${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ new_password: newPassword }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast('Password reset successfully! You can now log in.', 'success');
+            else alert('Password reset successfully! You can now log in.');
+
+            setTimeout(() => {
+                window.location.href = 'auth.html?mode=login';
+            }, 2000);
+        } else {
+            const err = data.error || data.message || 'Failed to reset password.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Reset password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Ensure backend is running.', 'error');
+        } else {
+            alert('Network error. Ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleResetPassword = handleResetPassword;
