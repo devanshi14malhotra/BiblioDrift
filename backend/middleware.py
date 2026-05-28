@@ -12,9 +12,11 @@ try:
         DEFAULT_ALLOWED_CONTENT_TYPES,
         validate_content_type as _validate_content_type_header,
     )
+    from .validators import validate_password_strength
 except ImportError:
     from error_responses import invalid_json_error
     from security_parsers import DEFAULT_ALLOWED_CONTENT_TYPES, validate_content_type as _validate_content_type_header
+    from validators import validate_password_strength
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +179,82 @@ def safe_request_handler(
         return decorated_function
     
     return decorator
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PASSWORD STRENGTH ENFORCEMENT  (Issue #790)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def require_strong_password(f):
+    """
+    Decorator that enforces strong password policy on any endpoint that
+    receives a 'password' field in its JSON body (e.g. /api/v1/register).
+
+    This acts as a second layer of defence — RegisterRequest in validators.py
+    already runs the same check via Pydantic.  Having it here means the rule
+    is enforced even if the route is called without the Pydantic schema, and
+    it returns a consistent, descriptive 400 response before any business
+    logic runs.
+
+    Usage:
+        @app.route('/api/v1/register', methods=['POST'])
+        @require_strong_password
+        def register():
+            ...
+
+    Response on failure (HTTP 400):
+        {
+            "success": false,
+            "error": "Password does not meet security requirements",
+            "requirements": [
+                "Minimum 8 characters required",
+                "At least one uppercase letter (A–Z) required"
+            ]
+        }
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Only check POST / PUT / PATCH — skip GET, HEAD, DELETE
+        if request.method not in ('POST', 'PUT', 'PATCH'):
+            return f(*args, **kwargs)
+
+        data = request.get_json(silent=True) or {}
+        password = data.get('password', '')
+
+        if not password:
+            logger.warning(
+                f"[require_strong_password] Missing password field "
+                f"on {request.method} {request.path} from {request.remote_addr}"
+            )
+            return jsonify({
+                'success': False,
+                'error': 'Password is required',
+                'requirements': []
+            }), 400
+
+        is_valid, errors = validate_password_strength(password)
+
+        if not is_valid:
+            logger.warning(
+                f"[require_strong_password] Weak password rejected "
+                f"on {request.path} from {request.remote_addr} — "
+                f"failed rules: {errors}"
+            )
+            return jsonify({
+                'success': False,
+                'error': 'Password does not meet security requirements',
+                'requirements': errors
+            }), 400
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+# ─────────────────────────────────────────────────────────────────────────────
+# END PASSWORD STRENGTH ENFORCEMENT
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 def csrf_token_required(f):
     """
     =============================================================================

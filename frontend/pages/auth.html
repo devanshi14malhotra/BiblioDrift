@@ -424,6 +424,19 @@
                         <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
                             aria-label="Show password" role="button" tabindex="0"></i>
                     </div>
+                    <div class="password-strength-bar">
+  <div id="strength-fill" class="strength-fill"></div>
+</div>
+
+<p id="strength-label" class="strength-label"></p>
+
+<ul class="pw-checklist" id="pw-checklist">
+  <li id="chk-len">At least 8 characters</li>
+  <li id="chk-up">One uppercase letter</li>
+  <li id="chk-low">One lowercase letter</li>
+  <li id="chk-num">One digit (0–9)</li>
+  <li id="chk-spec">One special character</li>
+</ul>
 
                     <!-- 
                         =============================================================
@@ -626,6 +639,8 @@
     </script>
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
+  <script src="../js/passwordValidator.js" type="module"></script>
+<script src="../js/authValidator.js" type="module"></script>
 </body>
 
 </html>

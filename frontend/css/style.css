@@ -6810,4 +6810,25 @@ body.night-mode .tooltip-author {
     border-color: var(--text-main);
 }
 
+/* Password Strength Styles */
+.password-strength-bar {
+  height: 5px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+}
+.strength-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.strength-label { font-size: 12px; margin: 0 0 8px; min-height: 16px; }
+.pw-checklist { list-style: none; padding: 0; margin: 0 0 12px; font-size: 13px; }
+.pw-checklist li { padding: 2px 0; color: #888; transition: color 0.2s; }
+.pw-checklist li.pass { color: #1D9E75; }
+.pw-checklist li.fail { color: #E24B4A; }
+.pw-checklist li.pass::before { content: '✓ '; }
+.pw-checklist li.fail::before { content: '✗ '; }
 
