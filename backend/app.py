@@ -1,6 +1,5 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
-
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,7 +30,6 @@ import logging
 from datetime import datetime, timedelta, timezone
 from sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
-
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
 env_path = os.path.join(os.path.dirname(__file__), '..', 'config', f'.env.{env}')
@@ -100,7 +98,6 @@ from error_responses import (
     not_found_error, resource_exists_error, rate_limit_error,
     internal_error, service_unavailable_error
 )
-
 # =====================================================================
 # LOGGING INITIALIZATION
 # We rely solely on the centralized setup_logging function to configure 
@@ -128,7 +125,6 @@ except ImportError:
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.register_blueprint(reader_identity_bp)
-
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
 validate_required_env_vars()
@@ -156,7 +152,7 @@ csrf = CSRFProtect(app)
 # Exclude certain endpoints from global CSRF if they are handled by JWT CSRF
 # or if they are intended to be public-facing without token requirements.
 # In this architecture, we prefer explicit protection on all mutation routes.
-# csrf.exempt(some_blueprint) 
+#csrf.exempt(some_blueprint) 
 
 # Initialize JWT Manager
 jwt = JWTManager(app)
@@ -1285,7 +1281,7 @@ def add_to_library(validated_data):
     from error_responses import handle_exception
     
     try:
-        
+        current_user_id = get_jwt_identity()
         if str(validated_data.user_id) != str(current_user_id):
             return unauthorized_access_error("Cannot access another user's library")
         
@@ -1458,7 +1454,7 @@ def _get_yearly_stats(user_id, year):
 def update_library_item(item_id, validated_data):
     """Update a library item (e.g. move to different shelf)."""
     try:
-        
+        current_user_id = get_jwt_identity()
         item = ShelfItem.query.with_for_update().get(item_id)
         if not item:
             return not_found_error("Library item")
@@ -1684,7 +1680,7 @@ def register(validated_data):
         try:
             user = register_user(username, email, password)
             if not user:
-                return internal_error("Failed to create user record after registration.")
+                return internal_error("Failed to create user record after registration.")   
             
             access_token = create_access_token(identity=str(user.id))
             
@@ -2060,7 +2056,7 @@ def verify_auth_session():
 @validate_schema(SetGoalRequest)
 def set_reading_goal(validated_data):
     """Set or update annual reading goal."""
-    
+    current_user_id = get_jwt_identity()
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
     
@@ -2178,7 +2174,7 @@ def get_leaderboard():
 @validate_schema(CollectionRequest)
 def create_collection(validated_data):
     """Create a new collection."""
-    
+    current_user_id = get_jwt_identity()
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
     
@@ -2251,7 +2247,7 @@ def update_collection(collection_id, validated_data):
         collection = Collection.query.get(collection_id)
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
-        
+        current_user_id = get_jwt_identity()
         if str(collection.user_id) != str(current_user_id):
             return forbidden_error("Unauthorized")
         
@@ -2301,10 +2297,12 @@ def delete_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/books', methods=['POST'])
 @jwt_required()
-def add_book_to_collection(collection_id):
+@validate_schema(AddToCollectionRequest)
+def add_book_to_collection(collection_id, validated_data):
     """Add a book to a collection."""
     
     try:
+        current_user_id = get_jwt_identity()
         collection = Collection.query.get(collection_id)
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
