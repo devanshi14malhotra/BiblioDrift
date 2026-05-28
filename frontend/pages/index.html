@@ -32,6 +32,19 @@
             btn.addEventListener('click', function () {
                 const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
                 applyTheme(current === 'night' ? 'light' : 'night');
+            // Ambient Paper/Canvas Background Switcher Logic
+                const bgSelector = document.getElementById('customBgSelect');
+                if (bgSelector) {
+                    const savedBg = localStorage.getItem('bibliodrift_bg') || 'default-clean';
+                    bgSelector.value = savedBg;
+                    document.body.setAttribute('data-bg', savedBg);
+
+                    bgSelector.addEventListener('change', function(e) {
+                        const selected = e.target.value;
+                        document.body.setAttribute('data-bg', selected);
+                        localStorage.setItem('bibliodrift_bg', selected);
+                    });
+}
             });
         });
     </script>
@@ -82,15 +95,23 @@
         }
 
         body.landing-page {
-            background:
-                radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 28%),
-                radial-gradient(circle at 82% 16%, rgba(93, 64, 55, 0.16), transparent 26%),
-                radial-gradient(circle at 12% 78%, rgba(127, 150, 160, 0.12), transparent 24%),
-                linear-gradient(180deg, #fbfaf6 0%, #f8f3eb 44%, #f6f0e8 100%);
-            color: var(--landing-ink);
-            overflow-x: hidden;
-            font-family: "DM Sans", sans-serif;
-        }
+    /* Fallback color if no custom texture is chosen yet */
+    background-color: #fbfaf6;
+    color: var(--landing-ink);
+    overflow-x: hidden;
+    font-family: "DM Sans", sans-serif;
+}
+
+/* Fallback default clean style layout when selected */
+body.landing-page[data-bg="default-clean"],
+body.landing-page:not([data-bg]) {
+    background:
+        radial-gradient(circle at top left, rgba(212, 175, 55, 0.14), transparent 28%),
+        radial-gradient(circle at 82% 16%, rgba(93, 64, 55, 0.12), transparent 24%),
+        linear-gradient(180deg, #fbfaf6 0%, #f8f3eb 45%, #f6f0e8 100%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.85) 0 1px, transparent 1px 24px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100% !important;
+}
 
         body.landing-page::before,
         body.landing-page::after {
@@ -504,6 +525,7 @@
             animation: floatOrb 10s ease-in-out infinite;
         }
 
+
         .orb-one {
             width: 12rem;
             height: 12rem;
@@ -521,7 +543,7 @@
             animation-delay: -3s;
         }
 
-        .hero-book-stack {
+        .hero-texture-stack {
             position: relative;
             width: min(100%, 24rem);
             min-height: 30rem;
@@ -529,7 +551,7 @@
             place-items: center;
         }
 
-        .hero-book-stack::before {
+        .hero-texture-stack::before {
             content: "";
             position: absolute;
             inset: 7% 10% 6% 10%;
@@ -540,30 +562,31 @@
             transform: rotate(-2deg);
         }
 
-        .hero-book {
+        .hero-texture-panel {
             position: absolute;
-            border-radius: 20px;
+            border-radius: 24px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.65);
-            box-shadow: 0 22px 40px rgba(44, 36, 32, 0.15);
+            border: 1px solid rgba(93, 64, 55, 0.08);
+            box-shadow: 0 24px 46px rgba(44, 36, 32, 0.14);
             animation: floatCard 8s ease-in-out infinite;
         }
 
-        .hero-book img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
+        .hero-texture-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: 0.92;
+            pointer-events: none;
         }
 
-        .book-large {
+        .texture-large {
             width: 15.5rem;
             height: 23rem;
             transform: rotate(-6deg) translateY(0.5rem);
             z-index: 2;
         }
 
-        .book-small-top {
+        .texture-small-top {
             width: 9.25rem;
             height: 13.75rem;
             top: 1.6rem;
@@ -573,7 +596,7 @@
             z-index: 3;
         }
 
-        .book-small-bottom {
+        .texture-small-bottom {
             width: 8.75rem;
             height: 13rem;
             left: 0.2rem;
@@ -581,6 +604,41 @@
             transform: rotate(-8deg);
             animation-delay: -2.8s;
             z-index: 1;
+        }
+
+        .hero-texture-panel[data-texture="smooth"] {
+            background: linear-gradient(180deg, #fefbf7 0%, #f4ede4 100%);
+        }
+
+        .hero-texture-panel[data-texture="smooth"]::before {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.9), transparent 18%),
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 12px),
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 12px);
+        }
+
+        .hero-texture-panel[data-texture="crinkled"] {
+            background: linear-gradient(180deg, #ebe0d2 0%, #dad0c3 100%);
+        }
+
+        .hero-texture-panel[data-texture="crinkled"]::before {
+            background-image:
+                radial-gradient(circle at 25% 20%, rgba(255,255,255,0.22), transparent 22%),
+                linear-gradient(115deg, rgba(255,255,255,0.18), transparent 18%),
+                linear-gradient(205deg, rgba(255,255,255,0.14), transparent 15%);
+            opacity: 0.62;
+        }
+
+        .hero-texture-panel[data-texture="canvas"] {
+            background: linear-gradient(180deg, #f5f0e7 0%, #dfd7cc 100%);
+        }
+
+        .hero-texture-panel[data-texture="canvas"]::before {
+            background-image:
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.18) 0 2px, transparent 2px 12px),
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 2px, transparent 2px 12px),
+                radial-gradient(circle at 82% 18%, rgba(255,255,255,0.16), transparent 24%);
+            opacity: 0.58;
         }
 
         .hero-caption {
@@ -1939,6 +1997,15 @@
                 <a href="#contribute">Contribute</a>
             </nav>
             <div class="landing-header-actions">
+                <div class="bg-switch-wrapper" style="position: relative; display: inline-block; margin-right: 0.5rem;">
+    <select id="customBgSelect" class="bg-dropdown-menu" aria-label="Choose Texture Theme">
+        <option value="default-clean">Clean Paper Canvas</option>
+        <option value="crinkled-parchment">Crinkled Parchment</option>
+        <option value="fine-pressed">Pressed Cotton</option>
+        <option value="heavy-textured">Textured Linen Canvas</option>
+        <option value="linen-weave">Soft Linen Weave</option>
+    </select>
+</div>
                 <button id="themeToggle" class="landing-icon-btn" aria-label="Toggle dark mode">
                     <i class="fa-solid fa-moon"></i>
                 </button>
@@ -1984,19 +2051,13 @@
                 <div class="hero-visual" aria-hidden="true">
                     <div class="hero-orb orb-one"></div>
                     <div class="hero-orb orb-two"></div>
-                    <div class="hero-book-stack">
-                        <div class="hero-book book-large">
-                            <img src="../assets/images/pride.jpg" alt="" />
-                        </div>
-                        <div class="hero-book book-small-top">
-                            <img src="../assets/images/gatsby.jpg" alt="" />
-                        </div>
-                        <div class="hero-book book-small-bottom">
-                            <img src="../assets/images/dune.jpg" alt="" />
-                        </div>
+                    <div class="hero-texture-stack">
+                        <div class="hero-texture-panel texture-large" data-texture="smooth"></div>
+                        <div class="hero-texture-panel texture-small-top" data-texture="crinkled"></div>
+                        <div class="hero-texture-panel texture-small-bottom" data-texture="canvas"></div>
                         <div class="hero-caption">
-                            <span>Curated for slow afternoons</span>
-                            <strong>Search by feeling, not just genre.</strong>
+                            <span>Soft texture themes for calm focus</span>
+                            <strong>Set the tone with paper, linen, and canvas-inspired surfaces.</strong>
                         </div>
                     </div>
                     <div class="hero-note">
