@@ -34,5 +34,6 @@ instance/
 venv/
 
 # Local untracked scripts folder
+ untracked/
 .claude/
 .refact/
