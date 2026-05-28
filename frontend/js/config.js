@@ -14,6 +14,11 @@ function resolveMoodApiBase() {
         return LOCAL_MOOD_API_BASE;
     }
     const host = window.location.hostname;
+    const origin = window.location.origin;
+    const protocol = window.location.protocol;
+    if (!origin || origin === 'null' || protocol === 'file:' || !host) {
+        return LOCAL_MOOD_API_BASE;
+    }
     if (host === 'localhost' || host === '127.0.0.1') {
         return LOCAL_MOOD_API_BASE;
     }

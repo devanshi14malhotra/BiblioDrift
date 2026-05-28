@@ -255,6 +255,19 @@
             transform: translateY(-1px);
         }
 
+        .input-hint {
+            display: block;
+            margin-top: 0.4rem;
+            padding-left: 0.1rem;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+
+        .input-hint.warning {
+            color: #b44a2a;
+        }
+
         .auth-btn {
             width: 100%;
             min-height: 3.65rem;
@@ -309,6 +322,59 @@
             line-height: 1.5;
         }
 
+        .auth-divider {
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(93, 64, 55, 0.14);
+        }
+
+        .credential-line {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.36);
+            border: 1px solid rgba(93, 64, 55, 0.1);
+        }
+
+        .credential-line-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+
+        .credential-line-result {
+            margin-top: 0.9rem;
+            padding: 0.9rem 1rem;
+            border-radius: 14px;
+            background: rgba(93, 64, 55, 0.08);
+            border: 1px solid rgba(93, 64, 55, 0.12);
+            color: var(--text-main);
+            display: grid;
+            gap: 0.4rem;
+        }
+
+        .credential-line-result[hidden] {
+            display: none;
+        }
+
+        .credential-line-result strong {
+            color: var(--wood-dark);
+        }
+
         @media (max-width: 900px) {
             body.auth-page main.auth-main {
                 padding: 1.5rem 1rem 2.5rem;
@@ -359,6 +425,11 @@
             .auth-highlights li {
                 padding: 0.9rem 0.95rem;
             }
+
+            .credential-line-grid {
+                grid-template-columns: 1fr;
+            }
+
         }
 
         [data-theme="night"] body.auth-page {
@@ -425,11 +496,34 @@
             border-color: rgba(252, 203, 78, 0.55);
         }
 
-        [data-theme="night"] .google-auth-btn {
-            background: rgba(255, 255, 255, 0.08);
-            color: #f5e9db;
-            border-color: rgba(252, 203, 78, 0.16);
+        [data-theme="night"] .input-hint {
+            color: rgba(245, 233, 219, 0.72);
         }
+
+        [data-theme="night"] .input-hint.warning {
+            color: #ff9e7a;
+        }
+
+        [data-theme="night"] .auth-divider::before,
+        [data-theme="night"] .auth-divider::after {
+            background: rgba(252, 203, 78, 0.16);
+        }
+
+        [data-theme="night"] .credential-line {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(252, 203, 78, 0.14);
+        }
+
+        [data-theme="night"] .credential-line-result {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(252, 203, 78, 0.14);
+            color: #f5e9db;
+        }
+
+        [data-theme="night"] .credential-line-result strong {
+            color: #fccb4e;
+        }
+
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
@@ -488,14 +582,14 @@
         <section class="auth-shell">
             <aside class="auth-intro" aria-label="Authentication benefits">
                 <p class="auth-eyebrow">Member access</p>
-                <h1>Sign in to your shelf.</h1>
+                <h1>Generate a local demo session.</h1>
                 <p class="auth-copy">
-                    Keep your recommendations, reading history, and mood-based picks synced across devices.
+                    Create temporary credentials on this browser and jump into the app without any backend setup.
                 </p>
                 <ul class="auth-highlights">
-                    <li><i class="fa-solid fa-book-open"></i> Continue from your latest reading session</li>
-                    <li><i class="fa-solid fa-comments"></i> Pick up saved chats and book suggestions</li>
-                    <li><i class="fa-solid fa-shield-heart"></i> Manage your account in one secure place</li>
+                    <li><i class="fa-solid fa-bolt"></i> Generate a username and password instantly</li>
+                    <li><i class="fa-solid fa-copy"></i> Copy credentials or regenerate them anytime</li>
+                    <li><i class="fa-solid fa-shield-heart"></i> Keep everything local to this device</li>
                 </ul>
             </aside>
 
@@ -507,6 +601,7 @@
                 <form id="authForm" data-mode="login" onsubmit="handleAuth(event)">
                     <div id="nameField">
                         <input type="text" id="username" class="auth-input" placeholder="Full Name" autocomplete="name">
+                        <small id="usernameHint" class="input-hint">Type only lowercase letters.</small>
                     </div>
 
                     <div class="input-group">
@@ -551,6 +646,26 @@
                     <span id="toggleText" class="toggle-link">
                         No account? Create one.
                     </span>
+                </div>
+
+                <div class="auth-divider"><span>Generate credentials below</span></div>
+                <div class="credential-line" aria-label="Temporary credential generator">
+                    <div class="credential-line-grid">
+                        <div class="input-group" style="margin: 0;">
+                                <input type="text" id="credentialNameInput" class="auth-input" placeholder="Enter your name" autocomplete="name">
+                                <small id="credentialNameHint" class="input-hint">Type only lowercase letters.</small>
+                        </div>
+                        <button type="button" id="generateCredentialBtn" class="auth-btn secondary" style="min-width: 220px;">
+                            Generate Credential
+                        </button>
+                    </div>
+                    <div id="credentialLineResult" class="credential-line-result" hidden>
+                        <div><strong>Email:</strong> <span id="generatedCredentialEmail"></span></div>
+                        <div><strong>Password:</strong> <span id="generatedCredentialPassword"></span></div>
+                        <button type="button" id="loginTempBtn" class="auth-btn" style="margin-top: 0.4rem; min-height: 3rem;">
+                            Log in with temporary credentials
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -619,6 +734,34 @@
         const nameField = document.getElementById('nameField');
         const submitBtn = document.getElementById('submitBtn');
         const googleAuthBtn = document.getElementById('googleAuthBtn');
+        const usernameInput = document.getElementById('username');
+        const usernameHint = document.getElementById('usernameHint');
+        const credentialNameInput = document.getElementById('credentialNameInput');
+        const credentialNameHint = document.getElementById('credentialNameHint');
+
+        const updateLowercaseHint = (input, hintEl) => {
+            if (!input || !hintEl) {
+                return;
+            }
+
+            const value = input.value || '';
+            const normalized = value.toLowerCase().replace(/[^a-z\s]/g, '');
+            const hasUppercaseOrInvalid = value !== normalized;
+            hintEl.textContent = hasUppercaseOrInvalid
+                ? 'Use only lowercase letters.'
+                : 'Type only lowercase letters.';
+            hintEl.classList.toggle('warning', hasUppercaseOrInvalid);
+        };
+
+        if (usernameInput && usernameHint) {
+            usernameInput.addEventListener('input', () => updateLowercaseHint(usernameInput, usernameHint));
+            updateLowercaseHint(usernameInput, usernameHint);
+        }
+
+        if (credentialNameInput && credentialNameHint) {
+            credentialNameInput.addEventListener('input', () => updateLowercaseHint(credentialNameInput, credentialNameHint));
+            updateLowercaseHint(credentialNameInput, credentialNameHint);
+        }
 
         if (googleAuthBtn) {
             googleAuthBtn.addEventListener('click', () => {

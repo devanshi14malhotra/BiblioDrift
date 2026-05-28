@@ -81,6 +81,7 @@
 // Do NOT re-declare them here — use the globals from config.js directly.
 const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const moodAnalysisCache = new Map();
+const TEMP_AUTH_PROFILE_KEY = 'bibliodrift_temp_auth_profile';
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -260,6 +261,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    SafeStorage.remove(TEMP_AUTH_PROFILE_KEY);
     authSessionPromise = null;
 }
 
@@ -273,6 +275,240 @@ function parseStoredUser() {
         return null;
     }
 }
+
+function isTemporaryAuthUser(user) {
+    return !!user && user.authProvider === 'temporary';
+}
+
+function getTemporaryAuthProfile() {
+    const profileStr = SafeStorage.get(TEMP_AUTH_PROFILE_KEY);
+    if (!profileStr) return null;
+
+    try {
+        return JSON.parse(profileStr);
+    } catch (error) {
+        return null;
+    }
+}
+
+function createSecureRandomString(length = 12) {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const randomValues = new Uint32Array(length);
+
+    if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(randomValues);
+    } else {
+        for (let index = 0; index < length; index += 1) {
+            randomValues[index] = Math.floor(Math.random() * alphabet.length);
+        }
+    }
+
+    return Array.from(randomValues, (value) => alphabet[value % alphabet.length]).join('');
+}
+
+function createTemporaryPassword(name, length = 16) {
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lower = 'abcdefghijkmnopqrstuvwxyz';
+    const digits = '23456789';
+    const symbols = '!@#$%^&*_-';
+    const allChars = `${upper}${lower}${digits}${symbols}`;
+    const namePrefix = normalizeTemporaryName(name).toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 6) || 'reader';
+    const pool = [
+        upper[Math.floor(Math.random() * upper.length)],
+        lower[Math.floor(Math.random() * lower.length)],
+        digits[Math.floor(Math.random() * digits.length)],
+        symbols[Math.floor(Math.random() * symbols.length)]
+    ];
+    const remaining = Math.max(length - pool.length, 0);
+
+    if (remaining > 0) {
+        const randomValues = new Uint32Array(remaining);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(randomValues);
+        } else {
+            for (let index = 0; index < remaining; index += 1) {
+                randomValues[index] = Math.floor(Math.random() * allChars.length);
+            }
+        }
+
+        Array.from(randomValues).forEach((value) => {
+            pool.push(allChars[value % allChars.length]);
+        });
+    }
+
+    for (let index = pool.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+    }
+
+    return `${namePrefix}-${pool.join('')}`;
+}
+
+function normalizeTemporaryName(name) {
+    return String(name || '').trim().replace(/\s+/g, ' ');
+}
+
+function createTemporaryAuthProfile(name) {
+    const normalizedName = normalizeTemporaryName(name);
+    const namePrefix = normalizedName.toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 10) || 'reader';
+    const username = `${namePrefix}_${createSecureRandomString(4).toLowerCase()}`;
+    const email = `${namePrefix}.${createSecureRandomString(5).toLowerCase()}@bibliodrift.local`;
+    const userId = Math.floor(100000 + Math.random() * 900000);
+    const password = createTemporaryPassword(normalizedName);
+    const sessionId = `${Date.now().toString(36)}-${createSecureRandomString(6).toLowerCase()}`;
+
+    return {
+        id: userId,
+        name: normalizedName,
+        email,
+        username,
+        password,
+        sessionId,
+        created_at: new Date().toISOString(),
+        authProvider: 'temporary'
+    };
+}
+
+function storeTemporaryAuthProfile(profile) {
+    SafeStorage.set(TEMP_AUTH_PROFILE_KEY, JSON.stringify(profile));
+    return profile;
+}
+
+function renderTemporaryAuthSession(profile) {
+    const tempUser = {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email || '',
+        username: profile.username,
+        created_at: profile.created_at,
+        authProvider: profile.authProvider,
+        sessionId: profile.sessionId
+    };
+
+    SafeStorage.set('bibliodrift_user', JSON.stringify(tempUser));
+    SafeStorage.set('bibliodrift_token', `temp-${profile.sessionId}`);
+    SafeStorage.set('isLoggedIn', 'true');
+    return tempUser;
+}
+
+function resetTemporaryAuthUI() {
+    const credentialCard = document.getElementById('tempCredentialCard');
+    const generatedStatus = document.getElementById('generatedCredentialStatus');
+    const loginBtn = document.getElementById('loginTempBtn');
+    const copyBtn = document.getElementById('copyTempCredentialsBtn');
+    const regenerateBtn = document.getElementById('regenerateTempCredentialsBtn');
+    const passwordInput = document.getElementById('generatedPassword');
+    const generatedEmail = document.getElementById('generatedEmail');
+    const generatedUsername = document.getElementById('generatedUsername');
+    const generatedUserId = document.getElementById('generatedUserId');
+
+    if (credentialCard) credentialCard.hidden = false;
+    if (generatedStatus) generatedStatus.textContent = 'Enter your name and generate temporary credentials below.';
+    if (loginBtn) loginBtn.disabled = true;
+    if (copyBtn) copyBtn.disabled = true;
+    if (regenerateBtn) regenerateBtn.disabled = true;
+    if (passwordInput) passwordInput.type = 'password';
+    if (generatedEmail) generatedEmail.value = '';
+    if (generatedUsername) generatedUsername.value = '';
+    if (generatedUserId) generatedUserId.value = '';
+    if (passwordInput) passwordInput.value = '';
+}
+
+function syncTemporaryAuthUI(profile) {
+    const credentialCard = document.getElementById('tempCredentialCard');
+    const generatedStatus = document.getElementById('generatedCredentialStatus');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('generatedEmail');
+    const usernameInput = document.getElementById('generatedUsername');
+    const userIdInput = document.getElementById('generatedUserId');
+    const passwordInput = document.getElementById('generatedPassword');
+    const loginBtn = document.getElementById('loginTempBtn');
+    const copyBtn = document.getElementById('copyTempCredentialsBtn');
+    const regenerateBtn = document.getElementById('regenerateTempCredentialsBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (!profile) {
+        resetTemporaryAuthUI();
+        if (submitBtn) submitBtn.textContent = 'Generate Temporary Credentials';
+        return;
+    }
+
+    if (credentialCard) credentialCard.hidden = false;
+    if (generatedStatus) {
+        generatedStatus.textContent = `Temporary credentials ready for ${profile.name || 'this reader'}.`;
+    }
+    if (nameInput && profile.name) nameInput.value = profile.name;
+    if (emailInput) emailInput.value = profile.email || '';
+    if (usernameInput) usernameInput.value = profile.username;
+    if (userIdInput) userIdInput.value = String(profile.id);
+    if (passwordInput) {
+        passwordInput.type = 'password';
+        passwordInput.value = profile.password;
+    }
+    if (loginBtn) loginBtn.disabled = false;
+    if (copyBtn) copyBtn.disabled = false;
+    if (regenerateBtn) regenerateBtn.disabled = false;
+    if (submitBtn) submitBtn.textContent = 'Log In with Temporary Credentials';
+}
+
+function copyTemporaryCredentials() {
+    const profile = getTemporaryAuthProfile();
+    if (!profile) return false;
+
+    const text = `Name: ${profile.name || ''}\nEmail: ${profile.email || ''}\nUsername: ${profile.username}\nUser ID: ${profile.id}\nPassword: ${profile.password}`;
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+    } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+    }
+    return true;
+}
+
+function loginWithTemporaryCredentials() {
+    const profile = getTemporaryAuthProfile();
+    if (!profile) {
+        showToast('Generate temporary credentials first.', 'error');
+        return false;
+    }
+
+    const currentName = normalizeTemporaryName(document.getElementById('name')?.value);
+    if (currentName && currentName !== profile.name) {
+        showToast('Name changed. Regenerate credentials for the new name.', 'error');
+        return false;
+    }
+
+    renderTemporaryAuthSession(profile);
+    if (typeof showToast === 'function') {
+        showToast(`Logged in as ${profile.username}.`, 'success');
+    }
+    setTimeout(() => {
+        window.location.href = 'profile.html';
+    }, 700);
+    return true;
+}
+
+function clearTemporaryAuthSession() {
+    SafeStorage.remove(TEMP_AUTH_PROFILE_KEY);
+    clearStoredAuthState();
+}
+
+window.TempAuth = {
+    clearTemporaryAuthSession,
+    copyTemporaryCredentials,
+    createTemporaryAuthProfile,
+    getTemporaryAuthProfile,
+    isTemporaryAuthUser,
+    loginWithTemporaryCredentials,
+    normalizeTemporaryName,
+    renderTemporaryAuthSession,
+    storeTemporaryAuthProfile,
+    syncTemporaryAuthUI
+};
 
 function renderAuthNavigation(authLink, tooltip, isAuthenticated) {
     if (!authLink) return;
@@ -302,6 +538,10 @@ async function verifyStoredAuthSession() {
         const token = SafeStorage.get('bibliodrift_token');
         const storedUser = parseStoredUser();
         const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
+
+        if (isTemporaryAuthUser(storedUser)) {
+            return storedUser;
+        }
 
         if (token === 'demo-token-12345') {
             return storedUser;
@@ -1866,6 +2106,10 @@ class LibraryManager {
         }
 
         // 4. Sync with backend if available (Full Refresh)
+        if (isTemporaryAuthUser(this.getUser())) {
+            await this.updateSyncStatus();
+            return;
+        }
         await this.syncWithBackend();
         if (navigator.onLine) {
             await this.flushPendingLibraryMutations();
@@ -2080,7 +2324,7 @@ class LibraryManager {
 
     async syncWithBackend() {
         const user = this.getUser();
-        if (!user) return;
+        if (!user || isTemporaryAuthUser(user)) return;
 
         try {
             const res = await fetch(`${this.apiBase}/library/${user.id}`, {
@@ -2179,7 +2423,7 @@ class LibraryManager {
     }
 
     async syncLocalToBackend(user) {
-        if (!user) return;
+        if (!user || isTemporaryAuthUser(user)) return;
 
         // Flatten local library into a list of items with 'shelf' property
         const itemsToSync = [];
@@ -2881,7 +3125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
-            
+
             if (!isLogin) {
                 // Switch to Register Mode
                 authForm.dataset.mode = 'register';
@@ -2896,6 +3140,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                 authBtn.textContent = 'Sign In';
                 toggleLink.textContent = 'No account? Create one.';
                 if (nameField) nameField.style.display = 'none';
+            }
+        });
+    }
+
+    const credentialNameInput = document.getElementById('credentialNameInput');
+    const generateCredentialBtn = document.getElementById('generateCredentialBtn');
+    const credentialLineResult = document.getElementById('credentialLineResult');
+    const generatedCredentialEmail = document.getElementById('generatedCredentialEmail');
+    const generatedCredentialPassword = document.getElementById('generatedCredentialPassword');
+    const loginTempBtn = document.getElementById('loginTempBtn');
+
+    if (loginTempBtn) {
+        loginTempBtn.addEventListener('click', () => {
+            loginWithTemporaryCredentials();
+        });
+    }
+
+    if (generateCredentialBtn && credentialNameInput) {
+        generateCredentialBtn.addEventListener('click', () => {
+            const name = normalizeTemporaryName(credentialNameInput.value);
+            if (!name) {
+                showToast('Enter your name to generate credentials.', 'error');
+                credentialNameInput.focus();
+                return;
+            }
+
+            const profile = createTemporaryAuthProfile(name);
+            storeTemporaryAuthProfile(profile);
+            if (generatedCredentialEmail) {
+                generatedCredentialEmail.textContent = profile.email;
+            }
+            if (generatedCredentialPassword) {
+                generatedCredentialPassword.textContent = profile.password;
+            }
+            if (credentialLineResult) {
+                credentialLineResult.hidden = false;
+            }
+
+            if (typeof showToast === 'function') {
+                showToast('Temporary credential generated.', 'success');
             }
         });
     }
@@ -2942,7 +3226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    if (verifiedUser) {
+    if (verifiedUser && !isTemporaryAuthUser(verifiedUser)) {
         await libManager.syncWithBackend();
     }
 
@@ -3043,7 +3327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // populate User Info
         document.getElementById('profile-username').textContent = user.username || 'Bookworm';
-        document.getElementById('profile-email').textContent = user.email || '';
+        document.getElementById('profile-email').textContent = user.email || (user.name ? `Local demo for ${user.name}` : 'Local demo session');
         document.getElementById('profile-joined').textContent = user.created_at ? new Date(user.created_at).getFullYear() : '2024';
 
         // populate Stats
@@ -3090,6 +3374,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const loadExtendedStats = async () => {
+            if (isTemporaryAuthUser(user)) {
+                const progressText = document.getElementById('goal-progress-text');
+                if (progressText) progressText.textContent = 'Temporary session only';
+                const lbSection = document.getElementById('leaderboard-section');
+                if (lbSection) lbSection.style.display = 'none';
+                return;
+            }
+
             const token = SafeStorage.get('bibliodrift_token');
             if (!token) return;
 
@@ -3356,6 +3648,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
 
             const token = SafeStorage.get('bibliodrift_token');
+            if (isTemporaryAuthUser(user)) {
+                identityContent.innerHTML = `
+                    <div class="empty-state" style="padding: 1rem 0; text-align: center; color: var(--text-muted);">
+                        <i class="fa-solid fa-vial" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                        <p>Temporary sessions keep auth local. Connect the backend to unlock reader identity insights.</p>
+                    </div>
+                `;
+                return;
+            }
             if (!token) {
                 identityContent.innerHTML = `
                     <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
@@ -3533,15 +3834,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Logout
         document.getElementById('logout-btn').addEventListener('click', async () => {
+            const user = parseStoredUser();
             try {
-                // Clear backend cookies
-                await fetch(`${MOOD_API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+                if (!isTemporaryAuthUser(user)) {
+                    // Clear backend cookies
+                    await fetch(`${MOOD_API_BASE}/logout`, { method: 'POST', credentials: 'include' });
+                }
             } catch (e) {
                 console.warn("Backend logout failed", e);
             }
-            SafeStorage.remove('bibliodrift_user');
-            SafeStorage.remove('bibliodrift_token');
-            SafeStorage.remove('isLoggedIn');
+            clearStoredAuthState();
             window.location.href = 'index.html';
         });
     }
@@ -3634,7 +3936,7 @@ async function handleAuth(event) {
         SafeStorage.set('bibliodrift_user', JSON.stringify(demoUser));
         SafeStorage.set('isLoggedIn', 'true');
         SafeStorage.set('bibliodrift_token', 'demo-token-12345');
-        
+
         if (typeof showToast === 'function')
             showToast(`Welcome, Demo User!`, "success");
 
@@ -3662,10 +3964,10 @@ async function handleAuth(event) {
     // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
     // =========================================================================
     // We retrieve the CSRF token from the hidden input field 'csrf_token'.
-    // This token is then injected into the 'X-CSRF-Token' header. 
+    // This token is then injected into the 'X-CSRF-Token' header.
     // The Flask-WTF backend expects this header for all state-changing
-    // AJAX requests. This protects against Cross-Site Request Forgery 
-    // by ensuring that the request is authenticated via the browser's 
+    // AJAX requests. This protects against Cross-Site Request Forgery
+    // by ensuring that the request is authenticated via the browser's
     // Same-Origin Policy and session-bound secrets.
     // =========================================================================
     const csrfToken = document.getElementById('csrf_token')?.value;
@@ -3673,7 +3975,7 @@ async function handleAuth(event) {
     try {
         const fetchOptions = {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json'
             },
             credentials: 'include',
