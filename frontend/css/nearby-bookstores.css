@@ -1,0 +1,439 @@
+/* =========================================
+       Nearby Bookstores Feature
+    ========================================= */
+
+    .nearby-bookstores-container {
+        width: 100%;
+        min-height: auto;
+        padding: 35px 45px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        animation: fadeIn 0.4s ease;
+    }
+
+    /* =========================================
+       Header
+    ========================================= */
+
+    .bookstores-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .bookstores-heading {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 2.5rem;
+        font-style: italic;
+        font-weight: 500;
+        line-height: 1.1;
+        letter-spacing: -0.5px;
+        color: var(--text-main);
+        text-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        margin-bottom: 6px;
+    }
+
+    .bookstores-subtitle {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.08rem;
+        line-height: 1.6;
+        color: var(--text-secondary);
+        max-width: 620px;
+    }
+
+    /* =========================================
+       Controls
+    ========================================= */
+
+    .bookstore-controls {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .find-bookstore-btn {
+        padding: 14px 24px;
+        border: none;
+        border-radius: 16px;
+        background: #d8b132;
+        color: #111;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 8px 18px rgba(216, 177, 50, 0.22);
+    }
+
+    .find-bookstore-btn:hover {
+        transform: translateY(-2px);
+        opacity: 0.95;
+    }
+
+    .find-bookstore-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* =========================================
+       Location Status
+    ========================================= */
+
+    .location-status {
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-top: 8px;
+        font-family: "Cormorant Garamond", serif;
+    }
+
+    .location-error {
+        color: #ef4444;
+    }
+
+    .location-success {
+        color: #10b981;
+    }
+
+    /* =========================================
+       Map
+    ========================================= */
+
+    .bookstore-map-container {
+        width: 100%;
+        height: 320px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: var(--glass-bg, rgba(255,255,255,0.1));
+        box-shadow:
+            0 10px 25px rgba(0,0,0,0.06),
+            inset 0 1px 0 rgba(255,255,255,0.3);
+        border: 1px solid rgba(255,255,255,0.22);
+    }
+
+    #bookstoreMap {
+        width: 100%;
+        height: 100%;
+    }
+
+    /* =========================================
+       Cards Grid
+    ========================================= */
+
+    .bookstores-grid {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(280px, 1fr)
+        );
+        gap: 22px;
+    }
+
+    /* =========================================
+       Bookstore Card
+    ========================================= */
+
+    .bookstore-card {
+        background: var(--glass-bg, rgba(255,255,255,0.1));
+        border-radius: 22px;
+        padding: 22px;
+        box-shadow:
+            0 8px 22px rgba(0,0,0,0.05),
+            inset 0 1px 0 rgba(255,255,255,0.25);
+
+        border: 1px solid rgba(255,255,255,0.22);
+
+        transition: all 0.3s ease;
+
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .bookstore-card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+            0 14px 30px rgba(0,0,0,0.08),
+            inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+
+    /* =========================================
+       Typography
+    ========================================= */
+
+    .bookstore-name {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.2;
+    }
+
+    .bookstore-address {
+        font-family: "Cormorant Garamond", serif;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        font-size: 1rem;
+    }
+
+    .bookstore-hours {
+        font-family: "Cormorant Garamond", serif;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    /* =========================================
+       Meta
+    ========================================= */
+
+    .bookstore-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .bookstore-distance {
+        color: #d8b132;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .bookstore-rating {
+        background: rgba(216, 177, 50, 0.15);
+        color: #d8b132;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    /* =========================================
+       Actions
+    ========================================= */
+
+    .bookstore-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .bookstore-btn {
+        flex: 1;
+        text-align: center;
+        text-decoration: none;
+        padding: 12px 14px;
+        border-radius: 14px;
+        font-weight: 700;
+        transition: all 0.25s ease;
+        font-size: 0.92rem;
+    }
+
+    .bookstore-btn-primary {
+        background: #d8b132;
+        color: #111;
+    }
+
+    .bookstore-btn-primary:hover {
+        opacity: 0.92;
+    }
+
+    .bookstore-btn-secondary {
+        background: var(--glass-bg, rgba(255,255,255,0.1));
+        color: var(--text-main);
+        border: 1px solid rgba(0,0,0,0.08);
+        cursor: pointer;
+    }
+
+    .bookstore-btn-secondary:hover {
+        background: var(--glass-bg, rgba(255,255,255,0.15));
+    }
+
+    /* =========================================
+       Empty / Loading
+    ========================================= */
+
+    .bookstore-loading,
+    .bookstore-empty {
+        width: 100%;
+        text-align: center;
+        padding: 45px 20px;
+        color: var(--text-secondary);
+        background: var(--glass-bg, rgba(255,255,255,0.1));
+        border-radius: 24px;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.15rem;
+    }
+
+    /* =========================================
+       Animation
+    ========================================= */
+
+    .fade-in {
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* =========================================
+       Responsive
+    ========================================= */
+
+    @media (max-width: 1200px) {
+
+        .nearby-bookstores-container {
+            padding: 40px 40px;
+        }
+
+        .bookstores-heading {
+            font-size: 2.3rem;
+        }
+
+        .bookstores-subtitle {
+            font-size: 1.05rem;
+        }
+
+        .bookstore-map-container {
+            height: 300px;
+        }
+    }
+
+    @media (max-width: 992px) {
+
+        .nearby-bookstores-container {
+            padding: 32px 28px;
+        }
+
+        .bookstores-header {
+            gap: 18px;
+        }
+
+        .bookstores-heading {
+            font-size: 2rem;
+        }
+
+        .bookstores-subtitle {
+            font-size: 1rem;
+        }
+
+        .bookstores-grid {
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(260px, 1fr)
+            );
+        }
+
+        .bookstore-map-container {
+            height: 280px;
+        }
+    }
+
+    @media (max-width: 768px) {
+
+        .nearby-bookstores-container {
+            padding: 24px 20px;
+            gap: 20px;
+        }
+
+        .bookstores-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .bookstores-heading {
+            font-size: 1.8rem;
+        }
+
+        .bookstores-subtitle {
+            font-size: 0.98rem;
+            line-height: 1.5;
+        }
+
+        .bookstores-grid {
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        .bookstore-card {
+            padding: 18px;
+            border-radius: 18px;
+        }
+
+        .bookstore-actions {
+            flex-direction: column;
+        }
+
+        .bookstore-map-container {
+            height: 240px;
+            border-radius: 18px;
+        }
+
+        .find-bookstore-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 13px 18px;
+            font-size: 0.92rem;
+        }
+
+        .bookstore-name {
+            font-size: 1.25rem;
+        }
+
+        .bookstore-address,
+        .bookstore-hours {
+            font-size: 0.95rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+
+        .nearby-bookstores-container {
+            padding: 18px 14px;
+        }
+
+        .bookstores-heading {
+            font-size: 1.55rem;
+        }
+
+        .bookstores-subtitle {
+            font-size: 0.92rem;
+        }
+
+        .bookstore-card {
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .bookstore-map-container {
+            height: 220px;
+        }
+
+        .bookstore-name {
+            font-size: 1.15rem;
+        }
+
+        .bookstore-btn {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+
+        .bookstore-distance,
+        .bookstore-rating {
+            font-size: 0.82rem;
+        }
+    }

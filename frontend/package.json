@@ -1,0 +1,13 @@
+{
+  "name": "bibliodrift-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for BiblioDrift",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node copy-assets.js",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

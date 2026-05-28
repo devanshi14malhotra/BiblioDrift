@@ -1,24 +1,362 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
 
-<head>
-  <meta charset="UTF-8" />
-  <script>
+    <!-- Theme Loader -->
+    <script>
       (function () {
-          const theme = localStorage.getItem('bibliodrift_theme');
-          if (theme === 'night') {
-              document.documentElement.setAttribute('data-theme', 'night');
-          }
+        const theme = localStorage.getItem("bibliodrift_theme");
+        if (theme === "night") {
+          document.documentElement.setAttribute("data-theme", "night");
+        }
       })();
-  </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy | BiblioDrift</title>
-  <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600&family=Georgia&display=swap" rel="stylesheet" />
-</head>
+    </script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Learn how BiblioDrift protects your privacy and personal data."
+    />
+
+    <title>Privacy Policy | BiblioDrift</title>
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Core Styles -->
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/style-responsive.css" />
+    <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-color);
+        color: var(--text-main);
+        font-family: "Inter", sans-serif;
+        line-height: 1.8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 20px;
+        background: var(--surface-elevated);
+        color: var(--text-main);
+        padding: 10px 16px;
+        border-radius: 8px;
+        z-index: 9999;
+        transition: top 0.3s ease;
+      }
+
+      .skip-link:focus {
+        top: 20px;
+      }
+
+      .reading-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 30%;
+        height: 4px;
+        background: var(--accent-gold);
+        z-index: 9999;
+      }
+
+      .breadcrumb {
+        max-width: 1400px;
+        margin: 1rem auto;
+        padding: 0 2rem;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .breadcrumb a {
+        color: var(--text-main);
+        text-decoration: none;
+      }
+
+      .privacy-hero {
+        padding: 5rem 2rem 4rem;
+        text-align: center;
+      }
+
+      .privacy-hero-content {
+        max-width: 900px;
+        margin: auto;
+      }
+
+      .privacy-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: var(--control-focus-ring);
+        color: var(--accent-gold);
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .privacy-hero h1 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(2.8rem, 6vw, 4.5rem);
+        margin-bottom: 1rem;
+        line-height: 1.1;
+      }
+
+      .privacy-hero p {
+        color: var(--text-muted);
+        max-width: 700px;
+        margin: auto;
+        font-size: 1.1rem;
+      }
+
+      .policy-meta {
+        margin-top: 1.5rem;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .hero-meta {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+      }
+
+      .hero-meta span {
+        background: var(--glass-bg);
+        padding: 12px 18px;
+        border-radius: 14px;
+        font-size: 0.95rem;
+        color: var(--text-main);
+      }
+
+      .privacy-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 2rem;
+        max-width: 1400px;
+        margin: auto;
+        padding: 0 2rem 5rem;
+      }
+
+      .privacy-sidebar {
+        position: sticky;
+        top: 100px;
+        align-self: start;
+      }
+
+      .sidebar-card {
+        background: var(--surface-panel);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 1.5rem;
+        backdrop-filter: blur(16px);
+      }
+
+      .sidebar-card h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+      }
+
+      .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .sidebar-nav a {
+        text-decoration: none;
+        color: var(--text-muted);
+        padding: 10px 14px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+      }
+
+      .sidebar-nav a:hover {
+        background: var(--nav-active-ring);
+        color: var(--nav-active-color);
+        transform: translateX(4px);
+      }
+
+      .privacy-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      .policy-card {
+        background: var(--surface-panel);
+        border: 1px solid var(--glass-border);
+        border-radius: 28px;
+        padding: 2rem;
+        backdrop-filter: blur(14px);
+        transition: all 0.3s ease;
+      }
+
+      .policy-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-gold);
+        box-shadow: var(--shadow-panel);
+      }
+
+      .policy-heading {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        margin-bottom: 1.2rem;
+      }
+
+      .policy-heading i {
+        font-size: 1.2rem;
+        color: var(--accent-gold);
+        margin-top: 6px;
+      }
+
+      .policy-heading h2 {
+        margin: 0;
+        font-size: 1.7rem;
+      }
+
+      .section-subtitle {
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .policy-list {
+        padding-left: 1.2rem;
+        color: var(--text-main);
+      }
+
+      .policy-list li {
+        margin-bottom: 10px;
+      }
+
+      .primary-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 1rem;
+        padding: 14px 24px;
+        border-radius: 16px;
+        background: var(--accent-gold);
+        color: var(--nav-active-color);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .primary-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-panel);
+      }
+
+      .contact-link {
+        color: var(--accent-gold);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .response-note {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .privacy-footer-cta {
+        text-align: center;
+        background: var(--surface-panel);
+        border: 1px solid var(--glass-border);
+        border-radius: 28px;
+        padding: 3rem 2rem;
+      }
+
+      .privacy-footer-cta h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .privacy-footer-cta p {
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: auto;
+      }
+
+      .back-to-top {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 1000;
+      }
+
+      @media (max-width: 1024px) {
+        .privacy-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .privacy-sidebar {
+          position: relative;
+          top: 0;
+        }
+
+        .sidebar-nav {
+          flex-direction: row;
+          overflow-x: auto;
+        }
+      }
+
+      @media (max-width: 768px) {
+                .privacy-hero {
+          padding-top: 3rem;
+        }
+
+        .privacy-hero h1 {
+          font-size: 2.5rem;
+        }
+
+        .policy-card {
+          padding: 1.5rem;
+        }
+
+        .policy-heading {
+          flex-direction: column;
+        }
+
+        .hero-meta {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
 
 <body>
     <header>
@@ -44,6 +382,14 @@
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
         <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
@@ -59,84 +405,232 @@
     </div>
   </header>
 
-  <main style="max-width: 900px; margin: 4rem auto; padding: 0 2rem;">
-    <section class="curated-section">
-      <div class="section-header">
-        <h1>Privacy Policy</h1>
-        <span><i class="fa-solid fa-shield-halved"></i> Your privacy matters</span>
-      </div>
-      <div style="margin-top: 2rem; line-height: 1.8; color: var(--text-muted);">
-        <p>At BiblioDrift, we respect your privacy and are committed to protecting your personal information. This policy explains how we collect, use, and safeguard the data you provide while using our services.</p>
-        <h2 style="margin-top: 1.5rem;">Information Collection</h2>
-        <p>We may collect information that helps personalize your experience, including login and usage details. We do not sell your personal data to third parties.</p>
-        <h2 style="margin-top: 1.5rem;">How We Use Data</h2>
-        <p>Your information is used to improve our app, provide personalized recommendations, and maintain account security.</p>
-        <h2 style="margin-top: 1.5rem;">Security</h2>
-        <p>We protect your information using appropriate safeguards and limited access controls.</p>
-        <h2 style="margin-top: 1.5rem;">Contact</h2>
-        <p>If you have questions about this policy, please reach out through our main contact channels.</p>
-      </div>
-    </section>
-  </main>
+    <!-- BREADCRUMB -->
+    <nav class="breadcrumb">
+      <a href="index.html">Home</a> /
+      <span>Privacy Policy</span>
+    </nav>
 
-  <!-- Back to Top Button -->
-  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
-    <i class="fa-solid fa-arrow-up"></i>
-  </button>
+    <!-- HERO -->
+    <section class="privacy-hero">
+      <div class="privacy-hero-content">
+        <span class="privacy-badge">
+          <i class="fa-solid fa-shield-halved"></i>
+          Privacy & Transparency
+        </span>
 
-  <!-- Ambient Sanctuary UI -->
-  <div class="ambient-sanctuary">
-    <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
-      <i class="fa-solid fa-leaf"></i>
-    </button>
-    <div id="ambientPanel" class="ambient-panel">
-      <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
-        <label class="switch">
-          <input type="checkbox" id="rainToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
-        <label class="switch">
-          <input type="checkbox" id="fireToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
-        <label class="switch">
-          <input type="checkbox" id="oceanToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
-        <label class="switch">
-          <input type="checkbox" id="stormToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="volume-control">
-        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
-        <div class="range-wrap">
-          <div class="range-track" aria-hidden="true"></div>
-          <div class="range-fill" aria-hidden="true"></div>
-          <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+        <h1>Your Privacy Matters</h1>
+
+        <p>
+          At BiblioDrift, we believe your reading journey should remain
+          personal, secure, and completely under your control.
+        </p>
+
+        <div class="policy-meta">
+          <i class="fa-solid fa-calendar"></i>
+          Last Updated: May 2026
+        </div>
+
+        <div class="hero-meta">
+          <span>
+            <i class="fa-solid fa-lock"></i>
+            Secure Experience
+          </span>
+
+          <span>
+            <i class="fa-solid fa-user-shield"></i>
+            No Data Selling
+          </span>
+
+          <span>
+            <i class="fa-solid fa-eye-slash"></i>
+            Privacy Focused
+          </span>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
+    <!-- MAIN -->
+    <main id="mainContent" class="privacy-layout">
+      <!-- SIDEBAR -->
+      <aside class="privacy-sidebar">
+        <div class="sidebar-card">
+          <h3>Quick Navigation</h3>
 
-  <script src="../js/config.js"></script>
-  <script src="../js/footer.js"></script>
-  <script src="../js/app.js"></script>
-  <script src="../script/header-scroll.js"></script>
+          <nav class="sidebar-nav">
+            <a href="#overview">Overview</a>
+            <a href="#collection">Collection</a>
+            <a href="#usage">Usage</a>
+            <a href="#security">Security</a>
+            <a href="#rights">Rights</a>
+            <a href="#contact">Contact</a>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- CONTENT -->
+      <section class="privacy-content">
+        <!-- Overview -->
+        <article id="overview" class="policy-card">
+          <div class="policy-heading">
+            <i class="fa-solid fa-circle-info"></i>
+
+            <div>
+              <h2>Overview</h2>
+
+              <p class="section-subtitle">
+                Understanding our privacy philosophy.
+              </p>
+            </div>
+          </div>
+
+          <p>
+            BiblioDrift respects your privacy and is committed to protecting the
+            information you share while exploring books and building your
+            personal library.
+          </p>
+        </article>
+
+        <!-- Collection -->
+        <article id="collection" class="policy-card">
+          <div class="policy-heading">
+            <i class="fa-solid fa-database"></i>
+
+            <div>
+              <h2>Information Collection</h2>
+
+              <p class="section-subtitle">
+                Information required to improve your experience.
+              </p>
+            </div>
+          </div>
+
+          <ul class="policy-list">
+            <li>Account authentication details</li>
+            <li>Reading preferences and saved content</li>
+            <li>Usage analytics for recommendations</li>
+            <li>Security and session information</li>
+          </ul>
+        </article>
+
+        <!-- Usage -->
+        <article id="usage" class="policy-card">
+          <div class="policy-heading">
+            <i class="fa-solid fa-chart-line"></i>
+
+            <div>
+              <h2>How We Use Your Data</h2>
+
+              <p class="section-subtitle">Using information responsibly.</p>
+            </div>
+          </div>
+
+          <ul class="policy-list">
+            <li>Improve recommendations</li>
+            <li>Enhance platform experience</li>
+            <li>Protect account security</li>
+            <li>Improve app functionality</li>
+          </ul>
+        </article>
+
+        <!-- Security -->
+        <article id="security" class="policy-card">
+          <div class="policy-heading">
+            <i class="fa-solid fa-lock"></i>
+
+            <div>
+              <h2>Security</h2>
+
+              <p class="section-subtitle">How we protect your information.</p>
+            </div>
+          </div>
+
+          <p>
+            We use secure systems and modern safeguards to protect your personal
+            information against unauthorized access.
+          </p>
+        </article>
+
+        <!-- Rights -->
+        <article id="rights" class="policy-card">
+          <div class="policy-heading">
+            <i class="fa-solid fa-scale-balanced"></i>
+
+            <div>
+              <h2>Your Rights</h2>
+
+              <p class="section-subtitle">
+                Your control over your information.
+              </p>
+            </div>
+          </div>
+
+          <ul class="policy-list">
+            <li>Request access to your information</li>
+            <li>Delete your account data</li>
+            <li>Update inaccurate information</li>
+            <li>Manage privacy preferences</li>
+          </ul>
+        </article>
+
+        <!-- Contact -->
+        <article id="contact" class="policy-card">
+          <div class="policy-heading">
+            <i class="fa-solid fa-envelope"></i>
+
+            <div>
+              <h2>Contact Us</h2>
+
+              <p class="section-subtitle">
+                Reach us for privacy-related concerns.
+              </p>
+            </div>
+          </div>
+
+          <p>Contact our privacy team at:</p>
+
+          <a href="mailto:privacy@bibliodrift.com" class="contact-link">
+            privacy@bibliodrift.com
+          </a>
+
+          <p class="response-note">
+            We aim to respond within 3ΓÇô5 business days.
+          </p>
+
+          <a href="contact.html" class="primary-btn">
+            <i class="fa-solid fa-paper-plane"></i>
+            Contact Support
+          </a>
+        </article>
+
+        <!-- CTA -->
+        <section class="privacy-footer-cta">
+          <h2>Still Have Questions?</h2>
+
+          <p>
+            Our team is here to help you understand how your information is
+            handled.
+          </p>
+
+          <a href="contact.html" class="primary-btn"> Contact Support </a>
+        </section>
+      </section>
+    </main>
+
+    <!-- Back To Top -->
+    <button
+      class="btn-icon back-to-top"
+      onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+    >
+      <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../script/header-scroll.js"></script>
     <script src="../js/theme-manager.js"></script>
-  <script src="../js/ambient.js"></script>
-</body>
-
+    <script src="../js/ambient.js"></script>
+    <script src="../js/pwa.js"></script>
+  </body>
 </html>

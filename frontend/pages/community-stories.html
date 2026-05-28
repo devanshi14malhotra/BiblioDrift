@@ -421,17 +421,18 @@
       .form-actions { flex-direction: column; }
     }
   </style>
+    <link rel="stylesheet" href="../css/pwa.css">
 </head>
 
 <body>
   <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html">Discovery</a>
+          <a href="app.html">Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -441,6 +442,10 @@
         <div class="tooltip">
           <a href="community-stories.html" class="active">Community</a>
           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
         </div>
         <div class="tooltip">
           <a href="chat.html">Chat</a>
@@ -571,5 +576,23 @@
     onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
     <i class="fa-solid fa-arrow-up"></i>
   </button>
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/pwa.js"></script>
 </body>
 </html>
+
+
+
+

@@ -1,7 +1,25 @@
 [build]
-command = "python build_netlify.py"
-publish = "dist"
+command = "cd frontend && npm install && npm run build"
+publish = "frontend/dist"
 functions = "netlify/functions"
 
 [build.environment]
 PYTHON_VERSION = "3.10"
+# BACKEND_URL is intentionally not set here: never commit secrets to the repo.
+# Set it in: Netlify Dashboard → Site Configuration → Environment Variables
+# Example value: https://your-app.onrender.com
+
+[[headers]]
+  for = "/*.gltf"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.obj"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

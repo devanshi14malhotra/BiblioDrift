@@ -20,11 +20,9 @@ where stories are explored through <b>mood, atmosphere, and feeling</b> instead 
 🌧️ Mood-first discovery • 📚 Immersive reading • 🤖 AI-powered storytelling
 </p>
 
-
-[🚀 Live Demo](https://bibliodrift-dm.netlify.app/) (static frontend; AI/auth need a deployed backend — see [docs/contributing.md](docs/contributing.md)) •
-[📚 Documentation](docs/) •
-[🤝 Contributing](docs/contributing.md)
-
+<a href="https://www.netlify.com">
+  <img src="https://www.netlify.com/assets/badges/netlify-badge-dark.svg" alt="Deploys by Netlify" />
+</a>
 </div>
 
 ---
@@ -105,7 +103,48 @@ It feels like:
 | Storage | LocalStorage |
 
 ---
+## 🚀 Backend Deployment & BACKEND_URL Setup
 
+> ⚠️ The frontend is deployed on Netlify, but the Flask backend is **not yet deployed**.
+> Google Sign-In and all AI features require the backend to be running.
+
+### Why is this needed?
+When a user clicks "Sign in with Google", the browser sends a request to `/api/v1/auth/google`.
+Netlify needs to know where to forward that request, that's what `BACKEND_URL` is for.
+Without it, Netlify has no rule for `/api/v1/*` and shows a 404 error.
+
+### Step 1 — Deploy the Flask backend
+
+You can deploy the backend (located in the `/backend` folder) to either:
+
+| Platform | Free Tier | Docs |
+|---|---|---|
+| [Render](https://render.com) | ✅ Yes | [Render Python Docs](https://render.com/docs/deploy-flask) |
+| [Railway](https://railway.app) | ✅ Yes | [Railway Docs](https://docs.railway.app) |
+
+After deploying, you'll get a public URL like:
+https://your-app.onrender.com
+
+### Step 2 — Set BACKEND_URL in Netlify
+
+1. Go to [Netlify Dashboard](https://app.netlify.com)
+2. Open your site → **Site Configuration → Environment Variables**
+3. Click **Add a variable**
+4. Set:
+   - **Key:** `BACKEND_URL`
+   - **Value:** `https://your-app.onrender.com` *(no trailing slash)*
+5. Click **Save**
+
+### Step 3 — Redeploy the Netlify site
+
+After setting the variable:
+1. Go to **Deploys** tab in your Netlify dashboard
+2. Click **Trigger deploy → Deploy site**
+3. This reruns `build_netlify.py`, which picks up `BACKEND_URL` and adds the proxy rule to `_redirects`
+
+After this, "Sign in with Google" will correctly reach the Flask backend. ✅
+
+---
 ## 🧠 System Architecture
 
 ```mermaid

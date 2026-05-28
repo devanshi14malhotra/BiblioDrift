@@ -5,19 +5,17 @@
     <meta charset="UTF-8">
     <script>
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
-            if (theme === 'night') {
-                document.documentElement.setAttribute('data-theme', 'night');
-            }
+            const theme = localStorage.getItem('bibliodrift_theme') || 'night';
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
     <script src="../js/db.js"></script>
 
     <script src="../js/app.js"></script>
     <script src="../js/library-3d.js"></script>
-    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- SEO & Open Graph meta tags -->
     <meta name="description"
@@ -32,6 +30,8 @@
     <meta property="og:image:height" content="630" />
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/reading-streak.css">
+    <link rel="stylesheet" href="../css/style-responsive-reading-streak.css">
     <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
     <link
@@ -51,9 +51,13 @@
 </head>
 
 <body class="library-page">
+    <div id="sc-glow-outer"></div>
+    <div id="sc-glow-mid"></div>
+    <div id="sc-glow-inner"></div>
+    <div id="sc-dot"></div>
 
       <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -63,7 +67,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html" >Discovery</a>
+          <a href="app.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -73,6 +77,14 @@
         <div class="tooltip">
           <a href="library.html" class="active">My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
         </div>
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
@@ -137,6 +149,41 @@
                 </div>
         </section>
 
+        <!-- Reading Streak (cozy GitHub-style heatmap) -->
+        <section class="reading-streak-section">
+            <div class="reading-streak-card">
+                <div class="reading-streak-header">
+                    <div class="reading-streak-title">
+                        <i class="fa-solid fa-fire" aria-hidden="true"></i>
+                        <h2>Reading Streak</h2>
+                    </div>
+
+                    <div class="reading-streak-stats">
+                        <div class="reading-streak-stat">
+                            <div class="reading-streak-stat-value" id="reading-streak-current">0</div>
+                            <div class="reading-streak-stat-label">Current</div>
+                        </div>
+                        <div class="reading-streak-stat">
+                            <div class="reading-streak-stat-value" id="reading-streak-longest">0</div>
+                            <div class="reading-streak-stat-label">Longest</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reading-streak-heatmap-wrap">
+                    <div class="reading-streak-heatmap-toolbar">
+                        <button id="reading-streak-mark-today" class="reading-streak-btn" type="button" aria-label="Mark today as read">
+                            <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                            <span>Mark Today as Read</span>
+                        </button>
+                    </div>
+
+                    <div class="reading-streak-scroll" role="region" aria-label="Reading streak heatmap">
+                        <div id="reading-streak-calendar" class="reading-streak-calendar"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- 3D Bookshelf Container -->
         <div class="bookshelf-3d-container" id="library-shelves" role="main" aria-label="3D bookshelf library">
@@ -185,7 +232,7 @@
                 </div>
                 
                 <!-- Call to Action -->
-                <a href="index.html" class="btn-primary library-empty-link">
+                <a href="app.html" class="btn-primary library-empty-link">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Discover Books
                 </a>
             </div>
@@ -430,7 +477,7 @@
                                     title="Share book">
                                     <i class="fa-solid fa-share-nodes"></i> Share
                                 </button>
-                                <button class="btn-preview" id="modal-preview-btn-lib" title="Preview this book">
+                                <button class="btn-secondary" id="modal-preview-btn-lib" title="Preview this book">
                                     <i class="fa-solid fa-book-open"></i> Preview
                                 </button>
                             </div>
@@ -541,9 +588,23 @@
 
     </main>
 
-    <script src="../js/config.js"></script>
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/config.js"></script>
     <script src="../js/library-3d.js"></script>
     <script src="../js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../js/book-preview.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../script/header-scroll.js"></script>
@@ -554,11 +615,10 @@
         <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
             <i class="fa-solid fa-leaf"></i>
         </button>
-        <div id="ambientPanel" class="ambient-panel">
+        <div id="ambientPanel" class="ambient-panel" aria-hidden="true">
             <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
             <div class="ambient-option">
-                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy
-                    Evening</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
                 <label class="switch">
                     <input type="checkbox" id="rainToggle">
                     <span class="slider"></span>
@@ -572,8 +632,35 @@
                 </label>
             </div>
             <div class="ambient-option">
-                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean
-                    Waves</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-train"></i> Train Ride</span>
+                <label class="switch">
+                    <input type="checkbox" id="trainToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-tree"></i> Forest Cabin</span>
+                <label class="switch">
+                    <input type="checkbox" id="forestToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-wand-sparkles"></i> Magic Realm</span>
+                <label class="switch">
+                    <input type="checkbox" id="magicToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-torii-gate"></i> Wisteria Night</span>
+                <label class="switch">
+                    <input type="checkbox" id="animeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
                 <label class="switch">
                     <input type="checkbox" id="oceanToggle">
                     <span class="slider"></span>
@@ -654,6 +741,7 @@
     </div>
   </div>
   <script src="../js/chatbot.js"></script>
+    <script src="../js/reading-streak.js"></script>
 
 </body>
 

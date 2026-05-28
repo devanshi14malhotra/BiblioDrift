@@ -16,11 +16,13 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
 </head>
 
 <body class="error-page-body">
     <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -30,7 +32,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html" >Discovery</a>
+          <a href="app.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -42,6 +44,14 @@
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
         </div>
         <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
@@ -51,6 +61,7 @@
           <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
         </div>
       </nav>
+      <!-- Dark Mode Toggle Button -->
       <button id="themeToggle" class="btn-icon" title="Toggle Theme">
         <i class="fa-solid fa-moon"></i>
       </button>
@@ -75,7 +86,7 @@
       </p>
 
       <div class="error-actions">
-        <a href="index.html" class="btn-primary">Return to Library</a>
+        <a href="app.html" class="btn-primary">Return to Library</a>
         <a href="javascript:history.back()" class="btn-outline">Go Back</a>
       </div>
     </section>
@@ -140,6 +151,9 @@
   <script src="../script/header-scroll.js"></script>
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
+    <script src="../js/pwa.js"></script>
 </body>
 
 </html>
+
+

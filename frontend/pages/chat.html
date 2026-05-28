@@ -305,7 +305,7 @@
 
 <body>
       <header>
-    <a href="index.html" class="logo">
+    <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -315,7 +315,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="index.html" >Discovery</a>
+          <a href="app.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -325,6 +325,14 @@
         <div class="tooltip">
           <a href="library.html" >My Library</a>
           <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
         </div>
         <div class="tooltip">
           <a href="chat.html" class="active">Chat</a>
@@ -411,21 +419,6 @@
 
             <!-- Chat Messages - Only scrollable area -->
             <div class="chat-messages" id="chatMessages">
-                <div class="message bookseller-message">
-                    <div class="message-avatar">
-                        <i class="fa-solid fa-book-open"></i>
-                    </div>
-                    <div class="message-content">
-                        <div class="message-bubble">
-                            <p>Ah, a wandering soul has found their way through the door&hellip; Welcome.</p>
-                            <p>I am Elara &mdash; keeper of stories, reader of moods, and devoted guide to the worlds
-                                that live between pages. Whether your heart is heavy with rain or light as a summer
-                                afternoon, I will find you the perfect book.</p>
-                            <p>Tell me: what is stirring in you today?</p>
-                        </div>
-                        <div class="message-time">Just now</div>
-                    </div>
-                </div>
             </div>
 
             <!-- Quick Suggestions -->
@@ -530,7 +523,20 @@
             window.renderAuthNavigation?.(link, tooltip, false);
         });
     </script>
-    <script src="../js/config.js"></script>
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/config.js"></script>
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
     <script src="../js/chat.js"></script>
@@ -541,3 +547,4 @@
 </body>
 
 </html>
+
