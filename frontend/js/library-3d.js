@@ -254,10 +254,10 @@ const SAMPLE_BOOKS = {
 };
 
 const StorageHelper = {
-    get: function(key) {
+    get: function (key) {
         return typeof SafeStorage !== 'undefined' ? SafeStorage.get(key) : localStorage.getItem(key);
     },
-    set: function(key, value) {
+    set: function (key, value) {
         if (typeof SafeStorage !== 'undefined') {
             SafeStorage.set(key, value);
         } else {
@@ -322,6 +322,14 @@ class BookshelfRenderer3D {
         this._escHandler = null;
         this._escListenerAttached = false;
         this.assetsLoaded = false;
+        
+        // Three.js Engine properties
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.staticObjects = [];
+        this.dynamicObjects = [];
+        this.threeJsAnimationId = null;
 
         // Create live region for screen reader announcements
         this.liveRegion = document.createElement('div');
@@ -348,10 +356,314 @@ class BookshelfRenderer3D {
         this.init();
     }
 
+    renderConstellationView() {
+        const container = document.getElementById('constellation-container');
+        if (!container) return;
+        
+        // Prevent rendering if container is hidden or not in viewport
+        if (container.classList.contains('hidden')) return;
+
+        // Cancel any pending render to prevent double render pileup
+        if (this._pendingConstellationRender) {
+            cancelAnimationFrame(this._pendingConstellationRender);
+        }
+
+        // Use double requestAnimationFrame to ensure browser has completed layout and paint
+        this._pendingConstellationRender = requestAnimationFrame(() => {
+            this._pendingConstellationRender = requestAnimationFrame(() => {
+                this._pendingConstellationRender = null;
+                this._executeConstellationRender(container);
+            });
+        });
+    }
+
+    _executeConstellationRender(container) {
+        const svgElement = document.getElementById('constellation-svg');
+        if (!svgElement) return;
+
+        // Force a layout reflow before measuring
+        container.style.display = 'block'; // Ensure it's not none during measurement
+        void container.offsetHeight; 
+
+        // Cleanup previous simulation and listeners
+        if (this.constellationSimulation) {
+            this.constellationSimulation.stop();
+            this.constellationSimulation = null;
+        }
+        if (this._constellationResizeHandler) {
+            window.removeEventListener('resize', this._constellationResizeHandler);
+        }
+
+        // Use getBoundingClientRect for more accurate dimensions than clientWidth/Height
+        const rect = container.getBoundingClientRect();
+        const width = rect.width || container.clientWidth || 800;
+        const height = rect.height || container.clientHeight || 600;
+
+        // If dimensions are still 0, we can't render properly
+        if (width === 0 || height === 0) {
+            console.warn('Constellation container has 0 dimensions, deferring render');
+            setTimeout(() => this.renderConstellationView(), 100);
+            return;
+        }
+
+        svgElement.innerHTML = '';
+        const svg = d3.select(svgElement)
+            .attr('width', width)
+            .attr('height', height)
+            .attr('viewBox', `0 0 ${width} ${height}`)
+            .style('cursor', 'grab');
+
+        const colors = {
+            book: '#facc15',
+            author: '#3b82f6',
+            genre: '#10b981',
+            shelf: '#f97316',
+            mood: '#8b5cf6'
+        };
+
+        const localLibrary = this.getLibraryState();    
+        const allBooks = ['current', 'want', 'finished'].flatMap(s =>
+            (localLibrary[s] || []).map(b => ({ ...b, shelfType: s }))
+        );
+
+        const emptyState = document.getElementById('constellation-empty-state');
+        if (allBooks.length === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            return;
+        }
+        if (emptyState) emptyState.classList.add('hidden');
+
+        const nodes = [];
+        const links = [];
+        const nodeMap = new Map();
+
+        const addNode = (id, type, label, data = {}) => {
+            if (nodeMap.has(id)) return nodeMap.get(id);
+            const n = {
+                id, type, label, ...data,
+                radius: type === 'book' ? 55 : 35,
+                // Start nodes near center but with some spread
+                x: width / 2 + (Math.random() - 0.5) * 100,
+                y: height / 2 + (Math.random() - 0.5) * 100
+            };
+            nodes.push(n);
+            nodeMap.set(id, n);
+            return n;
+        };
+
+        // Build Graph Data
+        allBooks.forEach(book => {
+            const bNode = addNode(`book-${book.id}`, 'book', book.title, { bookData: book });
+            addNode(`shelf-${book.shelfType}`, 'shelf', book.shelfType.charAt(0).toUpperCase() + book.shelfType.slice(1));
+            links.push({ source: bNode.id, target: `shelf-${book.shelfType}`, type: 'shelf' });
+
+            const author = book.author || (book.volumeInfo && book.volumeInfo.authors && book.volumeInfo.authors[0]);
+            if (author) {
+                addNode(`author-${author}`, 'author', author);
+                links.push({ source: bNode.id, target: `author-${author}`, type: 'author' });
+            }
+
+            (book.moods || []).forEach(m => {
+                addNode(`mood-${m}`, 'mood', m);
+                links.push({ source: bNode.id, target: `mood-${m}`, type: 'mood' });
+            });
+
+            const genres = book.categories || (book.volumeInfo && book.volumeInfo.categories) || [];
+            genres.forEach(g => {
+                addNode(`genre-${g}`, 'genre', g);
+                links.push({ source: bNode.id, target: `genre-${g}`, type: 'genre' });
+            });
+        });
+
+        const defs = svg.append('defs');
+
+        // Cinematic Glow Filter
+        const filter = defs.append('filter').attr('id', 'glow-filter').attr('x', '-50%').attr('y', '-50%').attr('width', '200%').attr('height', '200%');
+        filter.append('feGaussianBlur').attr('stdDeviation', '4').attr('result', 'blur');
+        filter.append('feComposite').attr('in', 'SourceGraphic').attr('in2', 'blur').attr('operator', 'over');
+
+        // Book Covers as Patterns
+        nodes.filter(n => n.type === 'book').forEach(n => {
+            const coverUrl = n.bookData.cover || (n.bookData.volumeInfo && n.bookData.volumeInfo.imageLinks && n.bookData.volumeInfo.imageLinks.thumbnail) || '../assets/images/biblioDrift_favicon.png';
+            defs.append('pattern')
+                .attr('id', `pat-${n.id}`)
+                .attr('width', 1).attr('height', 1)
+                .attr('patternContentUnits', 'objectBoundingBox')
+                .append('image')
+                .attr('href', coverUrl.replace('http:', 'https:'))
+                .attr('width', 1).attr('height', 1)
+                .attr('preserveAspectRatio', 'xMidYMid slice');
+        });
+
+        const mainLayer = svg.append('g').attr('class', 'constellation-main-layer');
+        const linkLayer = mainLayer.append('g').attr('class', 'links-layer');
+        const nodeLayer = mainLayer.append('g').attr('class', 'nodes-layer');
+
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => mainLayer.attr('transform', event.transform));
+
+        svg.call(zoom);
+
+        // Force Simulation Configuration
+        const simulation = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(links).id(d => d.id).distance(200).strength(0.8))
+            .force('charge', d3.forceManyBody().strength(-2500))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collide', d3.forceCollide().radius(d => d.radius + 60))
+            .force('x', d3.forceX(width / 2).strength(0.12))
+            .force('y', d3.forceY(height / 2).strength(0.12))
+            .alphaDecay(0.01)
+            .velocityDecay(0.4);
+
+        this.constellationSimulation = simulation;
+
+        const link = linkLayer.selectAll('line')
+            .data(links)
+            .join('line')
+            .attr('class', 'constellation-link')
+            .attr('stroke', d => colors[d.type])
+            .attr('stroke-width', 2);
+
+        const node = nodeLayer.selectAll('.constellation-node')
+            .data(nodes)
+            .join('g')
+            .attr('class', d => `constellation-node node-${d.type}`)
+            .call(d3.drag()
+                .on('start', (event, d) => {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x; d.fy = d.y;
+                    event.sourceEvent.stopPropagation();
+                    svg.style('cursor', 'grabbing');
+                })
+                .on('drag', (event, d) => {
+                    d.fx = event.x; d.fy = event.y;
+                })
+                .on('end', (event, d) => {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null; d.fy = null;
+                    svg.style('cursor', 'grab');
+                }));
+
+        node.append('circle')
+            .attr('class', 'node-core')
+            .attr('r', d => d.radius)
+            .attr('fill', d => d.type === 'book' ? `url(#pat-${d.id})` : colors[d.type])
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .style('filter', 'url(#glow-filter)');
+
+        node.append('text')
+            .attr('class', 'node-label')
+            .attr('dy', d => d.radius + 30)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#fff')
+            .style('font-size', '13px')
+            .style('font-weight', '600')
+            .style('text-shadow', '0 2px 4px rgba(0,0,0,0.8)')
+            .text(d => d.label.length > 22 ? d.label.substring(0, 20) + '...' : d.label);
+
+        // Fit to Viewport helper
+        const fitGraph = (animate = true) => {
+            const bounds = mainLayer.node().getBBox();
+            if (bounds.width === 0 || bounds.height === 0) return;
+            
+            const scale = 0.8 / Math.max(bounds.width / width, bounds.height / height);
+            const midX = bounds.x + bounds.width / 2;
+            const midY = bounds.y + bounds.height / 2;
+            
+            const transform = d3.zoomIdentity
+                .translate(width / 2 - midX * scale, height / 2 - midY * scale)
+                .scale(scale);
+                
+            if (animate) {
+                svg.transition().duration(800).ease(d3.easeCubicOut).call(zoom.transform, transform);
+            } else {
+                svg.call(zoom.transform, transform);
+            }
+        };
+
+        simulation.on('tick', () => {
+            link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+            node.attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+
+        // Warmup simulation and then fit
+        for (let i = 0; i < 100; ++i) simulation.tick();
+        
+        // Final layout adjustment after warmup
+        requestAnimationFrame(() => {
+            fitGraph(false);
+            simulation.alpha(0.3).restart();
+        });
+
+        // Hover Animations
+        node.on('mouseenter', (event, d) => {
+            const related = new Set([d.id]);
+            links.forEach(l => {
+                if (l.source.id === d.id) related.add(l.target.id);
+                if (l.target.id === d.id) related.add(l.source.id);
+            });
+            node.classed('dimmed', n => !related.has(n.id));
+            link.classed('highlighted', l => l.source.id === d.id || l.target.id === d.id)
+                .classed('dimmed', l => l.source.id !== d.id && l.target.id !== d.id);
+            d3.select(event.currentTarget).raise();
+            d3.select(event.currentTarget).select('.node-core').transition().duration(250).attr('r', d.radius * 1.3);
+        }).on('mouseleave', (event, d) => {
+            node.classed('dimmed', false);
+            link.classed('highlighted', false).classed('dimmed', false);
+            d3.select(event.currentTarget).select('.node-core').transition().duration(250).attr('r', d.radius);
+        }).on('click', (event, d) => {
+            event.stopPropagation();
+            if (d.type === 'book') {
+                if (typeof this.openModal === 'function') this.openModal(d.bookData);
+                else if (window.libManager?.renderer) window.libManager.renderer.openModal(d.bookData);
+            } else {
+                const scale = 1.5;
+                svg.transition().duration(800).call(zoom.transform, d3.zoomIdentity.translate(width / 2 - d.x * scale, height / 2 - d.y * scale).scale(scale));
+            }
+        });
+
+        // Toolbar Button Bindings
+        const centerBtn = document.getElementById('center-graph-btn');
+        if (centerBtn) centerBtn.onclick = () => fitGraph(true);
+        const resetBtn = document.getElementById('reset-graph-btn');
+        if (resetBtn) resetBtn.onclick = () => { simulation.alpha(1).restart(); fitGraph(true); };
+        const fullscreenBtn = document.getElementById('fullscreen-graph-btn');
+        if (fullscreenBtn) fullscreenBtn.onclick = () => {
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        // Resize handling
+        this._constellationResizeHandler = () => {
+            if (container.classList.contains('hidden')) return;
+            
+            const r = container.getBoundingClientRect();
+            const w = r.width || container.clientWidth;
+            const h = r.height || container.clientHeight;
+            
+            svg.attr('width', w).attr('height', h);
+            simulation.force('center', d3.forceCenter(w / 2, h / 2));
+            simulation.alpha(0.3).restart();
+            
+            // Re-center after a short delay to allow simulation to adjust
+            clearTimeout(this._resizeFitTimeout);
+            this._resizeFitTimeout = setTimeout(() => fitGraph(true), 150);
+        };
+        window.addEventListener('resize', this._constellationResizeHandler);
+    }
+
     async load3DAssets() {
         return new Promise((resolve) => {
             this.showLoadingSpinner();
-            
+
             const workerCode = `
                 self.onmessage = function(e) {
                     const { models } = e.data;
@@ -382,11 +694,11 @@ class BookshelfRenderer3D {
                     self.postMessage({ type: 'complete', data: parsedData });
                 };
             `;
-            
+
             const blob = new Blob([workerCode], { type: 'application/javascript' });
             const workerUrl = URL.createObjectURL(blob);
             const worker = new Worker(workerUrl);
-            
+
             const mockModels = [
                 { id: 'shelf-wood-texture-high-res' },
                 { id: 'book-cover-geometry-base' },
@@ -397,7 +709,7 @@ class BookshelfRenderer3D {
                 { id: 'gold-foil-reflection-probe' },
                 { id: 'room-environment-hdri' }
             ];
-            
+
             worker.onmessage = (e) => {
                 const { type, progress, data } = e.data;
                 if (type === 'progress') {
@@ -411,14 +723,14 @@ class BookshelfRenderer3D {
                     resolve();
                 }
             };
-            
+
             worker.onerror = (error) => {
                 console.error('Web Worker error:', error);
                 this.hideLoadingSpinner();
                 this.assetsLoaded = true;
                 resolve();
             };
-            
+
             worker.postMessage({ models: mockModels });
         });
     }
@@ -428,7 +740,7 @@ class BookshelfRenderer3D {
         if (!spinnerContainer) {
             spinnerContainer = document.createElement('div');
             spinnerContainer.id = 'bookshelf-3d-loader';
-            spinnerContainer.style.cssText = \`
+            spinnerContainer.style.cssText = `
                 position: absolute;
                 top: 0; left: 0; right: 0; bottom: 0;
                 background: rgba(18, 18, 18, 0.85);
@@ -443,11 +755,11 @@ class BookshelfRenderer3D {
                 font-family: 'Inter', sans-serif;
                 transition: opacity 0.5s ease;
                 border-radius: 12px;
-            \`;
-            
+            `;
+
             const spinner = document.createElement('div');
             spinner.className = 'loader-spinner';
-            spinner.style.cssText = \`
+            spinner.style.cssText = `
                 width: 60px;
                 height: 60px;
                 border: 4px solid rgba(212, 175, 55, 0.2);
@@ -455,60 +767,60 @@ class BookshelfRenderer3D {
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
                 margin-bottom: 20px;
-            \`;
-            
+            `;
+
             if (!document.getElementById('loader-keyframes')) {
                 const style = document.createElement('style');
                 style.id = 'loader-keyframes';
-                style.textContent = \`
+                style.textContent = `
                     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                \`;
+                `;
                 document.head.appendChild(style);
             }
-            
+
             const textContainer = document.createElement('div');
             textContainer.style.textAlign = 'center';
-            
+
             const title = document.createElement('h3');
             title.textContent = 'Preparing 3D Environment';
             title.style.margin = '0 0 10px 0';
             title.style.color = '#d4af37';
             title.style.fontWeight = '500';
-            
+
             const progressContainer = document.createElement('div');
-            progressContainer.style.cssText = \`
+            progressContainer.style.cssText = `
                 width: 250px;
                 height: 6px;
                 background: rgba(255,255,255,0.1);
                 border-radius: 3px;
                 overflow: hidden;
                 margin: 0 auto;
-            \`;
-            
+            `;
+
             const progressBar = document.createElement('div');
             progressBar.id = 'bookshelf-3d-progress-bar';
-            progressBar.style.cssText = \`
+            progressBar.style.cssText = `
                 height: 100%;
                 width: 0%;
                 background: linear-gradient(90deg, #d4af37, #f3e5ab);
                 transition: width 0.3s ease;
-            \`;
-            
+            `;
+
             const progressText = document.createElement('div');
             progressText.id = 'bookshelf-3d-progress-text';
             progressText.textContent = 'Loading models... 0%';
             progressText.style.fontSize = '14px';
             progressText.style.marginTop = '10px';
             progressText.style.color = '#a0a0a0';
-            
+
             progressContainer.appendChild(progressBar);
             textContainer.appendChild(title);
             textContainer.appendChild(progressContainer);
             textContainer.appendChild(progressText);
-            
+
             spinnerContainer.appendChild(spinner);
             spinnerContainer.appendChild(textContainer);
-            
+
             const libContainer = document.getElementById('library-container') || document.querySelector('.main-content') || document.body;
             if (libContainer !== document.body && window.getComputedStyle(libContainer).position === 'static') {
                 libContainer.style.position = 'relative';
@@ -522,8 +834,8 @@ class BookshelfRenderer3D {
     updateLoadingSpinner(progress) {
         const progressBar = document.getElementById('bookshelf-3d-progress-bar');
         const progressText = document.getElementById('bookshelf-3d-progress-text');
-        if (progressBar) progressBar.style.width = \`\${progress}%\`;
-        if (progressText) progressText.textContent = \`Loading high-res models... \${progress}%\`;
+        if (progressBar) progressBar.style.width = `${progress}%`;
+        if (progressText) progressText.textContent = `Loading high-res models... ${progress}%`;
     }
 
     hideLoadingSpinner() {
@@ -590,28 +902,28 @@ class BookshelfRenderer3D {
         const errorBanner = document.createElement('div');
         errorBanner.id = 'webgl-error-banner';
         errorBanner.style.cssText = `
-            background-color: rgba(220, 53, 69, 0.1);
-            border-left: 4px solid #dc3545;
+            background - color: rgba(220, 53, 69, 0.1);
+            border - left: 4px solid #dc3545;
             color: #dc3545;
             padding: 15px 20px;
             margin: 20px auto;
-            max-width: 800px;
-            border-radius: 4px;
-            font-family: 'Inter', sans-serif;
+            max - width: 800px;
+            border - radius: 4px;
+            font - family: 'Inter', sans - serif;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            align - items: center;
+            justify - content: space - between;
+            box - shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: relative;
-            z-index: 100;
-        `;
-        
+            z - index: 100;
+            `;
+
         const message = document.createElement('div');
         message.innerHTML = `
-            <strong style="display: block; margin-bottom: 5px; font-size: 1.1em;"><i class="fa-solid fa-triangle-exclamation"></i> WebGL Not Supported</strong>
-            <span style="font-size: 0.9em; opacity: 0.9;">Your browser or device does not support WebGL, which is required for the 3D interactive bookshelf. We have enabled a graceful 2D fallback mode so you can continue managing your library.</span>
-        `;
-        
+                < strong style = "display: block; margin-bottom: 5px; font-size: 1.1em;" > <i class="fa-solid fa-triangle-exclamation"></i> WebGL Not Supported</strong >
+                    <span style="font-size: 0.9em; opacity: 0.9;">Your browser or device does not support WebGL, which is required for the 3D interactive bookshelf. We have enabled a graceful 2D fallback mode so you can continue managing your library.</span>
+            `;
+
         const dismissBtn = document.createElement('button');
         dismissBtn.innerHTML = '<i class="fa-solid fa-times"></i>';
         dismissBtn.style.cssText = `
@@ -619,11 +931,11 @@ class BookshelfRenderer3D {
             border: none;
             color: #dc3545;
             cursor: pointer;
-            font-size: 1.2em;
+            font - size: 1.2em;
             padding: 5px;
             opacity: 0.7;
             transition: opacity 0.2s;
-        `;
+            `;
         dismissBtn.onmouseover = () => dismissBtn.style.opacity = '1';
         dismissBtn.onmouseout = () => dismissBtn.style.opacity = '0.7';
         dismissBtn.onclick = () => {
@@ -632,10 +944,10 @@ class BookshelfRenderer3D {
                 if (errorBanner.parentNode) errorBanner.parentNode.removeChild(errorBanner);
             }, 300);
         };
-        
+
         errorBanner.appendChild(message);
         errorBanner.appendChild(dismissBtn);
-        
+
         if (container === document.body) {
             document.body.insertBefore(errorBanner, document.body.firstChild);
         } else {
@@ -645,7 +957,7 @@ class BookshelfRenderer3D {
 
     init2DFallback() {
         this.assetsLoaded = true; // No 3D assets needed
-        
+
         // Hide the view toggle buttons since 3D and constellation are not available
         const viewControls = document.querySelector('.view-controls');
         if (viewControls) {
@@ -654,7 +966,7 @@ class BookshelfRenderer3D {
 
         const containerShelves = document.getElementById('library-shelves');
         const containerConstellation = document.getElementById('constellation-container');
-        
+
         if (containerConstellation) containerConstellation.classList.add('hidden');
         if (containerShelves) containerShelves.classList.remove('hidden');
 
@@ -861,17 +1173,17 @@ class BookshelfRenderer3D {
         card.className = 'book-card-2d';
         card.style.cssText = `
             background: rgba(30, 30, 30, 0.6);
-            border-radius: 8px;
+            border - radius: 8px;
             overflow: hidden;
             display: flex;
-            flex-direction: column;
-            transition: transform 0.2s, box-shadow 0.2s;
+            flex - direction: column;
+            transition: transform 0.2s, box - shadow 0.2s;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box - shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.05);
             position: relative;
-        `;
-        
+            `;
+
         card.onmouseover = () => {
             card.style.transform = 'translateY(-5px)';
             card.style.boxShadow = '0 8px 15px rgba(0,0,0,0.3)';
@@ -885,41 +1197,41 @@ class BookshelfRenderer3D {
 
         const coverContainer = document.createElement('div');
         coverContainer.style.cssText = `
-            width: 100%;
-            padding-top: 150%; /* 2:3 aspect ratio */
+            width: 100 %;
+            padding - top: 150 %; /* 2:3 aspect ratio */
             position: relative;
             background: #2a2a2a;
-        `;
-        
+            `;
+
         if (book.cover) {
             const img = document.createElement('img');
             img.src = book.cover;
             img.alt = book.title;
             img.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100 %;
+            height: 100 %;
+            object - fit: cover;
             `;
             coverContainer.appendChild(img);
         } else {
             const noCover = document.createElement('div');
             noCover.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #666;
-                text-align: center;
-                padding: 10px;
-                font-size: 0.9em;
-                background: linear-gradient(135deg, ${book.spineColor || '#444'}, #222);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100 %;
+            height: 100 %;
+            display: flex;
+            align - items: center;
+            justify - content: center;
+            color: #666;
+            text - align: center;
+            padding: 10px;
+            font - size: 0.9em;
+            background: linear - gradient(135deg, ${book.spineColor || '#444'}, #222);
             `;
             noCover.textContent = book.title;
             coverContainer.appendChild(noCover);
@@ -929,53 +1241,53 @@ class BookshelfRenderer3D {
         infoContainer.style.cssText = `
             padding: 12px;
             display: flex;
-            flex-direction: column;
-            flex-grow: 1;
+            flex - direction: column;
+            flex - grow: 1;
             background: rgba(20, 20, 20, 0.8);
-        `;
-        
+            `;
+
         const title = document.createElement('h4');
         title.textContent = book.title;
         title.style.cssText = `
             margin: 0 0 5px 0;
-            font-size: 1rem;
+            font - size: 1rem;
             color: #f0f0f0;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
+            display: -webkit - box;
+            -webkit - line - clamp: 2;
+            -webkit - box - orient: vertical;
             overflow: hidden;
-            font-family: 'Playfair Display', serif;
-        `;
-        
+            font - family: 'Playfair Display', serif;
+            `;
+
         const author = document.createElement('p');
         author.textContent = book.author;
         author.style.cssText = `
             margin: 0 0 8px 0;
-            font-size: 0.85rem;
+            font - size: 0.85rem;
             color: #a0a0a0;
-            white-space: nowrap;
+            white - space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
-        `;
+            text - overflow: ellipsis;
+            `;
 
         const metaRow = document.createElement('div');
         metaRow.style.cssText = `
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: auto;
-            font-size: 0.8rem;
-        `;
+            justify - content: space - between;
+            align - items: center;
+            margin - top: auto;
+            font - size: 0.8rem;
+            `;
 
         const rating = document.createElement('span');
-        rating.innerHTML = \`<i class="fa-solid fa-star" style="color: #d4af37;"></i> \${book.rating ? book.rating.toFixed(1) : 'N/A'}\`;
+        rating.innerHTML = `<i class="fa-solid fa-star" style="color: #d4af37;"></i> ${book.rating ? book.rating.toFixed(1) : 'N/A'}`;
         rating.style.color = '#ccc';
 
         metaRow.appendChild(rating);
 
         if (shelfType === 'current' && book.progress > 0) {
             const progress = document.createElement('span');
-            progress.textContent = \`\${book.progress}%\`;
+            progress.textContent = `${book.progress}%`;
             progress.style.color = '#4caf50';
             progress.style.fontWeight = 'bold';
             metaRow.appendChild(progress);
@@ -984,14 +1296,14 @@ class BookshelfRenderer3D {
         infoContainer.appendChild(title);
         infoContainer.appendChild(author);
         infoContainer.appendChild(metaRow);
-        
+
         card.appendChild(coverContainer);
         card.appendChild(infoContainer);
 
         card.addEventListener('click', () => this.openModal(book));
         card.setAttribute('tabindex', '0');
         card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', \`\${book.title} by \${book.author}\`);
+        card.setAttribute('aria-label', `${book.title} by ${book.author}`);
 
         card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1014,6 +1326,11 @@ class BookshelfRenderer3D {
 
         // Wait for 3D assets to load via Web Worker to prevent main thread blocking
         await this.load3DAssets();
+
+        // Initialize actual Three.js Engine
+        if (typeof THREE !== 'undefined') {
+            this.initThreeJSEngine();
+        }
 
         // Sort listener
         const sortSelect = document.getElementById('library-sort');
@@ -1043,8 +1360,8 @@ class BookshelfRenderer3D {
 
                 if (this.currentView === 'shelves') {
                     this.refreshShelves();
-                } else {
-                    this.renderConstellation();
+                } else if (this.currentView === 'constellation') {
+                    this.renderConstellationView();
                 }
             }, 300);
 
@@ -1063,14 +1380,20 @@ class BookshelfRenderer3D {
 
         const switchView = (targetView) => {
             this.currentView = targetView;
-            
+
             // Update button styles
             const btns = [
                 { el: btnShelves, view: 'shelves' },
                 { el: btnConstellation, view: 'constellation' },
                 { el: btnCollections, view: 'collections' }
             ];
-            
+            if (
+                this.constellationSimulation &&
+                targetView !== 'constellation'
+            ) {
+                this.constellationSimulation.stop();
+            }
+
             btns.forEach(btn => {
                 if (btn.el) {
                     if (btn.view === targetView) {
@@ -1082,14 +1405,14 @@ class BookshelfRenderer3D {
                     }
                 }
             });
-            
+
             // Show/hide containers
             const containers = [
                 { el: containerShelves, view: 'shelves' },
                 { el: containerConstellation, view: 'constellation' },
                 { el: containerCollections, view: 'collections' }
             ];
-            
+
             containers.forEach(c => {
                 if (c.el) {
                     if (c.view === targetView) {
@@ -1111,7 +1434,7 @@ class BookshelfRenderer3D {
         if (btnConstellation) {
             this.addManagedListener(btnConstellation, 'click', () => {
                 switchView('constellation');
-                this.renderConstellation();
+                this.renderConstellationView();
             });
         }
 
@@ -1141,6 +1464,126 @@ class BookshelfRenderer3D {
 
         // Setup modal close handlers
         this.setupModalHandlers();
+    }
+
+    initThreeJSEngine() {
+        const container = document.getElementById('library-container') || document.querySelector('.main-content') || document.body;
+        
+        // Create Scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x1a1a1a);
+        
+        // Create Camera
+        const width = container.clientWidth || window.innerWidth;
+        const height = container.clientHeight || window.innerHeight;
+        this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+        this.camera.position.set(0, 1.5, 5);
+        
+        // Create Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.domElement.style.position = 'absolute';
+        this.renderer.domElement.style.top = '0';
+        this.renderer.domElement.style.left = '0';
+        this.renderer.domElement.style.width = '100%';
+        this.renderer.domElement.style.height = '100%';
+        this.renderer.domElement.style.zIndex = '-1'; // Place behind the DOM fallback for now
+        this.renderer.domElement.style.pointerEvents = 'none'; // Let DOM handle clicks for now, or update later
+        
+        // Ensure container is positioned
+        if (getComputedStyle(container).position === 'static') {
+            container.style.position = 'relative';
+        }
+        container.appendChild(this.renderer.domElement);
+        
+        // Add Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        this.scene.add(directionalLight);
+        
+        // Build the 3D environment with static/dynamic separation
+        this.buildThreeJSEnvironment();
+        
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            if (!this.camera || !this.renderer) return;
+            const newWidth = container.clientWidth || window.innerWidth;
+            const newHeight = container.clientHeight || window.innerHeight;
+            this.camera.aspect = newWidth / newHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(newWidth, newHeight);
+        });
+        
+        // Start Rendering Loop
+        this.animateThreeJS();
+    }
+
+    buildThreeJSEnvironment() {
+        // Create a static bookshelf
+        const shelfGeometry = new THREE.BoxGeometry(10, 0.2, 2);
+        const shelfMaterial = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+        
+        for (let i = 0; i < 3; i++) {
+            const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+            shelf.position.y = i * 2 - 2;
+            
+            // OPTIMIZATION: Static objects do not update their matrices every frame
+            shelf.matrixAutoUpdate = false;
+            shelf.updateMatrix();
+            
+            this.scene.add(shelf);
+            this.staticObjects.push(shelf);
+        }
+        
+        // Add some mock dynamic objects (e.g. floating dust particles or moving books)
+        const dustGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+        const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xd4af37 });
+        
+        for (let i = 0; i < 50; i++) {
+            const dust = new THREE.Mesh(dustGeometry, dustMaterial);
+            dust.position.set(
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 5
+            );
+            
+            // Dynamic objects update their matrices
+            dust.matrixAutoUpdate = true;
+            
+            // Add custom properties for animation
+            dust.userData = {
+                speedX: (Math.random() - 0.5) * 0.01,
+                speedY: (Math.random() - 0.5) * 0.01
+            };
+            
+            this.scene.add(dust);
+            this.dynamicObjects.push(dust);
+        }
+    }
+
+    animateThreeJS() {
+        this.threeJsAnimationId = requestAnimationFrame(() => this.animateThreeJS());
+        
+        // Only update dynamic objects
+        for (const obj of this.dynamicObjects) {
+            obj.position.x += obj.userData.speedX;
+            obj.position.y += obj.userData.speedY;
+            
+            // Keep within bounds
+            if (obj.position.x > 5 || obj.position.x < -5) obj.userData.speedX *= -1;
+            if (obj.position.y > 5 || obj.position.y < -5) obj.userData.speedY *= -1;
+            
+            obj.rotation.x += 0.01;
+            obj.rotation.y += 0.01;
+        }
+        
+        // Static objects require 0 CPU overhead here because matrixAutoUpdate is false
+        
+        this.renderer.render(this.scene, this.camera);
     }
 
     refreshShelves() {
@@ -1329,7 +1772,7 @@ class BookshelfRenderer3D {
         renderChunk();
 
         // Update aria-label with book count
-        container.setAttribute('aria-label', `${shelfLabels[shelfType]} - ${books.length} book${books.length !== 1 ? 's' : ''}`);
+        container.setAttribute('aria-label', `${shelfLabels[shelfType]} - ${books.length} book${books.length !== 1 ? 's' : ''} `);
 
         // Add Shelf Drop Zone Logic
         // Remove old listeners? It's hard without named functions. 
@@ -1349,7 +1792,7 @@ class BookshelfRenderer3D {
 
             container.addEventListener('dragleave', (e) => {
                 container.style.backgroundColor = '';
-                
+
             });
 
             container.addEventListener('drop', (e) => {
@@ -1379,7 +1822,7 @@ class BookshelfRenderer3D {
             e.dataTransfer.effectAllowed = 'move';
             spine.style.opacity = '0.5';
             // Announce to screen readers
-            this.announceToScreenReader(`Started dragging ${book.title}`);
+            this.announceToScreenReader(`Started dragging ${book.title} `);
         });
 
         spine.addEventListener('dragend', (e) => {
@@ -1389,7 +1832,7 @@ class BookshelfRenderer3D {
         // Generate deterministic traits
         const traits = this.generateSpineTraits(book);
 
-        spine.className = `book-spine-3d ${traits.texture} ${traits.pattern}`;
+        spine.className = `book - spine - 3d ${traits.texture} ${traits.pattern} `;
         spine.dataset.bookId = book.id;
 
         // Vary spine width based on title length and "page count"
@@ -1401,12 +1844,12 @@ class BookshelfRenderer3D {
         const baseHeight = Math.min(280, 220 + book.title.length * 2.5);
         const spineHeight = baseHeight + Math.floor(this._seededRandom(traits.seed + 20) * 10);
 
-        spine.style.width = `${spineWidth}px`;
-        spine.style.height = `${spineHeight}px`;
+        spine.style.width = `${spineWidth} px`;
+        spine.style.height = `${spineHeight} px`;
         spine.style.setProperty('--spine-color', traits.spineColor);
 
         // Animation delay for staggered entrance (keep this index based for UI effect)
-        spine.style.animationDelay = `${index * 0.1}s`;
+        spine.style.animationDelay = `${index * 0.1} s`;
 
         // Apply Font Class
         spine.classList.add(traits.fontClass);
@@ -1460,27 +1903,27 @@ class BookshelfRenderer3D {
         spine.addEventListener('mousemove', (e) => this.moveTooltip(e));
         spine.addEventListener('mouseleave', () => this.hideTooltip());
         spine.addEventListener('click', () => this.openModal(book));
-       
+
         // Keyboard Accessibility (Issue #534)
-spine.setAttribute('tabindex', '0');
-spine.setAttribute('role', 'button');
-spine.setAttribute('aria-label', `${book.title} by ${book.author}. Rating: ${book.rating}. Press Enter or Space to view details.`);
+        spine.setAttribute('tabindex', '0');
+        spine.setAttribute('role', 'button');
+        spine.setAttribute('aria-label', `${book.title} by ${book.author}.Rating: ${book.rating}. Press Enter or Space to view details.`);
 
-spine.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        this.openModal(book);
-    }
-});
+        spine.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.openModal(book);
+            }
+        });
 
-spine.addEventListener('focus', () => {
-    const rect = spine.getBoundingClientRect();
-    this.showTooltip(
-        { clientX: rect.right, clientY: rect.top + rect.height / 2 },
-        book
-    );
-});
-spine.addEventListener('blur', () => this.hideTooltip());
+        spine.addEventListener('focus', () => {
+            const rect = spine.getBoundingClientRect();
+            this.showTooltip(
+                { clientX: rect.right, clientY: rect.top + rect.height / 2 },
+                book
+            );
+        });
+        spine.addEventListener('blur', () => this.hideTooltip());
 
         // Add mood icon if primary mood exists
         if (book.moods && book.moods.length > 0) {
@@ -1492,7 +1935,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
             moodIcon.style.textAlign = 'center';
             moodIcon.style.fontSize = '12px';
             moodIcon.style.opacity = '0.7';
-            moodIcon.innerHTML = `<i class="fa-solid ${this.getMoodIcon(book.moods[0])}"></i>`;
+            moodIcon.innerHTML = `< i class="fa-solid ${this.getMoodIcon(book.moods[0])}" ></i > `;
             spine.appendChild(moodIcon);
         }
 
@@ -1506,7 +1949,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
             const progressFill = document.createElement('div');
             progressFill.className = 'spine-progress-fill';
-            progressFill.style.height = `${progress}%`;
+            progressFill.style.height = `${progress}% `;
 
             progressIndicator.appendChild(progressFill);
             spine.appendChild(progressIndicator);
@@ -1556,7 +1999,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
             const hue = Math.floor(rand(1) * 360);
             const sat = 40 + Math.floor(rand(2) * 40); // 40-80%
             const lig = 25 + Math.floor(rand(3) * 35); // 25-60%
-            spineColor = `hsl(${hue}, ${sat}%, ${lig}%)`;
+            spineColor = `hsl(${hue}, ${sat} %, ${lig} %)`;
             textColor = lig < 50 ? '#f0f0f0' : '#1a1a1a';
         }
 
@@ -1613,9 +2056,9 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
         // Update tooltip content
         document.getElementById('tooltip-cover').src = book.cover;
-        document.getElementById('tooltip-cover').setAttribute('alt', `Cover of ${book.title}`);
+        document.getElementById('tooltip-cover').setAttribute('alt', `Cover of ${book.title} `);
         document.getElementById('tooltip-title').textContent = book.title;
-        document.getElementById('tooltip-author').textContent = `by ${book.author}`;
+        document.getElementById('tooltip-author').textContent = `by ${book.author} `;
         document.getElementById('tooltip-stars').textContent = this.getStarRating(book.rating);
         document.getElementById('tooltip-rating-text').textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         document.getElementById('tooltip-description').textContent = book.description.substring(0, 150) + '...';
@@ -1628,7 +2071,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
         if (book.shelfType === 'current' && progress > 0) {
             progressEl.style.display = 'block';
-            progressFill.style.width = `${progress}%`;
+            progressFill.style.width = `${progress}% `;
             progressLabel.textContent = `${progress}% read`;
         } else if (book.shelfType === 'current') {
             progressEl.style.display = 'block';
@@ -1649,7 +2092,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
         setTimeout(() => {
             this.tooltip.classList.add('visible');
             // Announce to screen readers
-            this.announceToScreenReader(`Book: ${book.title} by ${book.author}. ${book.rating} stars. ${book.description.substring(0, 100)}...`);
+            this.announceToScreenReader(`Book: ${book.title} by ${book.author}. ${book.rating} stars.${book.description.substring(0, 100)}...`);
         }, 100);
     }
 
@@ -1672,14 +2115,72 @@ spine.addEventListener('blur', () => this.hideTooltip());
             y = window.innerHeight - tooltip.offsetHeight - padding;
         }
 
-        tooltip.style.left = `${x}px`;
-        tooltip.style.top = `${y}px`;
+        tooltip.style.left = `${x} px`;
+        tooltip.style.top = `${y} px`;
     }
 
     hideTooltip() {
         this.tooltipTimeout = setTimeout(() => {
             this.tooltip.classList.remove('visible');
         }, 100);
+    }
+
+    getRelatedBooks(book) {
+        const lib = this.getLibraryState();
+        const all = [...(lib.current || []), ...(lib.want || []), ...(lib.finished || [])];
+        const categories = book.categories || (book.volumeInfo && book.volumeInfo.categories) || [];
+
+        return all.filter(b => {
+            if (b.id === book.id) return false;
+
+            // Same author
+            const authorA = book.author || (book.volumeInfo && book.volumeInfo.authors && book.volumeInfo.authors[0]);
+            const authorB = b.author || (b.volumeInfo && b.volumeInfo.authors && b.volumeInfo.authors[0]);
+            if (authorA && authorA === authorB) return true;
+
+            // Shared moods
+            if (book.moods && b.moods && book.moods.some(m => b.moods.includes(m))) return true;
+
+            // Shared categories
+            const catsB = b.categories || (b.volumeInfo && b.volumeInfo.categories) || [];
+            if (categories.some(c => catsB.includes(c))) return true;
+
+            return false;
+        }).slice(0, 10);
+    }
+
+    renderRelatedBooks(book) {
+        const container = document.getElementById('related-books-container');
+        if (!container) return;
+
+        const related = this.getRelatedBooks(book);
+        if (related.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; padding: 10px;">No other related books in your library yet.</p>';
+            return;
+        }
+
+        container.innerHTML = related.map(b => `
+            <div class="related-book-item" data-id="${b.id}" title="${b.title} by ${b.author}">
+                <img src="${b.cover || (b.volumeInfo && b.volumeInfo.imageLinks && b.volumeInfo.imageLinks.thumbnail) || '../assets/images/biblioDrift_favicon.png'}" alt="${b.title}">
+                <div class="related-book-title">${b.title}</div>
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.related-book-item').forEach(item => {
+            item.onclick = (e) => {
+                e.preventDefault();
+                const bookId = item.dataset.id;
+                const lib = this.getLibraryState();
+                const all = [...(lib.current || []), ...(lib.want || []), ...(lib.finished || [])];
+                const target = all.find(b => b.id === bookId);
+                if (target) {
+                    this.openModal(target);
+                    // Smoothly scroll modal content to top
+                    const modalContent = document.querySelector('.book-detail-content');
+                    if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            };
+        });
     }
 
     openModal(book) {
@@ -1691,6 +2192,9 @@ spine.addEventListener('blur', () => this.hideTooltip());
         // Hide tooltip
         this.hideTooltip();
 
+        // Populate Related Books
+        this.renderRelatedBooks(book);
+
         // 1. Reset Flip State
         const bookObject = document.getElementById('book-3d-object');
         if (bookObject) bookObject.classList.remove('flipped');
@@ -1699,7 +2203,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
         const coverImg = document.getElementById('modal-cover');
         if (coverImg) {
             coverImg.src = book.cover;
-            coverImg.setAttribute('alt', `Cover of ${book.title} by ${book.author}`);
+            coverImg.setAttribute('alt', `Cover of ${book.title} by ${book.author} `);
         }
 
         // 3. Style the 3D Book (Spine & Back)
@@ -1714,7 +2218,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
         if (spineFace) {
             spineFace.style.backgroundColor = spineColor;
-            spineFace.setAttribute('aria-label', `Book spine: ${book.title}`);
+            spineFace.setAttribute('aria-label', `Book spine: ${book.title} `);
             // Add title to spine if element exists
             // (We didn't add a span inside .face-spine in HTML explicitly but let's check if we want to)
         }
@@ -1740,7 +2244,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
         if (descriptionText) {
             descriptionText.textContent = book.description;
             descriptionText.style.color = textColor;
-            descriptionText.setAttribute('aria-label', `Description: ${book.description}`);
+            descriptionText.setAttribute('aria-label', `Description: ${book.description} `);
         }
 
         // Synopsis Title Color
@@ -1777,16 +2281,16 @@ spine.addEventListener('blur', () => this.hideTooltip());
         }
 
         taggingSection.innerHTML = `
-            <h4 class="mood-tagging-title" style="margin-top: 10px; margin-bottom: 8px; color: var(--accent-gold); font-family: 'Playfair Display', serif;">How does this book make you feel?</h4>
-            <div class="emotion-tags-container">
-                ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
-                    const isActive = book.moods && book.moods.includes(mood);
-                    return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+                How does this book make you feel ?
+                    <div class="emotion-tags-container">
+                        ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
+            const isActive = book.moods && book.moods.includes(mood);
+            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
-                }).join('')}
-            </div>
-        `;
+        }).join('')}
+                    </div>
+            `;
         // Categories
         const categoriesContainer = document.getElementById('modal-categories');
         if (categoriesContainer && book.categories) {
@@ -1806,27 +2310,27 @@ spine.addEventListener('blur', () => this.hideTooltip());
             book.reviews.forEach(review => {
                 const item = document.createElement('div');
                 item.className = 'review-item';
-                
+
                 const header = document.createElement('div');
                 header.className = 'review-header';
-                
+
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'reviewer-name';
                 nameSpan.textContent = review.name;
                 header.appendChild(nameSpan);
-                
+
                 const ratingSpan = document.createElement('span');
                 ratingSpan.className = 'review-rating';
                 ratingSpan.textContent = this.getStarRating(review.rating);
                 header.appendChild(ratingSpan);
-                
+
                 item.appendChild(header);
-                
+
                 const textP = document.createElement('p');
                 textP.className = 'review-text';
                 textP.textContent = `"${review.text}"`;
                 item.appendChild(textP);
-                
+
                 reviewsContainer.appendChild(item);
             });
         }
@@ -1898,15 +2402,15 @@ spine.addEventListener('blur', () => this.hideTooltip());
                 const syncProgressUI = (pct) => {
                     const clamped = Math.max(0, Math.min(100, Math.round(pct)));
                     if (progressSlider) progressSlider.value = clamped;
-                    if (progressBar) progressBar.style.width = `${clamped}%`;
-                    if (progressValue) progressValue.textContent = `${clamped}%`;
-                    if (progressBadge) progressBadge.textContent = `${clamped}%`;
+                    if (progressBar) progressBar.style.width = `${clamped}% `;
+                    if (progressValue) progressValue.textContent = `${clamped}% `;
+                    if (progressBadge) progressBadge.textContent = `${clamped}% `;
                     // Sync pages input
                     if (pagesReadInput && pagesTotalInput) {
                         const pages = Math.round((clamped / 100) * parseInt(pagesTotalInput.value || totalPages));
                         pagesReadInput.value = pages;
                     }
-                    if (pagesBar) pagesBar.style.width = `${clamped}%`;
+                    if (pagesBar) pagesBar.style.width = `${clamped}% `;
                 };
 
                 syncProgressUI(currentProgress);
@@ -1947,15 +2451,15 @@ spine.addEventListener('blur', () => this.hideTooltip());
                     newSlider.value = currentProgress;
                     newSlider.addEventListener('input', () => {
                         const pct = parseInt(newSlider.value);
-                        if (progressBar) progressBar.style.width = `${pct}%`;
-                        if (progressValue) progressValue.textContent = `${pct}%`;
-                        if (progressBadge) progressBadge.textContent = `${pct}%`;
+                        if (progressBar) progressBar.style.width = `${pct}% `;
+                        if (progressValue) progressValue.textContent = `${pct}% `;
+                        if (progressBadge) progressBadge.textContent = `${pct}% `;
                         // Sync pages
                         const total = parseInt(document.getElementById('modal-pages-total')?.value || totalPages);
                         const pages = Math.round((pct / 100) * total);
                         const pagesReadEl = document.getElementById('modal-pages-read');
                         if (pagesReadEl) pagesReadEl.value = pages;
-                        if (pagesBar) pagesBar.style.width = `${pct}%`;
+                        if (pagesBar) pagesBar.style.width = `${pct}% `;
                     });
                 }
 
@@ -1969,10 +2473,10 @@ spine.addEventListener('blur', () => this.hideTooltip());
                     const total = Math.max(1, parseInt(pagesTotalEl.value) || 1);
                     const pct = Math.min(100, Math.round((read / total) * 100));
                     if (sliderEl) sliderEl.value = pct;
-                    if (progressBar) progressBar.style.width = `${pct}%`;
-                    if (progressValue) progressValue.textContent = `${pct}%`;
-                    if (progressBadge) progressBadge.textContent = `${pct}%`;
-                    if (pagesBar) pagesBar.style.width = `${pct}%`;
+                    if (progressBar) progressBar.style.width = `${pct}% `;
+                    if (progressValue) progressValue.textContent = `${pct}% `;
+                    if (progressBadge) progressBadge.textContent = `${pct}% `;
+                    if (pagesBar) pagesBar.style.width = `${pct}% `;
                 };
 
                 if (pagesReadInput) {
@@ -2053,10 +2557,10 @@ spine.addEventListener('blur', () => this.hideTooltip());
         if (aiNoteEl) {
             // Reset to skeleton while fetching
             aiNoteEl.innerHTML = `
-                <div class="text-skeleton skeleton"></div>
-                <div class="text-skeleton skeleton" style="width: 90%"></div>
+                < div class="text-skeleton skeleton" ></div >
+                    <div class="text-skeleton skeleton" style="width: 90%"></div>
             `;
-            
+
             // Fetch vibe note using the shared renderer method
             if (window.renderer && typeof window.renderer.fetchAIVibe === 'function') {
                 window.renderer.fetchAIVibe(book.title, book.author, book.description || "").then(vibe => {
@@ -2130,7 +2634,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
         if (actionsSection && reviewsSection && actionsSection.nextElementSibling !== reviewsSection) {
             reviewsSection.parentNode.insertBefore(actionsSection, reviewsSection);
         }
-        
+
         // 8. Price Tracker Setup
         const priceTrackerSection = document.getElementById('modal-price-tracker-section');
         if (priceTrackerSection) {
@@ -2144,12 +2648,12 @@ spine.addEventListener('blur', () => this.hideTooltip());
             const activeAlert = document.getElementById('modal-price-active-alert');
             const activeTarget = document.getElementById('modal-price-active-target');
             const removeBtn = document.getElementById('modal-price-remove-btn');
-            
+
             priceLatest.textContent = '';
             authPrompt.style.display = 'none';
             priceControls.style.display = 'none';
             activeAlert.style.display = 'none';
-            
+
             // Only show price tracker for books on the wishlist ("want" shelf)
             const currentShelf = this.findBookShelf(book.id);
             const localBook = window.libManager && typeof window.libManager.findBook === 'function' ? window.libManager.findBook(book.id) : null;
@@ -2157,17 +2661,17 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
             if (currentShelf === 'want' && shelfItemId) {
                 priceTrackerSection.style.display = 'block';
-                
+
                 const isLoggedIn = window.SafeStorage ? window.SafeStorage.get('isLoggedIn') === 'true' : false;
                 if (!isLoggedIn) {
                     authPrompt.style.display = 'block';
                 } else {
                     priceControls.style.display = 'block';
-                    
+
                     const fetchPriceData = async () => {
                         try {
                             const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
-                            const priceRes = await fetch(`${MOOD_API_BASE}/books/${book.id}/prices`, {
+                            const priceRes = await fetch(`${MOOD_API_BASE} /books/${book.id}/prices`, {
                                 headers, credentials: 'include'
                             });
                             if (priceRes.ok) {
@@ -2179,7 +2683,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
                                     priceLatest.textContent = 'Price: N/A';
                                 }
                             }
-                            
+
                             const alertsRes = await fetch(`${MOOD_API_BASE}/alerts`, {
                                 headers, credentials: 'include'
                             });
@@ -2196,9 +2700,9 @@ spine.addEventListener('blur', () => this.hideTooltip());
                             console.error('Failed to fetch price data', err);
                         }
                     };
-                    
+
                     fetchPriceData();
-                    
+
                     const newSetBtn = setBtn.cloneNode(true);
                     setBtn.parentNode.replaceChild(newSetBtn, setBtn);
                     newSetBtn.addEventListener('click', async () => {
@@ -2207,15 +2711,15 @@ spine.addEventListener('blur', () => this.hideTooltip());
                             alert("Please enter a valid target price.");
                             return;
                         }
-                        
+
                         const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
                         const user = window.libManager ? window.libManager.getUser() : null;
                         if (!user) return;
-                        
+
                         const originalHTML = newSetBtn.innerHTML;
                         newSetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Setting...';
                         newSetBtn.disabled = true;
-                        
+
                         try {
                             const res = await fetch(`${MOOD_API_BASE}/books/${book.id}/alert`, {
                                 method: 'POST',
@@ -2227,7 +2731,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
                                     target_price: targetPrice
                                 })
                             });
-                            
+
                             if (res.ok) {
                                 const data = await res.json();
                                 targetInput.value = '';
@@ -2246,22 +2750,22 @@ spine.addEventListener('blur', () => this.hideTooltip());
                             newSetBtn.disabled = false;
                         }
                     });
-                    
+
                     const newRemoveBtn = removeBtn.cloneNode(true);
                     removeBtn.parentNode.replaceChild(newRemoveBtn, removeBtn);
                     newRemoveBtn.addEventListener('click', async () => {
                         const alertId = activeAlert.dataset.alertId;
                         if (!alertId) return;
-                        
+
                         const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
-                        
+
                         try {
                             const res = await fetch(`${MOOD_API_BASE}/alerts/${alertId}`, {
                                 method: 'DELETE',
                                 headers,
                                 credentials: 'include'
                             });
-                            
+
                             if (res.ok) {
                                 activeAlert.style.display = 'none';
                                 activeAlert.dataset.alertId = '';
@@ -2349,7 +2853,10 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
             newPreviewBtn.addEventListener('click', () => {
                 if (window.BookPreview && book.id) {
-                    window.BookPreview.open(book.id, book.title || 'Book Preview');
+                    const author = book.author || 'Unknown Author';
+                    const rating = book.rating || 0;
+                    const genre = book.genre || 'Fiction';
+                    window.BookPreview.open(book.id, book.title || 'Book Preview', author, rating, genre);
                 }
             });
         }
@@ -2358,11 +2865,11 @@ spine.addEventListener('blur', () => this.hideTooltip());
         const purchaseLinksEl = document.getElementById('modal-purchase-links-lib');
         if (purchaseLinksEl) {
             purchaseLinksEl.innerHTML = '<div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>';
-            
+
             const title = encodeURIComponent(book.title || '');
             const author = encodeURIComponent(book.author || '');
             const isbn = encodeURIComponent(book.isbn || '');
-            
+
             fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
                 .then(res => res.json())
                 .then(data => {
@@ -2381,28 +2888,28 @@ spine.addEventListener('blur', () => this.hideTooltip());
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
-        // Custom Collections Section
-        let collectionsSection = document.getElementById('modal-collections-tagging');
-        if (!collectionsSection) {
-            collectionsSection = document.createElement('div');
-            collectionsSection.id = 'modal-collections-tagging';
-            collectionsSection.className = 'collections-tagging-section';
-            collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
-            const infoPanel = document.querySelector('.book-info-panel');
-            if (infoPanel) {
-                const actions = document.querySelector('.book-actions-section');
-                infoPanel.insertBefore(collectionsSection, actions);
+            // Custom Collections Section
+            let collectionsSection = document.getElementById('modal-collections-tagging');
+            if (!collectionsSection) {
+                collectionsSection = document.createElement('div');
+                collectionsSection.id = 'modal-collections-tagging';
+                collectionsSection.className = 'collections-tagging-section';
+                collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+                const infoPanel = document.querySelector('.book-info-panel');
+                if (infoPanel) {
+                    const actions = document.querySelector('.book-actions-section');
+                    infoPanel.insertBefore(collectionsSection, actions);
+                }
             }
-        }
 
-        const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
-        if (!userObj) {
-            collectionsSection.innerHTML = `
+            const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+            if (!userObj) {
+                collectionsSection.innerHTML = `
                 <h4 style="margin: 0 0 5px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem;">Save in Custom Collections</h4>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;"><a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to save this book in custom shelves.</p>
             `;
-        } else {
-            collectionsSection.innerHTML = `
+            } else {
+                collectionsSection.innerHTML = `
                 <h4 style="margin: 0 0 8px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
                     <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
                 </h4>
@@ -2410,100 +2917,101 @@ spine.addEventListener('blur', () => this.hideTooltip());
                     <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
                 </div>
             `;
-            
-            (async () => {
-                try {
-                    const cols = await window.CollectionAPI.getCollections(userObj.id);
-                    const listEl = document.getElementById('modal-collections-list');
-                    if (!listEl) return;
-                    
-                    if (cols.length === 0) {
-                        listEl.innerHTML = `
+
+                (async () => {
+                    try {
+                        const cols = await window.CollectionAPI.getCollections(userObj.id);
+                        const listEl = document.getElementById('modal-collections-list');
+                        if (!listEl) return;
+
+                        if (cols.length === 0) {
+                            listEl.innerHTML = `
                             <span style="font-size: 0.8rem; color: var(--text-muted);">No custom collections created yet. Go to Custom Collections view to create one!</span>
                         `;
-                        return;
-                    }
-                    
-                    const colsWithItems = await Promise.all(
-                        cols.map(async (c) => {
-                            try {
-                                return await window.CollectionAPI.getCollection(c.id);
-                            } catch (e) {
-                                return { id: c.id, name: c.name, items: [] };
-                            }
-                        })
-                    );
-                    
-                    listEl.innerHTML = '';
-                    colsWithItems.forEach(col => {
-                        const existingItem = col.items.find(item => item.google_books_id === book.id);
-                        const isChecked = !!existingItem;
-                        const label = document.createElement('label');
-                        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
-                        
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.checked = isChecked;
-                        checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
-                        
-                        if (isChecked) {
-                            checkbox.dataset.bookId = existingItem.book_id;
+                            return;
                         }
-                        
-                        checkbox.onchange = async () => {
-                            checkbox.disabled = true;
-                            try {
-                                if (checkbox.checked) {
-                                    const authorStr = Array.isArray(book.authors || book.author) ? (book.authors || book.author).join(', ') : (book.authors || book.author || 'Unknown Author');
-                                    const res = await window.CollectionAPI.addBookToCollection(
-                                        col.id,
-                                        userObj.id,
-                                        book.id,
-                                        book.title,
-                                        authorStr,
-                                        book.cover || book.thumbnail || ''
-                                    );
-                                    checkbox.dataset.bookId = res.item.book_id;
-                                    showToast(`Added to "${col.name}"`, 'success');
-                                } else {
-                                    const bookId = checkbox.dataset.bookId;
-                                    if (bookId) {
-                                        await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
-                                        delete checkbox.dataset.bookId;
-                                        showToast(`Removed from "${col.name}"`, 'success');
-                                    }
+
+                        const colsWithItems = await Promise.all(
+                            cols.map(async (c) => {
+                                try {
+                                    return await window.CollectionAPI.getCollection(c.id);
+                                } catch (e) {
+                                    return { id: c.id, name: c.name, items: [] };
                                 }
-                            } catch (err) {
-                                checkbox.checked = !checkbox.checked; // Revert
-                                showToast(err.message, 'error');
-                            } finally {
-                                checkbox.disabled = false;
+                            })
+                        );
+
+                        listEl.innerHTML = '';
+                        colsWithItems.forEach(col => {
+                            const existingItem = col.items.find(item => item.google_books_id === book.id);
+                            const isChecked = !!existingItem;
+                            const label = document.createElement('label');
+                            label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = isChecked;
+                            checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
+
+                            if (isChecked) {
+                                checkbox.dataset.bookId = existingItem.book_id;
                             }
-                        };
-                        
-                        label.appendChild(checkbox);
-                        
-                        const textSpan = document.createElement('span');
-                        textSpan.textContent = col.name;
-                        label.appendChild(textSpan);
-                        
-                        listEl.appendChild(label);
-                    });
-                } catch (e) {
-                    console.error('Modal collections load failed', e);
-                    const listEl = document.getElementById('modal-collections-list');
-                    if (listEl) {
-                        listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+
+                            checkbox.onchange = async () => {
+                                checkbox.disabled = true;
+                                try {
+                                    if (checkbox.checked) {
+                                        const authorStr = Array.isArray(book.authors || book.author) ? (book.authors || book.author).join(', ') : (book.authors || book.author || 'Unknown Author');
+                                        const res = await window.CollectionAPI.addBookToCollection(
+                                            col.id,
+                                            userObj.id,
+                                            book.id,
+                                            book.title,
+                                            authorStr,
+                                            book.cover || book.thumbnail || ''
+                                        );
+                                        checkbox.dataset.bookId = res.item.book_id;
+                                        showToast(`Added to "${col.name}"`, 'success');
+                                    } else {
+                                        const bookId = checkbox.dataset.bookId;
+                                        if (bookId) {
+                                            await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
+                                            delete checkbox.dataset.bookId;
+                                            showToast(`Removed from "${col.name}"`, 'success');
+                                        }
+                                    }
+                                } catch (err) {
+                                    checkbox.checked = !checkbox.checked; // Revert
+                                    showToast(err.message, 'error');
+                                } finally {
+                                    checkbox.disabled = false;
+                                }
+                            };
+
+                            label.appendChild(checkbox);
+
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = col.name;
+                            label.appendChild(textSpan);
+
+                            listEl.appendChild(label);
+                        });
+                    } catch (e) {
+                        console.error('Modal collections load failed', e);
+                        const listEl = document.getElementById('modal-collections-list');
+                        if (listEl) {
+                            listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+                        }
                     }
-                }
-            })();
+                })();
+            }
         }
 
         // Show modal and manage focus
         if (this.modal) {
             this.modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-            
+
             // Hide fixed elements (ambient leaf, scroll-to-top) to avoid overlapping description
             const fixedControls = document.querySelectorAll('.ambient-sanctuary, .back-to-top');
             fixedControls.forEach(el => el.style.opacity = '0');
@@ -2523,7 +3031,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
             setTimeout(() => {
                 const bookObject = document.getElementById('book-3d-object');
                 if (bookObject) bookObject.classList.remove('flipped');
-                
+
                 // Restore fixed elements
                 const fixedControls = document.querySelectorAll('.ambient-sanctuary, .back-to-top');
                 fixedControls.forEach(el => el.style.opacity = '1');
@@ -2539,7 +3047,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
             // Remove old listener to avoid multi-flips
             const newBook = bookObject.cloneNode(true);
             bookObject.parentNode.replaceChild(newBook, bookObject);
-            
+
             newBook.addEventListener('click', (e) => {
                 // If user is selecting text (e.g. description), don't flip
                 if (window.getSelection().toString().length > 0) {
@@ -2621,7 +3129,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
                 newReadBtn.style.background = 'var(--wood-light)';
                 newReadBtn.style.color = 'white';
                 newReadBtn.setAttribute('aria-label', 'Book marked as read');
-                
+
                 if (this.currentBook) {
                     this.announceToScreenReader(`${this.currentBook.title} marked as read`);
                 }
@@ -2804,232 +3312,232 @@ spine.addEventListener('blur', () => this.hideTooltip());
     // =========================================================
     // VIBE CONSTELLATION (D3 FORCE GRAPH)
     // =========================================================
-    
-    renderConstellation() {
-        if (!this.assetsLoaded) return;
-        
-        const container = document.getElementById('constellation-container');
-        if (!container) return;
-        
-        // Stop previous simulation if exists
-        if (this.constellationSimulation) {
-            this.constellationSimulation.stop();
-        }
-        
-        container.innerHTML = ''; // Clear SVG
-        
-        // Gather all books
-        const storageKey = 'bibliodrift_library';
-        const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {
-            current: [],
-            want: [],
-            finished: []
-        };
-        
-        let allBooks = [
-            ...(localLibrary.current || []),
-            ...(localLibrary.want || []),
-            ...(localLibrary.finished || [])
-        ];
-        
-        // Normalize book structure
-        allBooks = allBooks.map(b => {
-            if (b.volumeInfo) {
-                return {
-                    id: b.id,
-                    title: b.volumeInfo.title || 'Untitled',
-                    author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
-                    cover: b.volumeInfo.imageLinks?.thumbnail || '',
-                    description: b.volumeInfo.description || '',
-                    rating: b.volumeInfo.averageRating || null,
-                    moods: b.moods || [],
-                    spineColor: b.spineColor
-                };
-            }
-            return { ...b, moods: b.moods || [] };
-        });
 
-        // Apply Search Filter
-        if (this.searchQuery) {
-            allBooks = allBooks.filter(b => {
-                const title = b.title.toLowerCase();
-                const author = b.author.toLowerCase();
-                const moods = b.moods.join(" ").toLowerCase();
-                return title.includes(this.searchQuery) || author.includes(this.searchQuery) || moods.includes(this.searchQuery);
-            });
-        }
-        
-        // Empty state check
-        const emptyState = document.getElementById('library-empty-state');
-        if (allBooks.length === 0) {
-            if (emptyState) emptyState.hidden = false;
-            return;
-        } else {
-            if (emptyState) emptyState.hidden = true;
-        }
+    // renderConstellation() {
+    //     if (!this.assetsLoaded) return;
 
-        // Setup dimensions
-        const width = container.clientWidth || 1000;
-        const height = 600;
+    //     const container = document.getElementById('constellation-container');
+    //     if (!container) return;
 
-        // Colors for moods
-        const moodColors = {
-            'cozy': '#8d6e63',
-            'dark': '#424242',
-            'mysterious': '#5e35b1',
-            'romantic': '#e91e63',
-            'adventurous': '#ff5722',
-            'melancholy': '#607d8b',
-            'uplifting': '#4caf50',
-            'default': '#d4af37' // accent-gold
-        };
+    //     // Stop previous simulation if exists
+    //     if (this.constellationSimulation) {
+    //         this.constellationSimulation.stop();
+    //     }
 
-        const nodes = allBooks.map(b => {
-            const primaryMood = (b.moods && b.moods[0]) ? b.moods[0].toLowerCase() : 'default';
-            return {
-                ...b,
-                radius: 35, // Size of cover
-                color: moodColors[primaryMood] || moodColors['default'],
-                primaryMood: primaryMood
-            };
-        });
+    //     container.innerHTML = ''; // Clear SVG
 
-        // Create links between books that share the same primary mood
-        const links = [];
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                if (nodes[i].primaryMood !== 'default' && nodes[i].primaryMood === nodes[j].primaryMood) {
-                    links.push({
-                        source: nodes[i].id,
-                        target: nodes[j].id,
-                        value: 1
-                    });
-                }
-            }
-        }
+    //     // Gather all books
+    //     const storageKey = 'bibliodrift_library';
+    //     const localLibrary = JSON.parse(StorageHelper.get(storageKey)) || {
+    //         current: [],
+    //         want: [],
+    //         finished: []
+    //     };
 
-        const svg = d3.select("#constellation-container").append("svg")
-            .attr("width", "100%")
-            .attr("height", height)
-            .style("background", "linear-gradient(to bottom, #111, #1a1a1a)")
-            .style("border-radius", "8px")
-            .style("box-shadow", "inset 0 0 50px rgba(0,0,0,0.5)");
+    //     let allBooks = [
+    //         ...(localLibrary.current || []),
+    //         ...(localLibrary.want || []),
+    //         ...(localLibrary.finished || [])
+    //     ];
 
-        // Add defs for cover images and glow filters
-        const defs = svg.append("defs");
-        
-        // Glow filter
-        const filter = defs.append("filter").attr("id", "glow");
-        filter.append("feGaussianBlur").attr("stdDeviation", "3.5").attr("result", "coloredBlur");
-        const feMerge = filter.append("feMerge");
-        feMerge.append("feMergeNode").attr("in", "coloredBlur");
-        feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+    //     // Normalize book structure
+    //     allBooks = allBooks.map(b => {
+    //         if (b.volumeInfo) {
+    //             return {
+    //                 id: b.id,
+    //                 title: b.volumeInfo.title || 'Untitled',
+    //                 author: (b.volumeInfo.authors && b.volumeInfo.authors[0]) || 'Unknown',
+    //                 cover: b.volumeInfo.imageLinks?.thumbnail || '',
+    //                 description: b.volumeInfo.description || '',
+    //                 rating: b.volumeInfo.averageRating || null,
+    //                 moods: b.moods || [],
+    //                 spineColor: b.spineColor
+    //             };
+    //         }
+    //         return { ...b, moods: b.moods || [] };
+    //     });
 
-        // Patterns for covers
-        nodes.forEach(node => {
-            defs.append("pattern")
-                .attr("id", "cover-" + node.id)
-                .attr("patternUnits", "userSpaceOnUse")
-                .attr("width", node.radius * 2)
-                .attr("height", node.radius * 2)
-                .append("image")
-                .attr("href", node.cover || '../assets/images/biblioDrift_favicon.png')
-                .attr("width", node.radius * 2)
-                .attr("height", node.radius * 2)
-                .attr("preserveAspectRatio", "xMidYMid slice");
-        });
+    //     // Apply Search Filter
+    //     if (this.searchQuery) {
+    //         allBooks = allBooks.filter(b => {
+    //             const title = b.title.toLowerCase();
+    //             const author = b.author.toLowerCase();
+    //             const moods = b.moods.join(" ").toLowerCase();
+    //             return title.includes(this.searchQuery) || author.includes(this.searchQuery) || moods.includes(this.searchQuery);
+    //         });
+    //     }
 
-        // Initialize forces
-        this.constellationSimulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(links).id(d => d.id).distance(120).strength(0.3))
-            .force("charge", d3.forceManyBody().strength(-300))
-            .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("collide", d3.forceCollide().radius(d => d.radius + 10).iterations(2));
+    //     // Empty state check
+    //     const emptyState = document.getElementById('library-empty-state');
+    //     if (allBooks.length === 0) {
+    //         if (emptyState) emptyState.hidden = false;
+    //         return;
+    //     } else {
+    //         if (emptyState) emptyState.hidden = true;
+    //     }
 
-        // Draw links
-        const link = svg.append("g")
-            .attr("stroke", "rgba(255, 255, 255, 0.15)")
-            .attr("stroke-width", 1.5)
-            .selectAll("line")
-            .data(links)
-            .join("line");
+    //     // Setup dimensions
+    //     const width = container.clientWidth || 1000;
+    //     const height = 600;
 
-        // Draw nodes
-        const node = svg.append("g")
-            .selectAll("circle")
-            .data(nodes)
-            .join("circle")
-            .attr("r", d => d.radius)
-            .attr("fill", d => `url(#cover-${d.id})`)
-            .attr("stroke", d => d.color)
-            .attr("stroke-width", 3)
-            .style("filter", "url(#glow)")
-            .style("cursor", "pointer")
-            .call(d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended));
+    //     // Colors for moods
+    //     const moodColors = {
+    //         'cozy': '#8d6e63',
+    //         'dark': '#424242',
+    //         'mysterious': '#5e35b1',
+    //         'romantic': '#e91e63',
+    //         'adventurous': '#ff5722',
+    //         'melancholy': '#607d8b',
+    //         'uplifting': '#4caf50',
+    //         'default': '#d4af37' // accent-gold
+    //     };
 
-        // Interaction
-        node.on("mouseover", (event, d) => {
-            d3.select(event.currentTarget)
-                .transition().duration(200)
-                .attr("r", d.radius * 1.2)
-                .attr("stroke-width", 4);
-            this.showTooltip(event, d);
-        })
-        .on("mousemove", (event) => {
-            this.moveTooltip(event);
-        })
-        .on("mouseout", (event, d) => {
-            d3.select(event.currentTarget)
-                .transition().duration(200)
-                .attr("r", d.radius)
-                .attr("stroke-width", 3);
-            this.hideTooltip();
-        })
-        .on("click", (event, d) => {
-            this.openModal(d);
-        });
+    //     const nodes = allBooks.map(b => {
+    //         const primaryMood = (b.moods && b.moods[0]) ? b.moods[0].toLowerCase() : 'default';
+    //         return {
+    //             ...b,
+    //             radius: 35, // Size of cover
+    //             color: moodColors[primaryMood] || moodColors['default'],
+    //             primaryMood: primaryMood
+    //         };
+    //     });
 
-        this.constellationSimulation.on("tick", () => {
-            // Keep within bounds
-            nodes.forEach(d => {
-                d.x = Math.max(d.radius, Math.min(width - d.radius, d.x));
-                d.y = Math.max(d.radius, Math.min(height - d.radius, d.y));
-            });
+    //     // Create links between books that share the same primary mood
+    //     const links = [];
+    //     for (let i = 0; i < nodes.length; i++) {
+    //         for (let j = i + 1; j < nodes.length; j++) {
+    //             if (nodes[i].primaryMood !== 'default' && nodes[i].primaryMood === nodes[j].primaryMood) {
+    //                 links.push({
+    //                     source: nodes[i].id,
+    //                     target: nodes[j].id,
+    //                     value: 1
+    //                 });
+    //             }
+    //         }
+    //     }
 
-            link
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
+    //     const svg = d3.select("#constellation-container").append("svg")
+    //         .attr("width", "100%")
+    //         .attr("height", height)
+    //         .style("background", "linear-gradient(to bottom, #111, #1a1a1a)")
+    //         .style("border-radius", "8px")
+    //         .style("box-shadow", "inset 0 0 50px rgba(0,0,0,0.5)");
 
-            node
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y);
-        });
+    //     // Add defs for cover images and glow filters
+    //     const defs = svg.append("defs");
 
-        // Drag functions
-        const self = this;
-        function dragstarted(event) {
-            if (!event.active) self.constellationSimulation.alphaTarget(0.3).restart();
-            event.subject.fx = event.subject.x;
-            event.subject.fy = event.subject.y;
-        }
+    //     // Glow filter
+    //     const filter = defs.append("filter").attr("id", "glow");
+    //     filter.append("feGaussianBlur").attr("stdDeviation", "3.5").attr("result", "coloredBlur");
+    //     const feMerge = filter.append("feMerge");
+    //     feMerge.append("feMergeNode").attr("in", "coloredBlur");
+    //     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-        function dragged(event) {
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;
-            self.moveTooltip(event); // keep tooltip with it
-        }
+    //     // Patterns for covers
+    //     nodes.forEach(node => {
+    //         defs.append("pattern")
+    //             .attr("id", "cover-" + node.id)
+    //             .attr("patternUnits", "userSpaceOnUse")
+    //             .attr("width", node.radius * 2)
+    //             .attr("height", node.radius * 2)
+    //             .append("image")
+    //             .attr("href", node.cover || '../assets/images/biblioDrift_favicon.png')
+    //             .attr("width", node.radius * 2)
+    //             .attr("height", node.radius * 2)
+    //             .attr("preserveAspectRatio", "xMidYMid slice");
+    //     });
 
-        function dragended(event) {
-            if (!event.active) self.constellationSimulation.alphaTarget(0);
-            event.subject.fx = null;
-            event.subject.fy = null;
-        }
-    }
+    //     // Initialize forces
+    //     this.constellationSimulation = d3.forceSimulation(nodes)
+    //         .force("link", d3.forceLink(links).id(d => d.id).distance(120).strength(0.3))
+    //         .force("charge", d3.forceManyBody().strength(-300))
+    //         .force("center", d3.forceCenter(width / 2, height / 2))
+    //         .force("collide", d3.forceCollide().radius(d => d.radius + 10).iterations(2));
+
+    //     // Draw links
+    //     const link = svg.append("g")
+    //         .attr("stroke", "rgba(255, 255, 255, 0.15)")
+    //         .attr("stroke-width", 1.5)
+    //         .selectAll("line")
+    //         .data(links)
+    //         .join("line");
+
+    //     // Draw nodes
+    //     const node = svg.append("g")
+    //         .selectAll("circle")
+    //         .data(nodes)
+    //         .join("circle")
+    //         .attr("r", d => d.radius)
+    //         .attr("fill", d => `url(#cover-${d.id})`)
+    //         .attr("stroke", d => d.color)
+    //         .attr("stroke-width", 3)
+    //         .style("filter", "url(#glow)")
+    //         .style("cursor", "pointer")
+    //         .call(d3.drag()
+    //             .on("start", dragstarted)
+    //             .on("drag", dragged)
+    //             .on("end", dragended));
+
+    //     // Interaction
+    //     node.on("mouseover", (event, d) => {
+    //         d3.select(event.currentTarget)
+    //             .transition().duration(200)
+    //             .attr("r", d.radius * 1.2)
+    //             .attr("stroke-width", 4);
+    //         this.showTooltip(event, d);
+    //     })
+    //         .on("mousemove", (event) => {
+    //             this.moveTooltip(event);
+    //         })
+    //         .on("mouseout", (event, d) => {
+    //             d3.select(event.currentTarget)
+    //                 .transition().duration(200)
+    //                 .attr("r", d.radius)
+    //                 .attr("stroke-width", 3);
+    //             this.hideTooltip();
+    //         })
+    //         .on("click", (event, d) => {
+    //             this.openModal(d);
+    //         });
+
+    //     this.constellationSimulation.on("tick", () => {
+    //         // Keep within bounds
+    //         nodes.forEach(d => {
+    //             d.x = Math.max(d.radius, Math.min(width - d.radius, d.x));
+    //             d.y = Math.max(d.radius, Math.min(height - d.radius, d.y));
+    //         });
+
+    //         link
+    //             .attr("x1", d => d.source.x)
+    //             .attr("y1", d => d.source.y)
+    //             .attr("x2", d => d.target.x)
+    //             .attr("y2", d => d.target.y);
+
+    //         node
+    //             .attr("cx", d => d.x)
+    //             .attr("cy", d => d.y);
+    //     });
+
+    //     // Drag functions
+    //     const self = this;
+    //     function dragstarted(event) {
+    //         if (!event.active) self.constellationSimulation.alphaTarget(0.3).restart();
+    //         event.subject.fx = event.subject.x;
+    //         event.subject.fy = event.subject.y;
+    //     }
+
+    //     function dragged(event) {
+    //         event.subject.fx = event.x;
+    //         event.subject.fy = event.y;
+    //         self.moveTooltip(event); // keep tooltip with it
+    //     }
+
+    //     function dragended(event) {
+    //         if (!event.active) self.constellationSimulation.alphaTarget(0);
+    //         event.subject.fx = null;
+    //         event.subject.fy = null;
+    //     }
+    // }
 
     async loadAndRenderCollections() {
         const gridContainer = document.getElementById('collections-grid');
@@ -3114,10 +3622,10 @@ spine.addEventListener('blur', () => this.hideTooltip());
             const card = document.createElement('div');
             card.className = 'collection-folder-card';
             card.style.cssText = 'background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; justify-content: space-between; min-height: 180px; box-sizing: border-box; position: relative; overflow: hidden;';
-            
+
             const badgeBg = col.is_public ? 'var(--accent-gold)' : 'var(--text-muted)';
             const badgeColor = col.is_public ? '#000' : '#fff';
-            
+
             card.innerHTML = `
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
@@ -3176,7 +3684,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
             // Populate header
             document.getElementById('selected-collection-name').textContent = collection.name;
             document.getElementById('selected-collection-desc').textContent = collection.description || 'No description provided.';
-            
+
             const statusBadge = document.getElementById('selected-collection-status');
             if (statusBadge) {
                 statusBadge.textContent = collection.is_public ? 'Public' : 'Private';
@@ -3222,7 +3730,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
                 };
 
                 const spine = this.createBookSpine(bookData, index, 'collection');
-                
+
                 // Add a hover option or delete handler specifically for collections
                 const deleteIcon = document.createElement('div');
                 deleteIcon.className = 'spine-finished-badge';
@@ -3295,7 +3803,7 @@ spine.addEventListener('blur', () => this.hideTooltip());
 
         // Close handlers
         document.getElementById('closeCollectionModalBtn').onclick = () => modal.close();
-        
+
         // Save handler
         form.onsubmit = async (e) => {
             e.preventDefault();
@@ -3361,6 +3869,12 @@ spine.addEventListener('blur', () => this.hideTooltip());
         if (this.constellationSimulation) {
             this.constellationSimulation.stop();
             this.constellationSimulation = null;
+        }
+        if (this.constellationResizeHandler) {
+            window.removeEventListener(
+                'resize',
+                this.constellationResizeHandler
+            );
         }
 
         if (this.tooltipTimeout) {

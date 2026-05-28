@@ -20,11 +20,9 @@ where stories are explored through <b>mood, atmosphere, and feeling</b> instead 
 🌧️ Mood-first discovery • 📚 Immersive reading • 🤖 AI-powered storytelling
 </p>
 
-
-[🚀 Live Demo](https://bibliodrift-dm.netlify.app/) (static frontend; AI/auth need a deployed backend — see [docs/contributing.md](docs/contributing.md)) •
-[📚 Documentation](docs/) •
-[🤝 Contributing](docs/contributing.md)
-
+<a href="https://www.netlify.com">
+  <img src="https://www.netlify.com/assets/badges/netlify-badge-dark.svg" alt="Deploys by Netlify" />
+</a>
 </div>
 
 ---
