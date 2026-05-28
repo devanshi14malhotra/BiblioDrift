@@ -72,6 +72,7 @@
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
   <link rel="stylesheet" href="../css/pwa.css">
+  <link rel="stylesheet" href="../css/app-page.css" />
   <link rel="manifest" href="../manifest.json">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -124,6 +125,10 @@
            <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
         </div>
         <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
           <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
@@ -145,8 +150,12 @@
 
   <main>
     <section class="hero">
-      <h1>Find yourself in the pages.</h1>
-      <p>A curated sanctuary for those who read through emotions.</p>
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <span class="hero-kicker">Mood-led discovery</span>
+        <h1 class="hero-title">Find yourself in the pages.</h1>
+        <p>A curated sanctuary for those who read through emotions.</p>
+      </div>
     </section>
 
     <!-- SEARCH RESULTS SECTION (Initially Hidden) -->
@@ -439,6 +448,19 @@
 
 
   <!--The footer is being called usingt footer.js.-->
+    <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
   <script src="../js/config.js"></script>
   <script src="../js/security.js"></script>
   <script src="../js/app.js"></script>
@@ -582,3 +604,4 @@
 </body>
 
 </html>
+

@@ -330,7 +330,10 @@
            <a href="community-stories.html">Community</a>
            <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
         </div>
-
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
         <div class="tooltip">
           <a href="chat.html" class="active">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
@@ -520,7 +523,20 @@
             window.renderAuthNavigation?.(link, tooltip, false);
         });
     </script>
-    <script src="../js/config.js"></script>
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/config.js"></script>
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
     <script src="../js/chat.js"></script>
@@ -531,3 +547,4 @@
 </body>
 
 </html>
+

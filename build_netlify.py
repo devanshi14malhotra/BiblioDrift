@@ -57,7 +57,16 @@ def build_html() -> None:
 
 
 def write_clean_route_redirects() -> None:
-    redirects = [
+    redirects = []
+
+    # if BACKEND_URL is set in Netlify's environment variables,
+    # proxy all /api/v1/* requests to the Flask backend.
+    # without this, Netlify has no rule for /api/v1/ and shows a 404.
+    backend_url = os.getenv("BACKEND_URL", "").strip().rstrip("/")
+    if backend_url:
+        redirects.append(f"/api/v1/* {backend_url}/api/v1/:splat 200")
+
+    redirects += [
         "/app /app.html 200",
         "/chat /chat.html 200",
         "/auth /auth.html 200",
@@ -70,6 +79,7 @@ def write_clean_route_redirects() -> None:
         "/contributors /contributors.html 200",
         "/contributing /contributing.html 200",
         "/community-stories /community-stories.html 200",
+        "/nearby-bookstores /nearby-bookstores.html 200",
     ]
     (DIST / "_redirects").write_text("\n".join(redirects) + "\n", encoding="utf-8")
 

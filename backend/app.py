@@ -1,6 +1,10 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -25,11 +29,8 @@ import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from backend.sanitizer import sanitize_payload
-from backend.reader_identity.routes import reader_identity_bp
+from sanitizer import sanitize_payload
+from reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -84,10 +85,14 @@ from password_reset_service import (
     request_password_reset,
     reset_password_with_token,
 )
+from email_service import (
+    build_password_reset_url,
+    is_email_configured,
+    send_password_reset_email,
+)
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from urllib.parse import quote
 from error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
@@ -773,13 +778,6 @@ def _validate_jwt_secret_startup():
 
 _validate_jwt_secret_startup()
 
-@app.route('/api/v1/config', methods=['GET'])
-def get_config():
-    """Serve public configuration values like Google Books API Key."""
-    return jsonify({
-        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
-        "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
-    })
 
 # =====================================================================
 # ENDPOINT: CSRF Token Retrieval
@@ -1975,20 +1973,36 @@ def forgot_password(validated_data):
             logger.error("forgot-password database error: %s", e, exc_info=True)
 
         response_data = {"message": FORGOT_PASSWORD_MESSAGE}
+        frontend_base = os.getenv('FRONTEND_ORIGIN', 'http://127.0.0.1:5500').rstrip('/')
+        email_config = app_config.email
 
-        if plain_token and app_config.is_development():
-            frontend_base = os.getenv(
-                'FRONTEND_ORIGIN',
-                'http://127.0.0.1:5500',
-            ).rstrip('/')
-            response_data["reset_url"] = (
-                f"{frontend_base}/pages/auth.html?token={quote(plain_token)}"
-            )
-            logger.info(
-                "Dev password reset link for %s: %s",
-                validated_data.email,
-                response_data["reset_url"],
-            )
+        if plain_token:
+            reset_url = build_password_reset_url(plain_token, frontend_base)
+            if is_email_configured(email_config):
+                send_result = send_password_reset_email(
+                    validated_data.email,
+                    reset_url,
+                    email_config,
+                )
+                if not send_result.ok:
+                    logger.error(
+                        "Password reset email not sent for %s: %s",
+                        validated_data.email,
+                        send_result.detail,
+                    )
+            elif app_config.is_development():
+                response_data["reset_url"] = reset_url
+                logger.info(
+                    "Dev password reset link for %s (email not configured): %s",
+                    validated_data.email,
+                    reset_url,
+                )
+            elif app_config.is_production():
+                logger.warning(
+                    "Password reset token created but EMAIL_* is not configured; "
+                    "user %s will not receive mail.",
+                    validated_data.email,
+                )
 
         return success_response(data=response_data)
     except Exception as e:

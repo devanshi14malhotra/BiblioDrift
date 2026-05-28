@@ -83,6 +83,10 @@
            <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
         </div>
         <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
           <a href="chat.html">Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
         </div>
@@ -587,7 +591,20 @@
 
     </main>
 
-    <script src="../js/config.js"></script>
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/config.js"></script>
     <script src="../js/library-3d.js"></script>
     <script src="../js/app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

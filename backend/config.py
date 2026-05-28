@@ -170,18 +170,28 @@ class GoogleOAuthConfig:
 
 @dataclass
 class EmailConfig:
-    """Email service configuration (e.g., SendGrid, Mailgun)."""
+    """Email service configuration (SendGrid API or SMTP)."""
     api_key: Optional[str]
     from_email: Optional[str]
     service_provider: str = 'sendgrid'
-    
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_use_tls: bool = True
+
     @classmethod
     def from_env(cls) -> 'EmailConfig':
         """Create email config from environment variables."""
         return cls(
             api_key=os.getenv('EMAIL_API_KEY'),
             from_email=os.getenv('EMAIL_FROM'),
-            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid')
+            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid'),
+            smtp_host=os.getenv('EMAIL_SMTP_HOST'),
+            smtp_port=int(os.getenv('EMAIL_SMTP_PORT', '587')),
+            smtp_username=os.getenv('EMAIL_SMTP_USER'),
+            smtp_password=os.getenv('EMAIL_SMTP_PASSWORD'),
+            smtp_use_tls=os.getenv('EMAIL_SMTP_USE_TLS', 'true').lower() == 'true',
         )
 
 
