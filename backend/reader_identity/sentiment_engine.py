@@ -2,8 +2,6 @@
 Handles sentiment analysis for reader reviews.
 """
 
-from textblob import TextBlob
-
 """
 Performs sentiment-based emotional profiling.
 """
@@ -11,6 +9,7 @@ Performs sentiment-based emotional profiling.
 class SentimentEngine:
 
     def analyze_reviews(self, reviews):
+        from textblob import TextBlob
 
         combined_text = " ".join(reviews)
 

@@ -1,12 +1,20 @@
 const createFooter = () => {
   const year = new Date().getFullYear();
+  const pagePath = (page) => {
+    const isLocalPreview = window.location.protocol === 'file:' ||
+      ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+    const cleanPath = page === 'index' ? '/' : `/${page}`;
+    const htmlPath = `${page}.html`;
+
+    return isLocalPreview ? htmlPath : cleanPath;
+  };
 
   const footerHTML = `
     <footer class="main-footer">
       <div class="footer-container">
         <!-- Brand Section -->
         <div class="footer-brand">
-          <a href="index.html" class="logo" aria-label="BiblioDrift Home">
+          <a href="${pagePath('index')}" class="logo" aria-label="BiblioDrift Home">
             <img class="footer-logo" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
           </a>
           <p class="footer-tagline">"There is no frigate like a book to take us lands away."</p>
@@ -17,23 +25,24 @@ const createFooter = () => {
         <nav class="footer-nav" aria-label="Footer Navigation">
           <h3>Explore</h3>
           <ul>
-            <li><a href="index.html">Discovery</a></li>
-            <li><a href="vault.html">My Vault</a></li>
-            <li><a href="library.html">My Library</a></li>
-            <li><a href="chat.html">Literary Chat</a></li>
-            <li><a href="auth.html">Account</a></li>
+            <li><a href="${pagePath('app')}">Discovery</a></li>
+            <li><a href="${pagePath('vault')}">My Vault</a></li>
+            <li><a href="${pagePath('library')}">My Library</a></li>
+            <li><a href="${pagePath('chat')}">Literary Chat</a></li>
+            <li><a href="${pagePath('auth')}">Account</a></li>
             <li>
-          <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank">
-           Repository
-          </a> 
-        </ul>
+              <a href="${pagePath('index')}">
+                Home Page
+              </a>
+            </li>
+          </ul>
         </nav>
 
         <div class="footer-legal">
           <h3>Legal</h3>
           <ul>
-            <li><a href="privacy-policy.html">Privacy Policy</a></li>
-            <li><a href="terms-and-conditions.html">Terms & Conditions</a></li>
+            <li><a href="${pagePath('privacy-policy')}">Privacy Policy</a></li>
+            <li><a href="${pagePath('terms-and-conditions')}">Terms & Conditions</a></li>
           </ul>
         </div>
 

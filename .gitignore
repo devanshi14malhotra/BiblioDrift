@@ -6,10 +6,10 @@ mood_analysis/mood_cache.json
 *.cache
 
 # Environment variables
-.env
-.env.local
-.env.production
-.env.development
+/.env
+/.env.local
+/.env.production
+/.env.development
 
 # Sensitive local files
 *.token
@@ -33,5 +33,6 @@ instance/
 # Virtual Environment
 venv/
 
+# Local untracked scripts folder
 .claude/
 .refact/

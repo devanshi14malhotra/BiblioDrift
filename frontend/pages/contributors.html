@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributors | BiblioDrift</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600&family=Georgia&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/contributors.css" />
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
+</head>
+<body>
+  <header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html">Home</a>
+          <span class="tooltip-text"><i class="fa-solid fa-house"></i> Back to landing</span>
+        </div>
+        <div class="tooltip">
+          <a href="app.html">Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html">My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html">Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <div class="tooltip">
+          <a href="auth.html">Account</a>
+          <span class="tooltip-text"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <!-- Dark Mode Toggle Button -->
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="contributors-shell">
+    <section class="contributors-hero">
+      <div class="section-header">
+        <h1>All Contributors</h1>
+        <div class="meta"><i class="fa-solid fa-users"></i> Community built, GitHub synced</div>
+      </div>
+      <p>
+        This page lists every contributor currently exported from GitHub. It uses the same cached data as the landing page, but shows the full set in a clean grid so you can scan the whole community at once.
+      </p>
+      <div class="contributors-actions">
+        <a class="btn-primary landing-cta-primary" href="landing.html#community"><i class="fa-solid fa-arrow-left"></i> Back to community</a>
+        <span class="contributors-note"><i class="fa-solid fa-rotate"></i> Auto-refreshes three times a day</span>
+      </div>
+    </section>
+
+    <section aria-live="polite">
+      <div id="contributors-status" class="contributors-loading">Loading contributors…</div>
+      <div id="contributors-grid" class="contributors-grid" hidden></div>
+    </section>
+  </main>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/footer.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../script/header-scroll.js"></script>
+  <script src="../js/contributors.js"></script>
+    <script src="../js/pwa.js"></script>
+</body>
+</html>
+
+
+

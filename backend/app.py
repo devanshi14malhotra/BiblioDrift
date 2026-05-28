@@ -1,6 +1,10 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -8,23 +12,23 @@ from flask_jwt_extended import (
     get_jwt_identity, set_access_cookies, unset_jwt_cookies
 )
 from flask_limiter import Limiter
+from flask_limiter.errors import RateLimitExceeded
 from flask_limiter.util import get_remote_address
 from sqlalchemy.orm import joinedload
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
-from backend.spine_generator import create_spine
+from spine_generator import create_spine
 import os
 import requests
 import secrets
 from urllib.parse import urlencode
+from werkzeug.utils import secure_filename
+import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
 
@@ -41,16 +45,18 @@ else:
 
 # Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
+from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service, get_vibe_recommendations
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
 from price_tracker import get_price_tracker
 from cache_service import cache_service
 from validators import (
     validate_request,
+    validate_schema,
     validate_google_books_id,
     AnalyzeMoodRequest,
     MoodTagsRequest,
     MoodSearchRequest,
+    VibeCheckRequest,
     GenerateNoteRequest,
     ChatRequest,
     CategoryBooksRequest,
@@ -59,6 +65,8 @@ from validators import (
     SyncLibraryRequest,
     RegisterRequest,
     LoginRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     SetGoalRequest,
     GetStatsRequest,
     CollectionRequest,
@@ -71,6 +79,16 @@ from validators import (
     format_validation_errors,
     validate_jwt_secret,
     is_production_mode
+)
+from password_reset_service import (
+    FORGOT_PASSWORD_MESSAGE,
+    request_password_reset,
+    reset_password_with_token,
+)
+from email_service import (
+    build_password_reset_url,
+    is_email_configured,
+    send_password_reset_email,
 )
 from collections import defaultdict, deque
 from math import ceil
@@ -143,6 +161,107 @@ csrf = CSRFProtect(app)
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
+DEFAULT_CORS_ORIGINS = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:5501",
+    "http://localhost:5501",
+    "http://127.0.0.1:5000",
+    "http://localhost:5000",
+]
+ALLOWED_CORS_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+ALLOWED_CORS_HEADERS = [
+    "Content-Type",
+    "Authorization",
+    "X-CSRF-TOKEN",
+    "X-CSRF-Token",
+    "X-Requested-With",
+    "Accept",
+]
+
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: STRICT CORS ORIGIN RESOLUTION
+# =====================================================================
+# This function enforces strict Cross-Origin Resource Sharing (CORS) 
+# policies, which is a critical security measure to prevent malicious
+# third-party websites from making unauthorized requests on behalf
+# of an authenticated user.
+#
+# The previous implementation was overly permissive, potentially
+# allowing wildcard ('*') origins in production environments.
+# A wildcard policy (Access-Control-Allow-Origin: *) exposes all
+# API endpoints to cross-origin requests from any domain on the
+# internet, severely undermining security and leaving the application
+# vulnerable to various attacks, including CSRF (Cross-Site Request Forgery)
+# and data exfiltration.
+#
+# To mitigate these risks, this updated function dynamically checks
+# the application's current environment. When operating in production
+# mode (as determined by `is_production_mode()`), it implements a
+# strict allowlist approach:
+#
+# 1. It attempts to read the `FRONTEND_URL` environment variable.
+#    If absent, it defaults to the known production domain 
+#    ('https://bibliodrift.com').
+# 2. It then checks the `ALLOWED_ORIGINS` environment variable,
+#    which allows for multiple comma-separated origins.
+# 3. CRITICAL: It actively parses the provided origins and strips out
+#    any wildcard ('*') entries, ensuring they cannot be used to
+#    bypass the strict policy.
+# 4. Empty strings and purely whitespace entries are also removed.
+# 5. If the resulting list of safe origins is empty (e.g., if the
+#    only provided origin was a wildcard), it forcefully falls back
+#    to the safe `FRONTEND_URL` default.
+#
+# In non-production environments (like local development), the rules
+# are slightly relaxed to facilitate testing and debugging, falling
+# back to a set of predefined `DEFAULT_CORS_ORIGINS` if no explicit
+# configuration is provided in the environment variables.
+# =====================================================================
+def _load_cors_origins() -> list[str]:
+    """Load an explicit CORS allowlist from the environment or defaults."""
+    if is_production_mode():
+        frontend_url = os.getenv("FRONTEND_URL", "https://bibliodrift.com")
+        raw_origins = os.getenv("ALLOWED_ORIGINS", frontend_url)
+        # Prevent wildcard in production
+        origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip() and origin.strip() != "*"]
+        return origins if origins else [frontend_url]
+
+    raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+    if raw_origins.strip():
+        return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return DEFAULT_CORS_ORIGINS
+
+def _apply_security_headers(response):
+    """Apply hardening headers to every API response."""
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.google.com; "
+        "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "connect-src 'self' https: ws: wss:; "
+        "frame-src 'self' https://books.google.com https://www.google.com; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'none'; "
+        "form-action 'self'; "
+        "upgrade-insecure-requests"
+    )
+
+    response.headers['Content-Security-Policy'] = csp_policy
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    response.headers['X-Frame-Options'] = 'DENY'
+    
+    # Add Cache-Control for 3D assets and static images
+    if request.path.endswith(('.gltf', '.obj', '.png')):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        
+    return response
+
 # =====================================================================
 # SECURITY COMPLIANCE UPDATE: CORS CONFIGURATION
 # The previous CORS(app) was overly permissive and allowed all origins.
@@ -153,11 +272,52 @@ jwt = JWTManager(app)
 # optionally load allowed origins from environment variables.
 # =====================================================================
 # ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5000,http://localhost:5000
-# For development, we'll allow all to be safe, then restrict in prod
-CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5501", "http://localhost:5501", "http://127.0.0.1:5000", "http://localhost:5000"])
+# For development, we keep a strict explicit allowlist and never use '*'
+_cors_origins = _load_cors_origins()
+CORS(
+    app,
+    supports_credentials=True,
+    origins=_cors_origins,
+    methods=ALLOWED_CORS_METHODS,
+    allow_headers=ALLOWED_CORS_HEADERS,
+    expose_headers=['Retry-After'],
+    resources={r"/api/*": {"origins": _cors_origins}},
+)
 
 # Initialize cache service
 cache_service.init_app(app)
+
+
+def _resolve_rate_limit_principal() -> str:
+    """Resolve a stable principal for per-user/session throttling."""
+    try:
+        user_id = get_jwt_identity()
+        if user_id:
+            return f"user:{user_id}"
+    except Exception:
+        # JWT may be absent on public endpoints.
+        pass
+
+    session_hint = (
+        request.cookies.get("access_token_cookie")
+        or request.cookies.get("csrf_access_token")
+        or request.cookies.get("session")
+    )
+    if session_hint:
+        return f"session:{session_hint[:24]}"
+
+    return "anon"
+
+
+def rate_limit_key_func() -> str:
+    """Composite key: IP + principal + endpoint."""
+    endpoint = request.endpoint or request.path
+    return f"{get_remote_address()}|{_resolve_rate_limit_principal()}|{endpoint}"
+
+
+def _handle_rate_limit_exceeded(e: RateLimitExceeded):
+    retry_after = int(getattr(e, "retry_after", 1) or 1)
+    return rate_limit_error(retry_after)
 
 # =====================================================================
 # SECURITY COMPLIANCE UPDATE: RATE LIMITING
@@ -168,11 +328,12 @@ cache_service.init_app(app)
 # We set generic defaults but override them on specific high-risk routes.
 # =====================================================================
 limiter = Limiter(
-    get_remote_address,
+    rate_limit_key_func,
     app=app,
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"
 )
+app.register_error_handler(RateLimitExceeded, _handle_rate_limit_exceeded)
 
 
 
@@ -515,35 +676,7 @@ def add_security_headers(response):
     Returns:
         response: Response with added security headers
     """
-    csp_policy = (
-        "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-        "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
-        "img-src 'self' data: blob: https:; "
-        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-        "connect-src 'self' ws: wss: https:; "
-        "frame-ancestors 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self'; "
-        "upgrade-insecure-requests"
-    )
-    response.headers['Content-Security-Policy'] = csp_policy
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Permissions-Policy'] = (
-        'geolocation=(), '
-        'microphone=(), '
-        'camera=(), '
-        'payment=(), '
-        'usb=(), '
-        'magnetometer=(), '
-        'gyroscope=(), '
-        'accelerometer=()'
-    )
-    return response
+    return _apply_security_headers(response)
 
 # Rate limiting configuration
 RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
@@ -674,6 +807,142 @@ def get_csrf_token():
     token = generate_csrf()
     return success_response(data={"csrf_token": token})
 
+# =====================================================================
+# ENDPOINT: System Health & Environment Diagnostics
+# =====================================================================
+# This endpoint provides comprehensive health checks for the API, 
+# Database, Redis Cache, and external AI/Service Integrations.
+# 
+# Security & Compliance:
+# - In 'production', it returns only essential health status to prevent
+#   information leakage, which is critical for attack surface reduction.
+# - In 'development' or 'testing', it returns detailed configuration
+#   states, database connection metrics, and dummy key validations.
+# - Validates that 'testing' environments correctly utilize dummy API 
+#   keys to prevent accidental financial charges against real services.
+# - Automatically degrades system status from 200 OK to 503 Service 
+#   Unavailable if critical infrastructural components (DB, Cache) fail.
+# =====================================================================
+@app.route('/api/v1/health', methods=['GET'])
+def health_check():
+    """
+    Comprehensive system health and environment diagnostic check.
+    Behavior and verbosity scale dynamically according to the active environment config.
+    """
+    from sqlalchemy import text
+    import time
+    
+    # Initialize the base health response structure
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "environment": app_config.get_environment_name(),
+        "version": "1.0.0",
+        "maintenance_mode": os.getenv("MAINTENANCE_MODE", "false").lower() == "true"
+    }
+    
+    # 1. Database Connectivity & Latency Check
+    db_status = "unknown"
+    db_latency_ms = 0
+    try:
+        start_time = time.time()
+        # Execute a lightweight, read-only query to test the active connection pool
+        # This confirms that SQLAlchemy can successfully speak to the database
+        db.session.execute(text("SELECT 1"))
+        db_latency_ms = round((time.time() - start_time) * 1000, 2)
+        db_status = "connected"
+    except Exception as e:
+        logger.error(f"Health Check: Database connection failed: {e}")
+        db_status = "disconnected"
+        health_status["status"] = "degraded"
+        # Only append specific error messages in non-production environments
+        if not app_config.is_production():
+            health_status["db_error"] = str(e)
+            
+    # 2. Redis Cache Connectivity Check
+    # Important for rate limiting and temporary data storage
+    redis_status = "unknown"
+    try:
+        # Check if the cache service was successfully initialized and bound to a client
+        if hasattr(cache_service, 'redis_client') and cache_service.redis_client:
+            if cache_service.redis_client.ping():
+                redis_status = "connected"
+            else:
+                redis_status = "unresponsive"
+                health_status["status"] = "degraded"
+        else:
+            redis_status = "disabled"
+    except Exception as e:
+        logger.error(f"Health Check: Redis connection failed: {e}")
+        redis_status = "disconnected"
+        health_status["status"] = "degraded"
+        if not app_config.is_production():
+            health_status["redis_error"] = str(e)
+    
+    # Assemble core services status payload
+    health_status["services"] = {
+        "database": {
+            "status": db_status,
+            "latency_ms": db_latency_ms
+        },
+        "redis_cache": {
+            "status": redis_status
+        }
+    }
+    
+    # 3. Environment-Specific Detailed Diagnostics
+    # In non-production environments, we expose more detailed configuration
+    # data to assist developers, CI/CD pipelines, and integration tests.
+    if not app_config.is_production():
+        # Validate AI Services configuration without exposing full keys
+        ai_services_state = {
+            "openai_configured": bool(app_config.ai_service.openai_api_key),
+            "groq_configured": bool(app_config.ai_service.groq_api_key),
+            "gemini_configured": bool(app_config.ai_service.gemini_api_key),
+            "google_books_configured": bool(app_config.ai_service.google_books_api_key)
+        }
+        
+        # Check if dummy test keys are active (from TestingConfig)
+        is_using_dummy_keys = (
+            app_config.ai_service.openai_api_key == 'test-dummy-openai-key' or
+            app_config.ai_service.groq_api_key == 'test-dummy-groq-key' or
+            app_config.email.api_key == 'test-dummy-email-key'
+        )
+        
+        health_status["diagnostics"] = {
+            "db_url_scheme": str(app_config.database.url).split("://")[0] if app_config.database.url else "none",
+            "rate_limiting_enabled": app_config.rate_limit.enabled,
+            "log_level": app_config.logging.level,
+            "ai_services": ai_services_state,
+            "is_using_dummy_keys": is_using_dummy_keys,
+            "security": {
+                "csrf_enabled": app.config.get('WTF_CSRF_ENABLED', False),
+                "cors_origins": _cors_origins,
+                "jwt_cookie_secure": app.config.get('JWT_COOKIE_SECURE', False)
+            }
+        }
+        
+        # Defensive Check: Add critical warning if testing in an environment 
+        # that explicitly should use dummy keys, but real ones are engaged.
+        if app_config.get_environment_name() in ['test', 'testing'] and not is_using_dummy_keys:
+            if "warnings" not in health_status["diagnostics"]:
+                health_status["diagnostics"]["warnings"] = []
+            health_status["diagnostics"]["warnings"].append(
+                "CRITICAL: Testing environment is active but dummy API keys are NOT engaged. Real credits may be consumed."
+            )
+            
+    # Return 503 Service Unavailable if core services are severely degraded
+    # Return 200 OK if system is healthy or experiencing minor non-critical issues
+    http_status = 200 if health_status["status"] == "healthy" else 503
+    
+    # If the system is explicitly put into maintenance mode, return 503
+    if health_status["maintenance_mode"]:
+        http_status = 503
+        health_status["status"] = "maintenance"
+        health_status["message"] = "System is currently undergoing scheduled maintenance."
+    
+    return jsonify(health_status), http_status
+
 @app.route('/')
 def index():
     """Simple index page showing available API endpoints."""
@@ -723,18 +992,14 @@ def index():
     return jsonify(endpoints_info)
 
 @app.route('/api/v1/analyze-mood', methods=['POST'])
-@rate_limit('analyze_mood')
-def handle_analyze_mood():
+@limiter.limit("10 per minute")
+@validate_schema(AnalyzeMoodRequest)
+def handle_analyze_mood(validated_data):
     """Analyze book mood using GoodReads reviews."""
     if not MOOD_ANALYSIS_AVAILABLE:
         return service_unavailable_error("Mood analysis not available - missing dependencies")
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(AnalyzeMoodRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         title = validated_data.title
         author = validated_data.author
@@ -751,8 +1016,9 @@ def handle_analyze_mood():
         return internal_error(str(e))
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
-@rate_limit('mood_tags')
-def handle_mood_tags():
+@limiter.limit("10 per minute")
+@validate_schema(MoodTagsRequest)
+def handle_mood_tags(validated_data):
     """Get mood tags for a book."""
     from exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException, 
@@ -761,11 +1027,6 @@ def handle_mood_tags():
     from error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(MoodTagsRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         title = validated_data.title
         author = validated_data.author
@@ -786,8 +1047,9 @@ def handle_mood_tags():
         return handle_exception(e, "handle_mood_tags")
 
 @app.route('/api/v1/mood-search', methods=['POST'])
-@rate_limit('mood_search')
-def handle_mood_search():
+@limiter.limit("10 per minute")
+@validate_schema(MoodSearchRequest)
+def handle_mood_search(validated_data):
     """Search for books based on mood/vibe with improved query parsing."""
     # Note: CORS preflight (OPTIONS) is handled globally by Flask-CORS —
     # no manual OPTIONS check needed here.
@@ -799,11 +1061,6 @@ def handle_mood_search():
     from error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(MoodSearchRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         mood_query = validated_data.query
         
@@ -844,48 +1101,14 @@ def handle_mood_search():
         return internal_error(str(e))
 
 
-@app.route('/api/v1/category-books', methods=['POST'])
-@rate_limit('category_books')
-def handle_category_books():
+@app.route('/api/v1/vibe-check', methods=['POST'])
+@rate_limit('vibe_check')
+@validate_schema(VibeCheckRequest)
+def handle_vibe_check(validated_data):
     """
-    Return AI-generated, category-specific book recommendations.
-
-    Fix for: all shelf categories displaying the same default books.
-
-    Each category sends its name + vibe description. The LLM returns a list
-    of real book titles and authors specific to that vibe. The frontend uses
-    these titles to query the Google Books API for actual cover images and
-    metadata — ensuring each shelf displays genuinely different, relevant books.
-
-    Request body:
-        {
-            "category": "Rainy Evening Reads",
-            "vibe_description": "quiet and melancholy, best read on grey afternoons",
-            "count": 5
-        }
-
-    Response:
-        {
-            "success": true,
-            "data": {
-                "category": "Rainy Evening Reads",
-                "books": [
-                    {
-                        "title": "The Remains of the Day",
-                        "author": "Kazuo Ishiguro",
-                        "reason": "A quiet, melancholy novel about regret — perfect for a rainy afternoon."
-                    },
-                    ...
-                ]
-            }
-        }
+    Generate hyper-personalized book recommendations based on a specific vibe.
     """
     try:
-        data = request.get_json()
-
-        is_valid, validated_data = validate_request(CategoryBooksRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
 
         books = get_category_books(
             category=validated_data.category,
@@ -911,7 +1134,7 @@ def handle_category_books():
 
 
 @app.route('/api/v1/books/purchase-links', methods=['GET'])
-@rate_limit('purchase_links')
+@limiter.limit("20 per minute")
 def handle_purchase_links():
     """Get purchase links for a book."""
     try:
@@ -934,8 +1157,9 @@ def handle_purchase_links():
         return internal_error(str(e))
 
 @app.route('/api/v1/generate-note', methods=['POST'])
-@rate_limit('generate_note')
-def handle_generate_note():
+@limiter.limit("10 per minute")
+@validate_schema(GenerateNoteRequest)
+def handle_generate_note(validated_data):
     """Generate AI-powered book recommendation with vibe support."""
     from exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
@@ -945,11 +1169,6 @@ def handle_generate_note():
     from error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(GenerateNoteRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         description = validated_data.description
         title = validated_data.title
@@ -991,8 +1210,9 @@ def handle_generate_note():
         return handle_exception(e, "handle_generate_note")
 
 @app.route('/api/v1/chat', methods=['POST'])
-@rate_limit('chat')
-def handle_chat():
+@limiter.limit("10 per minute")
+@validate_schema(ChatRequest)
+def handle_chat(validated_data):
     """Handle chat messages and generate bookseller responses."""
     from exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
@@ -1001,11 +1221,6 @@ def handle_chat():
     from error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(ChatRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         user_message = validated_data.message
         conversation_history = validated_data.history or []
@@ -1051,26 +1266,6 @@ def handle_chat():
         logger.error(f"Unexpected error in handle_chat: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "handle_chat")
 
-@app.route('/api/v1/health', methods=['GET'])
-def health_check():
-    """Health check endpoint with cache statistics."""
-    cache_stats = cache_service.get_stats()
-    
-    return jsonify({
-        "status": "healthy",
-        "service": "BiblioDrift AI Service",
-        "version": "2.0.0",
-        "features": {
-            "mood_analysis_available": MOOD_ANALYSIS_AVAILABLE,
-            "llm_service_available": llm_service.is_available(),
-            "openai_configured": llm_service.openai_client is not None,
-            "groq_configured": llm_service.groq_client is not None,
-            "gemini_configured": llm_service.gemini_client is not None,
-            "preferred_llm": llm_service.preferred_llm,
-            "caching_enabled": cache_stats.get('cache_type') != 'null'
-        },
-        "cache": cache_stats
-    })
 
 
 # =========================================================================
@@ -1085,20 +1280,16 @@ def health_check():
 #    attributes like shelf type and read progress.
 # =========================================================================
 @app.route('/api/v1/library', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
-def add_to_library():
+@validate_schema(AddToLibraryRequest)
+def add_to_library(validated_data):
     """Add a book to the user's shelf."""
     from sqlalchemy.exc import IntegrityError
     from exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
     from error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        current_user_id = get_jwt_identity()
-        
-        is_valid, validated_data = validate_request(AddToLibraryRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         if str(validated_data.user_id) != str(current_user_id):
             return unauthorized_access_error("Cannot access another user's library")
@@ -1268,15 +1459,10 @@ def _get_yearly_stats(user_id, year):
 # ==================== LIBRARY ENDPOINTS ====================
 @app.route('/api/v1/library/<int:item_id>', methods=['PUT'])
 @jwt_required()
-def update_library_item(item_id):
+@validate_schema(UpdateLibraryItemRequest)
+def update_library_item(item_id, validated_data):
     """Update a library item (e.g. move to different shelf)."""
     try:
-        data = request.get_json()
-        current_user_id = get_jwt_identity()
-        
-        is_valid, validated_data = validate_request(UpdateLibraryItemRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         item = ShelfItem.query.with_for_update().get(item_id)
         if not item:
@@ -1360,16 +1546,13 @@ price_tracker = get_price_tracker(db)
 #    the client when the server's record is strictly newer.
 # =========================================================================
 @app.route('/api/v1/library/sync', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
-def sync_library():
+@validate_schema(SyncLibraryRequest)
+def sync_library(validated_data):
     """Sync a list of books from local storage to the user's account."""
     try:
         current_user_id = get_jwt_identity()
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(SyncLibraryRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         user_id = validated_data.user_id
         raw_items = validated_data.items
@@ -1490,24 +1673,11 @@ def sync_library():
 # immediately responds with an active session ready to go.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
-@limiter.limit("5 per minute")
-def register():
+@limiter.limit("5 per 10 seconds")
+@validate_schema(RegisterRequest)
+def register(validated_data):
     """Register a new user and return JWT token."""
     try:
-        data = request.get_json()
-        
-        # =========================================================================
-        # SECURITY AUDIT: REGISTRATION ATTEMPT
-        # =========================================================================
-        # All registration attempts are logged for security auditing purposes.
-        # CSRF protection is enforced automatically by Flask-WTF for this 
-        # POST request, ensuring the signup originates from our own UI.
-        # =========================================================================
-        logger.info(f"Registration attempt for user: {data.get('username')} from IP: {request.remote_addr}")
-        
-        is_valid, validated_data = validate_request(RegisterRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         username = validated_data.username
         email = validated_data.email
@@ -1541,27 +1711,14 @@ def register():
 
 
 @app.route('/api/v1/login', methods=['POST'])
-@limiter.limit("5 per minute")
-def login():
+@limiter.limit("5 per 10 seconds")
+@validate_schema(LoginRequest)
+def login(validated_data):
     """Authenticate user and return JWT token."""
     from exceptions import DatabaseQueryError, ValidationException
     from error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        # =========================================================================
-        # SECURITY AUDIT: LOGIN ATTEMPT
-        # =========================================================================
-        # All login attempts are strictly validated against CSRF tokens.
-        # This prevents an attacker from creating a malicious site that 
-        # automatically logs a user into an account they control.
-        # =========================================================================
-        logger.info(f"Login attempt for identifier: {data.get('username')} from IP: {request.remote_addr}")
-        
-        is_valid, validated_data = validate_request(LoginRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         username_or_email = validated_data.username
         password = validated_data.password
@@ -1744,6 +1901,148 @@ def logout():
     return resp, status
 
 
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'avatars')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/v1/users/<int:user_id>/avatar', methods=['POST'])
+@jwt_required()
+def upload_avatar(user_id):
+    """Upload and update user avatar with MIME type and magic number validation."""
+    current_user_id = get_jwt_identity()
+    
+    if str(user_id) != str(current_user_id):
+        return forbidden_error("Unauthorized access to another user's profile")
+        
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "No file selected for uploading"}), 400
+        
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Allowed file types are png, jpg, jpeg, gif"}), 400
+        
+    # Validate Content-Type header
+    file_content_type = file.content_type
+    if file_content_type not in ALLOWED_MIME_TYPES:
+        return jsonify({"error": "Invalid Content-Type"}), 400
+        
+    # Verify file magic numbers
+    file_bytes = file.read(2048)
+    file.seek(0) # Reset file pointer after reading
+    
+    try:
+        mime = magic.Magic(mime=True)
+        file_mime = mime.from_buffer(file_bytes)
+        
+        if file_mime not in ALLOWED_MIME_TYPES:
+            return jsonify({"error": "Invalid file content (magic number mismatch)"}), 400
+    except Exception as e:
+        logger.error(f"Error validating file magic numbers: {e}")
+        return jsonify({"error": "Could not validate file format"}), 500
+        
+    filename = secure_filename(file.filename)
+    unique_filename = f"user_{user_id}_{filename}"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+    
+    try:
+        file.save(filepath)
+        
+        user = User.query.get(user_id)
+        if user:
+            user.profile_picture = f"/uploads/avatars/{unique_filename}"
+            db.session.commit()
+            
+        return jsonify({
+            "message": "Avatar uploaded successfully", 
+            "profile_picture": f"/uploads/avatars/{unique_filename}"
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to save avatar: {e}")
+        return jsonify({"error": "Failed to save file"}), 500
+
+
+@app.route('/api/v1/auth/forgot-password', methods=['POST'])
+@csrf.exempt
+@limiter.limit("5 per minute")
+@validate_schema(ForgotPasswordRequest)
+def forgot_password(validated_data):
+    """Request a password reset link (always returns a generic success message)."""
+    try:
+
+        plain_token = None
+        try:
+            plain_token = request_password_reset(validated_data.email)
+        except SQLAlchemyError as e:
+            logger.error("forgot-password database error: %s", e, exc_info=True)
+
+        response_data = {"message": FORGOT_PASSWORD_MESSAGE}
+        frontend_base = os.getenv('FRONTEND_ORIGIN', 'http://127.0.0.1:5500').rstrip('/')
+        email_config = app_config.email
+
+        if plain_token:
+            reset_url = build_password_reset_url(plain_token, frontend_base)
+            if is_email_configured(email_config):
+                send_result = send_password_reset_email(
+                    validated_data.email,
+                    reset_url,
+                    email_config,
+                )
+                if not send_result.ok:
+                    logger.error(
+                        "Password reset email not sent for %s: %s",
+                        validated_data.email,
+                        send_result.detail,
+                    )
+            elif app_config.is_development():
+                response_data["reset_url"] = reset_url
+                logger.info(
+                    "Dev password reset link for %s (email not configured): %s",
+                    validated_data.email,
+                    reset_url,
+                )
+            elif app_config.is_production():
+                logger.warning(
+                    "Password reset token created but EMAIL_* is not configured; "
+                    "user %s will not receive mail.",
+                    validated_data.email,
+                )
+
+        return success_response(data=response_data)
+    except Exception as e:
+        logger.error("forgot-password failed: %s", e, exc_info=True)
+        return success_response(data={"message": FORGOT_PASSWORD_MESSAGE})
+
+
+@app.route('/api/v1/auth/reset-password', methods=['POST'])
+@csrf.exempt
+@limiter.limit("5 per minute")
+@validate_schema(ResetPasswordRequest)
+def reset_password(validated_data):
+    """Set a new password using a valid reset token."""
+    try:
+
+        ok, message = reset_password_with_token(
+            validated_data.token,
+            validated_data.password,
+        )
+        if not ok:
+            return jsonify({"error": message}), 400
+
+        return success_response(data={"message": message})
+    except Exception as e:
+        logger.error("reset-password failed: %s", e, exc_info=True)
+        return internal_error("Unable to reset password.")
+
+
 @app.route('/api/v1/auth/verify', methods=['GET'])
 @jwt_required()
 def verify_auth_session():
@@ -1763,16 +2062,9 @@ def verify_auth_session():
 # ==================== READING STATS ENDPOINTS ====================
 @app.route('/api/v1/stats/goal', methods=['POST'])
 @jwt_required()
-def set_reading_goal():
+@validate_schema(SetGoalRequest)
+def set_reading_goal(validated_data):
     """Set or update annual reading goal."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(SetGoalRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
@@ -1888,16 +2180,9 @@ def get_leaderboard():
 # ==================== COLLECTIONS ENDPOINTS ====================
 @app.route('/api/v1/collections', methods=['POST'])
 @jwt_required()
-def create_collection():
+@validate_schema(CollectionRequest)
+def create_collection(validated_data):
     """Create a new collection."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(CollectionRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
@@ -1963,16 +2248,9 @@ def get_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>', methods=['PUT'])
 @jwt_required()
-def update_collection(collection_id):
+@validate_schema(UpdateCollectionRequest)
+def update_collection(collection_id, validated_data):
     """Update a collection."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(UpdateCollectionRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     try:
         collection = Collection.query.get(collection_id)
@@ -2030,14 +2308,6 @@ def delete_collection(collection_id):
 @jwt_required()
 def add_book_to_collection(collection_id):
     """Add a book to a collection."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(AddToCollectionRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     try:
         collection = Collection.query.get(collection_id)
@@ -2268,6 +2538,7 @@ def delete_review(review_id):
 # ==================== PRICE ALERT ENDPOINTS ====================
 
 @app.route('/api/v1/books/<book_id>/alert', methods=['POST'])
+@limiter.limit("20 per minute")
 @jwt_required()
 def create_price_alert(book_id):
     """Create a price alert for a book (requires JWT)."""
@@ -2410,20 +2681,9 @@ def delete_price_alert(alert_id):
 with app.app_context():
     db.create_all()
 
-@app.route('/api/books', methods=['GET'])
-def get_books():
-    query = request.args.get('q')
-    max_results = request.args.get('maxResults', 10)
-
-    API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
-    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}&key={API_KEY}"
-
-    try:
-        response = requests.get(url)
-        data = response.json()
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": "Failed to fetch books"}), 500
+# NOTE: Book search is performed directly from the frontend using the Google Books API.
+# The old backend proxy endpoint /api/books has been removed to avoid unnecessary
+# load on the backend server.
 
 if __name__ == '__main__':
     server_config = app_config.server

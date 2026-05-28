@@ -1,0 +1,205 @@
+/* Contributors Page Styles */
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(127, 150, 160, 0.12), transparent 26%),
+    var(--bg, #f7f2ea);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.nav-links .tooltip a {
+  padding: 0.36rem 0.6rem;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.nav-links .tooltip a:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
+}
+
+/* Contributors Shell */
+.contributors-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 5rem;
+}
+
+.contributors-hero {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.contributors-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4.5vw, 3.2rem);
+  line-height: 1.02;
+}
+
+.contributors-hero p {
+  margin: 0.6rem 0 0;
+  max-width: 72ch;
+  color: var(--text-muted);
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.contributors-actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.6rem;
+}
+
+.contributors-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(93, 64, 55, 0.08);
+  color: var(--text-muted);
+  box-shadow: 0 8px 20px rgba(44, 36, 32, 0.04);
+  font-size: 0.95rem;
+}
+
+/* Contributors Grid */
+.contributors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  align-items: start;
+}
+
+.contributor-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 1.25rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 250, 243, 0.9));
+  border: 1px solid rgba(93, 64, 55, 0.06);
+  box-shadow: 0 10px 24px rgba(44, 36, 32, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  min-height: 160px;
+}
+
+.contributor-card:hover,
+.contributor-card:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(44, 36, 32, 0.12);
+  border-color: rgba(212, 175, 55, 0.18);
+  outline: none;
+}
+
+.contributor-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 4px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 24px rgba(44, 36, 32, 0.08);
+  background: #fff;
+}
+
+.contributor-name {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.contributor-count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Loading & Empty States */
+.contributors-loading,
+.contributors-empty {
+  padding: 1rem 0 1.5rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 1.02rem;
+}
+
+#contributors-status {
+  padding: 2rem 0;
+}
+
+.meta {
+  color: var(--text-muted);
+  font-size: 0.96rem;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .contributors-shell {
+    padding: 2rem 1rem 3rem;
+  }
+
+  .contributors-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .contributor-avatar {
+    width: 76px;
+    height: 76px;
+  }
+
+  .contributors-hero p {
+    max-width: 100%;
+  }
+}
