@@ -3,9 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <script>
+    <script type="module">
+        import {
+            getStorageData,
+            saveStorageData,
+            STORAGE_KEYS
+        } from '../js/storage-manager.js';
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
+            const theme = getStorageData(STORAGE_KEYS.THEME);
             if (theme === 'night') {
                 document.documentElement.setAttribute('data-theme', 'night');
             }

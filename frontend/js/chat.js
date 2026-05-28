@@ -1,6 +1,12 @@
 // Chat with Bookseller - JavaScript functionality
 // Handles chat interface, message sending, and book recommendations
-
+import {
+    getStorageData,
+    saveStorageData,
+    removeStorageData,
+    STORAGE_KEYS
+    subscribeToStorage
+} from './storage-manager.js';
 class ChatInterface {
     constructor() {
         this.chatMessages = document.getElementById('chatMessages');
@@ -779,31 +785,37 @@ Tell me: what is stirring in you today?`,
         return { type, content, timestamp, books };
     }
 
-    loadConversationHistory() {
-        try {
-            const saved = localStorage.getItem('bibliodrift_chat_history');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed)) {
-                    const sanitizedMessages = parsed
-                        .map(message => this.sanitizeMessage(message))
-                        .filter(message => message !== null);
-                    this.conversationHistory = sanitizedMessages;
-                    this.conversationHistory.forEach(message => {
-                        this.renderMessage(message);
-                    });
-                } else {
-                    this.conversationHistory = [];
-                }
-            }
-        } catch (error) {
+loadConversationHistory() {
+    try {
+        const saved = getStorageData(
+            STORAGE_KEYS.CHAT_HISTORY,
+            []
+        );
+
+        if (Array.isArray(saved)) {
+            const sanitizedMessages = saved
+                .map(message => this.sanitizeMessage(message))
+                .filter(message => message !== null);
+
+            this.conversationHistory = sanitizedMessages;
+
+            this.conversationHistory.forEach(message => {
+                this.renderMessage(message);
+            });
+        } else {
             this.conversationHistory = [];
         }
-    }
 
+    } catch (error) {
+        this.conversationHistory = [];
+    }
+}
     saveConversationHistory() {
         try {
-            localStorage.setItem('bibliodrift_chat_history', JSON.stringify(this.conversationHistory));
+            saveStorageData(
+              STORAGE_KEYS.CHAT_HISTORY,
+              this.conversationHistory
+           );
         } catch (error) {
             // Silent fail for localStorage issues
         }
@@ -813,7 +825,7 @@ Tell me: what is stirring in you today?`,
         if (confirm('Are you sure you want to clear the conversation? This cannot be undone.')) {
             this.conversationHistory = [];
             this.chatMessages.innerHTML = '';
-            localStorage.removeItem('bibliodrift_chat_history');
+            removeStorageData(STORAGE_KEYS.CHAT_HISTORY);
             this.addWelcomeMessage();
 
             // Show quick suggestions again
@@ -974,4 +986,10 @@ function closeBookModal() {
 // Initialize chat interface when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.chatInterface = new ChatInterface();
+});
+
+subscribeToStorage((event) => {
+  if (event.key === STORAGE_KEYS.CHAT_HISTORY) {
+    console.log("Chat history updated in another tab");
+  }
 });

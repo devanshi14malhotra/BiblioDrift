@@ -16,9 +16,11 @@
   <link rel="apple-touch-icon" href="/assets/images/biblioDrift_favicon.png">
   <link rel="icon" href="/assets/images/biblioDrift_favicon.png" type="image/png">
 
-  <script>
+  <script type="module">
+    import { getStorageData } from '../js/storage-manager.js';
+
     (function () {
-      const theme = localStorage.getItem('bibliodrift_theme');
+      const theme = (STORAGE_KEYS.THEME);
       if (theme === 'night') {
         document.documentElement.setAttribute('data-theme', 'night');
       }
@@ -726,7 +728,7 @@
         } else {
           document.documentElement.removeAttribute('data-theme');
         }
-        localStorage.setItem('bibliodrift_theme', nextTheme);
+        saveStorageData(STORAGE_KEYS.THEME, nextTheme);
         if (typeof restoreTheme === 'function') restoreTheme();
         updateThemeToggleButton(nextTheme);
       });
@@ -751,7 +753,7 @@
       const bookSpreadTarget = document.getElementById("bookSpreadTarget");
       let activePdfObjectUrl = null;
 
-      const userSessionToken = localStorage.getItem("bibliodrift_session") || "authenticated_mock_user"; 
+      const userSessionToken = getStorageData("bibliodrift_session") || "authenticated_mock_user"; 
       
       if (!userSessionToken) {
         authBarrier.style.display = "block";

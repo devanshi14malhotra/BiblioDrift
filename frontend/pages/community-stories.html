@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <script>
+  <script type="module">
+            import {
+                getStorageData,
+                saveStorageData,
+                STORAGE_KEYS
+                } from '../js/storage-manager.js';
     (function () {
-      const theme = localStorage.getItem('bibliodrift_theme');
+      const theme = getStorageData(STORAGE_KEYS.THEME);
       if (theme === 'night') document.documentElement.setAttribute('data-theme', 'night');
     })();
   </script>
@@ -549,7 +554,7 @@
   <script>
     const themeToggle = document.getElementById('themeToggle');
     const icon = themeToggle.querySelector('i');
-    if (localStorage.getItem('bibliodrift_theme') === 'night') {
+    if (getStorageData(STORAGE_KEYS.THEME) === 'night') {
       document.documentElement.setAttribute('data-theme', 'night');
       icon.classList.replace('fa-moon', 'fa-sun');
     }
@@ -557,11 +562,11 @@
       const isNight = document.documentElement.getAttribute('data-theme') === 'night';
       if (isNight) {
         document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('bibliodrift_theme', 'day');
+        saveStorageData(STORAGE_KEYS.THEME, 'day');
         icon.classList.replace('fa-sun', 'fa-moon');
       } else {
         document.documentElement.setAttribute('data-theme', 'night');
-        localStorage.setItem('bibliodrift_theme', 'night');
+        saveStorageData(STORAGE_KEYS.THEME, 'night');
         icon.classList.replace('fa-moon', 'fa-sun');
       }
     });
