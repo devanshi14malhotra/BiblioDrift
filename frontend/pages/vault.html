@@ -702,7 +702,8 @@
   <script src="../js/footer.js"></script>
   <script src="../js/pwa.js"></script>
 
-  <script>
+  <script type="module">
+    import { saveStorageData, STORAGE_KEYS } from '../js/storage-manager.js';
     document.addEventListener("DOMContentLoaded", async () => {
       const themeToggle = document.getElementById("themeToggle");
       

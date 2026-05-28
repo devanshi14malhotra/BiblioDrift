@@ -551,7 +551,8 @@
 
   <script src="../js/footer.js"></script>
   <script src="../js/community-stories.js"></script>
-  <script>
+  <script type="module">
+     import { saveStorageData, STORAGE_KEYS } from '../js/storage-manager.js';
     const themeToggle = document.getElementById('themeToggle');
     const icon = themeToggle.querySelector('i');
     if (getStorageData(STORAGE_KEYS.THEME) === 'night') {
