@@ -1861,6 +1861,16 @@ body.is-leaving {
     .contributors-grid-view { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 768px) {
+  .landing-nav {
+    display: none;
+  }
+
+  .landing-header {
+    justify-content: space-between;
+  }
+}
+
 
 /* Dark Theme Overrides */
 html[data-theme='night'] {
