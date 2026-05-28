@@ -901,9 +901,9 @@ class BookshelfRenderer3D {
         const container = document.getElementById('library-container') || document.querySelector('.main-content') || document.body;
         const errorBanner = document.createElement('div');
         errorBanner.id = 'webgl-error-banner';
-        errorBanner.style.cssText = `
-            background - color: rgba(220, 53, 69, 0.1);
-            border - left: 4px solid #dc3545;
+        errorBanner.style.cssText = {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid #dc3545;
             color: #dc3545;
             padding: 15px 20px;
             margin: 20px auto;
@@ -915,18 +915,18 @@ class BookshelfRenderer3D {
             justify - content: space - between;
             box - shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: relative;
-            z - index: 100;
-            `;
-
+            z-index: 100;
+};
+        
         const message = document.createElement('div');
         message.innerHTML = `
-                < strong style = "display: block; margin-bottom: 5px; font-size: 1.1em;" > <i class="fa-solid fa-triangle-exclamation"></i> WebGL Not Supported</strong >
-                    <span style="font-size: 0.9em; opacity: 0.9;">Your browser or device does not support WebGL, which is required for the 3D interactive bookshelf. We have enabled a graceful 2D fallback mode so you can continue managing your library.</span>
-            `;
-
+            <strong style="display: block; margin-bottom: 5px; font-size: 1.1em;"><i class="fa-solid fa-triangle-exclamation"> WebGL Not Supported</i></strong>
+            <span style="font-size: 0.9em; opacity: 0.9;">Your browser or device does not support WebGL, which is required for the 3D interactive bookshelf. We have enabled a graceful 2D fallback mode so you can continue managing your library.</span>
+        `;
+        
         const dismissBtn = document.createElement('button');
         dismissBtn.innerHTML = '<i class="fa-solid fa-times"></i>';
-        dismissBtn.style.cssText = `
+        dismissBtn.style.cssText = {
             background: none;
             border: none;
             color: #dc3545;
@@ -935,7 +935,7 @@ class BookshelfRenderer3D {
             padding: 5px;
             opacity: 0.7;
             transition: opacity 0.2s;
-            `;
+};
         dismissBtn.onmouseover = () => dismissBtn.style.opacity = '1';
         dismissBtn.onmouseout = () => dismissBtn.style.opacity = '0.7';
         dismissBtn.onclick = () => {
@@ -1065,7 +1065,7 @@ class BookshelfRenderer3D {
             'want': 'Anticipated Journeys',
             'finished': 'Lifetime Favorites'
         };
-        container.setAttribute('aria-label', shelfLabels[shelfType] || `${shelfType} books shelf`);
+        container.setAttribute('aria-label', shelfLabels[shelfType] || `${shelfType} booksshelf`);
 
         const localLibrary = this.getLibraryState();
         let books = [...(localLibrary[shelfType] || [])];

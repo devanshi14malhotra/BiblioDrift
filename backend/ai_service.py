@@ -38,7 +38,7 @@ def process_new_book(book_data):
 
 
 # Import caching decorators
-from cache_service import (
+from .cache_service import (
     cache_recommendations, 
     cache_mood_tags, 
     cache_chat_response,
@@ -648,6 +648,100 @@ class LLMService:
                 logger.error(f"Gemini generation failed: {type(e).__name__}: {e}", exc_info=True)
                 return None
 
+def _fallback_category_books(category: str, count: int = 5):
+    category = category.lower().strip()
+
+    print("CATEGORY RECEIVED:", category)
+
+    category_map = {
+        "dark academia": [
+            {
+                "title": "The Secret History",
+                "author": "Donna Tartt",
+                "reason": "Elite college atmosphere with obsession and mystery."
+            },
+            {
+                "title": "If We Were Villains",
+                "author": "M. L. Rio",
+                "reason": "Shakespeare students trapped in tragedy and suspense."
+            },
+            {
+                "title": "Babel",
+                "author": "R. F. Kuang",
+                "reason": "Dark academic fantasy about language, empire, and power."
+            },
+            {
+                "title": "Ninth House",
+                "author": "Leigh Bardugo",
+                "reason": "Occult societies and murder mysteries at Yale."
+            },
+            {
+                "title": "The Picture of Dorian Gray",
+                "author": "Oscar Wilde",
+                "reason": "A gothic classic exploring beauty, corruption, and morality."
+            }
+        ],
+
+        "fantasy": [
+            {
+                "title": "The Hobbit",
+                "author": "J.R.R. Tolkien",
+                "reason": "A timeless fantasy adventure filled with courage and discovery."
+            },
+            {
+                "title": "Harry Potter and the Sorcerer's Stone",
+                "author": "J.K. Rowling",
+                "reason": "Magical world-building and unforgettable friendships."
+            }
+        ],
+
+        "science fiction": [
+            {
+                "title": "Dune",
+                "author": "Frank Herbert",
+                "reason": "Epic science fiction about power, destiny, and survival on Arrakis."
+            },
+            {
+                "title": "Project Hail Mary",
+                "author": "Andy Weir",
+                "reason": "A thrilling sci-fi survival story driven by science and humor."
+            }
+        ]
+    }
+
+    if category in category_map:
+        print("MATCH FOUND")
+        return category_map[category][:count]
+
+    print("NO MATCH - USING DEFAULT")
+
+    return [
+        {
+            "title": "Dune",
+            "author": "Frank Herbert",
+            "reason": "Epic science fiction about power, destiny, and survival on Arrakis."
+        },
+        {
+            "title": "1984",
+            "author": "George Orwell",
+            "reason": "A chilling dystopian story about surveillance and authoritarian control."
+        },
+        {
+            "title": "The Hobbit",
+            "author": "J.R.R. Tolkien",
+            "reason": "A timeless fantasy adventure filled with courage and discovery."
+        },
+        {
+            "title": "Pride and Prejudice",
+            "author": "Jane Austen",
+            "reason": "Classic romance and social commentary with unforgettable characters."
+        },
+        {
+            "title": "The Great Gatsby",
+            "author": "F. Scott Fitzgerald",
+            "reason": "A tragic exploration of wealth, illusion, and the American Dream."
+        }
+    ][:count]
 
 # Initialize LLM service
 llm_service = LLMService()
@@ -776,7 +870,7 @@ def get_category_books(category: str, vibe_description: str, count: int = 5) -> 
 
     if not raw:
         logger.error("get_category_books: LLM returned None for category: %s", category)
-        return []
+        return _fallback_category_books(category, count);
 
     parsed = _extract_json(raw)
 

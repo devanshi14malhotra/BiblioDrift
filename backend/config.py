@@ -10,6 +10,8 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
+from vault.temp_app import BASE_DIR
+
 # =============================================================================
 # ENVIRONMENT LOADING
 # =============================================================================
@@ -31,26 +33,53 @@ def load_environment():
 
 load_environment()
 
-
 @dataclass
 class DatabaseConfig:
-    """Database configuration settings."""
+    """Database configuration."""
     url: str
     track_modifications: bool = False
-    
+
     @classmethod
     def from_env(cls) -> 'DatabaseConfig':
-        """Create database config from environment variables."""
-        url = os.getenv('DATABASE_URL', 'sqlite:///instance/biblio.db')
-        
-        # Handle PostgreSQL URL format conversion
+        BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+        os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
+        DB_PATH = os.path.join(BASE_DIR, "instance", "app.db")
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{DB_PATH}"
+        url = os.getenv("DATABASE_URL") or SQLALCHEMY_DATABASE_URI
         if url and url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
-        
         return cls(
             url=url,
             track_modifications=os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() == 'true'
         )
+
+
+
+@classmethod
+def from_env(cls) -> 'DatabaseConfig':
+    """Create database config from environment variables."""
+    # url = os.getenv('DATABASE_URL', 'sqlite:///instance/biblio.db')
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+    os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
+
+    DB_PATH = os.path.join(BASE_DIR, "instance", "app.db")
+
+    SQLALCHEMY_DATABASE_URI = f"sqlite:///{DB_PATH}"
+    
+    url = os.getenv("DATABASE_URL") or SQLALCHEMY_DATABASE_URI
+
+    # Handle PostgreSQL URL format conversion
+    if url and url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    
+    return cls(
+        url=url,
+        track_modifications=os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() == 'true'
+    )
+class BaseConfig:
+    def __init__(self):
+        self.database = DatabaseConfig.from_env()
 
 
 @dataclass
@@ -167,12 +196,12 @@ class GoogleOAuthConfig:
             frontend_redirect_url=os.getenv('FRONTEND_URL', 'http://127.0.0.1:5500/frontend/pages/library.html'),
             scope=os.getenv('GOOGLE_OAUTH_SCOPE', 'openid email profile')
         )
-
+          
 @dataclass
 class EmailConfig:
-    """Email service configuration (SendGrid API or SMTP)."""
-    api_key: Optional[str]
-    from_email: Optional[str]
+    """Email service configuration (e.g., SendGrid, Mailgun)."""
+    api_key: Optional[str] = None
+    from_email: Optional[str] = None
     service_provider: str = 'sendgrid'
     smtp_host: Optional[str] = None
     smtp_port: int = 587
