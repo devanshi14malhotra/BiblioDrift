@@ -7496,20 +7496,42 @@ body.night-mode .tooltip-author {
 }
 
 .main-footer {
- 
-  padding: 4rem 2rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4rem;
+  padding: 60px 2rem 1rem;
+  background: var(--card-bg);
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-main);
 }
 
 .footer-container {
+  width: min(1200px, 100%);
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2rem;
+  grid-template-columns: minmax(260px, 2fr) repeat(3, minmax(160px, 1fr));
+  gap: 3rem;
+  align-items: start;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .footer-container a {
- 
+  min-width: 0;
+  min-height: 0;
   text-decoration: none;
   transition: color 0.3s ease;
+}
+
+.main-footer .footer-nav a,
+.main-footer .footer-legal a {
+  display: inline;
+  line-height: 1.35;
+}
+
+.main-footer .social-icons a {
+  min-width: 40px;
+  min-height: 40px;
 }
 
 
@@ -7524,6 +7546,32 @@ body.night-mode .tooltip-author {
   margin-top: 3rem;
   padding-top: 1rem;
   border-top: 1px solid #374151;
+}
+
+@media (max-width: 900px) {
+  .footer-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .main-footer {
+    padding: 60px 1.25rem 1rem;
+  }
+
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .footer-brand {
+    align-items: center;
+  }
+
+  .social-icons {
+    justify-content: center;
+  }
 }
 /* =========================
    Reader Perspectives

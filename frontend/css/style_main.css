@@ -2803,7 +2803,9 @@ main {
     background: var(--card-bg);
     /* Use card-bg for better contrast in dark mode */
     border-top: 1px solid var(--glass-border);
-    padding: 3rem 2rem 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 60px 2rem 1rem;
     margin-top: 4rem;
     color: var(--text-main);
     font-family: 'Georgia', serif;
@@ -2812,11 +2814,12 @@ main {
 }
 
 .footer-container {
-    max-width: 1200px;
+    width: min(1200px, 100%);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(260px, 2fr) repeat(3, minmax(160px, 1fr));
     gap: 3rem;
+    align-items: start;
     padding-bottom: 2rem;
     border-bottom: 1px solid var(--glass-border);
 }
@@ -2853,6 +2856,7 @@ main {
 }
 
 .footer-nav h3,
+.footer-legal h3,
 .footer-social h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.2rem;
@@ -2860,7 +2864,8 @@ main {
     color: var(--text-main);
 }
 
-.footer-nav ul {
+.footer-nav ul,
+.footer-legal ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -2869,15 +2874,20 @@ main {
     gap: 0.8rem;
 }
 
-.footer-nav li a {
+.footer-nav li a,
+.footer-legal li a {
     text-decoration: none;
     color: var(--text-muted);
     transition: all 0.3s ease;
     font-size: 1rem;
-    display: inline-block;
+    display: inline;
+    min-width: 0;
+    min-height: 0;
+    line-height: 1.35;
 }
 
-.footer-nav li a:hover {
+.footer-nav li a:hover,
+.footer-legal li a:hover {
     color: var(--accent-gold);
     transform: translateX(5px);
 }
@@ -2890,6 +2900,8 @@ main {
 .social-icons a {
     width: 40px;
     height: 40px;
+    min-width: 40px;
+    min-height: 40px;
     border-radius: 50%;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -2932,7 +2944,17 @@ main {
     }
 }
 
+@media (max-width: 900px) {
+    .footer-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
+    .main-footer {
+        padding: 60px 1.25rem 1rem;
+    }
+
     .footer-container {
         grid-template-columns: 1fr;
         gap: 2rem;
