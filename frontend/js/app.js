@@ -2749,21 +2749,24 @@ class GenreManager {
         this.closeBtn = document.getElementById('close-genre-modal');
         this.modalTitle = document.getElementById('genre-modal-title');
         this.booksGrid = document.getElementById('genre-books-grid');
-    }
+        this._lastFocusedCard = null;
 
     init() {
         if (!this.genreGrid) return;
 
-        // Add click listeners to genre cards
         const cards = this.genreGrid.querySelectorAll('.genre-card');
         cards.forEach(card => {
+            
             card.addEventListener('click', () => {
-                const genre = card.dataset.genre;
-                this.openGenre(genre);
+                cards.forEach(c => c.setAttribute('aria-pressed', 'false'));
+                card.setAttribute('aria-pressed', 'true');
+
+                this._lastFocusedCard = card;
+
+                this.openGenre(card.dataset.genre);
             });
         });
 
-        // Close modal listeners
         if (this.closeBtn) {
             this.closeBtn.addEventListener('click', () => this.closeModal());
         }
@@ -2771,6 +2774,27 @@ class GenreManager {
         if (this.modal) {
             this.modal.addEventListener('click', (e) => {
                 if (e.target === this.modal) this.closeModal();
+            });
+
+            this.modal.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.closeModal();
+            });
+
+            this.modal.addEventListener('keydown', (e) => {
+                if (e.key !== 'Tab') return;
+                const focusable = this.modal.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (!focusable.length) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
             });
         }
     }
@@ -2780,8 +2804,15 @@ class GenreManager {
 
         const genreName = genre.charAt(0).toUpperCase() + genre.slice(1);
         this.modalTitle.textContent = `${genreName} Books`;
+
+        this.modal.setAttribute('aria-label', `${genreName} Books`);
+
         this.modal.showModal();
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
+        document.body.style.overflow = 'hidden';
+
+        if (this.closeBtn) {
+            this.closeBtn.focus();
+        }
 
         this.fetchBooks(genre);
     }
@@ -2789,13 +2820,17 @@ class GenreManager {
     closeModal() {
         if (!this.modal) return;
         this.modal.close();
-        document.body.style.overflow = ''; // Restore scrolling
+        document.body.style.overflow = '';
+
+        if (this._lastFocusedCard) {
+            this._lastFocusedCard.focus();
+            this._lastFocusedCard = null;
+        }
     }
 
     async fetchBooks(genre) {
         if (!this.booksGrid) return;
 
-        // Show loading skeletons
         if (window.renderer) {
             window.renderer.renderSkeletons(this.booksGrid, 10);
         } else {
@@ -2834,8 +2869,6 @@ class GenreManager {
 
     async renderBooks(books) {
         this.booksGrid.innerHTML = '';
-
-
         const renderer = new BookRenderer(this.libraryManager);
         for (const book of books) {
             const el = await renderer.createBookElement(book);
