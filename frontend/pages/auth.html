@@ -10,6 +10,35 @@
                 document.documentElement.setAttribute('data-theme', 'night');
             }
         })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('themeToggle');
+            if (!btn) return;
+            const icon = btn.querySelector('i');
+            const STORAGE_KEY = 'bibliodrift_theme';
+            
+            function applyTheme(theme) {
+                if (theme === 'night') {
+                    document.documentElement.setAttribute('data-theme', 'night');
+                    if (icon) icon.className = 'fa-solid fa-sun';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    if (icon) icon.className = 'fa-solid fa-moon';
+                }
+                localStorage.setItem(STORAGE_KEY, theme);
+            }
+            
+            btn.addEventListener('click', function () {
+                const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
+                applyTheme(current === 'night' ? 'light' : 'night');
+            });
+            
+            // Set initial icon state
+            const currentTheme = localStorage.getItem(STORAGE_KEY);
+            if (currentTheme === 'night' && icon) {
+                icon.className = 'fa-solid fa-sun';
+            }
+        });
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auth | BiblioDrift</title>
@@ -334,6 +363,107 @@
                 padding: 0.9rem 0.95rem;
             }
         }
+
+        #forgotPasswordPanel,
+        #resetPasswordPanel {
+            display: none;
+        }
+
+        .auth-panel-actions {
+            margin-top: 1rem;
+        }
+
+        .auth-hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        #forgotResetLinkBox {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f5f5f0;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        #forgotResetLinkBox a {
+            color: #2c2c2c;
+            font-weight: 600;
+        }
+
+        /* Password Strength Styles */
+        .password-strength-container {
+            margin-top: 1rem;
+            padding: 0 0.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .password-strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .password-criteria {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .password-criteria li {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .password-criteria li i {
+            font-size: 0.95rem;
+            width: 16px;
+            text-align: center;
+        }
+
+        .criterion-met {
+            color: #4ade80 !important;
+        }
+        .criterion-met i {
+            color: #4ade80;
+        }
+        .criterion-unmet {
+            color: #f87171 !important;
+        }
+        .criterion-unmet i {
+            color: #f87171;
+        }
+
+        .strength-weak { background-color: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.4); }
+        .strength-fair { background-color: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.4); }
+        .strength-good { background-color: #a3e635; box-shadow: 0 0 8px rgba(163,230,53,0.4); }
+        .strength-strong { background-color: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.4); }
+
+        @keyframes inputShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); border-color: #f87171; }
+            40%, 80% { transform: translateX(5px); border-color: #f87171; }
+        }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
@@ -347,7 +477,7 @@
 
 <body class="auth-page">
     <header>
-        <a href="index.html" class="logo">
+        <a href="app.html" class="logo">
             <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
         </a>
         <div class="header-controls">
@@ -357,7 +487,7 @@
             </div>
             <nav class="nav-links">
                 <div class="tooltip">
-                    <a href="index.html">Discovery</a>
+                    <a href="app.html">Discovery</a>
                     <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
                 </div>
                 <div class="tooltip">
@@ -409,6 +539,9 @@
                 <p class="auth-subtitle">Use your account to continue where you left off.</p>
 
                 <form id="authForm" data-mode="login" onsubmit="handleAuth(event)">
+                    <input type="hidden" id="csrf_token" name="csrf_token" value="">
+
+                    
                     <div id="nameField">
                         <input type="text" id="username" class="auth-input" placeholder="Full Name" autocomplete="name">
                     </div>
@@ -423,6 +556,18 @@
                             value="demo123" required autocomplete="current-password">
                         <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
                             aria-label="Show password" role="button" tabindex="0"></i>
+                            
+                        <!-- Client-side Password Strength Validation UI -->
+                        <div id="passwordStrengthContainer" style="display: none;" class="password-strength-container">
+                            <div class="password-strength-bar">
+                                <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                            </div>
+                            <ul class="password-criteria" id="passwordCriteria">
+                                <li id="criterion-length" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 8 characters</li>
+                                <li id="criterion-number" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 1 number</li>
+                                <li id="criterion-special" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 1 special character</li>
+                            </ul>
+                        </div>
                     </div>
 
                     <!-- PASSWORD STRENGTH UI -->
@@ -440,6 +585,10 @@
 
                     <input type="hidden" id="csrf_token" name="csrf_token" value="">
 
+                    <span id="forgotPasswordLink" class="toggle-link" style="display: block; margin: -0.25rem 0 1rem; font-size: 0.85rem;">
+                        Forgot password?
+                    </span>
+
                     <!-- Primary Action Button -->
                     <button type="submit" id="submitBtn" class="auth-btn">
                         Sign In
@@ -451,6 +600,32 @@
                         <span>Sign in with Google</span>
                     </button>
                 </form>
+
+                <div id="forgotPasswordPanel">
+                    <p class="auth-hint">
+                        No email is sent yet. In local development, a reset link appears below only if this address is already registered in your database.
+                    </p>
+                    <form id="forgotPasswordForm" action="#" method="post" novalidate>
+                        <input type="email" id="forgotEmail" class="auth-input" placeholder="Email address" required autocomplete="email">
+                        <button type="submit" id="forgotSubmitBtn" class="auth-btn">Send reset link</button>
+                    </form>
+                    <div id="forgotResetLinkBox" aria-live="polite"></div>
+                    
+                    <div class="auth-panel-actions">
+                        <span id="backToSignInFromForgot" class="toggle-link">Back to sign in</span>
+                    </div>
+                </div>
+
+                <div id="resetPasswordPanel">
+                    <form id="resetPasswordForm" action="#" method="post" novalidate>
+                        <input type="password" id="newPassword" class="auth-input" placeholder="New password (min 8 characters)" required minlength="8" autocomplete="new-password">
+                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
+                        <button type="submit" id="resetSubmitBtn" class="auth-btn">Reset password</button>
+                    </form>
+                    <div class="auth-panel-actions">
+                        <span id="backToSignInFromReset" class="toggle-link">Back to sign in</span>
+                    </div>
+                </div>
 
                 <!-- Mode Toggle Link -->
                 <div class="auth-footer" style="margin-top: 1.5rem;">
@@ -514,6 +689,7 @@
   </div>
 
     <script src="../js/config.js"></script>
+    <script src="../js/auth-password-reset.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../js/app.js"></script>
     <script src="../script/header-scroll.js"></script>
@@ -534,6 +710,70 @@
             });
         }
         const passwordInput = document.getElementById('password');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const forgotPasswordPanel = document.getElementById('forgotPasswordPanel');
+        const resetPasswordPanel = document.getElementById('resetPasswordPanel');
+        const authFooter = document.querySelector('.auth-footer');
+        const emailInput = document.getElementById('email');
+        const forgotEmailInput = document.getElementById('forgotEmail');
+
+        function showAuthPanel(mode) {
+            const isSignIn = mode === 'signin';
+            authForm.style.display = isSignIn ? 'block' : 'none';
+            if (forgotPasswordPanel) {
+                forgotPasswordPanel.style.display = mode === 'forgot' ? 'block' : 'none';
+            }
+            if (resetPasswordPanel) {
+                resetPasswordPanel.style.display = mode === 'reset' ? 'block' : 'none';
+            }
+            if (authFooter) {
+                authFooter.style.display = isSignIn ? 'block' : 'none';
+            }
+            if (googleAuthBtn) {
+                googleAuthBtn.style.display = isSignIn ? 'flex' : 'none';
+            }
+            if (forgotPasswordLink) {
+                const isLoginMode = isSignIn && authForm.dataset.mode !== 'register';
+                forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none';
+            }
+            if (mode === 'forgot') {
+                authTitle.textContent = 'Reset your password';
+            } else if (mode === 'reset') {
+                authTitle.textContent = 'Choose a new password';
+            } else if (authForm.dataset.mode === 'register') {
+                authTitle.textContent = 'Create Account';
+            } else {
+                authTitle.textContent = 'Welcome Back';
+            }
+        }
+
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', () => {
+                if (forgotEmailInput && emailInput) {
+                    forgotEmailInput.value = emailInput.value;
+                }
+                const linkBox = document.getElementById('forgotResetLinkBox');
+                if (linkBox) {
+                    linkBox.style.display = 'none';
+                    linkBox.innerHTML = '';
+                }
+                showAuthPanel('forgot');
+            });
+        }
+
+        ['backToSignInFromForgot', 'backToSignInFromReset'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', () => {
+                    if (window.history.replaceState) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('token');
+                        window.history.replaceState({}, '', url.pathname);
+                    }
+                    showAuthPanel('signin');
+                });
+            }
+        });
 
         if (toggleText) {
             toggleText.addEventListener('click', () => {
@@ -546,6 +786,13 @@
                     googleAuthBtn.querySelector('span').textContent = 'Sign up with Google';
                     toggleText.textContent = 'Already have an account? Sign in.';
                     passwordInput.autocomplete = 'new-password';
+                    passwordInput.value = ''; // Reset password field on switch to register
+                    if (document.getElementById('passwordStrengthContainer')) {
+                        document.getElementById('passwordStrengthContainer').style.display = 'block';
+                        if (typeof updatePasswordStrengthMeter === 'function') {
+                            updatePasswordStrengthMeter();
+                        }
+                    }
                 } else {
                     authForm.dataset.mode = 'login';
                     authTitle.textContent = 'Welcome Back';
@@ -554,7 +801,11 @@
                     googleAuthBtn.querySelector('span').textContent = 'Sign in with Google';
                     toggleText.textContent = 'No account? Create one.';
                     passwordInput.autocomplete = 'current-password';
+                    if (document.getElementById('passwordStrengthContainer')) {
+                        document.getElementById('passwordStrengthContainer').style.display = 'none';
+                    }
                 }
+                showAuthPanel('signin');
             });
         }
 
@@ -585,6 +836,115 @@
                     toggleVisibility();
                 }
             });
+        }
+
+        // ==============================================================================
+        // PASSWORD STRENGTH VALIDATION LOGIC
+        // ==============================================================================
+        const passwordStrengthContainer = document.getElementById('passwordStrengthContainer');
+        const passwordStrengthFill = document.getElementById('passwordStrengthFill');
+        const criteriaNodes = {
+            length: document.getElementById('criterion-length'),
+            number: document.getElementById('criterion-number'),
+            special: document.getElementById('criterion-special')
+        };
+
+        function validatePasswordCriteria(password) {
+            const hasLength = password.length >= 8;
+            const hasNumber = /\d/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>\-_\+=\/\[\]\\';`~]/.test(password);
+            
+            return {
+                length: hasLength,
+                number: hasNumber,
+                special: hasSpecial,
+                score: (hasLength ? 1 : 0) + (hasNumber ? 1 : 0) + (hasSpecial ? 1 : 0)
+            };
+        }
+
+        function updateCriterionNode(node, isMet) {
+            if (!node) return;
+            const icon = node.querySelector('i');
+            if (isMet) {
+                node.classList.add('criterion-met');
+                node.classList.remove('criterion-unmet');
+                icon.className = 'fa-solid fa-circle-check';
+            } else {
+                node.classList.remove('criterion-met');
+                node.classList.add('criterion-unmet');
+                icon.className = 'fa-solid fa-circle-xmark';
+            }
+        }
+
+        function updatePasswordStrengthMeter() {
+            if (!passwordInput || authForm.dataset.mode !== 'register') return;
+
+            const password = passwordInput.value;
+            const validation = validatePasswordCriteria(password);
+            
+            updateCriterionNode(criteriaNodes.length, validation.length);
+            updateCriterionNode(criteriaNodes.number, validation.number);
+            updateCriterionNode(criteriaNodes.special, validation.special);
+            
+            let fillWidth = '0%';
+            let fillClass = 'strength-weak';
+            
+            if (password.length > 0) {
+                if (validation.score === 1) {
+                    fillWidth = '33%';
+                    fillClass = 'strength-weak';
+                } else if (validation.score === 2) {
+                    fillWidth = '66%';
+                    fillClass = 'strength-fair';
+                } else if (validation.score === 3) {
+                    fillWidth = '100%';
+                    fillClass = password.length >= 12 ? 'strength-strong' : 'strength-good';
+                }
+            }
+            
+            if (passwordStrengthFill) {
+                passwordStrengthFill.style.width = fillWidth;
+                passwordStrengthFill.className = `password-strength-fill ${fillClass}`;
+            }
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', updatePasswordStrengthMeter);
+        }
+
+        // Intercept form submission to enforce validation on register
+        if (authForm) {
+            const originalOnSubmit = authForm.onsubmit;
+            authForm.onsubmit = function(event) {
+                if (authForm.dataset.mode === 'register') {
+                    const validation = validatePasswordCriteria(passwordInput.value);
+                    if (validation.score < 3) {
+                        event.preventDefault();
+                        
+                        passwordInput.style.animation = 'inputShake 0.4s ease-in-out 0s 1';
+                        setTimeout(() => {
+                            passwordInput.style.animation = 'none';
+                        }, 400);
+                        
+                        passwordInput.focus();
+                        return false; // Stop submission
+                    }
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+                }
+
+                if (originalOnSubmit) {
+                    return originalOnSubmit.call(this, event);
+                }
+            };
+        }
+
+        const resetToken = new URLSearchParams(window.location.search).get('token');
+        if (resetToken) {
+            showAuthPanel('reset');
         }
     </script>
     <script src="../js/pwa.js"></script>
