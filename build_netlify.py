@@ -81,21 +81,18 @@ def write_clean_route_redirects() -> None:
         "/community-stories /community-stories.html 200",
         "/nearby-bookstores /nearby-bookstores.html 200",
     ]
-    (DIST / "_redirects").write_text("
-".join(redirects) + "
-", encoding="utf-8")
+    (DIST / "_redirects").write_text("\n".join(redirects) + "\n", encoding="utf-8")
 
 
 def inject_api_base_override() -> None:
-    """Optional Netlify build env MOOD_API_BASE -> runtime override in dist config.js."""
+    """Optional Netlify build env MOOD_API_BASE → runtime override in dist config.js."""
     api_base = os.getenv("MOOD_API_BASE", "").strip()
     if not api_base:
         return
     config_path = DIST / "js" / "config.js"
     if not config_path.exists():
         return
-    snippet = f'window.__MOOD_API_BASE_OVERRIDE__ = {api_base!r};
-'
+    snippet = f'window.__MOOD_API_BASE_OVERRIDE__ = {api_base!r};\n'
     content = config_path.read_text(encoding="utf-8")
     config_path.write_text(snippet + content, encoding="utf-8")
 
