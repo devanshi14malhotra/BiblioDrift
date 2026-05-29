@@ -33,8 +33,7 @@ instance/
 # Virtual Environment
 venv/
 
-node_modules/
-.venv/
-
 # Local untracked scripts folder
-untracked/
+ untracked/
+.claude/
+.refact/

@@ -134,12 +134,18 @@ Tell me: what is stirring in you today?`,
         let message = this.chatInput.value.trim();
         if (!message || this.isTyping) return;
 
+        // Lock immediately to prevent double-fire on rapid click/Enter
+        this.isTyping = true;
+        if (this.sendBtn) this.sendBtn.disabled = true;
+
         // Sanitize message before sending to server (defense-in-depth)
         message = this.sanitizeUserInput(message);
 
         if (!message) {
             // If sanitization resulted in empty string, don't send
             this.chatInput.value = '';
+            this.isTyping = false;
+            if (this.sendBtn) this.sendBtn.disabled = false;
             return;
         }
 
@@ -625,6 +631,7 @@ Tell me: what is stirring in you today?`,
 
     hideTypingIndicator() {
         this.isTyping = false;
+        if (this.sendBtn) this.sendBtn.disabled = false;
         const typingIndicator = document.getElementById('typingIndicator');
         if (typingIndicator) {
             typingIndicator.remove();

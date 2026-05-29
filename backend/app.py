@@ -779,6 +779,15 @@ def _validate_jwt_secret_startup():
 
 _validate_jwt_secret_startup()
 
+@app.route('/api/v1/config', methods=['GET'])
+@limiter.exempt
+def get_config():
+    response = jsonify({
+        "google_books_key": os.getenv("GOOGLE_BOOKS_API_KEY", ""),
+        "google_books_key_secondary": os.getenv("GOOGLE_BOOKS_API_KEY_SECONDARY", "")
+    })
+
+    return response
 
 # =====================================================================
 # ENDPOINT: CSRF Token Retrieval
@@ -1043,6 +1052,9 @@ def handle_mood_tags(validated_data):
 @validate_schema(MoodSearchRequest)
 def handle_mood_search(validated_data):
     """Search for books based on mood/vibe with improved query parsing."""
+    # Note: CORS preflight (OPTIONS) is handled globally by Flask-CORS —
+    # no manual OPTIONS check needed here.
+
     from exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
@@ -2693,5 +2705,3 @@ if __name__ == '__main__':
         logger.info("  GET  /api/v1/health - Health check")
 
     app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
-
-
