@@ -4,6 +4,7 @@
  */
 
 // Sample books data for demonstration
+import { calcReadingTime, calcRemainingTime } from './readingTime.js';
 const SAMPLE_BOOKS = {
     current: [
         {
@@ -1869,6 +1870,16 @@ class BookshelfRenderer3D {
         authorSpan.className = 'spine-author';
         authorSpan.textContent = book.author ? book.author.split(' ').pop() : '';
         face.appendChild(authorSpan);
+        // Issue #606 — Reading Time Badge on spine
+const pages = book.pageCount || book.page_count || book.volumeInfo?.pageCount;
+const { label: timeLabel } = calcReadingTime(pages);
+if (timeLabel) {
+    const timeBadge = document.createElement('div');
+    timeBadge.className = 'reading-time-badge';
+    timeBadge.style.cssText = 'writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.55rem; margin-top: 6px; padding: 2px 4px;';
+    timeBadge.innerHTML = `<i class="fa-regular fa-clock"></i> ${timeLabel}`;
+    face.appendChild(timeBadge);
+}
 
         if (traits.pattern.includes('ornament')) {
             const ornament = document.createElement('div');
@@ -2262,6 +2273,22 @@ class BookshelfRenderer3D {
 
         if (titleEl) titleEl.textContent = book.title;
         if (authorEl) authorEl.textContent = book.author; // Removed "by" prefix to match design
+        // Issue #606 — Populate reading time in modal
+const readingTimeStat = document.getElementById('modal-reading-time-stat');
+const readingTimeLabel = document.getElementById('modal-reading-time-label');
+const pages = book.pageCount || book.page_count;
+const progress = typeof book.progress === 'number' ? book.progress : 0;
+const { label: totalTimeLabel } = calcReadingTime(pages);
+const { label: remainLabel } = calcRemainingTime(pages, progress);
+
+if (readingTimeStat && totalTimeLabel) {
+    readingTimeStat.style.display = 'block';
+    if (readingTimeLabel) {
+        readingTimeLabel.textContent = book.shelfType === 'current' && remainLabel
+            ? `${remainLabel} left`
+            : totalTimeLabel;
+    }
+}
         if (starsEl) starsEl.textContent = this.getStarRating(book.rating);
         if (scoreEl) scoreEl.textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         if (countEl) countEl.textContent = `(${book.ratingCount} ratings)`;

@@ -79,6 +79,8 @@
 
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
+import { calcReadingTime, calcRemainingTime } from './readingTime.js';
+
 if (typeof window.IS_DEV === 'undefined') {
     window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 }
@@ -718,6 +720,17 @@ class BookRenderer {
                         <i class="fa-solid fa-circle-info"></i> Read Details
                     </button>
 
+                    ${(() => {
+    const pages = bookData?.volumeInfo?.pageCount;
+    const { label: totalLabel } = calcReadingTime(pages);
+    const { label: remainLabel } = calcRemainingTime(pages, progress);
+    if (!totalLabel) return '';
+    return `
+    <div class="reading-time-badge" style="margin-bottom: 6px;">
+        <i class="fa-regular fa-clock"></i>
+        <span>${shelf === 'current' && remainLabel ? remainLabel + ' left' : totalLabel}</span>
+    </div>`;
+})()}
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
                         <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
