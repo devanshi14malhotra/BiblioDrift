@@ -11,13 +11,13 @@
                 document.documentElement.setAttribute('data-theme', 'night');
             }
         })();
-        
+
         document.addEventListener('DOMContentLoaded', function () {
             const btn = document.getElementById('themeToggle');
             if (!btn) return;
             const icon = btn.querySelector('i');
             const STORAGE_KEY = 'bibliodrift_theme';
-            
+
             function applyTheme(theme) {
                 if (theme === 'night') {
                     document.documentElement.setAttribute('data-theme', 'night');
@@ -28,7 +28,7 @@
                 }
                 localStorage.setItem(STORAGE_KEY, theme);
             }
-            
+
             btn.addEventListener('click', function () {
                 const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
                 applyTheme(current === 'night' ? 'light' : 'night');
@@ -88,7 +88,7 @@
                 radial-gradient(circle at 12% 78%, rgba(127, 150, 160, 0.12), transparent 24%),
                 linear-gradient(180deg, #fbfaf6 0%, #f8f3eb 44%, #f6f0e8 100%);
             color: var(--landing-ink);
-            overflow-x: hidden;
+            overflow-x: clip;
             font-family: "DM Sans", sans-serif;
         }
 
@@ -276,12 +276,12 @@
             height: var(--petal-height, 1.05rem);
             border-radius: 70% 70% 45% 45% / 85% 85% 35% 35%;
             background:
-                radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95) 0 10%, rgba(255,241,245,0.86) 14%, rgba(239,162,184,0.96) 100%),
-                linear-gradient(180deg, rgba(255,255,255,0.3), rgba(231,137,165,0.95));
+                radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.95) 0 10%, rgba(255, 241, 245, 0.86) 14%, rgba(239, 162, 184, 0.96) 100%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(231, 137, 165, 0.95));
             box-shadow: 0 6px 14px rgba(220, 127, 157, 0.22);
             opacity: 0;
             transform: translate3d(0, 0, 0) rotate(0deg) scale(0.9);
-            animation: blossom-fall var(--petal-duration, 1800ms) cubic-bezier(.2,.8,.2,1) forwards;
+            animation: blossom-fall var(--petal-duration, 1800ms) cubic-bezier(.2, .8, .2, 1) forwards;
         }
 
         .blossom-petal--large {
@@ -299,7 +299,7 @@
             position: absolute;
             inset: 0.2rem 0.23rem 0.3rem;
             border-radius: inherit;
-            background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.72), transparent 58%);
+            background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.72), transparent 58%);
             opacity: 0.7;
         }
 
@@ -692,7 +692,7 @@
             justify-content: space-between;
         }
 
-        .community-header-row > div {
+        .community-header-row>div {
             flex: 1 1 auto;
             text-align: left;
         }
@@ -707,7 +707,7 @@
                 justify-content: center;
             }
 
-            .community-header-row > div {
+            .community-header-row>div {
                 text-align: center;
             }
         }
@@ -952,9 +952,17 @@
             background: linear-gradient(180deg, rgba(242, 249, 246, 0.98), rgba(227, 239, 233, 0.92));
         }
 
-        .about-mood-pill:nth-child(1) i { color: #b66b2f; }
-        .about-mood-pill:nth-child(2) i { color: #7f96a0; }
-        .about-mood-pill:nth-child(3) i { color: #6e8b74; }
+        .about-mood-pill:nth-child(1) i {
+            color: #b66b2f;
+        }
+
+        .about-mood-pill:nth-child(2) i {
+            color: #7f96a0;
+        }
+
+        .about-mood-pill:nth-child(3) i {
+            color: #6e8b74;
+        }
 
         .about-mood-pill i {
             color: var(--landing-wood);
@@ -1069,8 +1077,15 @@
         }
 
         @keyframes feature-fade-up {
-            from { opacity: 0; transform: translateY(10px) scale(0.995); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.995);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .feature-card {
@@ -1084,12 +1099,12 @@
             border-radius: 24px;
             opacity: 0;
             transform: translateY(10px) scale(0.995);
-            animation: feature-fade-up 520ms cubic-bezier(.2,.8,.2,1) forwards;
-            transition: transform 0.28s cubic-bezier(.2,.8,.2,1), box-shadow 0.28s ease, border-color 0.28s ease;
+            animation: feature-fade-up 520ms cubic-bezier(.2, .8, .2, 1) forwards;
+            transition: transform 0.28s cubic-bezier(.2, .8, .2, 1), box-shadow 0.28s ease, border-color 0.28s ease;
             overflow: hidden;
         }
 
-        .feature-card::before{
+        .feature-card::before {
             content: "";
             position: absolute;
             left: 1rem;
@@ -1097,21 +1112,32 @@
             width: 46%;
             height: 46px;
             border-radius: 12px;
-            background: linear-gradient(90deg, rgba(212,175,55,0.14), rgba(255,255,255,0.0));
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.14), rgba(255, 255, 255, 0.0));
             filter: blur(6px);
             opacity: 0.9;
             pointer-events: none;
         }
 
         /* Staggered entrance for the four feature cards */
-        #key-features .feature-card:nth-child(1){ animation-delay: 120ms; }
-        #key-features .feature-card:nth-child(2){ animation-delay: 240ms; }
-        #key-features .feature-card:nth-child(3){ animation-delay: 360ms; }
-        #key-features .feature-card:nth-child(4){ animation-delay: 480ms; }
+        #key-features .feature-card:nth-child(1) {
+            animation-delay: 120ms;
+        }
+
+        #key-features .feature-card:nth-child(2) {
+            animation-delay: 240ms;
+        }
+
+        #key-features .feature-card:nth-child(3) {
+            animation-delay: 360ms;
+        }
+
+        #key-features .feature-card:nth-child(4) {
+            animation-delay: 480ms;
+        }
 
         .feature-card:hover {
             transform: translateY(-8px) scale(1.006);
-            box-shadow: 0 18px 40px rgba(44,36,32,0.08);
+            box-shadow: 0 18px 40px rgba(44, 36, 32, 0.08);
             border-color: rgba(212, 175, 55, 0.12);
         }
 
@@ -1121,14 +1147,17 @@
             border-radius: 14px;
             display: grid;
             place-items: center;
-            background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(212,175,55,0.06));
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(212, 175, 55, 0.06));
             color: var(--landing-wood);
             font-size: 1.08rem;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
             transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
         }
 
-        .feature-card:hover i { transform: scale(1.08) translateY(-2px); box-shadow: 0 10px 26px rgba(44,36,32,0.07); }
+        .feature-card:hover i {
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 10px 26px rgba(44, 36, 32, 0.07);
+        }
 
         .feature-card h3 {
             margin: 0.15rem 0 0.35rem;
@@ -1138,17 +1167,30 @@
             color: var(--landing-ink);
         }
 
-        .feature-card p { color: var(--landing-muted); margin: 0; }
+        .feature-card p {
+            color: var(--landing-muted);
+            margin: 0;
+        }
 
         .feature-card:focus {
             outline: none;
-            box-shadow: 0 0 0 4px rgba(212,175,55,0.12), 0 12px 30px rgba(44,36,32,0.06);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12), 0 12px 30px rgba(44, 36, 32, 0.06);
             transform: translateY(-6px) scale(1.004);
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .feature-card { animation: none !important; transition: none !important; transform: none !important; opacity: 1 !important; }
-            .feature-card:hover, .feature-card:focus { transform: none; box-shadow: none; }
+            .feature-card {
+                animation: none !important;
+                transition: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+            }
+
+            .feature-card:hover,
+            .feature-card:focus {
+                transform: none;
+                box-shadow: none;
+            }
         }
 
         .community-grid {
@@ -1165,41 +1207,215 @@
         }
 
         /* Carousel styles for community section */
-        .community-carousel { display:flex; align-items:center; gap:12px; max-width:980px; margin:0 auto; }
-        .community-track { display:flex; width:100%; overflow:hidden; scroll-behavior:smooth; }
-        .community-track .contributor-card { flex:0 0 100%; box-sizing:border-box; padding:1.15rem; border-radius:16px; }
-        .carousel-btn { background:var(--landing-surface); border:1px solid rgba(0,0,0,0.04); width:38px; height:38px; border-radius:999px; display:grid; place-items:center; cursor:pointer; }
-        .carousel-btn:hover { transform: translateY(-2px); box-shadow:0 8px 20px rgba(44,36,32,0.06); }
-        .carousel-dots { display:flex; gap:8px; justify-content:center; width:100%; margin-top:10px; }
-        .carousel-dot { width:8px; height:8px; background:rgba(0,0,0,0.12); border-radius:999px; cursor:pointer; }
-        .carousel-dot.active { background:var(--landing-gold); box-shadow:0 4px 10px rgba(212,175,55,0.12); }
+        .community-carousel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .community-track {
+            display: flex;
+            width: 100%;
+            overflow: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .community-track .contributor-card {
+            flex: 0 0 100%;
+            box-sizing: border-box;
+            padding: 1.15rem;
+            border-radius: 16px;
+        }
+
+        .carousel-btn {
+            background: var(--landing-surface);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+        }
+
+        .carousel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(44, 36, 32, 0.06);
+        }
+
+        .carousel-dots {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.12);
+            border-radius: 999px;
+            cursor: pointer;
+        }
+
+        .carousel-dot.active {
+            background: var(--landing-gold);
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.12);
+        }
 
         @media (max-width: 880px) {
-            .community-carousel { gap:8px; }
-            .carousel-btn { width:34px; height:34px; }
+            .community-carousel {
+                gap: 8px;
+            }
+
+            .carousel-btn {
+                width: 34px;
+                height: 34px;
+            }
         }
 
         /* Live contributors list */
-        .contributors-list { display:block; max-width:980px; margin:0 auto; padding:0.6rem 0; }
-        .contributors-loading { color: var(--landing-muted); padding:0.8rem 0; text-align:center; }
-        .contributors-grid { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; align-items:center; }
-        .contributors-slider { position:relative; overflow:hidden; padding:12px 0; }
-        .slider-track { display:flex; align-items:center; will-change:transform; }
-        .slide { flex:0 0 auto; box-sizing:border-box; display:flex; justify-content:center; padding:0 12px; }
-        .contributor-item { display:flex; gap:0.8rem; align-items:center; padding:0.4rem 0.6rem; text-decoration:none; color:var(--landing-ink); border-radius:12px; transition:transform 0.18s ease, box-shadow 0.18s ease; }
-        .contributor-avatar-img { width:96px; height:96px; border-radius:999px; object-fit:cover; box-shadow: 0 12px 28px rgba(44,36,32,0.08); }
-        .contributor-meta { display:flex; flex-direction:column; }
-        .contributor-name { font-weight:700; font-family:"Fraunces", serif; font-size:0.96rem; }
-        .contrib-count { color:var(--landing-muted); font-size:0.82rem; }
-        .contributors-toggle { position:absolute; right:12px; bottom:6px; background:rgba(255,255,255,0.9); border-radius:999px; padding:6px 10px; font-size:13px; box-shadow:0 6px 18px rgba(44,36,32,0.06); cursor:pointer; }
-        .contributor-item { display:flex; gap:0.8rem; align-items:center; padding:0.5rem 0.6rem; text-decoration:none; color:var(--landing-ink); border-radius:12px; transition:transform 0.18s ease, box-shadow 0.18s ease; }
-        .contributor-item:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(44,36,32,0.06); }
-        .contributor-avatar-img { width:64px; height:64px; border-radius:999px; object-fit:cover; box-shadow: 0 8px 18px rgba(44,36,32,0.06); }
-        .contributor-meta { display:flex; flex-direction:column; }
-        .contributor-name { font-weight:700; font-family:"Fraunces", serif; font-size:0.98rem; }
-        .contrib-count { color:var(--landing-muted); font-size:0.88rem; }
+        .contributors-list {
+            display: block;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0.6rem 0;
+        }
 
-        @media (max-width:640px){ .contributor-avatar-img{width:52px;height:52px} .contributor-item{gap:0.6rem} }
+        .contributors-loading {
+            color: var(--landing-muted);
+            padding: 0.8rem 0;
+            text-align: center;
+        }
+
+        .contributors-grid {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .contributors-slider {
+            position: relative;
+            overflow: hidden;
+            padding: 12px 0;
+        }
+
+        .slider-track {
+            display: flex;
+            align-items: center;
+            will-change: transform;
+        }
+
+        .slide {
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            padding: 0 12px;
+        }
+
+        .contributor-item {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            text-decoration: none;
+            color: var(--landing-ink);
+            border-radius: 12px;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .contributor-avatar-img {
+            width: 96px;
+            height: 96px;
+            border-radius: 999px;
+            object-fit: cover;
+            box-shadow: 0 12px 28px rgba(44, 36, 32, 0.08);
+        }
+
+        .contributor-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contributor-name {
+            font-weight: 700;
+            font-family: "Fraunces", serif;
+            font-size: 0.96rem;
+        }
+
+        .contrib-count {
+            color: var(--landing-muted);
+            font-size: 0.82rem;
+        }
+
+        .contributors-toggle {
+            position: absolute;
+            right: 12px;
+            bottom: 6px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 13px;
+            box-shadow: 0 6px 18px rgba(44, 36, 32, 0.06);
+            cursor: pointer;
+        }
+
+        .contributor-item {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            padding: 0.5rem 0.6rem;
+            text-decoration: none;
+            color: var(--landing-ink);
+            border-radius: 12px;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .contributor-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 28px rgba(44, 36, 32, 0.06);
+        }
+
+        .contributor-avatar-img {
+            width: 64px;
+            height: 64px;
+            border-radius: 999px;
+            object-fit: cover;
+            box-shadow: 0 8px 18px rgba(44, 36, 32, 0.06);
+        }
+
+        .contributor-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contributor-name {
+            font-weight: 700;
+            font-family: "Fraunces", serif;
+            font-size: 0.98rem;
+        }
+
+        .contrib-count {
+            color: var(--landing-muted);
+            font-size: 0.88rem;
+        }
+
+        @media (max-width:640px) {
+            .contributor-avatar-img {
+                width: 52px;
+                height: 52px
+            }
+
+            .contributor-item {
+                gap: 0.6rem
+            }
+        }
 
         .contributor-avatar {
             width: 3.25rem;
@@ -1328,8 +1544,8 @@
             padding: 0.95rem 1rem;
             border-radius: 24px;
             background:
-                linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,250,243,0.88)),
-                radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 32%);
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 243, 0.88)),
+                radial-gradient(circle at top right, rgba(212, 175, 55, 0.12), transparent 32%);
             border: 1px solid rgba(93, 64, 55, 0.08);
             box-shadow: 0 18px 40px rgba(44, 36, 32, 0.07);
         }
@@ -1361,7 +1577,7 @@
             margin-bottom: 0.45rem;
             padding: 0.35rem 0.65rem;
             border-radius: 999px;
-            background: rgba(212,175,55,0.12);
+            background: rgba(212, 175, 55, 0.12);
             color: var(--landing-wood);
             font-size: 0.85rem;
             font-weight: 600;
@@ -1392,7 +1608,7 @@
             gap: 1rem;
             padding: 1rem;
             border-radius: 24px;
-            background: rgba(255,255,255,0.58);
+            background: rgba(255, 255, 255, 0.58);
             border: 1px solid rgba(93, 64, 55, 0.06);
         }
 
@@ -1577,10 +1793,13 @@
         }
 
         @keyframes blossom-glow {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
                 opacity: 0.42;
             }
+
             50% {
                 transform: scale(1.04);
                 opacity: 0.68;
@@ -1592,9 +1811,11 @@
                 opacity: 0;
                 transform: translate3d(0, 0, 0) rotate(0deg) scale(0.88);
             }
+
             12% {
                 opacity: 1;
             }
+
             100% {
                 opacity: 0;
                 transform: translate3d(var(--petal-dx, 0px), var(--petal-dy, -140px), 0) rotate(var(--petal-rotation, 220deg)) scale(0.72);
@@ -1861,9 +2082,9 @@
             color: inherit;
             padding: 0.45rem 0.7rem;
             border-radius: 999px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,250,243,0.9));
-            border: 1px solid rgba(93,64,55,0.06);
-            box-shadow: 0 10px 22px rgba(44,36,32,0.04);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 243, 0.9));
+            border: 1px solid rgba(93, 64, 55, 0.06);
+            box-shadow: 0 10px 22px rgba(44, 36, 32, 0.04);
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
@@ -1881,7 +2102,7 @@
         .contributor-item:hover,
         .contributor-item:focus-visible {
             transform: translateY(-4px);
-            box-shadow: 0 18px 34px rgba(44,36,32,0.09);
+            box-shadow: 0 18px 34px rgba(44, 36, 32, 0.09);
             border-color: rgba(212, 175, 55, 0.18);
             outline: none;
         }
@@ -1892,8 +2113,8 @@
             border-radius: 999px;
             object-fit: cover;
             display: block;
-            box-shadow: 0 8px 20px rgba(44,36,32,0.08);
-            border: 3px solid rgba(255,255,255,0.88);
+            box-shadow: 0 8px 20px rgba(44, 36, 32, 0.08);
+            border: 3px solid rgba(255, 255, 255, 0.88);
         }
 
         .contributors-grid-view .contributor-avatar-img {
@@ -1901,20 +2122,48 @@
             height: 78px;
         }
 
-        .contributor-meta { display: flex; flex-direction: column; }
-        .contributors-grid-view .contributor-meta { align-items: center; }
-        .contributor-name { font-family: "Fraunces", serif; font-weight:600; color:var(--landing-ink); }
-        .contrib-count { color:var(--landing-muted); font-size:0.88rem; }
+        .contributor-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contributors-grid-view .contributor-meta {
+            align-items: center;
+        }
+
+        .contributor-name {
+            font-family: "Fraunces", serif;
+            font-weight: 600;
+            color: var(--landing-ink);
+        }
+
+        .contrib-count {
+            color: var(--landing-muted);
+            font-size: 0.88rem;
+        }
 
         .contributors-list.is-expanded .contributor-item {
             animation: feature-fade-up 0.35s ease both;
         }
 
-        @media (max-width: 640px){
-            .contributor-avatar-img { width:48px; height:48px; }
-            .contributor-item { padding: 0.35rem 0.55rem; }
-            .contributors-panel { padding: 0.85rem; border-radius: 22px; }
-            .contributors-grid-view { grid-template-columns: 1fr; }
+        @media (max-width: 640px) {
+            .contributor-avatar-img {
+                width: 48px;
+                height: 48px;
+            }
+
+            .contributor-item {
+                padding: 0.35rem 0.55rem;
+            }
+
+            .contributors-panel {
+                padding: 0.85rem;
+                border-radius: 22px;
+            }
+
+            .contributors-grid-view {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
     <link rel="manifest" href="../manifest.json">
@@ -2017,138 +2266,138 @@
 
             <section class="landing-section reveal ambient-about-section" id="about-project">
 
-    <div class="ambient-blur ambient-blur-left"></div>
-    <div class="ambient-blur ambient-blur-right"></div>
+                <div class="ambient-blur ambient-blur-left"></div>
+                <div class="ambient-blur ambient-blur-right"></div>
 
-    <div class="section-header about-header">
+                <div class="section-header about-header">
 
-        <div class="about-heading-content">
-            <p class="section-kicker">About the project</p>
+                    <div class="about-heading-content">
+                        <p class="section-kicker">About the project</p>
 
-            <h2>
-                A reading room you want to
-                return to.
-            </h2>
+                        <h2>
+                            A reading room you want to
+                            return to.
+                        </h2>
 
-            <p class="about-subtext">
-                BiblioDrift turns book discovery into a slower ritual with
-                mood-first browsing, ambient exploration, and a tactile
-                interface that keeps the atmosphere warm and personal.
-            </p>
+                        <p class="about-subtext">
+                            BiblioDrift turns book discovery into a slower ritual with
+                            mood-first browsing, ambient exploration, and a tactile
+                            interface that keeps the atmosphere warm and personal.
+                        </p>
 
-            <div class="about-cta-row">
-                <a href="app.html" class="primary-about-btn">
-                    Enter Library
-                </a>
+                        <div class="about-cta-row">
+                            <a href="app.html" class="primary-about-btn">
+                                Enter Library
+                            </a>
 
-                <a href="#community" class="secondary-about-btn">
-                    Meet Contributors
-                </a>
-            </div>
-        </div>
+                            <a href="#community" class="secondary-about-btn">
+                                Meet Contributors
+                            </a>
+                        </div>
+                    </div>
 
-        <div class="about-floating-chip">
-            <i class="fa-solid fa-book-open"></i>
-            Mood-first discovery
-        </div>
-
-    </div>
-
-    <div class="about-grid">
-
-        <article class="about-card">
-
-            <div class="card-icon-wrap">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </div>
-
-            <div>
-                <p class="section-kicker">Reading sanctuary</p>
-
-                <p class="about-lede">
-                    A softer way to discover books, built around
-                    atmosphere first.
-                </p>
-
-                <p class="section-copy">
-                    The experience blends mood-based discovery with a quiet,
-                    editorial interface that keeps books centered while making
-                    exploration feel calm, cinematic, and personal.
-                </p>
-
-                <div class="about-mood-row" aria-label="Project highlights">
-
-                    <span class="about-mood-pill">
-                        <i class="fa-solid fa-fire"></i>
-                        Cozy
-                    </span>
-
-                    <span class="about-mood-pill">
-                        <i class="fa-solid fa-sparkles"></i>
-                        Curated
-                    </span>
-
-                    <span class="about-mood-pill">
-                        <i class="fa-solid fa-users"></i>
-                        Community
-                    </span>
+                    <div class="about-floating-chip">
+                        <i class="fa-solid fa-book-open"></i>
+                        Mood-first discovery
+                    </div>
 
                 </div>
-            </div>
-        </article>
 
-        <div class="about-feature-stack">
+                <div class="about-grid">
 
-            <article class="mini-feature-card">
-                <div class="mini-feature-icon">
-                    <i class="fa-solid fa-brain"></i>
+                    <article class="about-card">
+
+                        <div class="card-icon-wrap">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+
+                        <div>
+                            <p class="section-kicker">Reading sanctuary</p>
+
+                            <p class="about-lede">
+                                A softer way to discover books, built around
+                                atmosphere first.
+                            </p>
+
+                            <p class="section-copy">
+                                The experience blends mood-based discovery with a quiet,
+                                editorial interface that keeps books centered while making
+                                exploration feel calm, cinematic, and personal.
+                            </p>
+
+                            <div class="about-mood-row" aria-label="Project highlights">
+
+                                <span class="about-mood-pill">
+                                    <i class="fa-solid fa-fire"></i>
+                                    Cozy
+                                </span>
+
+                                <span class="about-mood-pill">
+                                    <i class="fa-solid fa-sparkles"></i>
+                                    Curated
+                                </span>
+
+                                <span class="about-mood-pill">
+                                    <i class="fa-solid fa-users"></i>
+                                    Community
+                                </span>
+
+                            </div>
+                        </div>
+                    </article>
+
+                    <div class="about-feature-stack">
+
+                        <article class="mini-feature-card">
+                            <div class="mini-feature-icon">
+                                <i class="fa-solid fa-brain"></i>
+                            </div>
+
+                            <div>
+                                <h3>AI-guided discovery</h3>
+
+                                <p>
+                                    Explore books through emotion, tone,
+                                    weather, and atmosphere.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="mini-feature-card">
+                            <div class="mini-feature-icon">
+                                <i class="fa-solid fa-cloud-rain"></i>
+                            </div>
+
+                            <div>
+                                <h3>Ambient sanctuary</h3>
+
+                                <p>
+                                    Layer rain, storms, fireplace,
+                                    and ocean sounds while reading.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="mini-feature-card">
+                            <div class="mini-feature-icon">
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+
+                            <div>
+                                <h3>Built with community</h3>
+
+                                <p>
+                                    Crafted by readers, contributors,
+                                    and open-source collaborators.
+                                </p>
+                            </div>
+                        </article>
+
+                    </div>
+
                 </div>
 
-                <div>
-                    <h3>AI-guided discovery</h3>
-
-                    <p>
-                        Explore books through emotion, tone,
-                        weather, and atmosphere.
-                    </p>
-                </div>
-            </article>
-
-            <article class="mini-feature-card">
-                <div class="mini-feature-icon">
-                    <i class="fa-solid fa-cloud-rain"></i>
-                </div>
-
-                <div>
-                    <h3>Ambient sanctuary</h3>
-
-                    <p>
-                        Layer rain, storms, fireplace,
-                        and ocean sounds while reading.
-                    </p>
-                </div>
-            </article>
-
-            <article class="mini-feature-card">
-                <div class="mini-feature-icon">
-                    <i class="fa-solid fa-heart"></i>
-                </div>
-
-                <div>
-                    <h3>Built with community</h3>
-
-                    <p>
-                        Crafted by readers, contributors,
-                        and open-source collaborators.
-                    </p>
-                </div>
-            </article>
-
-        </div>
-
-    </div>
-
-</section>
+            </section>
 
             <section class="landing-section reveal" id="key-features">
                 <div class="section-header">
@@ -2196,10 +2445,12 @@
                     <a class="btn-ghost contributors-view-all" href="contributors.html">
                         <i class="fa-solid fa-users"></i> View all contributors
                     </a>
-                    <span class="contributors-refresh-note"><i class="fa-solid fa-rotate"></i> Refreshes up to 3 times a day</span>
+                    <span class="contributors-refresh-note"><i class="fa-solid fa-rotate"></i> Refreshes up to 3 times a
+                        day</span>
                 </div>
 
-                <div class="contributors-list" data-owner="devanshi14malhotra" data-repo="BiblioDrift" aria-live="polite">
+                <div class="contributors-list" data-owner="devanshi14malhotra" data-repo="BiblioDrift"
+                    aria-live="polite">
                     <div class="contributors-loading">Loading contributors…</div>
                 </div>
             </section>
@@ -2213,18 +2464,22 @@
                     <span class="section-chip"><i class="fa-solid fa-quote-left"></i> gentle, tactile, and
                         immersive</span>
                 </div>
-                <p class="reader-experience-intro">BiblioDrift is designed to feel calm, readable, and responsive, so the interface fades into the background and the books, sounds, and moods stay in focus.</p>
+                <p class="reader-experience-intro">BiblioDrift is designed to feel calm, readable, and responsive, so
+                    the interface fades into the background and the books, sounds, and moods stay in focus.</p>
                 <div class="testimonial-grid">
                     <article class="quote-card">
-                        <p>“It feels like stepping into a quiet bookstore where the shelves respond to the mood you brought with you.”</p>
+                        <p>“It feels like stepping into a quiet bookstore where the shelves respond to the mood you
+                            brought with you.”</p>
                         <span>Discovery stays intimate instead of mechanical.</span>
                     </article>
                     <article class="quote-card">
-                        <p>“The interface knows when to be present and when to get out of the way, which makes reading feel unhurried.”</p>
+                        <p>“The interface knows when to be present and when to get out of the way, which makes reading
+                            feel unhurried.”</p>
                         <span>Motion stays calm, useful, and atmospheric.</span>
                     </article>
                     <article class="quote-card">
-                        <p>“Every section belongs to the same room, so the page feels like one place instead of a stack of screens.”</p>
+                        <p>“Every section belongs to the same room, so the page feels like one place instead of a stack
+                            of screens.”</p>
                         <span>Typography, spacing, and warmth stay consistent.</span>
                     </article>
                 </div>
@@ -2267,340 +2522,340 @@
 
             <script src="../js/landing-contributors.js"></script>
             <script>
-            (function(){
-                const lists = document.querySelectorAll('.contributors-list');
-                if(!lists.length) return;
+                (function () {
+                    const lists = document.querySelectorAll('.contributors-list');
+                    if (!lists.length) return;
 
-                const REFRESH_INTERVAL_MS = 8 * 60 * 60 * 1000;
-                const FEATURED_LIMIT = 10;
-                const STATIC_PATHS = [
-                    '../data/contributors.json',
-                    '/data/contributors.json',
-                    'frontend/data/contributors.json'
-                ];
+                    const REFRESH_INTERVAL_MS = 8 * 60 * 60 * 1000;
+                    const FEATURED_LIMIT = 10;
+                    const STATIC_PATHS = [
+                        '../data/contributors.json',
+                        '/data/contributors.json',
+                        'frontend/data/contributors.json'
+                    ];
 
-                function storageGet(key){
-                    try { return window.localStorage.getItem(key); }
-                    catch(e){ return null; }
-                }
-
-                function storageSet(key, value){
-                    try { window.localStorage.setItem(key, value); }
-                    catch(e){}
-                }
-
-                lists.forEach(container => {
-                    const owner = container.dataset.owner || 'devanshi14malhotra';
-                    const repo = container.dataset.repo || 'BiblioDrift';
-                    const loading = container.querySelector('.contributors-loading');
-                    const section = container.closest('.landing-section');
-                    const cacheKey = `biblioDrift.contributors.${owner}.${repo}`;
-                    const cacheTimeKey = `${cacheKey}.fetchedAt`;
-
-                    let contributors = [];
-                    let renderVersion = 0;
-
-                    function readCachedContributors(){
-                        const raw = storageGet(cacheKey);
-                        if(!raw) return [];
-                        try { return JSON.parse(raw); }
-                        catch(e){ return []; }
+                    function storageGet(key) {
+                        try { return window.localStorage.getItem(key); }
+                        catch (e) { return null; }
                     }
 
-                    function writeCachedContributors(data){
-                        storageSet(cacheKey, JSON.stringify(data));
-                        storageSet(cacheTimeKey, String(Date.now()));
+                    function storageSet(key, value) {
+                        try { window.localStorage.setItem(key, value); }
+                        catch (e) { }
                     }
 
-                    function cacheAgeMs(){
-                        const raw = storageGet(cacheTimeKey);
-                        if(!raw) return Number.POSITIVE_INFINITY;
-                        const parsed = Number(raw);
-                        if(!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
-                        return Date.now() - parsed;
-                    }
+                    lists.forEach(container => {
+                        const owner = container.dataset.owner || 'devanshi14malhotra';
+                        const repo = container.dataset.repo || 'BiblioDrift';
+                        const loading = container.querySelector('.contributors-loading');
+                        const section = container.closest('.landing-section');
+                        const cacheKey = `biblioDrift.contributors.${owner}.${repo}`;
+                        const cacheTimeKey = `${cacheKey}.fetchedAt`;
 
-                    function createContributorCard(user){
-                        const a = document.createElement('a');
-                        a.className = 'contributor-item';
-                        a.href = user.html_url;
-                        a.target = '_blank';
-                        a.rel = 'noopener noreferrer';
+                        let contributors = [];
+                        let renderVersion = 0;
 
-                        const img = document.createElement('img');
-                        img.className = 'contributor-avatar-img';
-                        img.loading = 'lazy';
-                        img.alt = user.login;
-                        img.src = `${user.avatar_url}?s=160`;
-
-                        const meta = document.createElement('div');
-                        meta.className = 'contributor-meta';
-                        const name = document.createElement('div');
-                        name.className = 'contributor-name';
-                        name.textContent = user.login;
-                        const count = document.createElement('div');
-                        count.className = 'contrib-count';
-                        count.textContent = user.contributions ? `${user.contributions} contributions` : 'GitHub contributor';
-
-                        meta.appendChild(name);
-                        meta.appendChild(count);
-                        a.appendChild(img);
-                        a.appendChild(meta);
-                        return a;
-                    }
-
-                    function startTicker(track, slider, version){
-                        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-                            return;
+                        function readCachedContributors() {
+                            const raw = storageGet(cacheKey);
+                            if (!raw) return [];
+                            try { return JSON.parse(raw); }
+                            catch (e) { return []; }
                         }
 
-                        const originals = Array.from(track.children);
-                        let singleWidth = 0;
-                        const imgs = track.querySelectorAll('img');
-                        let started = false;
-                        let bootAttempts = 0;
-                        let animationFrameId = 0;
-                        let resizeObserver = null;
+                        function writeCachedContributors(data) {
+                            storageSet(cacheKey, JSON.stringify(data));
+                            storageSet(cacheTimeKey, String(Date.now()));
+                        }
 
-                        const compute = ()=>{
-                            let width = track.scrollWidth ? track.scrollWidth / 2 : 0;
-                            if(!width){
-                                width = originals.reduce((sum, el)=> sum + el.getBoundingClientRect().width, 0);
-                            }
-                            if(!width){
-                                width = originals.reduce((sum, el)=> sum + el.offsetWidth, 0);
-                            }
-                            singleWidth = Math.max(0, width);
-                            track.style.width = `${Math.max(singleWidth * 2, track.scrollWidth)}px`;
-                        };
+                        function cacheAgeMs() {
+                            const raw = storageGet(cacheTimeKey);
+                            if (!raw) return Number.POSITIVE_INFINITY;
+                            const parsed = Number(raw);
+                            if (!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
+                            return Date.now() - parsed;
+                        }
 
-                        const run = ()=>{
-                            if(started){
+                        function createContributorCard(user) {
+                            const a = document.createElement('a');
+                            a.className = 'contributor-item';
+                            a.href = user.html_url;
+                            a.target = '_blank';
+                            a.rel = 'noopener noreferrer';
+
+                            const img = document.createElement('img');
+                            img.className = 'contributor-avatar-img';
+                            img.loading = 'lazy';
+                            img.alt = user.login;
+                            img.src = `${user.avatar_url}?s=160`;
+
+                            const meta = document.createElement('div');
+                            meta.className = 'contributor-meta';
+                            const name = document.createElement('div');
+                            name.className = 'contributor-name';
+                            name.textContent = user.login;
+                            const count = document.createElement('div');
+                            count.className = 'contrib-count';
+                            count.textContent = user.contributions ? `${user.contributions} contributions` : 'GitHub contributor';
+
+                            meta.appendChild(name);
+                            meta.appendChild(count);
+                            a.appendChild(img);
+                            a.appendChild(meta);
+                            return a;
+                        }
+
+                        function startTicker(track, slider, version) {
+                            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                                 return;
                             }
-                            started = true;
-                            track.style.display = 'flex';
-                            track.style.transition = 'none';
-                            compute();
 
-                            if(window.ResizeObserver){
-                                resizeObserver = new ResizeObserver(()=> {
-                                    const previousWidth = singleWidth;
-                                    compute();
-                                    if(previousWidth !== singleWidth && singleWidth > 0){
-                                        pos = singleWidth ? pos % singleWidth : 0;
+                            const originals = Array.from(track.children);
+                            let singleWidth = 0;
+                            const imgs = track.querySelectorAll('img');
+                            let started = false;
+                            let bootAttempts = 0;
+                            let animationFrameId = 0;
+                            let resizeObserver = null;
+
+                            const compute = () => {
+                                let width = track.scrollWidth ? track.scrollWidth / 2 : 0;
+                                if (!width) {
+                                    width = originals.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0);
+                                }
+                                if (!width) {
+                                    width = originals.reduce((sum, el) => sum + el.offsetWidth, 0);
+                                }
+                                singleWidth = Math.max(0, width);
+                                track.style.width = `${Math.max(singleWidth * 2, track.scrollWidth)}px`;
+                            };
+
+                            const run = () => {
+                                if (started) {
+                                    return;
+                                }
+                                started = true;
+                                track.style.display = 'flex';
+                                track.style.transition = 'none';
+                                compute();
+
+                                if (window.ResizeObserver) {
+                                    resizeObserver = new ResizeObserver(() => {
+                                        const previousWidth = singleWidth;
+                                        compute();
+                                        if (previousWidth !== singleWidth && singleWidth > 0) {
+                                            pos = singleWidth ? pos % singleWidth : 0;
+                                            track.style.transform = `translateX(-${pos}px)`;
+                                        }
+                                    });
+                                    resizeObserver.observe(track);
+                                }
+
+                                let pos = 0;
+                                const speed = 90;
+                                let last = performance.now();
+
+                                function frame(now) {
+                                    if (container.dataset.renderVersion !== String(version)) {
+                                        if (resizeObserver) {
+                                            resizeObserver.disconnect();
+                                        }
+                                        return;
+                                    }
+
+                                    const dt = (now - last) / 1000;
+                                    last = now;
+                                    if (singleWidth > 0) {
+                                        pos = (pos + speed * dt) % singleWidth;
                                         track.style.transform = `translateX(-${pos}px)`;
                                     }
-                                });
-                                resizeObserver.observe(track);
-                            }
+                                    animationFrameId = requestAnimationFrame(frame);
+                                }
 
-                            let pos = 0;
-                            const speed = 90;
-                            let last = performance.now();
+                                animationFrameId = requestAnimationFrame(frame);
+                            };
 
-                            function frame(now){
-                                if(container.dataset.renderVersion !== String(version)){
-                                    if(resizeObserver){
-                                        resizeObserver.disconnect();
-                                    }
+                            const boot = () => {
+                                if (container.dataset.renderVersion !== String(version)) {
                                     return;
                                 }
 
-                                const dt = (now - last) / 1000;
-                                last = now;
-                                if(singleWidth > 0){
-                                    pos = (pos + speed * dt) % singleWidth;
-                                    track.style.transform = `translateX(-${pos}px)`;
+                                compute();
+
+                                if (singleWidth > 0) {
+                                    run();
+                                    return;
                                 }
-                                animationFrameId = requestAnimationFrame(frame);
-                            }
 
-                            animationFrameId = requestAnimationFrame(frame);
-                        };
+                                if (bootAttempts < 45) {
+                                    bootAttempts += 1;
+                                    requestAnimationFrame(boot);
+                                    return;
+                                }
 
-                        const boot = ()=>{
-                            if(container.dataset.renderVersion !== String(version)){
-                                return;
-                            }
-
-                            compute();
-
-                            if(singleWidth > 0){
                                 run();
-                                return;
-                            }
-
-                            if(bootAttempts < 45){
-                                bootAttempts += 1;
-                                requestAnimationFrame(boot);
-                                return;
-                            }
-
-                            run();
-                        };
-
-                        imgs.forEach(img => {
-                            const retry = ()=> {
-                                if(!started){
-                                    boot();
-                                } else {
-                                    compute();
-                                }
                             };
 
-                            if(img.complete){
-                                retry();
-                                return;
-                            }
+                            imgs.forEach(img => {
+                                const retry = () => {
+                                    if (!started) {
+                                        boot();
+                                    } else {
+                                        compute();
+                                    }
+                                };
 
-                            img.addEventListener('load', retry, { once: true });
-                            img.addEventListener('error', retry, { once: true });
-                        });
-
-                        requestAnimationFrame(boot);
-                        setTimeout(boot, 600);
-                    }
-
-                    function renderContributors(data){
-                        if(!Array.isArray(data) || !data.length){
-                            if(loading) loading.textContent = 'No contributors found.';
-                            return;
-                        }
-
-                        contributors = data;
-                        container.dataset.renderVersion = String(renderVersion += 1);
-                        if(loading && loading.parentNode){
-                            loading.remove();
-                        }
-
-                        container.innerHTML = '';
-                        const panel = document.createElement('div');
-                        panel.className = 'contributors-panel';
-
-                        const slider = document.createElement('div');
-                        slider.className = 'contributors-slider';
-                        const track = document.createElement('div');
-                        track.className = 'slider-track';
-
-                        const shown = data.slice(0, Math.min(FEATURED_LIMIT, data.length));
-                        shown.forEach(user => {
-                            const slide = document.createElement('div');
-                            slide.className = 'slide';
-                            slide.appendChild(createContributorCard(user));
-                            track.appendChild(slide);
-                        });
-
-                        slider.appendChild(track);
-                        panel.appendChild(slider);
-
-                        const grid = document.createElement('div');
-                        grid.className = 'contributors-grid-view';
-                        data.forEach(user => {
-                            grid.appendChild(createContributorCard(user));
-                        });
-                        panel.appendChild(grid);
-
-                        container.appendChild(panel);
-                        const duplicates = Array.from(track.children);
-                        duplicates.forEach(node => track.appendChild(node.cloneNode(true)));
-
-                        startTicker(track, slider, renderVersion);
-                    }
-
-                    async function fetchStaticContributors(){
-                        for(const path of STATIC_PATHS){
-                            try{
-                                const res = await fetch(path);
-                                if(!res.ok) continue;
-                                const data = await res.json();
-                                if(Array.isArray(data) && data.length){
-                                    return data;
+                                if (img.complete) {
+                                    retry();
+                                    return;
                                 }
-                            }catch(e){
-                                continue;
-                            }
-                        }
-                        return [];
-                    }
 
-                    async function fetchGitHubContributors(){
-                        const perPage = 100;
-                        const all = [];
-
-                        for(let page = 1; page <= 20; page += 1){
-                            const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${perPage}&page=${page}`;
-                            const res = await fetch(url, {
-                                headers: {
-                                    'Accept': 'application/vnd.github+json',
-                                    'X-GitHub-Api-Version': '2022-11-28',
-                                    'User-Agent': 'BiblioDrift-contributors'
-                                }
+                                img.addEventListener('load', retry, { once: true });
+                                img.addEventListener('error', retry, { once: true });
                             });
 
-                            if(!res.ok){
-                                throw new Error(`GitHub returned ${res.status}`);
-                            }
-
-                            const data = await res.json();
-                            if(!Array.isArray(data) || !data.length){
-                                break;
-                            }
-
-                            all.push(...data);
-                            if(data.length < perPage){
-                                break;
-                            }
+                            requestAnimationFrame(boot);
+                            setTimeout(boot, 600);
                         }
 
-                        return Array.from(new Map(all.filter(user => user && user.login).map(user => [user.login, user])).values());
-                    }
-
-                    async function refreshContributorSource(force = false){
-                        const cached = readCachedContributors();
-                        if(cached.length && !force && cacheAgeMs() < REFRESH_INTERVAL_MS){
-                            renderContributors(cached);
-                            return;
-                        }
-
-                        const staticData = await fetchStaticContributors();
-                        if(staticData.length){
-                            renderContributors(staticData);
-                        } else if(cached.length){
-                            renderContributors(cached);
-                        }
-
-                        try{
-                            if(!force && cached.length && cacheAgeMs() < REFRESH_INTERVAL_MS){
+                        function renderContributors(data) {
+                            if (!Array.isArray(data) || !data.length) {
+                                if (loading) loading.textContent = 'No contributors found.';
                                 return;
                             }
 
-                            const liveData = await fetchGitHubContributors();
-                            if(liveData.length){
-                                writeCachedContributors(liveData);
-                                renderContributors(liveData);
+                            contributors = data;
+                            container.dataset.renderVersion = String(renderVersion += 1);
+                            if (loading && loading.parentNode) {
+                                loading.remove();
                             }
-                        }catch(e){
-                            if(!staticData.length && !cached.length){
-                                if(loading){
-                                    loading.textContent = 'Contributors not available.';
-                                    const link = document.createElement('a');
-                                    link.href = `https://github.com/${owner}/${repo}/graphs/contributors`;
-                                    link.target = '_blank';
-                                    link.rel = 'noopener noreferrer';
-                                    link.textContent = 'View contributors on GitHub';
-                                    link.style.display = 'inline-block';
-                                    link.style.marginTop = '8px';
-                                    loading.appendChild(link);
+
+                            container.innerHTML = '';
+                            const panel = document.createElement('div');
+                            panel.className = 'contributors-panel';
+
+                            const slider = document.createElement('div');
+                            slider.className = 'contributors-slider';
+                            const track = document.createElement('div');
+                            track.className = 'slider-track';
+
+                            const shown = data.slice(0, Math.min(FEATURED_LIMIT, data.length));
+                            shown.forEach(user => {
+                                const slide = document.createElement('div');
+                                slide.className = 'slide';
+                                slide.appendChild(createContributorCard(user));
+                                track.appendChild(slide);
+                            });
+
+                            slider.appendChild(track);
+                            panel.appendChild(slider);
+
+                            const grid = document.createElement('div');
+                            grid.className = 'contributors-grid-view';
+                            data.forEach(user => {
+                                grid.appendChild(createContributorCard(user));
+                            });
+                            panel.appendChild(grid);
+
+                            container.appendChild(panel);
+                            const duplicates = Array.from(track.children);
+                            duplicates.forEach(node => track.appendChild(node.cloneNode(true)));
+
+                            startTicker(track, slider, renderVersion);
+                        }
+
+                        async function fetchStaticContributors() {
+                            for (const path of STATIC_PATHS) {
+                                try {
+                                    const res = await fetch(path);
+                                    if (!res.ok) continue;
+                                    const data = await res.json();
+                                    if (Array.isArray(data) && data.length) {
+                                        return data;
+                                    }
+                                } catch (e) {
+                                    continue;
+                                }
+                            }
+                            return [];
+                        }
+
+                        async function fetchGitHubContributors() {
+                            const perPage = 100;
+                            const all = [];
+
+                            for (let page = 1; page <= 20; page += 1) {
+                                const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${perPage}&page=${page}`;
+                                const res = await fetch(url, {
+                                    headers: {
+                                        'Accept': 'application/vnd.github+json',
+                                        'X-GitHub-Api-Version': '2022-11-28',
+                                        'User-Agent': 'BiblioDrift-contributors'
+                                    }
+                                });
+
+                                if (!res.ok) {
+                                    throw new Error(`GitHub returned ${res.status}`);
+                                }
+
+                                const data = await res.json();
+                                if (!Array.isArray(data) || !data.length) {
+                                    break;
+                                }
+
+                                all.push(...data);
+                                if (data.length < perPage) {
+                                    break;
+                                }
+                            }
+
+                            return Array.from(new Map(all.filter(user => user && user.login).map(user => [user.login, user])).values());
+                        }
+
+                        async function refreshContributorSource(force = false) {
+                            const cached = readCachedContributors();
+                            if (cached.length && !force && cacheAgeMs() < REFRESH_INTERVAL_MS) {
+                                renderContributors(cached);
+                                return;
+                            }
+
+                            const staticData = await fetchStaticContributors();
+                            if (staticData.length) {
+                                renderContributors(staticData);
+                            } else if (cached.length) {
+                                renderContributors(cached);
+                            }
+
+                            try {
+                                if (!force && cached.length && cacheAgeMs() < REFRESH_INTERVAL_MS) {
+                                    return;
+                                }
+
+                                const liveData = await fetchGitHubContributors();
+                                if (liveData.length) {
+                                    writeCachedContributors(liveData);
+                                    renderContributors(liveData);
+                                }
+                            } catch (e) {
+                                if (!staticData.length && !cached.length) {
+                                    if (loading) {
+                                        loading.textContent = 'Contributors not available.';
+                                        const link = document.createElement('a');
+                                        link.href = `https://github.com/${owner}/${repo}/graphs/contributors`;
+                                        link.target = '_blank';
+                                        link.rel = 'noopener noreferrer';
+                                        link.textContent = 'View contributors on GitHub';
+                                        link.style.display = 'inline-block';
+                                        link.style.marginTop = '8px';
+                                        loading.appendChild(link);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    refreshContributorSource(false);
-                    setInterval(()=> refreshContributorSource(true), REFRESH_INTERVAL_MS);
-                });
-            })();
+                        refreshContributorSource(false);
+                        setInterval(() => refreshContributorSource(true), REFRESH_INTERVAL_MS);
+                    });
+                })();
             </script>
 
             <footer class="landing-footer reveal" id="footer">
@@ -2611,22 +2866,28 @@
                         <p>Move between the app, the guide, and the community without losing your place.</p>
                     </div>
                     <div class="footer-banner-actions">
-                        <a class="footer-pill app-link" href="app.html"><i class="fa-solid fa-book-open-reader"></i> Open App</a>
-                        <a class="footer-pill" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Contribute</a>
+                        <a class="footer-pill app-link" href="app.html"><i class="fa-solid fa-book-open-reader"></i>
+                            Open App</a>
+                        <a class="footer-pill" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i>
+                            Contribute</a>
                     </div>
                 </div>
 
-                <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+                <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app"
+                    class="pwa-banner-visible">
                     <div class="pwa-banner-content">
-                        <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+                        <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon"
+                            class="pwa-banner-icon">
                         <div class="pwa-banner-text">
                             <strong>Install BiblioDrift.</strong>
                             <span>Read offline, anytime.</span>
                         </div>
                     </div>
                     <div class="pwa-banner-actions">
-                        <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
-                        <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+                        <button class="pwa-install-btn" id="pwa-install-btn"
+                            aria-label="Install BiblioDrift as an app">Install</button>
+                        <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i
+                                class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
 
@@ -2666,22 +2927,27 @@
                                 rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
                             <a href="https://www.linkedin.com/in/devanshi5malhotra/" target="_blank"
                                 rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                                <a href="contributing.html" aria-label="Contributing guide"><i
+                            <a href="contributing.html" aria-label="Contributing guide"><i
                                     class="fa-solid fa-file-lines"></i></a>
                         </div>
                         <div style="margin-top: 1.5rem;">
                             <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">
-                              <img src="https://www.netlify.com/assets/badges/netlify-badge-dark.svg" alt="Deploys by Netlify" />
+                                <img src="https://www.netlify.com/assets/badges/netlify-badge-dark.svg"
+                                    alt="Deploys by Netlify" />
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="footer-bottom">
-                    <p class="footer-meta"><strong>&copy; <span id="currentYear"></span> BiblioDrift</strong> <span>Curated with <i class="fa-solid fa-heart"></i> for book lovers.</span></p>
-                    <p class="footer-link-row"><a class="app-link" href="app.html">Enter the app</a><span>·</span><a href="#top">Back to top</a></p>
+                    <p class="footer-meta"><strong>&copy; <span id="currentYear"></span> BiblioDrift</strong>
+                        <span>Curated with <i class="fa-solid fa-heart"></i> for book lovers.</span>
+                    </p>
+                    <p class="footer-link-row"><a class="app-link" href="app.html">Enter the app</a><span>·</span><a
+                            href="#top">Back to top</a></p>
                 </div>
             </footer>
-            <button id="blossomToggle" class="blossom-toggle" type="button" aria-pressed="false" aria-label="Start cherry blossom effect">
+            <button id="blossomToggle" class="blossom-toggle" type="button" aria-pressed="false"
+                aria-label="Start cherry blossom effect">
                 <i class="fa-solid fa-spa"></i>
                 <span class="blossom-toggle-label">Bloom</span>
             </button>
@@ -2695,5 +2961,3 @@
 </body>
 
 </html>
-
-
