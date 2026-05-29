@@ -39,6 +39,12 @@
             downloadedBooks: DOWNLOADED_BOOKS_SCHEMA,
             syncQueue: SYNC_QUEUE_SCHEMA
         });
+        window.db.version(3).stores({
+            books: BOOKS_SCHEMA,
+            downloadedBooks: DOWNLOADED_BOOKS_SCHEMA,
+            syncQueue: SYNC_QUEUE_SCHEMA,
+            userLibrary: 'userId'
+        });
 
         window.db.open().catch(async (error) => {
             console.error('Failed to open BiblioDrift IndexedDB', error);

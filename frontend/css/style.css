@@ -612,7 +612,7 @@ textarea:focus {
     transform: rotateY(180deg);
     background: var(--paper-color);
     /* Paper color */
-    padding: 1.5rem;
+    padding: 1.2rem 0.6rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -741,10 +741,13 @@ textarea:focus {
 }
 
 .book__face--back .book-actions {
-    justify-content: space-around;
-    padding: 0 10px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 4px;
     width: 100%;
-    margin-bottom: -6px;
+    margin-top: auto;
+    margin-bottom: 2px;
 }
 
 .book-actions {
@@ -768,6 +771,66 @@ textarea:focus {
 .btn-icon:hover {
     opacity: 1;
     transform: scale(1.08);
+}
+
+/* Elegant, high-visibility tactile action buttons on flipped cards */
+.book__face--back .book-actions .btn-icon {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    border: 1.5px solid #5d4037 !important;
+    color: #5d4037 !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 4px rgba(93, 64, 55, 0.12) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.book__face--back .book-actions .btn-icon i {
+    font-size: 11px !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.book__face--back .book-actions .btn-icon:hover {
+    opacity: 1 !important;
+    background: #3e2723 !important;
+    color: #fffdf9 !important;
+    border-color: #3e2723 !important;
+    transform: translateY(-2px) scale(1.08) !important;
+    box-shadow: 0 3px 8px rgba(62, 39, 35, 0.25) !important;
+}
+
+/* Mood magic button custom contrast */
+.book__face--back .book-actions .btn-icon.mood-btn {
+    color: #b58d12 !important;
+    border-color: #e5c158 !important;
+    background: #fffef2 !important;
+}
+
+.book__face--back .book-actions .btn-icon.mood-btn:hover {
+    background: #b58d12 !important;
+    color: #fffdf9 !important;
+    border-color: #b58d12 !important;
+}
+
+/* Add to library button when checked */
+.book__face--back .book-actions .btn-icon .fa-check {
+    color: #2e7d32 !important;
+}
+
+.book__face--back .book-actions .btn-icon:hover .fa-check {
+    color: #fffdf9 !important;
 }
 
 /* --- Virtual Shelves --- */
@@ -5602,7 +5665,7 @@ textarea:focus {
     transform: rotateY(180deg) translateZ(calc(var(--book-thick) * 0.5));
     background: var(--paper-color);
     border-radius: 6px 4px 4px 6px;
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -7496,20 +7559,42 @@ body.night-mode .tooltip-author {
 }
 
 .main-footer {
- 
-  padding: 4rem 2rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4rem;
+  padding: 60px 2rem 1rem;
+  background: var(--card-bg);
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-main);
 }
 
 .footer-container {
+  width: min(1200px, 100%);
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2rem;
+  grid-template-columns: minmax(260px, 2fr) repeat(3, minmax(160px, 1fr));
+  gap: 3rem;
+  align-items: start;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .footer-container a {
- 
+  min-width: 0;
+  min-height: 0;
   text-decoration: none;
   transition: color 0.3s ease;
+}
+
+.main-footer .footer-nav a,
+.main-footer .footer-legal a {
+  display: inline;
+  line-height: 1.35;
+}
+
+.main-footer .social-icons a {
+  min-width: 40px;
+  min-height: 40px;
 }
 
 
@@ -7524,6 +7609,32 @@ body.night-mode .tooltip-author {
   margin-top: 3rem;
   padding-top: 1rem;
   border-top: 1px solid #374151;
+}
+
+@media (max-width: 900px) {
+  .footer-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .main-footer {
+    padding: 60px 1.25rem 1rem;
+  }
+
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .footer-brand {
+    align-items: center;
+  }
+
+  .social-icons {
+    justify-content: center;
+  }
 }
 /* =========================
    Reader Perspectives
@@ -7578,21 +7689,12 @@ body.night-mode .tooltip-author {
   color: var(--text-muted);
 }
 
-/* PR 881 - Centering Fixes for Library Icons */
+/* PR 881 - Centering Fixes for Library Icons - Removed duplicate button size override to prevent squished layout */
 .book__face--back .book-actions .btn-icon i,
 .library-actions-group button i {
     font-size: 16px !important;
     width: 16px;
     height: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.book__face--back .book-actions .btn-icon {
-    width: 32px;
-    height: 32px;
-    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -233,14 +233,6 @@
         </div>
       </div>
     </section>
-
-    <!-- ── CHANGE 1: Mood Collection Cards ──────────────────────────────────
-         Pehle yeh sirf section headers the — koi interactive element nahi tha.
-         Ab har mood ek <button> hai jisme:
-           - type="button"         (form submit nahi hoga)
-           - aria-label            (screen reader ko batata hai kya hoga)
-           - data-mood-target      (JS mein scroll/filter ke liye)
-           - aria-pressed          (toggle state screen readers ke liye)
     ──────────────────────────────────────────────────────────────────────── -->
     <section class="curated-section" aria-labelledby="mood-collections-heading">
       <div class="section-header">
@@ -379,17 +371,6 @@
       <div class="curated-row" id="row-fiction"></div>
     </section>
 
-    <!-- ── CHANGE 2: Genre Grid — div → button ──────────────────────────────
-         Pehle: <div class="genre-card" data-genre="romance" onclick="...">
-         Ab:    <button type="button" class="genre-card" data-genre="romance"
-                        aria-label="Browse Romance books">
-         
-         Kya fayda:
-           - Tab key se navigate kar sakte hain
-           - Enter aur Space dono kaam karte hain (button default behavior)
-           - Screen reader announce karta hai "Browse Romance books, button"
-           - app.js mein GenreManager ka existing click listener kaam karta rahega
-             kyunki woh querySelector('.genre-card') use karta hai
     ──────────────────────────────────────────────────────────────────────── -->
     <section class="curated-section genre-section">
       <div class="section-header">
@@ -662,11 +643,6 @@
   <script src="../script/header-scroll.js"></script>
   <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
-
-  <!-- ── CHANGE 3: Mood Collection scroll handler ──────────────────────────
-       Yeh function mood card click pe corresponding curated section mein
-       scroll karta hai. app.js ke baad load hota hai taaki koi conflict na ho.
-  ──────────────────────────────────────────────────────────────────────── -->
   <script>
     function scrollToMoodSection(btn) {
       const targetId = btn.dataset.moodTarget;
