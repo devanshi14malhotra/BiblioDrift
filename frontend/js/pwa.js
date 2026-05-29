@@ -120,6 +120,7 @@
 
     // ── Install Banner UI ──────────────────────────────────────────────────────
 
+    
     function _showInstallBanner() {
         let banner = document.getElementById('pwa-install-banner');
         if (!banner) {
@@ -156,16 +157,28 @@
                 if (main) main.appendChild(banner);
                 else document.body.appendChild(banner);
             }
+            
+            // Now attach listeners since we just created it
+            _attachBannerListeners();
         }
 
         // Animate in
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));
+    }
 
+    function _attachBannerListeners() {
         const installBtn = document.getElementById('pwa-install-btn');
         if (installBtn && !installBtn.dataset.listenerAttached) {
             installBtn.dataset.listenerAttached = 'true';
             installBtn.addEventListener('click', async () => {
-                if (!_deferredPrompt) return;
+                if (!_deferredPrompt) {
+                    if (typeof showToast === 'function') {
+                        showToast("Install prompt not available. You might already have the app installed, or your browser doesn't support it.", "info");
+                    } else {
+                        alert("Install prompt not available. You might already have the app installed, or your browser doesn't support it.");
+                    }
+                    return;
+                }
                 _deferredPrompt.prompt();
                 const { outcome } = await _deferredPrompt.userChoice;
                 _deferredPrompt = null;
@@ -183,6 +196,11 @@
             });
         }
     }
+    
+    // Attach listeners on load for any hardcoded buttons
+    document.addEventListener("DOMContentLoaded", _attachBannerListeners);
+    // Also run immediately in case DOM is already loaded
+    _attachBannerListeners();
 
     function _hideInstallBanner() {
         const banner = document.getElementById('pwa-install-banner');

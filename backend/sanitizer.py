@@ -11,8 +11,16 @@ import logging
 from markupsafe import escape
 from typing import Any, Dict, List, Optional, Union
 import bleach
+import unicodedata
+
+
 
 logger = logging.getLogger(__name__)
+
+def normalize_unicode(text: str) -> str:
+    """Strip homoglyph and invisible control characters."""
+    text = unicodedata.normalize("NFC", text)
+    return "".join(c for c in text if unicodedata.category(c) not in ("Cc", "Cf"))
 
 # Patterns for potential prompt injection or malicious commands
 PROMPT_INJECTION_PATTERNS = [
@@ -72,6 +80,8 @@ def sanitize_string(text: Optional[str], max_len: int = 5000, strip_html: bool =
     
     # Convert to string
     text = str(text).strip()
+    text = normalize_unicode(text)
+
     
     if not text:
         return ""
@@ -115,8 +125,7 @@ def sanitize_string(text: Optional[str], max_len: int = 5000, strip_html: bool =
             strip=False  # Convert unknown tags to entities
         )
     
-    # Layer 3: Additional HTML escaping for extra safety
-    text = html.escape(text)
+    
     
     # Layer 4: Limit length
     if len(text) > max_len:
@@ -158,8 +167,7 @@ def sanitize_for_ai(text: Optional[str]) -> str:
         logger.warning(f"Possible prompt injection detected: {detected_patterns[:2]}")
         clean_text = f"[User Input - Content Flagged]: {clean_text}"
     
-    return clean_text
-
+    return f"<user_input>{clean_text}</user_input>"
 
 
 def sanitize_payload(data: Union[Dict, List, str, Any]) -> Any:
@@ -179,7 +187,7 @@ def sanitize_payload(data: Union[Dict, List, str, Any]) -> Any:
         Sanitized version of the payload
     """
     if isinstance(data, dict):
-        return {k: sanitize_payload(v) for k, v in data.items()}
+        return {sanitize_string(str(k)): sanitize_payload(v) for k, v in data.items()}    
     elif isinstance(data, list):
         return [sanitize_payload(i) for i in data]
     elif isinstance(data, str):

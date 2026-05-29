@@ -99,6 +99,33 @@ function hideNoResults() {
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Centralized Publish-Subscribe State Store
+ */
+class Store {
+    constructor(initialState = {}) {
+        this.state = initialState;
+        this.listeners = [];
+    }
+    getState() { return this.state; }
+    setState(updater) {
+        const newState = typeof updater === 'function' ? updater(this.state) : updater;
+        this.state = { ...this.state, ...newState };
+        this.notify();
+    }
+    subscribe(listener) {
+        this.listeners.push(listener);
+        return () => { this.listeners = this.listeners.filter(l => l !== listener); };
+    }
+    notify() { this.listeners.forEach(listener => listener(this.state)); }
+}
+
+window.appStore = new Store({
+    user: null,
+    libraryBooks: { current: [], want: [], finished: [] },
+    currentTheme: localStorage.getItem('bibliodrift_theme') || 'light'
+});
+
 let GOOGLE_API_KEY = '';
 
 /**
@@ -109,27 +136,6 @@ function getCookie(name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
-}
-
-async function loadConfig() {
-    try {
-        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            GOOGLE_API_KEY = data.google_books_key || '';
-            if (window.GoogleBooksClient) {
-                window.GoogleBooksClient.setKeys([
-                    data.google_books_key,
-                    data.google_books_key_secondary,
-                ]);
-            }
-            if (IS_DEV) {
-                console.log('Config loaded');
-            }
-        }
-    } catch (e) {
-        console.warn('Failed to load backend config', e);
-    }
 }
 
 const CollectionAPI = {
@@ -275,6 +281,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    window.appStore.setState({ user: null });
     authSessionPromise = null;
 }
 
@@ -348,6 +355,7 @@ async function verifyStoredAuthSession() {
                 const verifiedUser = data.user || storedUser;
                 if (verifiedUser) {
                     SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+                    window.appStore.setState({ user: verifiedUser });
                 }
                 SafeStorage.set('isLoggedIn', 'true');
                 return verifiedUser || null;
@@ -689,7 +697,7 @@ class BookRenderer {
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+                    <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -924,6 +932,7 @@ class BookRenderer {
         if (!modal) return;
 
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
+        document.getElementById('modal-img').alt = `Cover of '${book.volumeInfo.title}' by ${book.volumeInfo.authors?.join(', ') || 'Unknown Author'}`;
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
 
@@ -1867,13 +1876,38 @@ class LibraryManager {
         // 1. Request persistent storage to prevent wipes
         await SafeStorage.requestPersistence();
 
-        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
-        const stored = await SafeStorage.getAsync(this.storageKey);
-        if (stored) {
+        const user = this.getUser();
+        let storedLibrary = null;
+
+        // 2. Load from Dexie IndexedDB (Issue #875)
+        if (user && window.db?.userLibrary) {
             try {
-                this.library = JSON.parse(stored);
+                const record = await window.db.userLibrary.get(user.id);
+                if (record && record.library) {
+                    storedLibrary = record.library;
+                }
             } catch (e) {
-                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                console.error("[Library] Failed to read from Dexie", e);
+            }
+        }
+
+        // Fallback to SafeStorage for migration
+        if (!storedLibrary) {
+            const stored = await SafeStorage.getAsync(this.storageKey);
+            if (stored) {
+                try {
+                    storedLibrary = JSON.parse(stored);
+                } catch (e) {
+                    console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                }
+            }
+        }
+
+        if (storedLibrary) {
+            this.library = storedLibrary;
+            // Migrate to Dexie immediately
+            if (user && window.db?.userLibrary) {
+                window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
             }
         }
 
@@ -1887,12 +1921,27 @@ class LibraryManager {
             this.renderShelf('finished', 'shelf-finished');
         }
 
-        // 4. Sync with backend if available (Full Refresh)
-        await this.syncWithBackend();
-        if (navigator.onLine) {
-            await this.flushPendingLibraryMutations();
+        // 4. Sync with backend if available (Background Refresh)
+        if (!storedLibrary) {
+            await this.syncWithBackend();
+            if (navigator.onLine) {
+                await this.flushPendingLibraryMutations();
+            }
+            await this.updateSyncStatus();
+        } else {
+            // Background sync (stale-while-revalidate strategy)
+            (async () => {
+                try {
+                    await this.syncWithBackend();
+                    if (navigator.onLine) {
+                        await this.flushPendingLibraryMutations();
+                    }
+                    await this.updateSyncStatus();
+                } catch (e) {
+                    console.error("[Library] Background sync failed", e);
+                }
+            })();
         }
-        await this.updateSyncStatus();
     }
 
     getUser() {
@@ -2625,6 +2674,10 @@ class LibraryManager {
     }
 
     saveLocally() {
+        const user = this.getUser();
+        if (user && window.db?.userLibrary) {
+            window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
+        }
         SafeStorage.set(this.storageKey, JSON.stringify(this.library));
     }
 
@@ -2886,10 +2939,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const themeManager = new ThemeManager();
 
     // 2. Load Config (Non-blocking)
-    loadConfig();
-
-
-
     // --- AUTH LOGIC ---
     const toggleLink = document.getElementById('toggleText');
     const authTitle = document.getElementById('authTitle');
@@ -3024,24 +3073,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         renderer.renderCuratedSection(query, 'search-results-grid', 20);
-    } else if (document.getElementById('row-rainy')) {
+    } else if (document.getElementById('dynamic-shelves-container')) {
         console.log('📚 Initializing Curated Discovery Sections...');
-        const discoveryShelves = [
-            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy' },
-            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
-            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
-            {
-                type: 'query',
-                query: 'subject:gothic fiction subject:dark academia subject:campus',
-                elementId: 'row-dark-academia',
-                vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
-                fallbackQuery: 'subject:gothic fiction subject:campus'
-            },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
-            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
+        const container = document.getElementById('dynamic-shelves-container');
+        
+        const fallbackShelves = [
+            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy', title: 'Rainy Evening Reads', subtitle: 'Mystery & Melancholy', icon: 'fa-cloud-rain' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian', title: 'Indian Authors', subtitle: 'Subcontinent Voices', icon: 'fa-feather' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics', title: 'Forgotten Classics', subtitle: 'Timeless & Dust-free', icon: 'fa-hourglass' },
+            { type: 'query', query: 'subject:gothic fiction subject:dark academia subject:campus', elementId: 'row-dark-academia', title: 'Dark Academia', subtitle: 'Gothic, cerebral, candlelit', icon: 'fa-feather-pointed', vibeDescription: 'gothic, intellectual, melancholic, and candlelit', fallbackQuery: 'subject:gothic fiction subject:campus' },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction', title: 'General Fiction', subtitle: 'Stories for everyone', icon: 'fa-book-open' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller', title: 'Thriller & Suspense', subtitle: 'Edge of Your Seat', icon: 'fa-skull' }
         ];
+
         (async () => {
             try {
+                let discoveryShelves = fallbackShelves;
+                try {
+                    const response = await fetch(`${MOOD_API_BASE}/content/live-shelves`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data && data.data.shelves) {
+                            discoveryShelves = data.data.shelves;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn('⚠️ Could not fetch live shelves, falling back to local config:', apiErr);
+                }
+
+                // Render HTML for shelves
+                container.innerHTML = discoveryShelves.map(shelf => `
+                    <section class="curated-section">
+                        <div class="section-header">
+                            <h2>${shelf.title}</h2>
+                            <span><i class="fa-solid ${shelf.icon}"></i> ${shelf.subtitle}</span>
+                        </div>
+                        <div class="curated-row" id="${shelf.elementId}"></div>
+                    </section>
+                `).join('');
+
                 for (const shelf of discoveryShelves) {
                     if (shelf.type === 'category') {
                         await renderer.renderMoodCategorySection(shelf, shelf.elementId);
@@ -3478,7 +3548,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     card.className = 'progress-overview-card';
                     card.innerHTML = `
                         <div class="progress-card-cover">
-                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="Cover of '${title}' by ${author}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
                         </div>
                         <div class="progress-card-info">
                             <div class="progress-card-title">${title}</div>
@@ -4191,7 +4261,7 @@ async function triggerOfflineLibraryView() {
                 bookCard.className = 'book-card offline-card';
                 bookCard.innerHTML = `
                     <div class="book-cover-wrapper">
-                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img" />
+                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="Cover of '${book.title}' by ${book.author || 'Unknown Author'}" class="book-cover-img" />
                     </div>
                     <div class="book-details">
                         <h3>${book.title}</h3>
