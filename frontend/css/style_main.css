@@ -355,7 +355,7 @@ main {
     transform: rotateY(180deg);
     background: var(--paper-color);
     /* Paper color */
-    padding: 1.5rem;
+    padding: 1.2rem 0.6rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -470,6 +470,76 @@ main {
 .btn-icon:hover {
     opacity: 1;
     transform: scale(1.1);
+}
+
+/* Elegant, high-visibility tactile action buttons on flipped cards */
+.book__face--back .book-actions {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 4px;
+    width: 100%;
+    margin-top: auto;
+    margin-bottom: 2px;
+}
+
+.book__face--back .book-actions .btn-icon {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    border: 1.5px solid #5d4037 !important;
+    color: #5d4037 !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 4px rgba(93, 64, 55, 0.12) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.book__face--back .book-actions .btn-icon i {
+    font-size: 11px !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.book__face--back .book-actions .btn-icon:hover {
+    opacity: 1 !important;
+    background: #3e2723 !important;
+    color: #fffdf9 !important;
+    border-color: #3e2723 !important;
+    transform: translateY(-2px) scale(1.08) !important;
+    box-shadow: 0 3px 8px rgba(62, 39, 35, 0.25) !important;
+}
+
+/* Mood magic button custom contrast */
+.book__face--back .book-actions .btn-icon.mood-btn {
+    color: #b58d12 !important;
+    border-color: #e5c158 !important;
+    background: #fffef2 !important;
+}
+
+.book__face--back .book-actions .btn-icon.mood-btn:hover {
+    background: #b58d12 !important;
+    color: #fffdf9 !important;
+    border-color: #b58d12 !important;
+}
+
+/* Add to library button when checked */
+.book__face--back .book-actions .btn-icon .fa-check {
+    color: #2e7d32 !important;
+}
+
+.book__face--back .book-actions .btn-icon:hover .fa-check {
+    color: #fffdf9 !important;
 }
 
 /* --- Virtual Shelves --- */
@@ -2803,7 +2873,9 @@ main {
     background: var(--card-bg);
     /* Use card-bg for better contrast in dark mode */
     border-top: 1px solid var(--glass-border);
-    padding: 3rem 2rem 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 60px 2rem 1rem;
     margin-top: 4rem;
     color: var(--text-main);
     font-family: 'Georgia', serif;
@@ -2812,11 +2884,12 @@ main {
 }
 
 .footer-container {
-    max-width: 1200px;
+    width: min(1200px, 100%);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(260px, 2fr) repeat(3, minmax(160px, 1fr));
     gap: 3rem;
+    align-items: start;
     padding-bottom: 2rem;
     border-bottom: 1px solid var(--glass-border);
 }
@@ -2853,6 +2926,7 @@ main {
 }
 
 .footer-nav h3,
+.footer-legal h3,
 .footer-social h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.2rem;
@@ -2860,7 +2934,8 @@ main {
     color: var(--text-main);
 }
 
-.footer-nav ul {
+.footer-nav ul,
+.footer-legal ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -2869,15 +2944,20 @@ main {
     gap: 0.8rem;
 }
 
-.footer-nav li a {
+.footer-nav li a,
+.footer-legal li a {
     text-decoration: none;
     color: var(--text-muted);
     transition: all 0.3s ease;
     font-size: 1rem;
-    display: inline-block;
+    display: inline;
+    min-width: 0;
+    min-height: 0;
+    line-height: 1.35;
 }
 
-.footer-nav li a:hover {
+.footer-nav li a:hover,
+.footer-legal li a:hover {
     color: var(--accent-gold);
     transform: translateX(5px);
 }
@@ -2890,6 +2970,8 @@ main {
 .social-icons a {
     width: 40px;
     height: 40px;
+    min-width: 40px;
+    min-height: 40px;
     border-radius: 50%;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -2932,7 +3014,17 @@ main {
     }
 }
 
+@media (max-width: 900px) {
+    .footer-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
+    .main-footer {
+        padding: 60px 1.25rem 1rem;
+    }
+
     .footer-container {
         grid-template-columns: 1fr;
         gap: 2rem;

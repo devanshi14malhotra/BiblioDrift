@@ -39,3 +39,5 @@ sympy
 textblob==0.19.0
 tenacity
 python-magic
+
+flask-socketio==5.3.6

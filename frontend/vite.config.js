@@ -22,6 +22,7 @@ export default defineConfig({
         contributing: resolve(__dirname, 'pages/contributing.html'),
         contributors: resolve(__dirname, 'pages/contributors.html'),
         'community-stories': resolve(__dirname, 'pages/community-stories.html'),
+        'nearby-bookstores': resolve(__dirname, 'pages/nearby-bookstores.html'),
         'spotify-playlists': resolve(__dirname, 'pages/spotify-playlists.html')
       }
     }
