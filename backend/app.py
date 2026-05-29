@@ -81,16 +81,24 @@ from validators import (
     validate_jwt_secret,
     is_production_mode
 )
+
+
+
+
 from password_reset_service import (
     FORGOT_PASSWORD_MESSAGE,
     request_password_reset,
     reset_password_with_token,
 )
+
+
+
 from email_service import (
     build_password_reset_url,
     is_email_configured,
     send_password_reset_email,
 )
+
 from collections import defaultdict, deque
 from math import ceil
 from time import time
@@ -1711,9 +1719,13 @@ def sync_library(validated_data):
 # immediately responds with an active session ready to go.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
+
+
+
 @limiter.limit("5 per 10 seconds")
 @validate_schema(RegisterRequest)
 def register(validated_data):
+
     """Register a new user and return JWT token."""
     try:
         

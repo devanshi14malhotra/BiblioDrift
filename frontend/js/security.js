@@ -19,6 +19,134 @@ const SAFE_HREF_PROTOCOLS = ['http:', 'https:', 'mailto:'];
 const SAFE_HREF_PATTERN = /^(?:(?:https?:|mailto:)[^\s]*|#.*|\/(?!\/)[^\s]*|[^:/\s][^:\s]*)$/i;
 let domPurifyHooksRegistered = false;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PASSWORD VALIDATION  (Issue #790)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Rules that every new password must satisfy.
+ * Each rule has a unique id (used to target the checklist <li>),
+ * a regex to test against, and the human-readable message shown to the user.
+ */
+const PASSWORD_RULES = [
+    { id: 'pw-len',  regex: /.{8,}/,      msg: 'At least 8 characters' },
+    { id: 'pw-up',   regex: /[A-Z]/,      msg: 'One uppercase letter (A–Z)' },
+    { id: 'pw-low',  regex: /[a-z]/,      msg: 'One lowercase letter (a–z)' },
+    { id: 'pw-num',  regex: /[0-9]/,      msg: 'One digit (0–9)' },
+    { id: 'pw-spec', regex: /[@#$!%&*]/,  msg: 'One special character (@, #, $, !, %, &, *)' },
+];
+
+/**
+ * Validate password strength against PASSWORD_RULES.
+ *
+ * @param {string} password - The password to test
+ * @returns {{ isValid: boolean, errors: string[], strength: string, results: Array }}
+ *   - isValid   : true only when ALL rules pass
+ *   - errors    : array of failure messages (empty when valid)
+ *   - strength  : 'weak' | 'fair' | 'good' | 'strong'
+ *   - results   : per-rule objects { id, msg, passed } for building UI checklists
+ */
+function validatePassword(password) {
+    if (typeof password !== 'string') {
+        return { isValid: false, errors: ['Password must be a string'], strength: 'weak', results: [] };
+    }
+
+    const results = PASSWORD_RULES.map(rule => ({
+        id:     rule.id,
+        msg:    rule.msg,
+        passed: rule.regex.test(password),
+    }));
+
+    const passedCount = results.filter(r => r.passed).length;
+    const errors      = results.filter(r => !r.passed).map(r => r.msg);
+
+    // Map 1–5 passed rules to a label; 0 rules = no label yet
+    const strengthMap = { 1: 'weak', 2: 'weak', 3: 'fair', 4: 'good', 5: 'strong' };
+    const strength    = passedCount === 0 ? '' : (strengthMap[passedCount] || 'weak');
+
+    return {
+        isValid: passedCount === PASSWORD_RULES.length,
+        errors,
+        strength,
+        results,
+    };
+}
+
+/**
+ * Wire up real-time password strength UI.
+ *
+ * Expects this HTML structure inside your registration form:
+ *
+ *   <input type="password" id="password" />
+ *
+ *   <div class="password-strength-bar">
+ *     <div id="strength-fill" class="strength-fill"></div>
+ *   </div>
+ *   <p id="strength-label" class="strength-label"></p>
+ *
+ *   <ul class="pw-checklist">
+ *     <li id="pw-len">  At least 8 characters</li>
+ *     <li id="pw-up">   One uppercase letter (A–Z)</li>
+ *     <li id="pw-low">  One lowercase letter (a–z)</li>
+ *     <li id="pw-num">  One digit (0–9)</li>
+ *     <li id="pw-spec"> One special character (@, #, $, !, %, &, *)</li>
+ *   </ul>
+ *
+ * @param {string} inputId    - id of the <input type="password"> element
+ * @param {string} fillId     - id of the strength bar fill <div>
+ * @param {string} labelId    - id of the strength label <p>
+ * @param {string} submitId   - id of the submit/register <button> to enable/disable
+ */
+function initPasswordStrengthUI(inputId, fillId, labelId, submitId) {
+    const inputEl  = document.getElementById(inputId);
+    const fillEl   = document.getElementById(fillId);
+    const labelEl  = document.getElementById(labelId);
+    const submitEl = submitId ? document.getElementById(submitId) : null;
+
+    if (!inputEl || !fillEl || !labelEl) {
+        console.warn('initPasswordStrengthUI: one or more required elements not found.');
+        return;
+    }
+
+    const STRENGTH_COLORS = {
+        weak:   '#E24B4A',
+        fair:   '#EF9F27',
+        good:   '#EF9F27',
+        strong: '#1D9E75',
+    };
+
+    inputEl.addEventListener('input', () => {
+        const { isValid, results, strength } = validatePassword(inputEl.value);
+
+        // Update bar width + color
+        const pct = (results.filter(r => r.passed).length / PASSWORD_RULES.length) * 100;
+        fillEl.style.width      = inputEl.value.length === 0 ? '0%' : `${pct}%`;
+        fillEl.style.background = STRENGTH_COLORS[strength] || '#E24B4A';
+
+        // Update label text
+        labelEl.textContent = inputEl.value.length === 0 ? '' : strength;
+
+        // Update checklist items
+        results.forEach(({ id, passed }) => {
+            const li = document.getElementById(id);
+            if (!li) return;
+            li.classList.toggle('pass', passed);
+            li.classList.toggle('fail', !passed && inputEl.value.length > 0);
+        });
+
+        // Enable / disable submit button
+        if (submitEl) {
+            submitEl.disabled        = !isValid;
+            submitEl.style.opacity   = isValid ? '1' : '0.45';
+            submitEl.style.cursor    = isValid ? 'pointer' : 'not-allowed';
+        }
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// END PASSWORD VALIDATION
+// ─────────────────────────────────────────────────────────────────────────────
+
 function getDOMPurify() {
     return isDOMPurifyAvailable() ? globalThis.DOMPurify : null;
 }
@@ -156,7 +284,8 @@ function setElementContent(element, content, asHTML = false) {
 }
 
 /**
- * Validate and sanitize user input before sending to server
+ * Validate and sanitize user input before sending to server.
+ * Pass { isPassword: true } in options to also run password-strength checks.
  * 
  * @param {string} input - User input
  * @param {object} options - Validation options
@@ -168,7 +297,8 @@ function validateUserInput(input, options = {}) {
         minLength = 0,
         required = true,
         pattern = null,
-        allowHTML = false
+        allowHTML = false,
+        isPassword = false,   // ← NEW: set true for password fields
     } = options;
 
     const errors = [];
@@ -222,8 +352,20 @@ function validateUserInput(input, options = {}) {
         errors.push('Input contains potentially dangerous content');
     }
 
-    // Sanitize
-    const sanitized = allowHTML ? sanitizeHTML(input) : sanitizeForDisplay(input);
+    // ── Password-strength check (Issue #790) ──────────────────────────────────
+    if (isPassword && input.length > 0) {
+        const pwValidation = validatePassword(input);
+        if (!pwValidation.isValid) {
+            errors.push(...pwValidation.errors);
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // For password fields we skip HTML sanitization — passwords are never
+    // rendered as HTML; sanitizing them would corrupt special characters.
+    const sanitized = isPassword
+        ? input
+        : (allowHTML ? sanitizeHTML(input) : sanitizeForDisplay(input));
 
     return {
         isValid: errors.length === 0,
@@ -440,6 +582,10 @@ if (typeof module !== 'undefined' && module.exports) {
         getCSRFToken,
         secureAPIRequest,
         HTML,
-        makeContentEditableSafe
+        makeContentEditableSafe,
+        // ── Issue #790 exports ──────────────────────────────────────────────
+        PASSWORD_RULES,
+        validatePassword,
+        initPasswordStrengthUI,
     };
 }

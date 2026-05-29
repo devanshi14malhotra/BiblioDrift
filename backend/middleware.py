@@ -15,6 +15,7 @@ try:
 except ImportError:
     from error_responses import invalid_json_error
     from security_parsers import DEFAULT_ALLOWED_CONTENT_TYPES, validate_content_type as _validate_content_type_header
+   
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +178,8 @@ def safe_request_handler(
         return decorated_function
     
     return decorator
+
+
 def csrf_token_required(f):
     """
     =============================================================================

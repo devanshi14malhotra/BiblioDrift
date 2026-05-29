@@ -28,6 +28,46 @@ def validate_google_books_id(google_id: str) -> bool:
     return bool(GOOGLE_BOOKS_ID_PATTERN.fullmatch(str(google_id).strip()))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PASSWORD STRENGTH VALIDATION  (Issue #790)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Individual rule regexes — kept separate so RegisterRequest's field_validator
+# can also iterate over them to produce per-rule error messages.
+_PASSWORD_RULES: List[Dict[str, Any]] = [
+    {"regex": re.compile(r'.{8,}'),      "msg": "Minimum 8 characters required"},
+    {"regex": re.compile(r'[A-Z]'),      "msg": "At least one uppercase letter (A–Z) required"},
+    {"regex": re.compile(r'[a-z]'),      "msg": "At least one lowercase letter (a–z) required"},
+    {"regex": re.compile(r'\d'),         "msg": "At least one digit (0–9) required"},
+    {"regex": re.compile(r'[@#$!%&*]'), "msg": "At least one special character (@, #, $, !, %, &, *) required"},
+]
+
+
+def validate_password_strength(password: str) -> tuple[bool, list[str]]:
+    """
+    Check password against all strength rules.
+
+    Returns:
+        (is_valid, errors)  — errors is an empty list when is_valid is True.
+
+    Usage (standalone):
+        ok, errors = validate_password_strength("Secure@123")
+    """
+    if not isinstance(password, str):
+        return False, ["Password must be a string"]
+
+    errors = [
+        rule["msg"]
+        for rule in _PASSWORD_RULES
+        if not rule["regex"].search(password)
+    ]
+    return len(errors) == 0, errors
+
+# ─────────────────────────────────────────────────────────────────────────────
+# END PASSWORD STRENGTH VALIDATION
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 class ShelfType(str, Enum):
     """Valid shelf types for library items."""
     WANT = "want"
@@ -203,7 +243,7 @@ class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username (3-50 characters)")
     email: EmailStr = Field(..., description="Valid email address")
     password: str = Field(..., min_length=8, max_length=100, description="Password (minimum 8 characters)")
-    
+
     @field_validator('username')
     @classmethod
     def username_alphanumeric(cls, v: str) -> str:
@@ -212,6 +252,21 @@ class RegisterRequest(BaseModel):
         if not v.replace('_', '').isalnum():
             raise ValueError('Username must contain only letters, numbers, and underscores.')
         return v
+
+    @field_validator('password')
+    @classmethod
+    def password_strong_enough(cls, v: str) -> str:
+        """
+        Enforce strong password policy (Issue #790).
+        Runs validate_password_strength() and raises ValueError
+        with all failed rules so the API response is descriptive.
+        """
+        is_valid, errors = validate_password_strength(v)
+        if not is_valid:
+            # Join all failure reasons into one message so Pydantic surfaces them
+            raise ValueError("Password does not meet requirements: " + " | ".join(errors))
+        return v  # never sanitize / modify passwords — return as-is
+
 
 class LoginRequest(BaseModel):
     """Request schema for POST /api/v1/login endpoint."""

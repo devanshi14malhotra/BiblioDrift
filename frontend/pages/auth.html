@@ -655,17 +655,19 @@
                         </div>
                     </div>
 
-                    <!-- 
-                        =============================================================
-                        SECURITY COMPLIANCE: CSRF TOKEN FIELD
-                        =============================================================
-                        This hidden input is dynamically populated with a one-time 
-                        security token provided by the backend. It protects against
-                        Cross-Site Request Forgery attacks by ensuring that the 
-                        form submission originated from this specific application 
-                        instance.
-                        =============================================================
-                    -->
+                    <!-- PASSWORD STRENGTH UI -->
+                    <div class="password-strength-bar">
+                        <div id="strength-fill" class="strength-fill"></div>
+                    </div>
+                    <p id="strength-label" class="strength-label"></p>
+                    <ul class="pw-checklist" id="pw-checklist">
+                        <li id="chk-len">At least 8 characters</li>
+                        <li id="chk-up">One uppercase letter</li>
+                        <li id="chk-low">One lowercase letter</li>
+                        <li id="chk-num">One digit (0–9)</li>
+                        <li id="chk-spec">One special character</li>
+                    </ul>
+
                     <input type="hidden" id="csrf_token" name="csrf_token" value="">
 
                     <span id="forgotPasswordLink" class="toggle-link" style="display: block; margin: -0.25rem 0 1rem; font-size: 0.85rem;">
@@ -1056,18 +1058,8 @@
     </script>
     <script src="../js/pwa.js"></script>
     <script>
-        /**
-         * ==============================================================================
-         * CSRF INITIALIZATION LOGIC
-         * ==============================================================================
-         * On document load, we query the backend's CSRF endpoint to retrieve a 
-         * fresh security token. This token is then stored in the hidden form 
-         * field and utilized in the 'handleAuth' submission headers.
-         * ==============================================================================
-         */
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // We use MOOD_API_BASE from config.js
                 const response = await fetch(`${MOOD_API_BASE}/csrf-token`, {
                     method: 'GET',
                     credentials: 'include'
@@ -1094,6 +1086,8 @@
     </script>
     <script src="../js/theme-manager.js"></script>
   <script src="../js/ambient.js"></script>
+  <script src="../js/passwordValidator.js" type="module"></script>
+<script src="../js/authValidator.js" type="module"></script>
 </body>
 
 </html>
