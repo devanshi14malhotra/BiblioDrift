@@ -162,7 +162,7 @@ graph TD
 
 <div align="center">
 	<h3>Discovery & Virtual Library</h3>
-	<img src="https://github.com/user-attachments/assets/296b478b-f275-45c0-957b-50f6ee3a00c8" width="85%" alt="Home Page" />
+	<img width="1920" height="992" alt="Screenshot 2026-05-24 223107" src="https://github.com/user-attachments/assets/5554c29f-843d-4667-8a81-03ded75b5a60" />
 	<br><br>
 	<img src="https://github.com/user-attachments/assets/a1b9a827-d467-4d3c-a113-848252e13f68" width="47%" alt="Virtual Library" />
 	<img src="https://github.com/user-attachments/assets/9434fa01-9634-46e3-a20b-15ada676a91c" width="47%" alt="Sign In Page" />
