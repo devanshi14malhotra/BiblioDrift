@@ -32,12 +32,37 @@ input {
     min-width: 44px;
 }
 
+.main-footer a {
+    min-height: 0;
+    min-width: 0;
+}
+
+.main-footer .footer-nav a,
+.main-footer .footer-legal a {
+    line-height: 1.35;
+}
+
+.main-footer .social-icons a {
+    min-height: 40px;
+    min-width: 40px;
+}
+
 @media (max-width: 768px) {
 
     button,
     a {
         min-height: 48px;
         min-width: 48px;
+    }
+
+    .main-footer a {
+        min-height: 0;
+        min-width: 0;
+    }
+
+    .main-footer .social-icons a {
+        min-height: 40px;
+        min-width: 40px;
     }
 }
 
@@ -112,6 +137,12 @@ input {
     :root {
         --book-width: 130px;
         --book-height: 200px;
+        --type-display-size: clamp(2.1rem, 7vw, 3rem);
+        --type-copy-size: 1rem;
+        --type-copy-line-height: 1.8;
+        --type-heading-2-size: 1.35rem;
+        --type-heading-3-size: 1.1rem;
+        --type-section-meta-size: 0.85rem;
     }
 
     /* Main content padding */
@@ -183,11 +214,13 @@ input {
         overflow-x: auto;
 
         .hero h1 {
-            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-size: var(--type-display-size);
+            line-height: 1.08;
         }
 
         .hero p {
-            font-size: 1rem;
+            font-size: var(--type-copy-size);
+            line-height: var(--type-copy-line-height);
         }
 
         /* Curated Sections - Improved Mobile Layout */
@@ -200,11 +233,12 @@ input {
         }
 
         .section-header h2 {
-            font-size: 1.3rem;
+            font-size: var(--type-heading-2-size);
         }
 
         .section-header span {
-            font-size: 0.85rem;
+            font-size: var(--type-section-meta-size);
+            line-height: 1.45;
         }
 
         .curated-row {
@@ -493,13 +527,15 @@ input {
     }
 
     body.library-page .library-hero h1 {
-        font-size: clamp(1.7rem, 5vw, 2rem);
-        line-height: 1.1;
+        font-size: var(--type-display-size);
+        line-height: 1.08;
     }
 
     body.library-page .library-hero p {
         max-width: 28rem;
         margin-inline: auto;
+        font-size: var(--type-copy-size);
+        line-height: var(--type-copy-line-height);
     }
 
     body.library-page .hero .view-toggles {
@@ -543,16 +579,24 @@ input {
 }
 
 @media (max-width: 480px) {
+    :root {
+        --type-display-size: clamp(1.9rem, 8vw, 2.5rem);
+        --type-copy-size: 0.95rem;
+        --type-copy-line-height: 1.75;
+        --type-heading-2-size: 1.1rem;
+        --type-section-meta-size: 0.75rem;
+    }
+
     body.library-page .library-hero {
         padding: 1rem 0.75rem;
     }
 
     body.library-page .library-hero h1 {
-        font-size: 1.55rem;
+        font-size: var(--type-display-size);
     }
 
     body.library-page .library-hero p {
-        font-size: 0.95rem;
+        font-size: var(--type-copy-size);
     }
 
     body.library-page .hero .view-toggles {
@@ -888,12 +932,14 @@ input {
     }
 
     .hero h1 {
-        font-size: clamp(1.3rem, 5vw, 1.8rem);
+        font-size: var(--type-display-size);
+        line-height: 1.08;
         margin-bottom: 1rem;
     }
 
     .hero p {
-        font-size: 0.95rem;
+        font-size: var(--type-copy-size);
+        line-height: var(--type-copy-line-height);
     }
 
     /* Curated Section */
@@ -907,11 +953,11 @@ input {
     }
 
     .section-header h2 {
-        font-size: 1.1rem;
+        font-size: var(--type-heading-2-size);
     }
 
     .section-header span {
-        font-size: 0.75rem;
+        font-size: var(--type-section-meta-size);
     }
 
     .curated-row {

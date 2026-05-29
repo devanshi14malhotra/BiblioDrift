@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Nearby Bookstores | BiblioDrift</title>
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/style-responsive.css" />
+
+    <!-- Leaflet Map CSS -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet/dist/leaflet.css"
+    />
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/nearby-bookstores.css" />
+
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         Navbar
+    ========================== -->
+
+<header>
+    <a href="index.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="index.html">Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="vault.html" >My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html" >My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="nearby-bookstores.html" class="active">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html" >Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <!-- DYNAMIC AUTH LINK -->
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink" >Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+    <!-- =========================
+         Main Container
+    ========================== -->
+
+    <main class="nearby-bookstores-container">
+
+        <!-- =========================
+             Header Section
+        ========================== -->
+
+        <section class="bookstores-header">
+
+            <div>
+
+                <h1 class="bookstores-heading">
+                    Nearby Bookstores
+                </h1>
+
+                <p class="bookstores-subtitle">
+                    Discover local bookstores around your location.
+                </p>
+
+            </div>
+
+            <div class="bookstore-controls">
+
+                <button
+                    id="findStoresBtn"
+                    class="find-bookstore-btn"
+                >
+
+                    <i class="fa-solid fa-location-crosshairs"></i>
+
+                    Find Nearby Stores
+
+                </button>
+
+            </div>
+
+        </section>
+
+        <!-- =========================
+             Location Status
+        ========================== -->
+
+        <div id="locationStatus"></div>
+
+        <!-- =========================
+             Map Section
+        ========================== -->
+
+        <section class="bookstore-map-container">
+
+            <div id="bookstoreMap"></div>
+
+        </section>
+
+        <!-- =========================
+             Bookstore Grid
+        ========================== -->
+
+        <section>
+
+            <div
+                class="bookstores-grid"
+                id="bookstoresGrid"
+            ></div>
+
+        </section>
+
+    </main>
+
+    <!-- =========================
+         Leaflet JS
+    ========================== -->
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- =========================
+         Nearby Bookstores JS
+    ========================== -->
+    <script src="../js/app.js"></script>
+    <script src="../js/theme-manager.js"></script>
+    <script src="../js/ambient.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../js/nearby-bookstores.js"></script>
+
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/pwa.js"></script>
+</body>
+</html>
+
+
+
+
+
+

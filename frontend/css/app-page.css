@@ -1,0 +1,432 @@
+
+    .hero,
+    .section-header,
+    .quiz-container,
+    .perspective-card {
+      color-scheme: light dark;
+    }
+
+    body {
+      position: relative;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(212, 175, 55, 0.08), transparent 18%),
+        radial-gradient(circle at 88% 18%, rgba(93, 64, 55, 0.06), transparent 20%),
+        radial-gradient(circle at 50% 100%, rgba(212, 175, 55, 0.05), transparent 22%),
+        var(--bg-color);
+      isolation: isolate;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.5), transparent 32%),
+        radial-gradient(circle at 18% 32%, rgba(212, 175, 55, 0.06), transparent 20%),
+        radial-gradient(circle at 82% 56%, rgba(93, 64, 55, 0.05), transparent 18%),
+        radial-gradient(circle at 50% 78%, rgba(212, 175, 55, 0.05), transparent 24%);
+      mix-blend-mode: screen;
+      opacity: 0.9;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      position: relative;
+      max-width: 82rem;
+      margin: 0.75rem auto 0.9rem;
+      padding: clamp(2rem, 4vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1rem;
+      align-items: center;
+      text-align: center;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(212, 175, 55, 0.18), transparent 28%),
+        radial-gradient(circle at 82% 74%, rgba(93, 64, 55, 0.08), transparent 24%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
+      border: 1px solid rgba(212, 175, 55, 0.24);
+      box-shadow:
+        0 18px 45px rgba(44, 36, 32, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.35) inset,
+        0 0 60px rgba(212, 175, 55, 0.12);
+      backdrop-filter: blur(18px) saturate(1.2);
+      -webkit-backdrop-filter: blur(18px) saturate(1.2);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 1rem;
+      border-radius: 24px;
+      border: 1px solid rgba(212, 175, 55, 0.18);
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 14% 24%, rgba(212, 175, 55, 0.45) 0 1px, transparent 2px),
+        radial-gradient(circle at 24% 70%, rgba(93, 64, 55, 0.34) 0 1.5px, transparent 3px),
+        radial-gradient(circle at 38% 38%, rgba(212, 175, 55, 0.28) 0 1.5px, transparent 3px),
+        radial-gradient(circle at 60% 18%, rgba(93, 64, 55, 0.22) 0 1px, transparent 2px),
+        radial-gradient(circle at 72% 58%, rgba(212, 175, 55, 0.3) 0 1.5px, transparent 3px),
+        radial-gradient(circle at 88% 28%, rgba(93, 64, 55, 0.26) 0 1px, transparent 2px),
+        radial-gradient(circle at 84% 84%, rgba(212, 175, 55, 0.24) 0 1.5px, transparent 3px);
+      opacity: 0.75;
+      filter: blur(0.2px);
+      animation: heroParticleDrift 14s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-glow {
+      position: absolute;
+      inset: auto auto -14% -8%;
+      width: 22rem;
+      height: 22rem;
+      background: radial-gradient(circle, rgba(212, 175, 55, 0.2), transparent 68%);
+      filter: blur(18px);
+      opacity: 0.75;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes heroParticleDrift {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 0.58;
+      }
+
+      to {
+        transform: translate3d(0, -10px, 0) scale(1.02);
+        opacity: 0.92;
+      }
+    }
+
+    .hero-copy {
+      position: relative;
+      display: grid;
+      gap: 0.4rem;
+      max-width: 44rem;
+      justify-items: center;
+      margin-inline: auto;
+      z-index: 1;
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: fit-content;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--control-border);
+      background: rgba(255, 255, 255, 0.55);
+      color: color-mix(in srgb, var(--accent-gold) 65%, var(--text-main));
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 26px rgba(44, 36, 32, 0.08);
+    }
+
+    .hero-kicker::before {
+      content: '';
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 999px;
+      background: var(--accent-gold);
+      box-shadow: 0 0 0 6px rgba(212, 175, 55, 0.14);
+      flex-shrink: 0;
+    }
+
+    .hero-title {
+      position: relative;
+      margin: 0;
+      max-width: 20ch;
+      font-size: clamp(2.7rem, 5.8vw, 4.3rem);
+      line-height: 0.86;
+      letter-spacing: -0.065em;
+      font-style: normal;
+      font-weight: 600;
+      text-wrap: nowrap;
+      color: var(--text-main);
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.52),
+        0 14px 30px rgba(44, 36, 32, 0.14);
+      margin-inline: auto;
+    }
+
+    .hero p {
+      position: relative;
+      margin: 0;
+      max-width: 100%;
+      color: var(--text-muted);
+      font-size: clamp(1rem, 1.05vw, 1.08rem);
+      line-height: 1.7;
+      letter-spacing: 0.005em;
+      text-wrap: pretty;
+      margin-inline: auto;
+      white-space: nowrap;
+    }
+
+    .curated-section,
+    .reader-perspectives,
+    .reading-mood-quiz {
+      position: relative;
+    }
+
+    .curated-section::before,
+    .reader-perspectives::before,
+    .reading-mood-quiz::before {
+      content: '';
+      position: absolute;
+      inset: -2rem auto auto 50%;
+      width: min(58rem, 92vw);
+      height: 18rem;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background:
+        radial-gradient(circle, rgba(212, 175, 55, 0.12), transparent 62%),
+        radial-gradient(circle, rgba(93, 64, 55, 0.08), transparent 70%);
+      filter: blur(34px);
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .curated-section > *,
+    .reader-perspectives > *,
+    .reading-mood-quiz > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-header {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+      margin: 0 1rem 0.9rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--control-border);
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.2vw, 2rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+
+    .section-header span {
+      color: color-mix(in srgb, var(--accent-gold) 82%, var(--text-main));
+      font-size: 0.78rem;
+      line-height: 1.35;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .perspective-card,
+    .quiz-container,
+    .modal-content,
+    .chatbot-window,
+    .ambient-panel {
+      color: var(--text-main);
+    }
+
+    .perspective-card h3,
+    .quiz-question h3,
+    .quiz-results h3,
+    .modal-info h2,
+    .chatbot-name-status h4,
+    .ambient-panel h3 {
+      margin-bottom: 0.35rem;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+
+    .perspective-card h3 {
+      font-size: 1.12rem;
+    }
+
+    .perspective-text,
+    .quiz-container p,
+    .modal-subtitle,
+    .chatbot-status,
+    .ambient-option span,
+    .purchase-header,
+    .ai-header span {
+      line-height: 1.75;
+    }
+
+    .perspective-text,
+    .quiz-container p,
+    .modal-subtitle {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+    }
+
+    [data-theme="night"] .hero {
+      background:
+        radial-gradient(circle at 18% 20%, rgba(252, 203, 78, 0.2), transparent 28%),
+        radial-gradient(circle at 82% 74%, rgba(255, 255, 255, 0.05), transparent 24%),
+        linear-gradient(180deg, rgba(31, 26, 23, 0.96), rgba(24, 20, 18, 0.92));
+      border-color: rgba(252, 203, 78, 0.24);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(252, 203, 78, 0.06) inset,
+        0 0 60px rgba(252, 203, 78, 0.14);
+    }
+
+    [data-theme="night"] .hero::before {
+      border-color: rgba(252, 203, 78, 0.16);
+    }
+
+    [data-theme="night"] .hero-title {
+      text-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    [data-theme="night"] body::before {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08), transparent 30%),
+        radial-gradient(circle at 20% 28%, rgba(252, 203, 78, 0.07), transparent 18%),
+        radial-gradient(circle at 82% 56%, rgba(255, 255, 255, 0.04), transparent 18%),
+        radial-gradient(circle at 50% 78%, rgba(252, 203, 78, 0.05), transparent 24%);
+      mix-blend-mode: screen;
+    }
+
+    [data-theme="night"] .curated-section::before,
+    [data-theme="night"] .reader-perspectives::before,
+    [data-theme="night"] .reading-mood-quiz::before {
+      background:
+        radial-gradient(circle, rgba(252, 203, 78, 0.1), transparent 62%),
+        radial-gradient(circle, rgba(255, 255, 255, 0.04), transparent 70%);
+      opacity: 0.55;
+    }
+
+    [data-theme="night"] .section-header span {
+      color: var(--accent-gold);
+    }
+
+    [data-theme="night"] .perspective-text,
+    [data-theme="night"] .quiz-container p,
+    [data-theme="night"] .modal-subtitle {
+      color: #d8c7b8;
+    }
+
+    .modal-info h2 {
+      font-size: clamp(1.55rem, 2.5vw, 2.2rem);
+      margin-bottom: 0.35rem;
+    }
+
+    .chatbot-name-status h4 {
+      font-size: 1rem;
+    }
+
+    .chatbot-status {
+      font-size: 0.84rem;
+      letter-spacing: 0.02em;
+    }
+
+    .quiz-options button,
+    .generate-tags-btn,
+    .retake-quiz-btn,
+    .btn-primary,
+    .btn-secondary,
+    .btn-preview {
+      letter-spacing: 0.01em;
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        margin-top: 1rem;
+        margin-bottom: 0.85rem;
+        border-radius: 26px;
+        padding: 1.6rem 1rem 2rem;
+        text-align: center;
+        align-items: center;
+      }
+
+      .hero::before {
+        inset: 0.75rem;
+        border-radius: 20px;
+      }
+
+      .hero h1 {
+        max-width: 100%;
+        font-size: clamp(2.1rem, 7vw, 3rem);
+        line-height: 0.9;
+      }
+
+      .hero p {
+        max-width: 30ch;
+        font-size: 0.94rem;
+        line-height: 1.68;
+        white-space: normal;
+      }
+
+      .hero-copy {
+        justify-items: center;
+      }
+
+      .section-header {
+        margin-inline: 0.5rem;
+      }
+
+      .section-header h2 {
+        font-size: 1.25rem;
+      }
+
+      .section-header span {
+        font-size: 0.72rem;
+      }
+
+      .modal-info h2 {
+        font-size: 1.45rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        border-radius: 22px;
+        padding: 1.45rem 0.9rem 1.7rem;
+      }
+
+      .hero h1 {
+        max-width: 100%;
+        letter-spacing: -0.05em;
+        font-size: clamp(1.9rem, 8vw, 2.55rem);
+      }
+
+      .hero p,
+      .perspective-text,
+      .modal-subtitle {
+        font-size: 0.94rem;
+        line-height: 1.7;
+        white-space: normal;
+      }
+
+      .section-header h2,
+      .quiz-container h2,
+      .modal-info h2 {
+        letter-spacing: -0.01em;
+      }
+
+      .section-header span {
+        letter-spacing: 0.11em;
+      }
+    }
+  
