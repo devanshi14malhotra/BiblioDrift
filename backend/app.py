@@ -2431,21 +2431,28 @@ def get_public_collections():
     try:
         limit = request.args.get('limit', 20, type=int)
         offset = request.args.get('offset', 0, type=int)
-        
+
         collections = Collection.query.filter_by(is_public=True).order_by(
             Collection.created_at.desc()
         ).offset(offset).limit(limit).all()
-        
+
         total = Collection.query.filter_by(is_public=True).count()
-        
+
         result = []
         for c in collections:
             collection_data = c.to_dict()
-            user = User.query.get(c.user_id)
-            collection_data['owner_username'] = user.username if user else "Unknown"
+            collection_data['owner_username'] = (
+                c.user.username if c.user else "Unknown"
+            )
             result.append(collection_data)
-        
-        return jsonify({"collections": result, "total": total, "limit": limit, "offset": offset}), 200
+
+        return jsonify({
+            "collections": result,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
