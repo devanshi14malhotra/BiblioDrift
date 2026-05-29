@@ -136,7 +136,20 @@ validate_required_env_vars()
 
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
-
+# =====================================================================
+# 🔒 SECURITY COMPLIANCE UPDATE: STRICT JWT COOKIE SESSIONS
+# =====================================================================
+# By default, Flask-JWT-Extended allows tokens in the Authorization header.
+# We are overriding this to strictly enforce HttpOnly cookies, preventing
+# XSS attacks from stealing the token out of LocalStorage. We also enable
+# Double-Submit Cookie CSRF protection specifically for the JWT tokens.
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_SECURE'] = app_config.is_production() if hasattr(app_config, 'is_production') else True
+app.config['JWT_COOKIE_SAMESITE'] = 'Lax'
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+app.config['JWT_CSRF_IN_COOKIES'] = False  # Forces CSRF token to be sent in headers, not just cookies
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=12) # Short-lived session
+# =====================================================================
 # =====================================================================
 # SECURITY COMPLIANCE UPDATE: CSRF PROTECTION (FLASK-WTF)
 # =====================================================================
