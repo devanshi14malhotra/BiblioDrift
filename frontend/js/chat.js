@@ -10,11 +10,32 @@ class ChatInterface {
 
         this.conversationHistory = [];
         this.isProcessing = false;
+        
+        this.socket = null;
+        this.currentMessageContent = "";
+        this.currentMessageBubble = null;
 
         this.init();
     }
 
     init() {
+        // Init socket.io
+        if (typeof io !== 'undefined') {
+            const moodApiBase = window.MOOD_API_BASE || 'http://127.0.0.1:5000';
+            const baseUrl = moodApiBase.replace(/\/api\/v1\/?$/, '');
+            this.socket = io(baseUrl);
+            
+            this.socket.on('chat_stream', (data) => {
+                if (this.currentMessageBubble) {
+                    this.hideTypingIndicator(); // Hide indicator as soon as text flows
+                    this.currentMessageContent += data.chunk;
+                    this.currentMessageBubble.innerHTML = '';
+                    this.renderTextContent(this.currentMessageBubble, this.currentMessageContent, true);
+                    this.scrollToBottom();
+                }
+            });
+        }
+
         // Load conversation history from localStorage
         this.loadConversationHistory();
 
@@ -164,6 +185,61 @@ Tell me: what is stirring in you today?`,
         // Show typing indicator
         this.showTypingIndicator();
 
+        // --- WebSockets Path ---
+        if (this.socket && this.socket.connected) {
+            this.currentMessageContent = "";
+            const booksellerMessage = {
+                type: 'bookseller',
+                content: "",
+                books: null,
+                timestamp: new Date().toISOString()
+            };
+            this.conversationHistory.push(booksellerMessage);
+            const messageDiv = this.renderMessage(booksellerMessage);
+            this.currentMessageBubble = messageDiv.querySelector('.message-bubble');
+
+            const history = this._buildTokenBudgetHistory(message);
+            this.socket.emit('chat_message', { message: message, history: history });
+
+            const onComplete = async (data) => {
+                this.socket.off('chat_complete', onComplete);
+                this.socket.off('chat_error', onError);
+                
+                booksellerMessage.content = data.response;
+                if (data.recommendations && data.recommendations.length > 0) {
+                    booksellerMessage.books = data.recommendations;
+                    const bookRec = this.createBookRecommendations(data.recommendations);
+                    this.currentMessageBubble.appendChild(bookRec);
+                }
+                this.saveConversationHistory();
+                this.scrollToBottom();
+            };
+
+            const onError = (data) => {
+                this.socket.off('chat_complete', onComplete);
+                this.socket.off('chat_error', onError);
+                this.hideTypingIndicator();
+                
+                // Remove the empty message we created
+                this.conversationHistory.pop();
+                if (messageDiv) messageDiv.remove();
+                
+                const errorMessage = {
+                    type: 'bookseller',
+                    content: "The candles are flickering and something seems amiss with my connection to the literary spirits. Give me a moment — the books are waiting, and so is the perfect story for you.",
+                    timestamp: new Date().toISOString()
+                };
+                this.conversationHistory.push(errorMessage);
+                this.renderMessage(errorMessage);
+                this.saveConversationHistory();
+            };
+
+            this.socket.on('chat_complete', onComplete);
+            this.socket.on('chat_error', onError);
+            return;
+        }
+
+        // --- HTTP Fallback Path ---
         try {
             // Get AI response
             const response = await this.getBooksellerResponse(message);
@@ -501,6 +577,7 @@ Tell me: what is stirring in you today?`,
 
         this.chatMessages.appendChild(messageDiv);
         this.scrollToBottom();
+        return messageDiv;
     }
 
     createBookRecommendations(books) {
