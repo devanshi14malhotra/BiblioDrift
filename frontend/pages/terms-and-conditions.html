@@ -1,30 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
 
-<head>
-  <meta charset="UTF-8" />
-  <script>
+    <!-- Theme Loader -->
+    <script>
       (function () {
-          const theme = localStorage.getItem('bibliodrift_theme');
-          if (theme === 'night') {
-              document.documentElement.setAttribute('data-theme', 'night');
-          }
+        const theme = localStorage.getItem("bibliodrift_theme");
+        if (theme === "night") {
+          document.documentElement.setAttribute("data-theme", "night");
+        }
       })();
-  </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Terms & Conditions | BiblioDrift</title>
-  <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600&family=Georgia&display=swap" rel="stylesheet" />
-    <link rel="manifest" href="../manifest.json">
-    <link rel="stylesheet" href="../css/pwa.css">
-</head>
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terms & Conditions | BiblioDrift</title>
 
-<body>
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/style-responsive.css" />
+    <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+    <link rel="stylesheet" href="../css/pwa.css" />
+    <link rel="manifest" href="../manifest.json" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Georgia&display=swap" rel="stylesheet" />
+  </head>
+
+  <body>
+    <!-- =========================
+       HEADER
+  ========================== -->
     <header>
-    <a href="app.html" class="logo">
+    <a href="index.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
     <div class="header-controls">
@@ -34,7 +44,7 @@
       </div>
       <nav class="nav-links">
         <div class="tooltip">
-          <a href="app.html" >Discovery</a>
+          <a href="index.html" >Discovery</a>
           <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
         </div>
         <div class="tooltip">
@@ -49,7 +59,10 @@
            <a href="community-stories.html">Community</a>
            <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
         </div>
-
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
@@ -60,94 +73,710 @@
           <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
         </div>
       </nav>
-      <!-- Dark Mode Toggle Button -->
       <button id="themeToggle" class="btn-icon" title="Toggle Theme">
         <i class="fa-solid fa-moon"></i>
       </button>
     </div>
   </header>
 
-  <main style="max-width: 900px; margin: 4rem auto; padding: 0 2rem;">
-    <section class="curated-section">
-      <div class="section-header">
-        <h1>Terms &amp; Conditions</h1>
-        <span><i class="fa-solid fa-file-contract"></i> Use of BiblioDrift</span>
-      </div>
-      <div style="margin-top: 2rem; line-height: 1.8; color: var(--text-muted);">
-        <p>Welcome to BiblioDrift. These terms govern your access and use of our site and services.</p>
-        <h2 style="margin-top: 1.5rem;">Acceptance</h2>
-        <p>By using BiblioDrift, you agree to comply with these terms and any applicable laws.</p>
-        <h2 style="margin-top: 1.5rem;">Content Use</h2>
-        <p>All content on BiblioDrift is provided for personal, non-commercial use only. You may not redistribute or reproduce content without permission.</p>
-        <h2 style="margin-top: 1.5rem;">Account Responsibilities</h2>
-        <p>You are responsible for maintaining the confidentiality of your account details and for all activity under your account.</p>
-        <h2 style="margin-top: 1.5rem;">Changes</h2>
-        <p>We may update these terms from time to time. Continued use of the service constitutes acceptance of the revised terms.</p>
-      </div>
-    </section>
-  </main>
+    <!-- =========================
+       MAIN LAYOUT
+  ========================== -->
+    <main
+      id="termsLayout"
+      style="
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 2.5rem;
+        max-width: 1320px;
+        margin: 3rem auto;
+        padding: 0 1.5rem;
+        align-items: start;
+      "
+    >
+      <!-- =========================
+         SIDEBAR / TOC
+    ========================== -->
+      <aside style="position: sticky; top: 100px; align-self: start">
+        <div
+          style="
+            background: var(--surface-panel);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+          "
+        >
+          <!-- TOC Header -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 0.7rem;
+              margin-bottom: 1.4rem;
+            "
+          >
+            <i
+              class="fa-solid fa-book-open"
+              style="color: var(--accent-gold); font-size: 1rem"
+            ></i>
 
-  <!-- Back to Top Button -->
-  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
-    <i class="fa-solid fa-arrow-up"></i>
-  </button>
+            <h3
+              style="
+                margin: 0;
+                font-size: 1.05rem;
+                color: var(--text-main);
+                letter-spacing: 0.3px;
+              "
+            >
+              On This Page
+            </h3>
+          </div>
 
-  <!-- Ambient Sanctuary UI -->
-  <div class="ambient-sanctuary">
-    <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
-      <i class="fa-solid fa-leaf"></i>
+          <!-- TOC Links -->
+          <nav style="display: flex; flex-direction: column; gap: 0.8rem">
+            <a
+              href="#intro"
+              style="
+                text-decoration: none;
+                color: var(--text-muted);
+                padding: 0.7rem 0.9rem;
+                border-radius: 12px;
+                transition: 0.2s ease;
+                font-size: 0.95rem;
+              "
+              onmouseover="
+                this.style.background = 'var(--glass-bg)';
+                this.style.color = 'var(--text-main)';
+              "
+              onmouseout="
+                this.style.background = 'transparent';
+                this.style.color = 'var(--text-muted)';
+              "
+            >
+              Introduction
+            </a>
+
+            <a
+              href="#acceptance"
+              style="
+                text-decoration: none;
+                color: var(--text-muted);
+                padding: 0.7rem 0.9rem;
+                border-radius: 12px;
+                transition: 0.2s ease;
+                font-size: 0.95rem;
+              "
+              onmouseover="
+                this.style.background = 'var(--glass-bg)';
+                this.style.color = 'var(--text-main)';
+              "
+              onmouseout="
+                this.style.background = 'transparent';
+                this.style.color = 'var(--text-muted)';
+              "
+            >
+              Acceptance
+            </a>
+
+            <a
+              href="#content-use"
+              style="
+                text-decoration: none;
+                color: var(--text-muted);
+                padding: 0.7rem 0.9rem;
+                border-radius: 12px;
+                transition: 0.2s ease;
+                font-size: 0.95rem;
+              "
+              onmouseover="
+                this.style.background = 'var(--glass-bg)';
+                this.style.color = 'var(--text-main)';
+              "
+              onmouseout="
+                this.style.background = 'transparent';
+                this.style.color = 'var(--text-muted)';
+              "
+            >
+              Content Use
+            </a>
+
+            <a
+              href="#account"
+              style="
+                text-decoration: none;
+                color: var(--text-muted);
+                padding: 0.7rem 0.9rem;
+                border-radius: 12px;
+                transition: 0.2s ease;
+                font-size: 0.95rem;
+              "
+              onmouseover="
+                this.style.background = 'var(--glass-bg)';
+                this.style.color = 'var(--text-main)';
+              "
+              onmouseout="
+                this.style.background = 'transparent';
+                this.style.color = 'var(--text-muted)';
+              "
+            >
+              Account Responsibilities
+            </a>
+
+            <a
+              href="#changes"
+              style="
+                text-decoration: none;
+                color: var(--text-muted);
+                padding: 0.7rem 0.9rem;
+                border-radius: 12px;
+                transition: 0.2s ease;
+                font-size: 0.95rem;
+              "
+              onmouseover="
+                this.style.background = 'var(--glass-bg)';
+                this.style.color = 'var(--text-main)';
+              "
+              onmouseout="
+                this.style.background = 'transparent';
+                this.style.color = 'var(--text-muted)';
+              "
+            >
+              Changes
+            </a>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- =========================
+         TERMS CONTENT
+    ========================== -->
+      <section
+        class="curated-section"
+        style="
+          position: relative;
+          overflow: hidden;
+          padding: 3rem;
+          border-radius: 32px;
+          border: 1px solid var(--glass-border);
+          background:
+            radial-gradient(
+              circle at top right,
+              var(--surface-panel),
+              transparent 30%
+            ),
+            var(--surface-panel);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+        "
+      >
+        <!-- Decorative Glow -->
+        <div
+          style="
+            position: absolute;
+            top: -120px;
+            right: -120px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: var(--surface-panel);
+            filter: blur(30px);
+            pointer-events: none;
+          "
+        ></div>
+
+        <!-- =========================
+           HEADER
+      ========================== -->
+        <div
+          id="intro"
+          style="
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+          "
+        >
+          <!-- Left -->
+          <div style="max-width: 760px">
+            <span
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.45rem 0.9rem;
+                border-radius: 999px;
+                background: var(--glass-bg);
+                color: var(--text-muted);
+                font-size: 0.85rem;
+                margin-bottom: 1.2rem;
+                border: 1px solid var(--glass-border);
+              "
+            >
+              <i class="fa-solid fa-scale-balanced"></i>
+              Legal & Platform Guidelines
+            </span>
+
+            <h1
+              style="
+                font-family: &quot;Playfair Display&quot;, serif;
+                font-size: clamp(2.6rem, 5vw, 4.2rem);
+                line-height: 1.05;
+                margin: 0 0 1rem;
+                color: var(--text-main);
+                font-weight: 700;
+                letter-spacing: -1.5px;
+              "
+            >
+              Terms &amp; Conditions
+            </h1>
+
+            <p
+              style="
+                font-size: 1.08rem;
+                line-height: 2;
+                color: var(--text-muted);
+                margin: 0;
+              "
+            >
+              These terms outline the rules, responsibilities, and guidelines
+              governing your use of BiblioDrift and its services.
+            </p>
+          </div>
+
+          <!-- Right Info Card -->
+          <div
+            style="
+              min-width: 240px;
+              background: var(--surface-panel);
+              border: 1px solid var(--glass-border);
+              border-radius: 22px;
+              padding: 1.2rem 1.3rem;
+              backdrop-filter: blur(12px);
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+                margin-bottom: 1rem;
+              "
+            >
+              <div
+                style="
+                  width: 44px;
+                  height: 44px;
+                  border-radius: 14px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: var(--glass-bg);
+                  color: var(--accent-gold);
+                "
+              >
+                <i class="fa-solid fa-file-contract"></i>
+              </div>
+
+              <div>
+                <div style="font-size: 0.88rem; color: var(--text-muted)">
+                  Policy Type
+                </div>
+
+                <div
+                  style="
+                    color: var(--text-main);
+                    font-weight: 600;
+                    margin-top: 0.2rem;
+                  "
+                >
+                  Terms of Service
+                </div>
+              </div>
+            </div>
+
+            <div
+              style="
+                font-size: 0.9rem;
+                color: var(--text-muted);
+                line-height: 1.7;
+              "
+            >
+              Last updated: May 2026
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================
+           POLICY SECTIONS
+      ========================== -->
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 1.7rem;
+            position: relative;
+            z-index: 2;
+          "
+        >
+          <!-- CARD -->
+          <article
+            id="acceptance"
+            style="
+              background: var(--surface-panel);
+              border: 1px solid var(--glass-border);
+              border-radius: 26px;
+              padding: 2rem;
+              transition: 0.25s ease;
+            "
+            onmouseover="this.style.transform = 'translateY(-4px)'"
+            onmouseout="this.style.transform = 'translateY(0px)'"
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.2rem;
+              "
+            >
+              <div
+                style="
+                  width: 52px;
+                  height: 52px;
+                  border-radius: 16px;
+                  background: var(--glass-bg);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--accent-gold);
+                  flex-shrink: 0;
+                "
+              >
+                <i class="fa-solid fa-check"></i>
+              </div>
+
+              <h2
+                style="
+                  margin: 0;
+                  font-size: 1.7rem;
+                  color: var(--text-main);
+                  line-height: 1.3;
+                "
+              >
+                Acceptance of Terms
+              </h2>
+            </div>
+
+            <p
+              style="
+                margin: 0;
+                color: var(--text-muted);
+                font-size: 1rem;
+                line-height: 2;
+              "
+            >
+              By accessing or using BiblioDrift, you agree to comply with these
+              terms and all applicable laws and regulations.
+            </p>
+          </article>
+
+          <!-- CARD -->
+          <article
+            id="content-use"
+            style="
+              background: var(--surface-panel);
+              border: 1px solid var(--glass-border);
+              border-radius: 26px;
+              padding: 2rem;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.2rem;
+              "
+            >
+              <div
+                style="
+                  width: 52px;
+                  height: 52px;
+                  border-radius: 16px;
+                  background: var(--glass-bg);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--accent-gold);
+                "
+              >
+                <i class="fa-solid fa-book"></i>
+              </div>
+
+              <h2 style="margin: 0; font-size: 1.7rem; color: var(--text-main)">
+                Content Use
+              </h2>
+            </div>
+
+            <p
+              style="
+                margin: 0;
+                color: var(--text-muted);
+                font-size: 1rem;
+                line-height: 2;
+              "
+            >
+              All content on BiblioDrift is intended for personal,
+              non-commercial use only.
+            </p>
+          </article>
+
+          <!-- CARD -->
+          <article
+            id="account"
+            style="
+              background: var(--surface-panel);
+              border: 1px solid var(--glass-border);
+              border-radius: 26px;
+              padding: 2rem;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.2rem;
+              "
+            >
+              <div
+                style="
+                  width: 52px;
+                  height: 52px;
+                  border-radius: 16px;
+                  background: var(--glass-bg);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--accent-gold);
+                "
+              >
+                <i class="fa-solid fa-user-shield"></i>
+              </div>
+
+              <h2 style="margin: 0; font-size: 1.7rem; color: var(--text-main)">
+                Account Responsibilities
+              </h2>
+            </div>
+
+            <p
+              style="
+                margin: 0;
+                color: var(--text-muted);
+                font-size: 1rem;
+                line-height: 2;
+              "
+            >
+              You are responsible for maintaining the confidentiality of your
+              account details and activities performed through your account.
+            </p>
+          </article>
+
+          <!-- CARD -->
+          <article
+            id="changes"
+            style="
+              background: var(--surface-panel);
+              border: 1px solid var(--glass-border);
+              border-radius: 26px;
+              padding: 2rem;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.2rem;
+              "
+            >
+              <div
+                style="
+                  width: 52px;
+                  height: 52px;
+                  border-radius: 16px;
+                  background: var(--glass-bg);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--accent-gold);
+                "
+              >
+                <i class="fa-solid fa-rotate"></i>
+              </div>
+
+              <h2 style="margin: 0; font-size: 1.7rem; color: var(--text-main)">
+                Changes to Terms
+              </h2>
+            </div>
+
+            <p
+              style="
+                margin: 0;
+                color: var(--text-muted);
+                font-size: 1rem;
+                line-height: 2;
+              "
+            >
+              We may update these terms periodically. Continued use of
+              BiblioDrift after updates are posted constitutes acceptance of the
+              revised terms.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- =========================
+       BACK TO TOP
+  ========================== -->
+    <button
+      id="backToTop"
+      class="btn-icon back-to-top"
+      title="Back to Top"
+      onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+    >
+      <i class="fa-solid fa-arrow-up"></i>
     </button>
-    <div id="ambientPanel" class="ambient-panel">
-      <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
-        <label class="switch">
-          <input type="checkbox" id="rainToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
-        <label class="switch">
-          <input type="checkbox" id="fireToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
-        <label class="switch">
-          <input type="checkbox" id="oceanToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
-        <label class="switch">
-          <input type="checkbox" id="stormToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="volume-control">
-        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
-        <div class="range-wrap">
-          <div class="range-track" aria-hidden="true"></div>
-          <div class="range-fill" aria-hidden="true"></div>
-          <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+
+    <!-- =========================
+       AMBIENT SANCTUARY
+  ========================== -->
+    <div class="ambient-sanctuary">
+      <button
+        id="ambientToggle"
+        title="Ambient Sanctuary"
+        aria-expanded="false"
+        aria-controls="ambientPanel"
+      >
+        <i class="fa-solid fa-leaf"></i>
+      </button>
+
+      <div id="ambientPanel" class="ambient-panel">
+        <h3 style="color: var(--text-main) !important">Ambient Sanctuary</h3>
+
+        <!-- Rain -->
+        <div class="ambient-option">
+          <span style="color: var(--text-main) !important">
+            <i class="fa-solid fa-cloud-rain"></i>
+            Rainy Evening
+          </span>
+
+          <label class="switch">
+            <input type="checkbox" id="rainToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Fireplace -->
+        <div class="ambient-option">
+          <span style="color: var(--text-main) !important">
+            <i class="fa-solid fa-fire"></i>
+            Cozy Fireplace
+          </span>
+
+          <label class="switch">
+            <input type="checkbox" id="fireToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Ocean -->
+        <div class="ambient-option">
+          <span style="color: var(--text-main) !important">
+            <i class="fa-solid fa-water"></i>
+            Calm Ocean Waves
+          </span>
+
+          <label class="switch">
+            <input type="checkbox" id="oceanToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Storm -->
+        <div class="ambient-option">
+          <span style="color: var(--text-main) !important">
+            <i class="fa-solid fa-bolt"></i>
+            Stormy Rain
+          </span>
+
+          <label class="switch">
+            <input type="checkbox" id="stormToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Volume -->
+        <div class="volume-control">
+          <label for="ambientVolume" style="color: var(--text-main) !important">
+            <i class="fa-solid fa-volume-high"></i>
+            Volume
+          </label>
+
+          <div class="range-wrap">
+            <div class="range-track" aria-hidden="true"></div>
+            <div class="range-fill" aria-hidden="true"></div>
+
+            <input
+              type="range"
+              id="ambientVolume"
+              min="0"
+              max="1"
+              step="0.1"
+              value="0.5"
+              style="width: 100%"
+            />
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
+    <!-- =========================
+       RESPONSIVE SCRIPT
+  ========================== -->
+    <script>
+      function handleTermsResponsive() {
+        const layout = document.getElementById("termsLayout");
 
-  <script src="../js/config.js"></script>
-  <script src="../js/footer.js"></script>
-  <script src="../js/app.js"></script>
-  <script src="../script/header-scroll.js"></script>
+        if (window.innerWidth <= 980) {
+          layout.style.gridTemplateColumns = "1fr";
+        } else {
+          layout.style.gridTemplateColumns = "260px minmax(0, 1fr)";
+        }
+      }
+
+      handleTermsResponsive();
+
+      window.addEventListener("resize", handleTermsResponsive);
+    </script>
+
+    <!-- JS -->
+    <script src="../js/config.js"></script>
+    <script src="../js/footer.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../script/header-scroll.js"></script>
     <script src="../js/theme-manager.js"></script>
-  <script src="../js/ambient.js"></script>
+    <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
-</body>
-
+  </body>
 </html>
 
 

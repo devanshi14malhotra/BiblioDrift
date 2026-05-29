@@ -111,27 +111,6 @@ function getCookie(name) {
     return null;
 }
 
-async function loadConfig() {
-    try {
-        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            GOOGLE_API_KEY = data.google_books_key || '';
-            if (window.GoogleBooksClient) {
-                window.GoogleBooksClient.setKeys([
-                    data.google_books_key,
-                    data.google_books_key_secondary,
-                ]);
-            }
-            if (IS_DEV) {
-                console.log('Config loaded');
-            }
-        }
-    } catch (e) {
-        console.warn('Failed to load backend config', e);
-    }
-}
-
 const CollectionAPI = {
     getHeaders() {
         const headers = { 'Content-Type': 'application/json' };
@@ -689,7 +668,7 @@ class BookRenderer {
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+                    <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -924,6 +903,7 @@ class BookRenderer {
         if (!modal) return;
 
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
+        document.getElementById('modal-img').alt = `Cover of '${book.volumeInfo.title}' by ${book.volumeInfo.authors?.join(', ') || 'Unknown Author'}`;
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
 
@@ -2889,10 +2869,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const themeManager = new ThemeManager();
 
     // 2. Load Config (Non-blocking)
-    loadConfig();
-
-
-
     // --- AUTH LOGIC ---
     const toggleLink = document.getElementById('toggleText');
     const authTitle = document.getElementById('authTitle');
@@ -3481,7 +3457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     card.className = 'progress-overview-card';
                     card.innerHTML = `
                         <div class="progress-card-cover">
-                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="Cover of '${title}' by ${author}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
                         </div>
                         <div class="progress-card-info">
                             <div class="progress-card-title">${title}</div>
@@ -3550,17 +3526,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         achievementsGrid.innerHTML = '';
 
         const achievements = [
-            { id: 'reader', icon: 'fa-book', title: 'Avid Reader', desc: 'Finished 5 books', condition: finishedCount >= 5 },
-            { id: 'collector', icon: 'fa-layer-group', title: 'Curator', desc: 'Added 10 books', condition: (currentCount + wantCount + finishedCount) >= 10 },
-            { id: 'critic', icon: 'fa-pen-fancy', title: 'Critic', desc: 'Saved 3 reviews', condition: false }, // Mock
-            { id: 'focused', icon: 'fa-glasses', title: 'Focused', desc: 'Reading 3 at once', condition: currentCount >= 3 }
+            {
+                id: 'reader',
+                badge: 'badge--gold',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M3 6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6z"></path>
+                        <path fill="currentColor" d="M21 6h-2v12h2V6z" opacity="0.18"></path>
+                    </svg>`,
+                title: 'Avid Reader',
+                desc: 'Finished 5 books',
+                condition: finishedCount >= 5
+            },
+            {
+                id: 'collector',
+                badge: 'badge--teal',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <rect x="3" y="4" width="18" height="3" rx="1" fill="currentColor"></rect>
+                        <rect x="5" y="9" width="14" height="3" rx="1" fill="currentColor" opacity="0.9"></rect>
+                        <rect x="7" y="14" width="10" height="3" rx="1" fill="currentColor" opacity="0.7"></rect>
+                    </svg>`,
+                title: 'Curator',
+                desc: 'Added 10 books',
+                condition: (currentCount + wantCount + finishedCount) >= 10
+            },
+            {
+                id: 'critic',
+                badge: 'badge--purple',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12.3 2.3l2.4 2.4-8.5 8.5-2.4-2.4L12.3 2.3zM3 21l6-1 10.7-10.7 1.3 1.3L10.3 22 3 21z"></path>
+                    </svg>`,
+                title: 'Critic',
+                desc: 'Saved 3 reviews',
+                condition: false
+            },
+            {
+                id: 'focused',
+                badge: 'badge--gray',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M4 10a3 3 0 0 1 6 0 1 1 0 0 0 2 0 3 3 0 0 1 6 0v2h-2v6H4v-6H2v-2h2zM8 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+                    </svg>`,
+                title: 'Focused',
+                desc: 'Reading 3 at once',
+                condition: currentCount >= 3
+            }
         ];
 
         achievements.forEach(ach => {
             const card = document.createElement('div');
             card.className = `achievement-card ${ach.condition ? 'unlocked' : 'locked'}`;
             card.innerHTML = `
-                <i class="fa-solid ${ach.icon}"></i>
+                <span class="achievement-badge ${ach.badge}" aria-hidden="true"></span>
+                ${ach.icon}
                 <h4>${ach.title}</h4>
                 <p>${ach.desc}</p>
             `;
@@ -4150,7 +4170,7 @@ async function triggerOfflineLibraryView() {
                 bookCard.className = 'book-card offline-card';
                 bookCard.innerHTML = `
                     <div class="book-cover-wrapper">
-                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img" />
+                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="Cover of '${book.title}' by ${book.author || 'Unknown Author'}" class="book-cover-img" />
                     </div>
                     <div class="book-details">
                         <h3>${book.title}</h3>

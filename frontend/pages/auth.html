@@ -60,6 +60,19 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        html,
+        body {
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            font-family: 'Georgia', serif;
+        }
+
         body.auth-page {
             background:
                 radial-gradient(circle at top left, rgba(212, 175, 55, 0.12), transparent 34%),
@@ -99,12 +112,15 @@
         body.auth-page main.auth-main {
             position: relative;
             z-index: 1;
-            max-width: none;
+            max-width: 1200px;
+            margin: 0 auto;
             min-height: calc(100vh - 120px);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem 4rem 4rem;
+            padding: 2rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .auth-shell {
@@ -307,8 +323,9 @@
         }
 
         .auth-footer {
-            margin-top: 1.25rem;
+            margin-top: 1rem;
             text-align: center;
+            
         }
 
         .google-auth-btn {
