@@ -32,12 +32,37 @@ input {
     min-width: 44px;
 }
 
+.main-footer a {
+    min-height: 0;
+    min-width: 0;
+}
+
+.main-footer .footer-nav a,
+.main-footer .footer-legal a {
+    line-height: 1.35;
+}
+
+.main-footer .social-icons a {
+    min-height: 40px;
+    min-width: 40px;
+}
+
 @media (max-width: 768px) {
 
     button,
     a {
         min-height: 48px;
         min-width: 48px;
+    }
+
+    .main-footer a {
+        min-height: 0;
+        min-width: 0;
+    }
+
+    .main-footer .social-icons a {
+        min-height: 40px;
+        min-width: 40px;
     }
 }
 

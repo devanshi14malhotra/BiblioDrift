@@ -668,7 +668,7 @@ class BookRenderer {
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+                    <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -903,6 +903,7 @@ class BookRenderer {
         if (!modal) return;
 
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
+        document.getElementById('modal-img').alt = `Cover of '${book.volumeInfo.title}' by ${book.volumeInfo.authors?.join(', ') || 'Unknown Author'}`;
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
 
@@ -2999,24 +3000,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         renderer.renderCuratedSection(query, 'search-results-grid', 20);
-    } else if (document.getElementById('row-rainy')) {
+    } else if (document.getElementById('dynamic-shelves-container')) {
         console.log('📚 Initializing Curated Discovery Sections...');
-        const discoveryShelves = [
-            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy' },
-            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
-            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
-            {
-                type: 'query',
-                query: 'subject:gothic fiction subject:dark academia subject:campus',
-                elementId: 'row-dark-academia',
-                vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
-                fallbackQuery: 'subject:gothic fiction subject:campus'
-            },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
-            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
+        const container = document.getElementById('dynamic-shelves-container');
+        
+        const fallbackShelves = [
+            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy', title: 'Rainy Evening Reads', subtitle: 'Mystery & Melancholy', icon: 'fa-cloud-rain' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian', title: 'Indian Authors', subtitle: 'Subcontinent Voices', icon: 'fa-feather' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics', title: 'Forgotten Classics', subtitle: 'Timeless & Dust-free', icon: 'fa-hourglass' },
+            { type: 'query', query: 'subject:gothic fiction subject:dark academia subject:campus', elementId: 'row-dark-academia', title: 'Dark Academia', subtitle: 'Gothic, cerebral, candlelit', icon: 'fa-feather-pointed', vibeDescription: 'gothic, intellectual, melancholic, and candlelit', fallbackQuery: 'subject:gothic fiction subject:campus' },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction', title: 'General Fiction', subtitle: 'Stories for everyone', icon: 'fa-book-open' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller', title: 'Thriller & Suspense', subtitle: 'Edge of Your Seat', icon: 'fa-skull' }
         ];
+        ];
+
         (async () => {
             try {
+                let discoveryShelves = fallbackShelves;
+                try {
+                    const response = await fetch(`${MOOD_API_BASE}/content/live-shelves`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data && data.data.shelves) {
+                            discoveryShelves = data.data.shelves;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn('⚠️ Could not fetch live shelves, falling back to local config:', apiErr);
+                }
+
+                // Render HTML for shelves
+                container.innerHTML = discoveryShelves.map(shelf => `
+                    <section class="curated-section">
+                        <div class="section-header">
+                            <h2>${shelf.title}</h2>
+                            <span><i class="fa-solid ${shelf.icon}"></i> ${shelf.subtitle}</span>
+                        </div>
+                        <div class="curated-row" id="${shelf.elementId}"></div>
+                    </section>
+                `).join('');
+
                 for (const shelf of discoveryShelves) {
                     if (shelf.type === 'category') {
                         await renderer.renderMoodCategorySection(shelf, shelf.elementId);
@@ -3452,8 +3475,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const card = document.createElement('div');
                     card.className = 'progress-overview-card';
                     card.innerHTML = `
+
                         <div class="book-cover-wrapper cover-skeleton">
                              <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img book-cover-fade" onload="this.parentElement.classList.remove('cover-skeleton'); this.classList.add('loaded');" onerror="this.parentElement.classList.remove('cover-skeleton'); this.classList.add('loaded');" />
+
+                        <div class="progress-card-cover">
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="Cover of '${title}' by ${author}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+
                         </div>
                         <div class="progress-card-info">
                             <div class="progress-card-title">${title}</div>
@@ -4166,7 +4194,7 @@ async function triggerOfflineLibraryView() {
                 bookCard.className = 'book-card offline-card';
                 bookCard.innerHTML = `
                     <div class="book-cover-wrapper">
-                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img" />
+                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="Cover of '${book.title}' by ${book.author || 'Unknown Author'}" class="book-cover-img" />
                     </div>
                     <div class="book-details">
                         <h3>${book.title}</h3>

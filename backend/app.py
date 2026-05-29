@@ -780,6 +780,55 @@ def _validate_jwt_secret_startup():
 _validate_jwt_secret_startup()
 
 
+@app.route('/api/v1/content/live-shelves', methods=['GET'])
+def get_live_shelves():
+    """Return the configuration for live discovery shelves on the frontend."""
+    discovery_shelves = [
+        {
+            "type": "query",
+            "query": "subject:mystery atmosphere",
+            "elementId": "row-rainy",
+            "title": "Rainy Evening Reads",
+            "subtitle": "Mystery & Melancholy",
+            "icon": "fa-cloud-rain"
+        },
+        {
+            "type": "query",
+            "query": "authors:arundhati roy|subject:india",
+            "elementId": "row-indian",
+            "title": "Indian Authors",
+            "subtitle": "Subcontinent Voices",
+            "icon": "fa-feather"
+        },
+        {
+            "type": "query",
+            "query": "subject:classic fiction",
+            "elementId": "row-classics",
+            "title": "Forgotten Classics",
+            "subtitle": "Timeless & Dust-free",
+            "icon": "fa-hourglass"
+        },
+        {
+            "type": "query",
+            "query": "subject:gothic fiction subject:dark academia subject:campus",
+            "elementId": "row-dark-academia",
+            "title": "Dark Academia",
+            "subtitle": "Gothic, cerebral, candlelit",
+            "icon": "fa-feather-pointed",
+            "vibeDescription": "gothic, intellectual, melancholic, and candlelit",
+            "fallbackQuery": "subject:gothic fiction subject:campus"
+        },
+        {
+            "type": "query",
+            "query": "subject:fiction",
+            "elementId": "row-fiction",
+            "title": "General Fiction",
+            "subtitle": "Stories for everyone",
+            "icon": "fa-book-open"
+        }
+    ]
+    return success_response(data={"shelves": discovery_shelves})
+
 # =====================================================================
 # ENDPOINT: CSRF Token Retrieval
 # =====================================================================
