@@ -7516,19 +7516,91 @@ body { cursor: none; }
     background-size: 0.65rem auto;
 }
 
-[data-theme="night"] .sort-select {
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e0d5cb%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+/* Night Theme Override */
+[data-theme="night"] {
+    --bg-color: #0b0f19; /* Deep cosmic dark background */
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --header-bg: rgba(11, 15, 25, 0.75);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --shadow-panel: 0 18px 45px rgba(0, 0, 0, 0.7);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --book-bg: #111827;
+    --paper-color: #1f2937;
+    --accent-gold: #fbbf24;
 }
 
-.sort-select option {
-    background: var(--bg-color);
+/* Dynamic Ambient Glow Background Structure */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
     color: var(--text-main);
-}
-.custom-auth-bg {
-    background: linear-gradient(to bottom right, #f8fafc, #dbeafe);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    position: relative;
+    overflow-x: hidden;
     min-height: 100vh;
 }
 
+body:not(.landing-page) {
+    background:
+        radial-gradient(circle at 12% 10%, rgba(212, 175, 55, 0.08), transparent 18%),
+        radial-gradient(circle at 88% 18%, rgba(93, 64, 55, 0.06), transparent 20%),
+        linear-gradient(180deg, #f8f3ec 0%, #f4ede5 100%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.83) 0 1px, transparent 1px 24px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 28px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+}
+
+body:not(.landing-page)::before {
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.12), transparent 18%),
+        radial-gradient(circle at 80% 28%, rgba(255, 255, 255, 0.08), transparent 14%);
+    opacity: 0.4;
+    mix-blend-mode: screen;
+}
+
+/* Animated Ambient Glow Containers */
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: -1;
+    mix-blend-mode: screen;
+    filter: blur(120px);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+/* Glow layout specifically active during Night Mode */
+[data-theme="night"] body::before {
+    opacity: 0.25;
+    top: -10%;
+    right: -10%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, rgba(168, 85, 247, 0.4) 50%, transparent 100%);
+    animation: floatGlowOne 25s infinite alternate ease-in-out;
+}
+
+[data-theme="night"] body::after {
+    opacity: 0.2;
+    bottom: -10%;
+    left: -10%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.5) 0%, rgba(59, 130, 246, 0.3) 60%, transparent 100%);
+    animation: floatGlowTwo 30s infinite alternate ease-in-out;
+}
+
+/* Keyframe Animations for Natural Floating Movements */
+@keyframes floatGlowOne {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-8%, 12%) scale(1.1); }
+    100% { transform: translate(5%, -5%) scale(0.9); }
 .auth-btn {
     transition: all 0.3s ease;
 }
@@ -7638,7 +7710,6 @@ body.night-mode .tooltip-author {
 }
 /* =========================
    Reader Perspectives
-========================= */
 .reader-perspectives {
   padding: 4rem 2rem;
   background: var(--bg-color);
@@ -7708,476 +7779,80 @@ body.night-mode .tooltip-author {
     gap: 0.5rem;
 }
 
-/* --- Reading Mood Quiz --- */
-.reading-mood-quiz {
-    padding: 4rem 2rem;
-    margin-bottom: 4rem;
-    display: flex;
-    justify-content: center;
+@keyframes floatGlowTwo {
+    0% { transform: translate(0, 0) scale(0.9); }
+    50% { transform: translate(10%, -10%) scale(1.15); }
+    100% { transform: translate(-5%, 5%) scale(1); }
 }
 
-.quiz-container {
-    background: var(--surface-panel);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+/* Custom Dropdown Styling Rules */
+.bg-dropdown-menu {
+    background: var(--header-bg);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-panel);
-    padding: 3rem;
-    max-width: 800px;
-    width: 100%;
-    box-shadow: var(--shadow-panel);
-    text-align: center;
-}
-
-.quiz-container h2 {
-    font-family: "Playfair Display", serif;
-    font-size: 2.5rem;
     color: var(--text-main);
-    margin-bottom: 0.5rem;
-    font-style: italic;
-}
-
-.quiz-container > p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    margin-bottom: 2.5rem;
-}
-
-.quiz-question {
-    text-align: left;
-    margin-bottom: 2rem;
-}
-
-.quiz-question h3 {
-    font-size: 1.2rem;
-    color: var(--text-main);
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-
-.quiz-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-}
-
-.quiz-options button {
-    background: transparent;
-    border: 1px solid var(--input-border);
-    color: var(--text-muted);
-    padding: 0.6rem 1.2rem;
-    border-radius: 20px;
-    font-family: "Georgia", serif;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.quiz-options button:hover {
-    background: var(--glass-bg);
-    border-color: var(--accent-gold);
-    color: var(--text-main);
-}
-
-.quiz-options button.selected {
-    background: var(--accent-gold);
-    color: var(--wood-dark);
-    border-color: var(--accent-gold);
-    font-weight: bold;
-    transform: scale(1.05);
-    box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
-}
-
-.generate-tags-btn {
-    background: var(--text-main);
-    color: var(--bg-color);
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 30px;
-    font-family: "Georgia", serif;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: 1rem;
-    width: 100%;
-    max-width: 300px;
-}
-
-.generate-tags-btn:hover:not(:disabled) {
-    background: var(--accent-gold);
-    color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.generate-tags-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.quiz-results {
-    margin-top: 3rem;
-    padding-top: 2rem;
-    border-top: 1px dashed var(--glass-border);
-}
-
-.quiz-results h3 {
-    font-family: "Playfair Display", serif;
-    font-size: 1.5rem;
-    color: var(--text-main);
-    margin-bottom: 1rem;
-}
-
-.mood-tags {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.8rem;
-    margin-bottom: 1.5rem;
-}
-
-.mood-tags span {
-    background: var(--glass-bg);
-    border: 1px solid var(--accent-gold);
-    color: var(--accent-gold);
     padding: 0.5rem 1rem;
     border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-.retake-quiz-btn {
-    background: transparent;
-    border: 1px solid var(--text-muted);
-    color: var(--text-muted);
-    padding: 0.6rem 1.5rem;
-    border-radius: 20px;
     font-family: "Georgia", serif;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.3s;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-soft);
 }
-
-.retake-quiz-btn:hover {
-    color: var(--text-main);
-    border-color: var(--text-main);
-}
-
-/* ── No-results empty state ── */
-#no-results-state {
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1.5rem;
-}
-.no-results-inner {
-  text-align: center;
-  max-width: 480px;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1.5rem;
-  padding: 2.75rem 2rem;
-}
-.no-results-icon-wrap {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.25rem;
-  font-size: 1.75rem;
-}
-.no-results-title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-main, #f0ece3);
-  margin: 0 0 0.5rem;
-}
-.no-results-subtitle {
-  font-size: 0.875rem;
-  color: var(--text-muted, #a89f91);
-  margin: 0 0 0.5rem;
-  line-height: 1.6;
-}
-.no-results-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted, #a89f91);
-  margin: 0 0 0.75rem;
-}
-.no-results-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-}
-.mood-suggestion-tag {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgb(0, 0, 0);
-  color: var(--text-main, #2810b1ce);
-  border-radius: 20rem;
-  padding: 0.4rem 1rem;
-  font-size: 0.95rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
-}
-.mood-suggestion-tag:hover {
-  background: rgba(255, 255, 255, 0.13);
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
-}
-
-
-/* ============================================================ */
-/* IN-APP BOOK PREVIEW MODAL (Google Books Embedded Viewer)    */
-/* ============================================================ */
-
-/* Backdrop overlay â€” hidden by default, shown via .active */
-dialog.book-preview-modal {
-    display: none;
-    padding: 0;
-    border: none;
-    background: transparent;
-    margin: auto;
-    overflow: visible;
-}
-
-dialog.book-preview-modal[open] {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-dialog.book-preview-modal::backdrop {
-    background: rgba(0, 0, 0, 0.78);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-}
-
-/* Inner panel */
-.preview-modal-inner {
-    background: var(--bg-color);
-    border-radius: 20px;
-    width: min(92vw, 960px);
-    height: min(90vh, 780px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow:
-        0 32px 80px rgba(0, 0, 0, 0.5),
-        0 8px 24px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--glass-border);
-    position: relative;
-    animation: previewModalIn 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-@keyframes previewModalIn {
-    from { opacity: 0; transform: scale(0.94) translateY(16px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0);    }
-}
-
-/* Header */
-.preview-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--glass-border);
-    background: var(--header-bg);
-    flex-shrink: 0;
-    gap: 1rem;
-}
-
-.preview-modal-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    min-width: 0;
-    flex: 1;
-}
-
-.preview-header-icon {
-    color: var(--accent-gold);
-    font-size: 1.1rem;
-    flex-shrink: 0;
-}
-
-.preview-modal-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.preview-powered-by {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 2px 8px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-}
-
-.preview-close-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-    position: relative;
-    z-index: 10;
-}
-
-.preview-close-btn:hover {
-    background: var(--accent-gold);
-    color: #2c2420;
+.bg-dropdown-menu:hover {
     border-color: var(--accent-gold);
-    transform: rotate(90deg);
 }
 
-/* Body */
-.preview-modal-body {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    background: #f5f5f5;
-    min-height: 0;
+/* ==========================================================================
+   PAPER TEXTURE OPTIONS (SCREENSHOT STYLES ADDED BELOW)
+   ========================================================================== */
+
+/* Background 1: Crinkled Parchment Style (Left Photo) */
+body[data-bg="crinkled-parchment"] {
+    background-color: #ebdcd0 !important;
+    background-image: 
+        radial-gradient(rgba(0,0,0,0.03) 1px, transparent 0),
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 50%),
+        radial-gradient(circle at 75% 60%, rgba(93,64,55,0.06) 0%, transparent 40%),
+        linear-gradient(135deg, rgba(93,64,55,0.04) 0%, rgba(255,255,255,0.2) 50%, rgba(93,64,55,0.05) 100%) !important;
+    background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100% !important;
 }
 
-[data-theme="night"] .preview-modal-body {
-    background: #1a1614;
+/* Background 2: Fine Pressed Cotton Style (Middle Photo) */
+body[data-bg="fine-pressed"] {
+    background-color: #f2f0eb !important;
+    background-image: 
+        radial-gradient(rgba(0,0,0,0.015) 15%, transparent 16%),
+        radial-gradient(rgba(0,0,0,0.01) 15%, transparent 16%),
+        linear-gradient(to right, rgba(255,255,255,0.5), rgba(255,255,255,0)),
+        linear-gradient(to bottom, rgba(0,0,0,0.02), rgba(0,0,0,0)) !important;
+    background-size: 4px 4px, 6px 6px, 100% 100%, 100% 100% !important;
+    background-position: 0 0, 2px 2px, 0 0, 0 0 !important;
 }
 
-/* Loading state */
-.preview-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.2rem;
-    background: var(--bg-color);
-    z-index: 2;
+/* Background 3: Heavy Textured Canvas Style */
+body[data-bg="heavy-textured"] {
+    background-color: #e6e4df !important;
+    background-image: 
+        linear-gradient(90deg, rgba(0,0,0,0.02) 50%, transparent 50%),
+        linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%),
+        linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)) !important;
+    background-size: 6px 100%, 100% 6px, 100% 100% !important;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.04) !important;
 }
 
-.preview-loading p {
-    color: var(--text-muted);
-    font-family: 'Georgia', serif;
-    font-style: italic;
-    font-size: 1rem;
+/* Background 4: Soft Linen Weave */
+body[data-bg="linen-weave"] {
+    background-color: #f5efe6 !important;
+    background-image:
+        linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 18px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 18px),
+        radial-gradient(circle at 20% 20%, rgba(213, 188, 161, 0.12), transparent 20%);
+    background-size: 100% 100%, 18px 18px, 18px 18px, 100% 100% !important;
 }
 
-.preview-loading-spinner {
-    width: 44px;
-    height: 44px;
-    border: 3px solid var(--glass-border);
-    border-top-color: var(--accent-gold);
-    border-radius: 50%;
-    animation: previewSpin 0.8s linear infinite;
-}
-
-@keyframes previewSpin {
-    to { transform: rotate(360deg); }
-}
-
-/* Viewer container â€” Google injects its iframe here */
-.preview-viewer-container {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    inset: 0;
-}
-
-.preview-viewer-container iframe {
-    width: 100% !important;
-    height: 100% !important;
-    border: none !important;
-    display: block !important;
-}
-
-/* Fallback state */
-.preview-fallback {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 2rem;
-    background: var(--bg-color);
-    text-align: center;
-    z-index: 2;
-}
-
-.preview-fallback-icon {
-    font-size: 3.5rem;
-    color: var(--accent-gold);
-    opacity: 0.6;
-    margin-bottom: 0.5rem;
-}
-
-.preview-fallback-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    color: var(--text-main);
-    margin: 0;
-}
-
-.preview-fallback-msg {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    max-width: 38ch;
-    margin: 0;
-}
-
-.preview-external-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding: 0.65rem 1.4rem;
-    background: var(--accent-gold);
-    color: #2c2420;
-    border-radius: 24px;
-    font-family: 'Georgia', serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-}
-
-.preview-external-link:hover {
-    background: #e6c44a;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
-}
-
-/* Footer */
+/* Preview-modal-footer */
 .preview-modal-footer {
     padding: 0.6rem 1.5rem;
     border-top: 1px solid var(--glass-border);
@@ -8220,37 +7895,5 @@ dialog.book-preview-modal::backdrop {
     background: var(--accent-gold);
     color: #2c2420;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-}
-
-.btn-preview i {
-    font-size: 0.85rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .preview-modal-inner {
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-        border: none;
-    }
-
-    .preview-modal-header {
-        padding: 0.85rem 1rem;
-    }
-
-    .preview-powered-by {
-        display: none;
-    }
-
-    .preview-modal-footer {
-        padding: 0.5rem 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .preview-modal-title {
-        font-size: 0.95rem;
-    }
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
 }
