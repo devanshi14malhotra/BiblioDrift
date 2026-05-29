@@ -1944,3 +1944,17 @@ html[data-theme='night'] .hero-book-stack::before {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
 }
+
+a[class*="btn"] {
+    text-decoration: none;
+}
+
+a[class*="btn"]:hover,
+a[class*="btn"]:focus-visible {
+    text-decoration: none;
+}
+a.footer-pill,
+a.footer-pill:hover,
+a.footer-pill:focus-visible {
+    text-decoration: none;
+}
