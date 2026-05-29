@@ -508,6 +508,113 @@ class LLMService:
             logger.error(f"generate_chat failed: {type(e).__name__}: {e}", exc_info=True)
 
         return None
+
+    def generate_chat_stream(self, system_prompt: str, messages: list, max_tokens: Optional[int] = None):
+        """Yield chunks of text from the LLM for streaming."""
+        if not self.is_available():
+            yield "The candles are flickering and my connection to the ether seems troubled today. "
+            return
+
+        if max_tokens is None:
+            max_tokens = self.config.get('gemini_max_tokens', 600)
+
+        # Per-model context window limits (conservative estimates)
+        _MODEL_CONTEXT_LIMITS = {
+            'llama-3.1-8b-instant': 8192,
+            'llama-3.3-70b-versatile': 32768,
+            'gpt-3.5-turbo': 4096,
+            'gpt-4': 8192,
+            'gpt-4o': 16384,
+            'models/gemini-2.0-flash-lite': 32768,
+            'models/gemini-1.5-flash': 32768,
+        }
+
+        def _get_context_limit(model_name: str) -> int:
+            return _MODEL_CONTEXT_LIMITS.get(model_name, 4096)
+
+        try:
+            # --- Gemini ---
+            if self.gemini_client and (self.preferred_llm == 'gemini' or not self.groq_client):
+                try:
+                    from google.genai import types
+                    context_limit = _get_context_limit(self.config['gemini_model'])
+                    trimmed = self.trim_history_to_token_budget(
+                        system_prompt, messages, max_tokens, context_limit
+                    )
+                    
+                    flat_prompt = system_prompt + "\n\n"
+                    for m in trimmed:
+                        role = "Elara" if m.get("role") == "assistant" else "Customer"
+                        flat_prompt += f"{role}: {m.get('content', '')}\n"
+                    flat_prompt += "Elara:"
+                    
+                    response = self.gemini_client.models.generate_content_stream(
+                        model=self.config['gemini_model'],
+                        contents=flat_prompt,
+                    )
+                    for chunk in response:
+                        if chunk.text:
+                            yield chunk.text
+                    return
+                except Exception as e:
+                    logger.warning(f"Gemini streaming chat failed, falling back: {e}")
+
+            # --- Groq ---
+            if self.groq_client:
+                try:
+                    context_limit = _get_context_limit(self.config['groq_model'])
+                    trimmed = self.trim_history_to_token_budget(
+                        system_prompt, messages, max_tokens, context_limit
+                    )
+                    
+                    groq_messages = [{"role": "system", "content": system_prompt}] + [
+                        {"role": m.get("role", "user"), "content": m.get("content", "")}
+                        for m in trimmed
+                    ]
+                    response = self.groq_client.chat.completions.create(
+                        model=self.config['groq_model'],
+                        messages=groq_messages,
+                        max_tokens=min(max_tokens, self.config['groq_max_tokens']),
+                        temperature=self.config['groq_temperature'],
+                        stream=True
+                    )
+                    for chunk in response:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            yield content
+                    return
+                except Exception as e:
+                    logger.warning(f"Groq streaming chat failed, falling back: {e}")
+
+            # --- OpenAI ---
+            if self.openai_client:
+                from openai import OpenAI
+                client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+                context_limit = _get_context_limit(self.config['openai_model'])
+                trimmed = self.trim_history_to_token_budget(
+                    system_prompt, messages, max_tokens, context_limit
+                )
+                
+                oai_messages = [{"role": "system", "content": system_prompt}] + [
+                    {"role": m.get("role", "user"), "content": m.get("content", "")}
+                    for m in trimmed
+                ]
+                response = client.chat.completions.create(
+                    model=self.config['openai_model'],
+                    messages=oai_messages,
+                    max_tokens=min(max_tokens, self.config['openai_max_tokens']),
+                    temperature=self.config['openai_temperature'],
+                    stream=True
+                )
+                for chunk in response:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+                return
+
+        except Exception as e:
+            logger.error(f"generate_chat_stream failed: {type(e).__name__}: {e}", exc_info=True)
+            yield "An error occurred while peering into the books. Please ask again."
     
     def generate_text(self, prompt: str, max_tokens: Optional[int] = None, retry_count: int = 0) -> Optional[str]:
         """Generate text using available LLM service with retry logic."""
@@ -653,7 +760,7 @@ class LLMService:
 llm_service = LLMService()
 
 __all__ = ['generate_book_note', 'get_ai_recommendations', 'get_category_books',
-           'get_book_mood_tags_safe', 'generate_chat_response', 'llm_service', 
+           'get_book_mood_tags_safe', 'generate_chat_response', 'generate_chat_response_stream', 'llm_service', 
            'LLMService', 'PromptTemplates']
 
 
@@ -962,6 +1069,56 @@ def generate_chat_response(user_message: str, conversation_history: list = []) -
     ]
     import random
     return random.choice(variations)
+
+def generate_chat_response_stream(user_message: str, conversation_history: list = []):
+    """
+    Yield an emotionally rich, persona-driven chat response from Elara.
+    """
+    if not llm_service.is_available():
+        logger.warning("generate_chat_response_stream: No LLM available")
+        yield "The candles are flickering and my connection to the ether seems troubled today. "
+        yield "Come back in a moment — the books are waiting, and so am I."
+        return
+
+    messages = []
+    for msg in (conversation_history or []):
+        role = msg.get("type", msg.get("role", "user"))
+        if role in ("bookseller", "assistant"):
+            role = "assistant"
+        else:
+            role = "user"
+        content = msg.get("content", "")
+        if content:
+            messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": user_message})
+
+    yield from llm_service.generate_chat_stream(
+        system_prompt=_WISE_BOOKSELLER_SYSTEM_PROMPT,
+        messages=messages,
+    )
+
+    # SMART FALLBACK: A variety of poetic responses that adapt to keywords
+    msg_lower = user_message.lower()
+    
+    if any(k in msg_lower for k in ['rain', 'melancholy', 'sad', 'quiet']):
+        yield "The rain has a way of turning the heart into a library of its own. I've gathered these quiet, thoughtful volumes for your pensive mood."
+    elif any(k in msg_lower for k in ['adventure', 'journey', 'travel', 'exciting']):
+        yield "Ah, a soul that yearns for the horizon! The dust on these covers is from distant worlds... here are a few maps for your next great journey."
+    elif any(k in msg_lower for k in ['cozy', 'warm', 'happy', 'gentle']):
+        yield "There is a particular warmth in finding the right story at the right time. Let me tuck these gentle tales into your shelf for a comfortable evening."
+    elif any(k in msg_lower for k in ['dark', 'mystery', 'thriller', 'shadow']):
+        yield "Some stories prefer the shadows, whispering truths we only dare to hear at night. I've pulled these mysterious tomes from the back shelf for you."
+    else:
+        # Generic but varied fallbacks
+        variations = [
+            "The books have been whispering your name today. I've pulled a few that seem particularly eager to meet you.",
+            "Every reader is a traveler, and every book a destination. Which of these paths shall we walk today?",
+            "I've spent a lifetime listening to the scent of old paper... and it tells me these stories belong in your hands.",
+            "The stars and the ink seem to be in alignment. Here is what I've found in the quiet corners of the shop for you."
+        ]
+        import random
+        yield random.choice(variations)
 
 # =========================================================================
 # VIBE-CHECK ENDPOINT LOGIC

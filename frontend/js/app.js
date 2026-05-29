@@ -99,6 +99,33 @@ function hideNoResults() {
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Centralized Publish-Subscribe State Store
+ */
+class Store {
+    constructor(initialState = {}) {
+        this.state = initialState;
+        this.listeners = [];
+    }
+    getState() { return this.state; }
+    setState(updater) {
+        const newState = typeof updater === 'function' ? updater(this.state) : updater;
+        this.state = { ...this.state, ...newState };
+        this.notify();
+    }
+    subscribe(listener) {
+        this.listeners.push(listener);
+        return () => { this.listeners = this.listeners.filter(l => l !== listener); };
+    }
+    notify() { this.listeners.forEach(listener => listener(this.state)); }
+}
+
+window.appStore = new Store({
+    user: null,
+    libraryBooks: { current: [], want: [], finished: [] },
+    currentTheme: localStorage.getItem('bibliodrift_theme') || 'light'
+});
+
 let GOOGLE_API_KEY = '';
 
 /**
@@ -109,27 +136,6 @@ function getCookie(name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
-}
-
-async function loadConfig() {
-    try {
-        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            GOOGLE_API_KEY = data.google_books_key || '';
-            if (window.GoogleBooksClient) {
-                window.GoogleBooksClient.setKeys([
-                    data.google_books_key,
-                    data.google_books_key_secondary,
-                ]);
-            }
-            if (IS_DEV) {
-                console.log('Config loaded');
-            }
-        }
-    } catch (e) {
-        console.warn('Failed to load backend config', e);
-    }
 }
 
 const CollectionAPI = {
@@ -275,6 +281,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    window.appStore.setState({ user: null });
     authSessionPromise = null;
 }
 
@@ -348,6 +355,7 @@ async function verifyStoredAuthSession() {
                 const verifiedUser = data.user || storedUser;
                 if (verifiedUser) {
                     SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+                    window.appStore.setState({ user: verifiedUser });
                 }
                 SafeStorage.set('isLoggedIn', 'true');
                 return verifiedUser || null;
@@ -689,7 +697,7 @@ class BookRenderer {
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="${safeTitle}">
+                    <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -924,6 +932,7 @@ class BookRenderer {
         if (!modal) return;
 
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
+        document.getElementById('modal-img').alt = `Cover of '${book.volumeInfo.title}' by ${book.volumeInfo.authors?.join(', ') || 'Unknown Author'}`;
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
 
@@ -1867,13 +1876,38 @@ class LibraryManager {
         // 1. Request persistent storage to prevent wipes
         await SafeStorage.requestPersistence();
 
-        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
-        const stored = await SafeStorage.getAsync(this.storageKey);
-        if (stored) {
+        const user = this.getUser();
+        let storedLibrary = null;
+
+        // 2. Load from Dexie IndexedDB (Issue #875)
+        if (user && window.db?.userLibrary) {
             try {
-                this.library = JSON.parse(stored);
+                const record = await window.db.userLibrary.get(user.id);
+                if (record && record.library) {
+                    storedLibrary = record.library;
+                }
             } catch (e) {
-                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                console.error("[Library] Failed to read from Dexie", e);
+            }
+        }
+
+        // Fallback to SafeStorage for migration
+        if (!storedLibrary) {
+            const stored = await SafeStorage.getAsync(this.storageKey);
+            if (stored) {
+                try {
+                    storedLibrary = JSON.parse(stored);
+                } catch (e) {
+                    console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                }
+            }
+        }
+
+        if (storedLibrary) {
+            this.library = storedLibrary;
+            // Migrate to Dexie immediately
+            if (user && window.db?.userLibrary) {
+                window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
             }
         }
 
@@ -1887,12 +1921,27 @@ class LibraryManager {
             this.renderShelf('finished', 'shelf-finished');
         }
 
-        // 4. Sync with backend if available (Full Refresh)
-        await this.syncWithBackend();
-        if (navigator.onLine) {
-            await this.flushPendingLibraryMutations();
+        // 4. Sync with backend if available (Background Refresh)
+        if (!storedLibrary) {
+            await this.syncWithBackend();
+            if (navigator.onLine) {
+                await this.flushPendingLibraryMutations();
+            }
+            await this.updateSyncStatus();
+        } else {
+            // Background sync (stale-while-revalidate strategy)
+            (async () => {
+                try {
+                    await this.syncWithBackend();
+                    if (navigator.onLine) {
+                        await this.flushPendingLibraryMutations();
+                    }
+                    await this.updateSyncStatus();
+                } catch (e) {
+                    console.error("[Library] Background sync failed", e);
+                }
+            })();
         }
-        await this.updateSyncStatus();
     }
 
     getUser() {
@@ -2625,6 +2674,10 @@ class LibraryManager {
     }
 
     saveLocally() {
+        const user = this.getUser();
+        if (user && window.db?.userLibrary) {
+            window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
+        }
         SafeStorage.set(this.storageKey, JSON.stringify(this.library));
     }
 
@@ -2886,10 +2939,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const themeManager = new ThemeManager();
 
     // 2. Load Config (Non-blocking)
-    loadConfig();
-
-
-
     // --- AUTH LOGIC ---
     const toggleLink = document.getElementById('toggleText');
     const authTitle = document.getElementById('authTitle');
@@ -3024,24 +3073,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         renderer.renderCuratedSection(query, 'search-results-grid', 20);
-    } else if (document.getElementById('row-rainy')) {
+    } else if (document.getElementById('dynamic-shelves-container')) {
         console.log('📚 Initializing Curated Discovery Sections...');
-        const discoveryShelves = [
-            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy' },
-            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
-            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
-            {
-                type: 'query',
-                query: 'subject:gothic fiction subject:dark academia subject:campus',
-                elementId: 'row-dark-academia',
-                vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
-                fallbackQuery: 'subject:gothic fiction subject:campus'
-            },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
-            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
+        const container = document.getElementById('dynamic-shelves-container');
+        
+        const fallbackShelves = [
+            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy', title: 'Rainy Evening Reads', subtitle: 'Mystery & Melancholy', icon: 'fa-cloud-rain' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian', title: 'Indian Authors', subtitle: 'Subcontinent Voices', icon: 'fa-feather' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics', title: 'Forgotten Classics', subtitle: 'Timeless & Dust-free', icon: 'fa-hourglass' },
+            { type: 'query', query: 'subject:gothic fiction subject:dark academia subject:campus', elementId: 'row-dark-academia', title: 'Dark Academia', subtitle: 'Gothic, cerebral, candlelit', icon: 'fa-feather-pointed', vibeDescription: 'gothic, intellectual, melancholic, and candlelit', fallbackQuery: 'subject:gothic fiction subject:campus' },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction', title: 'General Fiction', subtitle: 'Stories for everyone', icon: 'fa-book-open' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller', title: 'Thriller & Suspense', subtitle: 'Edge of Your Seat', icon: 'fa-skull' }
         ];
+
         (async () => {
             try {
+                let discoveryShelves = fallbackShelves;
+                try {
+                    const response = await fetch(`${MOOD_API_BASE}/content/live-shelves`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data && data.data.shelves) {
+                            discoveryShelves = data.data.shelves;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn('⚠️ Could not fetch live shelves, falling back to local config:', apiErr);
+                }
+
+                // Render HTML for shelves
+                container.innerHTML = discoveryShelves.map(shelf => `
+                    <section class="curated-section">
+                        <div class="section-header">
+                            <h2>${shelf.title}</h2>
+                            <span><i class="fa-solid ${shelf.icon}"></i> ${shelf.subtitle}</span>
+                        </div>
+                        <div class="curated-row" id="${shelf.elementId}"></div>
+                    </section>
+                `).join('');
+
                 for (const shelf of discoveryShelves) {
                     if (shelf.type === 'category') {
                         await renderer.renderMoodCategorySection(shelf, shelf.elementId);
@@ -3478,7 +3548,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     card.className = 'progress-overview-card';
                     card.innerHTML = `
                         <div class="progress-card-cover">
-                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="${title}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="Cover of '${title}' by ${author}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
                         </div>
                         <div class="progress-card-info">
                             <div class="progress-card-title">${title}</div>
@@ -3547,17 +3617,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         achievementsGrid.innerHTML = '';
 
         const achievements = [
-            { id: 'reader', icon: 'fa-book', title: 'Avid Reader', desc: 'Finished 5 books', condition: finishedCount >= 5 },
-            { id: 'collector', icon: 'fa-layer-group', title: 'Curator', desc: 'Added 10 books', condition: (currentCount + wantCount + finishedCount) >= 10 },
-            { id: 'critic', icon: 'fa-pen-fancy', title: 'Critic', desc: 'Saved 3 reviews', condition: false }, // Mock
-            { id: 'focused', icon: 'fa-glasses', title: 'Focused', desc: 'Reading 3 at once', condition: currentCount >= 3 }
+            {
+                id: 'reader',
+                badge: 'badge--gold',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M3 6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6z"></path>
+                        <path fill="currentColor" d="M21 6h-2v12h2V6z" opacity="0.18"></path>
+                    </svg>`,
+                title: 'Avid Reader',
+                desc: 'Finished 5 books',
+                condition: finishedCount >= 5
+            },
+            {
+                id: 'collector',
+                badge: 'badge--teal',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <rect x="3" y="4" width="18" height="3" rx="1" fill="currentColor"></rect>
+                        <rect x="5" y="9" width="14" height="3" rx="1" fill="currentColor" opacity="0.9"></rect>
+                        <rect x="7" y="14" width="10" height="3" rx="1" fill="currentColor" opacity="0.7"></rect>
+                    </svg>`,
+                title: 'Curator',
+                desc: 'Added 10 books',
+                condition: (currentCount + wantCount + finishedCount) >= 10
+            },
+            {
+                id: 'critic',
+                badge: 'badge--purple',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12.3 2.3l2.4 2.4-8.5 8.5-2.4-2.4L12.3 2.3zM3 21l6-1 10.7-10.7 1.3 1.3L10.3 22 3 21z"></path>
+                    </svg>`,
+                title: 'Critic',
+                desc: 'Saved 3 reviews',
+                condition: false
+            },
+            {
+                id: 'focused',
+                badge: 'badge--gray',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M4 10a3 3 0 0 1 6 0 1 1 0 0 0 2 0 3 3 0 0 1 6 0v2h-2v6H4v-6H2v-2h2zM8 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+                    </svg>`,
+                title: 'Focused',
+                desc: 'Reading 3 at once',
+                condition: currentCount >= 3
+            }
         ];
 
         achievements.forEach(ach => {
             const card = document.createElement('div');
             card.className = `achievement-card ${ach.condition ? 'unlocked' : 'locked'}`;
             card.innerHTML = `
-                <i class="fa-solid ${ach.icon}"></i>
+                <span class="achievement-badge ${ach.badge}" aria-hidden="true"></span>
+                ${ach.icon}
                 <h4>${ach.title}</h4>
                 <p>${ach.desc}</p>
             `;
@@ -4147,7 +4261,7 @@ async function triggerOfflineLibraryView() {
                 bookCard.className = 'book-card offline-card';
                 bookCard.innerHTML = `
                     <div class="book-cover-wrapper">
-                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="${book.title}" class="book-cover-img" />
+                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="Cover of '${book.title}' by ${book.author || 'Unknown Author'}" class="book-cover-img" />
                     </div>
                     <div class="book-details">
                         <h3>${book.title}</h3>

@@ -8,6 +8,8 @@ import re
 from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 from typing import Optional, List, Dict, Any, Literal
 from enum import Enum
+from functools import wraps
+from flask import request, jsonify
 
 # Handle both absolute and relative imports
 try:
@@ -92,6 +94,21 @@ class MoodSearchRequest(BaseModel):
         """Sanitize search query for AI."""
         if not v or not v.strip():
             raise ValueError('Query cannot be empty or whitespace')
+        return sanitize_for_ai(v)
+
+
+# ==================== VIBE CHECK ====================
+class VibeCheckRequest(BaseModel):
+    """Request schema for /api/v1/vibe-check endpoint."""
+    vibe_prompt: str = Field(..., min_length=1, max_length=1000, description="Vibe description prompt")
+    count: Optional[int] = Field(default=3, ge=1, le=10, description="Number of recommendations to return")
+
+    @field_validator('vibe_prompt')
+    @classmethod
+    def sanitize_prompt(cls, v: str) -> str:
+        """Sanitize vibe prompt for AI."""
+        if not v or not v.strip():
+            raise ValueError('Vibe prompt cannot be empty or whitespace')
         return sanitize_for_ai(v)
 
 
@@ -337,6 +354,29 @@ def validate_request(schema_class, data: Optional[Dict[str, Any]]) -> tuple[bool
                 'error': str(e),
                 'validation_errors': []
             }
+
+
+def validate_schema(schema_class):
+    """
+    Decorator to automatically validate incoming JSON payloads against a Pydantic schema.
+    If valid, it injects the validated data as a keyword argument `validated_data`.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            try:
+                data = request.get_json(silent=True)
+            except Exception:
+                data = None
+                
+            is_valid, validated_data_or_error = validate_request(schema_class, data)
+            if not is_valid:
+                return jsonify(validated_data_or_error), 400
+            
+            kwargs['validated_data'] = validated_data_or_error
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
 # ==================== JWT SECRET VALIDATION ====================
