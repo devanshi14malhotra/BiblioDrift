@@ -76,7 +76,7 @@
     --input-bg: rgba(0, 0, 0, 0.2);
     --input-border: rgba(255, 255, 255, 0.1);
     --book-bg: #2c2420;
-    --paper-color: #e0d5cb;
+    --paper-color: var(--bg-color);
     /* Overrides */
     --shadow-hover: 0 15px 45px rgba(0, 0, 0, 0.5);
     --nav-active-color: #fff2df;
