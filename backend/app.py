@@ -72,7 +72,7 @@ from validators import (
     validate_jwt_secret,
     is_production_mode
 )
-from middleware import require_strong_password  # Issue #790
+
 from collections import defaultdict, deque
 from math import ceil
 from time import time
@@ -1487,7 +1487,7 @@ def sync_library():
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
 @limiter.limit("5 per minute")
-@require_strong_password
+
 def register():
     """Register a new user and return JWT token."""
     try:
