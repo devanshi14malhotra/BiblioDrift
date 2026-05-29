@@ -34,7 +34,8 @@
   <!-- Added SEO meta description to improve search engine discoverability and click-through rates -->
   <meta name="description" content="BiblioDrift — Discover books by mood, track your reading journey, and get AI-powered recommendations." />
   <title>BiblioDrift | Find yourself in the pages</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/style.css?v=2" />
+  <link rel="stylesheet" href="../css/style-responsive.css?v=2" />
   <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
   <link rel="manifest" href="/manifest.json">
   <!-- Fonts -->
@@ -509,6 +510,9 @@
     <a href="app.html" class="logo">
       <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
     </a>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation">
+      <i class="fa-solid fa-bars"></i>
+    </button>
     <div class="header-controls">
       <div class="search-bar">
         <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
