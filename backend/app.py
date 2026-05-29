@@ -1722,8 +1722,6 @@ def sync_library(validated_data):
 
 
 
-def register():
-
 @limiter.limit("5 per 10 seconds")
 @validate_schema(RegisterRequest)
 def register(validated_data):
