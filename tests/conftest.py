@@ -84,10 +84,32 @@ def auth_headers(client, test_user):
         "/api/auth/login",
         json={"username": "testuser", "password": "Password123!"},
     )
-    token = resp.get_json().get("access_token", "")
-    return {"Authorization": f"Bearer {token}"}
+    data = resp.get_json()
+    assert resp.status_code == 200, f"Login failed: {data}"
+    assert "access_token" in data, f"No token in response: {data}"
+    return {"Authorization": f"Bearer {data['access_token']}"}
+
+@pytest.fixture
+def admin_user(app):
+    with app.app_context():
+        admin = User(username="adminuser", email="admin@example.com", is_admin=True)
+        admin.set_password("AdminPass123!")
+        _db.session.add(admin)
+        _db.session.commit()
+        _db.session.refresh(admin)
+        return admin
 
 
+@pytest.fixture
+def admin_auth_headers(client, admin_user):
+    resp = client.post(
+        "/api/auth/login",
+        json={"username": "adminuser", "password": "AdminPass123!"},
+    )
+    data = resp.get_json()
+    assert resp.status_code == 200, f"Admin login failed: {data}"
+    assert "access_token" in data, f"No token in response: {data}"
+    return {"Authorization": f"Bearer {data['access_token']}"}
 # --- Mocks for external services (issue #511 requirement) ---
 
 @pytest.fixture
