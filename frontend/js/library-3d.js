@@ -1206,7 +1206,7 @@ class BookshelfRenderer3D {
         if (book.cover) {
             const img = document.createElement('img');
             img.src = book.cover;
-            img.alt = book.title;
+            img.alt = `Cover of '${book.title}' by ${book.author}`;
             img.style.cssText = `
             position: absolute;
             top: 0;
@@ -2056,7 +2056,7 @@ class BookshelfRenderer3D {
 
         // Update tooltip content
         document.getElementById('tooltip-cover').src = book.cover;
-        document.getElementById('tooltip-cover').setAttribute('alt', `Cover of ${book.title} `);
+        document.getElementById('tooltip-cover').setAttribute('alt', `Cover of '${book.title}' by ${book.author}`);
         document.getElementById('tooltip-title').textContent = book.title;
         document.getElementById('tooltip-author').textContent = `by ${book.author} `;
         document.getElementById('tooltip-stars').textContent = this.getStarRating(book.rating);
@@ -2161,7 +2161,7 @@ class BookshelfRenderer3D {
 
         container.innerHTML = related.map(b => `
             <div class="related-book-item" data-id="${b.id}" title="${b.title} by ${b.author}">
-                <img src="${b.cover || (b.volumeInfo && b.volumeInfo.imageLinks && b.volumeInfo.imageLinks.thumbnail) || '../assets/images/biblioDrift_favicon.png'}" alt="${b.title}">
+                <img src="${b.cover || (b.volumeInfo && b.volumeInfo.imageLinks && b.volumeInfo.imageLinks.thumbnail) || '../assets/images/biblioDrift_favicon.png'}" alt="Cover of '${b.title}' by ${b.author || 'Unknown Author'}">
                 <div class="related-book-title">${b.title}</div>
             </div>
         `).join('');
@@ -2203,7 +2203,7 @@ class BookshelfRenderer3D {
         const coverImg = document.getElementById('modal-cover');
         if (coverImg) {
             coverImg.src = book.cover;
-            coverImg.setAttribute('alt', `Cover of ${book.title} by ${book.author} `);
+            coverImg.setAttribute('alt', `Cover of '${book.title}' by ${book.author}`);
         }
 
         // 3. Style the 3D Book (Spine & Back)
