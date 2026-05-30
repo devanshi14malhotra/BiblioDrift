@@ -89,7 +89,8 @@ class BookMoodAnalyzer:
                 'sadness', 'anger', 'fear', 'disgust', 'anxiety', 'depression',
                 'frustration', 'disappointment', 'grief', 'despair', 'rage',
                 'heartbreak', 'anguish', 'sorrow', 'melancholy', 'dread', 'terror',
-                'horror', 'haunting', 'disturbing', 'unsettling', 'troubling', 'tragic'
+                'horror', 'haunting', 'disturbing', 'unsettling', 'troubling', 'tragic',
+                'bittersweet'
             ],
             'intensity_modifiers': [
                 'very', 'extremely', 'incredibly', 'absolutely', 'completely',

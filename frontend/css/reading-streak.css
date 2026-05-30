@@ -1,0 +1,397 @@
+/* Reading Streak (Issue #608)
+   Cozy glassmorphism streak heatmap for My Library - GitHub Green Edition
+*/
+
+.reading-streak-section {
+  width: 100%;
+  margin: 3rem 0 2.5rem;
+}
+
+.reading-streak-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-soft, 0 8px 32px 0 rgba(0, 0, 0, 0.2));
+  padding: 1.75rem;
+  transition: all 0.3s ease;
+}
+
+.reading-streak-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+  padding-bottom: 1.25rem;
+}
+
+.reading-streak-title {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--theme-text, var(--text-main, #fff5f5));
+}
+
+.reading-streak-title i {
+  font-size: 1.8rem;
+  color: var(--accent-gold);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent-gold) 40%, transparent));
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.reading-streak-title h2 {
+  font-size: 1.6rem;
+  margin: 0;
+  font-family: "Georgia", serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.reading-streak-stats {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.reading-streak-stat {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 0.75rem 1.25rem;
+  min-width: 110px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reading-streak-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--accent-gold);
+}
+
+.reading-streak-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--text-main) 20%, transparent);
+}
+
+.reading-streak-stat-label {
+  color: var(--theme-text-muted, var(--text-muted, #7f8c8d));
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+.reading-streak-heatmap-wrap {
+  margin-top: 0.5rem;
+}
+
+.reading-streak-heatmap-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.reading-streak-btn {
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  font-family: "Georgia", serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reading-streak-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  background: var(--input-bg);
+  border-color: var(--accent-gold);
+}
+
+.reading-streak-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  color: var(--text-muted);
+}
+
+.reading-streak-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 12px;
+  margin-bottom: 1rem;
+  position: relative;
+  border-radius: 12px;
+}
+
+.reading-streak-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.reading-streak-scroll::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 999px;
+}
+
+.reading-streak-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-main);
+}
+
+/* Heatmap container */
+.reading-streak-heatmap-container {
+  display: flex;
+  position: relative;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Weekdays column (sticky to the left) */
+.reading-streak-weekdays {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 12px;
+  margin-top: 1.5rem; /* push down to align with rows under month labels */
+  height: calc(12px * 7 + 0.35rem * 6);
+  position: sticky;
+  left: 0;
+  background: var(--theme-bg, #1a1614); /* adapts perfectly to mood theme */
+  z-index: 10;
+  user-select: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.weekday-label {
+  height: 12px;
+  line-height: 12px;
+  font-size: 0.65rem;
+  color: var(--theme-text-muted, var(--text-muted, #7f8c8d));
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+/* Grid Wrapper containing months and columns */
+.reading-streak-grid-wrapper {
+  position: relative;
+  flex-grow: 1;
+  padding-top: 1.5rem; /* space for floated month labels */
+  padding-left: 8px;
+}
+
+/* Month labels positioned absolutely above starting week columns */
+.reading-streak-month-label {
+  position: absolute;
+  top: 0;
+  left: 8px; /* small left padding to match column gap */
+  font-size: 0.65rem;
+  color: var(--theme-text-muted, var(--text-muted, #7f8c8d));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.reading-streak-grid {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.reading-streak-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  position: relative; /* essential for absolute positioning of month labels relative to week columns */
+}
+
+/* Standardized cell */
+.reading-streak-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+/* Inactive (No reading) */
+.reading-streak-cell.inactive {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+}
+
+/* Future/Out of window cells */
+.reading-streak-cell-empty {
+  visibility: hidden; /* hide nicely rather than display block, maintaining grid geometry */
+}
+
+/* Intensity levels (Theme Colors) */
+.reading-streak-cell.active {
+  background: color-mix(in srgb, var(--text-main) 25%, transparent);
+  border-color: color-mix(in srgb, var(--text-main) 30%, transparent);
+}
+
+.reading-streak-cell.active2 {
+  background: color-mix(in srgb, var(--text-main) 50%, transparent);
+  border-color: color-mix(in srgb, var(--text-main) 55%, transparent);
+}
+
+.reading-streak-cell.active3 {
+  background: color-mix(in srgb, var(--text-main) 75%, transparent);
+  border-color: color-mix(in srgb, var(--text-main) 80%, transparent);
+}
+
+.reading-streak-cell.active4 {
+  background: var(--text-main);
+  border-color: var(--text-main);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--text-main) 50%, transparent);
+}
+
+/* Hover effect on cells */
+.reading-streak-cell:hover:not(.reading-streak-cell-empty) {
+  transform: scale(1.3);
+  z-index: 5;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-gold) 50%, transparent);
+}
+
+/* Footer / Legend */
+.reading-streak-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+}
+
+.reading-streak-info {
+  font-size: 0.75rem;
+  color: var(--theme-text-muted, var(--text-muted, #7f8c8d));
+  font-weight: 500;
+}
+
+.reading-streak-info strong {
+  color: var(--theme-text, var(--text-main, #fff5f5));
+  font-weight: 700;
+}
+
+.reading-streak-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--theme-text-muted, var(--text-muted, #7f8c8d));
+  font-weight: 500;
+}
+
+.reading-streak-legend span {
+  margin: 0 0.15rem;
+}
+
+.reading-streak-legend .reading-streak-cell {
+  cursor: default;
+}
+
+.reading-streak-legend .reading-streak-cell:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent-gold) 30%, transparent));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent-gold) 60%, transparent));
+    transform: scale(1.08);
+  }
+}
+
+/* Media query refinements */
+@media (max-width: 768px) {
+  .reading-streak-card {
+    padding: 1.25rem;
+    border-radius: 20px;
+  }
+
+  .reading-streak-header {
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .reading-streak-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .reading-streak-stat {
+    min-width: 0;
+    flex: 1;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .reading-streak-stat-value {
+    font-size: 1.75rem;
+  }
+
+  .reading-streak-weekdays {
+    padding-right: 8px;
+    height: calc(10px * 7 + 0.25rem * 6);
+  }
+
+  .weekday-label {
+    font-size: 0.6rem;
+    height: 10px;
+    line-height: 10px;
+  }
+
+  .reading-streak-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .reading-streak-grid {
+    gap: 0.25rem;
+  }
+
+  .reading-streak-col {
+    gap: 0.25rem;
+  }
+
+  .reading-streak-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .reading-streak-legend {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing Guide | BiblioDrift</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/style-responsive.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png" />
+  <link rel="stylesheet" href="../css/contributing.css" />
+  <style>
+  </style>
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
+</head>
+<body class="landing-page">
+  <div class="landing-shell">
+    <header class="landing-header">
+      <a class="landing-brand" href="index.html" aria-label="BiblioDrift home">
+        <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift logo" />
+        <span>BiblioDrift</span>
+      </a>
+      <nav class="landing-nav" aria-label="Guide sections">
+        <a href="#contribute">Contribute</a>
+        <a href="#setup">Setup</a>
+        <a href="#pull-requests">Pull Requests</a>
+        <a href="#style">Style</a>
+      </nav>
+      <!-- Dark Mode Toggle Button -->
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <div class="landing-header-actions">
+        <a class="btn-ghost app-link" href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to landing</a>
+      </div>
+    </header>
+
+    <main class="guide-shell">
+      <section class="guide-hero reveal is-visible">
+        <div class="guide-hero-copy">
+          <div class="eyebrow-row">
+            <span class="eyebrow-pill"><i class="fa-solid fa-handshake-angle"></i> Contribution guide</span>
+            <span class="eyebrow-note">for UI, docs, logic, and accessibility work</span>
+          </div>
+          <h1>Contributing to BiblioDrift</h1>
+          <p>
+            Thanks for taking the time to contribute. BiblioDrift is a calm, visual-first book discovery platform, and contributions should improve the experience without breaking the mood-driven flow.
+          </p>
+          <div class="guide-actions">
+            <span class="guide-note"><i class="fa-solid fa-mug-hot"></i> Keep changes focused</span>
+            <span class="guide-note"><i class="fa-solid fa-circle-check"></i> Test before opening a PR</span>
+          </div>
+          <nav class="toc" aria-label="Contributing table of contents">
+            <a href="#contribute">Contribute</a>
+            <a href="#setup">Setup</a>
+            <a href="#pull-requests">Pull Requests</a>
+            <a href="#style">Style</a>
+          </nav>
+        </div>
+
+        <aside class="guide-hero-aside">
+          <span class="guide-kicker"><i class="fa-solid fa-sparkles"></i> What helps most</span>
+          <div class="guide-hero-stat">
+            <strong>Small UI fixes</strong>
+            <span>Polish spacing, alignment, responsiveness, and polish in the reading flow.</span>
+          </div>
+          <div class="guide-hero-stat">
+            <strong>Accessibility updates</strong>
+            <span>Improve focus states, contrast, keyboard navigation, and semantic structure.</span>
+          </div>
+          <div class="guide-hero-stat">
+            <strong>Docs and tests</strong>
+            <span>Clarify setup, document behavior changes, and add coverage for important paths.</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="guide-section reveal" id="what-you-can-contribute">
+        <a id="contribute" aria-hidden="true"></a>
+        <h2>What You Can Contribute</h2>
+        <p>Short, focused contributions are easiest to review. Common helpful tasks:</p>
+
+        <div class="guide-grid" style="margin-top:0.6rem;">
+          <article class="guide-card">
+            <h3>Bug fixes</h3>
+            <p>Reproduce, fix, and add a brief test or steps to reproduce.</p>
+          </article>
+
+          <article class="guide-card">
+            <h3>UI & accessibility</h3>
+            <p>Small spacing, focus, contrast, or responsive fixes that improve clarity.</p>
+          </article>
+
+          <article class="guide-card">
+            <h3>Docs & setup</h3>
+            <p>Tighten setup steps, add troubleshooting notes, or short how-tos.</p>
+          </article>
+
+          <article class="guide-card">
+            <h3>Tests</h3>
+            <p>Add/adjust tests for regressions or core behaviors.</p>
+          </article>
+        </div>
+
+        <p style="margin-top:0.8rem;">Quick checklist before opening a PR: fork & branch, run tests, keep changes small, and include a short description or screenshot.</p>
+      </section>
+
+      <section class="guide-section reveal" id="setup">
+        <h2>Setup</h2>
+        <p>Quick 3-step local setup to get started:</p>
+        <ol>
+          <li><strong>Clone:</strong> fork the repo and clone your fork locally.</li>
+          <li><strong>Env & deps:</strong> create a virtual environment and install the project's requirements.</li>
+          <li><strong>Run:</strong> run the test suite or start the backend (see backend/app.py) to verify your changes.</li>
+        </ol>
+        <p>See <a href="https://github.com/devanshi14malhotra/BiblioDrift">README</a> for full environment notes and troubleshooting.</p>
+      </section>
+
+      <section class="guide-section reveal" id="project-pages">
+        <h2>Project Pages</h2>
+        <p>These are the main pages contributors usually move between while reviewing or updating the experience.</p>
+        <div class="page-link-grid">
+          <a class="page-link-card app-link" href="index.html">
+            <i class="fa-solid fa-house"></i>
+            <strong>Landing page</strong>
+            <span>The main public entry point for the project.</span>
+          </a>
+          <a class="page-link-card app-link" href="contributors.html">
+            <i class="fa-solid fa-users"></i>
+            <strong>Contributors</strong>
+            <span>Browse the full contributor list in one place.</span>
+          </a>
+          <a class="page-link-card app-link" href="app.html">
+            <i class="fa-solid fa-book-open-reader"></i>
+            <strong>Discovery app</strong>
+            <span>The reading experience and main app entry.</span>
+          </a>
+          <a class="page-link-card app-link" href="../README.md">
+            <i class="fa-solid fa-file-lines"></i>
+            <strong>README</strong>
+            <span>High-level overview, setup notes, and project context.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="guide-section reveal" id="pr-process">
+        <a id="pull-requests" aria-hidden="true"></a>
+        <h2>Pull Request Process</h2>
+        <p>Keep PRs small and focused. Quick guidance:</p>
+        <ul>
+          <li>Branch from `main` with a clear name (e.g., <code>feat/...</code> or <code>fix/...</code>).</li>
+          <li>Describe what changed, how to test, and link related issues.</li>
+          <li>Run tests; include screenshots for UI changes.</li>
+        </ul>
+        <p class="guide-note" style="margin-top:0.6rem;"><i class="fa-solid fa-circle-info"></i> Concise PRs get reviewed faster.</p>
+      </section>
+
+      <section class="guide-section reveal" id="code-style">
+        <a id="style" aria-hidden="true"></a>
+        <h2>Style Guide</h2>
+        <ul>
+          <li>Prefer plain HTML/CSS/Vanilla JS for frontend work; avoid adding frameworks without discussion.</li>
+          <li>Use semantic markup and accessible patterns; prefer existing CSS variables in <code>frontend/css/style.css</code>.</li>
+          <li>For backend, follow current Python conventions and add tests for behavior changes.</li>
+        </ul>
+        <p style="margin-top: 1rem;">See <a href="https://github.com/devanshi14malhotra/BiblioDrift/blob/main/docs/contributing.md">docs/contributing.md</a> for details; open an issue to discuss large changes.</p>
+      </section>
+    </main>
+    <button id="backToTop" aria-label="Back to top">↑</button>
+  </div>
+
+  <script src="../js/theme-manager.js"></script>
+  <script src="../js/contributing.js"></script>
+    <script src="../js/pwa.js"></script>
+</body>
+</html>
+
+
+

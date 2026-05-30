@@ -7,10 +7,10 @@ import sys
 import os
 
 # Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from mood_analysis.mood_analyzer import BookMoodAnalyzer, AnalysisConfig
-from mood_analysis.mood_query_parser import parse_mood_query, MoodQueryParser
+from backend.mood_analysis.mood_analyzer import BookMoodAnalyzer, AnalysisConfig
+from backend.mood_analysis.mood_query_parser import parse_mood_query, MoodQueryParser
 
 class TestEnhancedSentimentAnalysis:
     """Test enhanced sentiment analysis with intensity and subjectivity weighting."""

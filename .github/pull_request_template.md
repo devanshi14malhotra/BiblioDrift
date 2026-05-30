@@ -26,8 +26,5 @@ Explain how you tested it.
 - [ ] Docs updated  
 - [ ] PR title includes the relevant event tag or a general contribution label
 
-## NSoC'26 Rule
-For event-based contributions, include the relevant event tag in the t itle, such as **NSoC'26**, **Apertre 3.0**,**GSSoC'26**, etc.
-
 Example:
 [NSoC'26] Add authentication system

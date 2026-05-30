@@ -1,6 +1,18 @@
 # BiblioDrift Contributor Guide for Open Source Events
 
-This document is tailored for contributors participating in all open source events: _Nexus Spring of Code, ACM Sourcery and Apertre3.0._
+This document is tailored for contributors participating in all open source events: _GirlsScript Summer of Code, Nexus Spring of Code, ACM Sourcery and Apertre3.0._
+
+> [!IMPORTANT]
+>
+> ### Contribution & Assignment Guidelines
+>
+> * A maximum of **5 active issues** can be assigned to a contributor at a time.
+> * Contributors may request more issues after completing their currently assigned issues and getting the corresponding PRs reviewed/merged.
+> * Please work only on issues assigned to you.
+> * To ensure fair participation, issue hoarding will not be encouraged.
+> * If there is **no progress/update for 2–3 days**, the issue may be unassigned and opened for others to contribute.
+> * Keep pull requests focused, meaningful, and easy to review.
+
 
 [![BiblioDrift - Issues](https://img.shields.io/badge/BiblioDrift-Issues-9113ff?style=for-the-badge)](https://github.com/devanshi14malhotra/BiblioDrift/issues)
 
@@ -168,7 +180,7 @@ Follow this checklist for any feature PR during Sourcery.
 
 ### Issue 5: Document One API Flow Better
 - Improve one example request/response path in the docs.
-- Files: `README.md` or `PROJECT_DETAILS.md`
+- Files: `README.md` or `docs/contributing.md`
 
 ---
 
