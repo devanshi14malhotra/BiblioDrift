@@ -2015,8 +2015,8 @@ def forgot_password(validated_data):
         email_config = app_config.email
 
         if plain_token:
-            reset_url = build_password_reset_url(plain_token, frontend_base)
             if is_email_configured(email_config):
+                reset_url = build_password_reset_url(plain_token, frontend_base)
                 send_result = send_password_reset_email(
                     validated_data.email,
                     reset_url,
@@ -2029,11 +2029,10 @@ def forgot_password(validated_data):
                         send_result.detail,
                     )
             elif app_config.is_development():
-                response_data["reset_url"] = reset_url
                 logger.info(
-                    "Dev password reset link for %s (email not configured): %s",
+                    "Password reset requested for %s, but email is not configured; "
+                    "no reset URL was returned.",
                     validated_data.email,
-                    reset_url,
                 )
             elif app_config.is_production():
                 logger.warning(

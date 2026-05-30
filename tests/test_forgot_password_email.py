@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from unittest.mock import patch
@@ -33,21 +34,27 @@ def test_forgot_password_sends_email_when_configured(
 
 @patch('backend.app.send_password_reset_email')
 @patch('backend.app.is_email_configured', return_value=False)
-def test_forgot_password_dev_reset_url_when_email_disabled(
+def test_forgot_password_dev_response_hides_reset_token_when_email_disabled(
     _mock_configured,
     mock_send,
     client,
     test_user,
     monkeypatch,
+    caplog,
 ):
     monkeypatch.setenv('APP_ENV', 'development')
-    res = client.post(
-        '/api/v1/auth/forgot-password',
-        json={'email': test_user.email},
-    )
+    with patch('backend.app.request_password_reset', return_value='plain-reset-token'):
+        with caplog.at_level(logging.INFO, logger='backend.app'):
+            res = client.post(
+                '/api/v1/auth/forgot-password',
+                json={'email': test_user.email},
+            )
 
     assert res.status_code == 200
     body = res.get_json()
-    assert 'reset_url' in body
-    assert 'token=' in body['reset_url']
+    assert body.get('reset_url') is None
+    assert body.get('message')
+    assert 'plain-reset-token' not in str(body)
+    assert 'plain-reset-token' not in caplog.text
+    assert 'token=' not in caplog.text
     mock_send.assert_not_called()
