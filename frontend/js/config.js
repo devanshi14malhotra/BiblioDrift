@@ -60,7 +60,11 @@ if (typeof window !== 'undefined') {
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
-            const url = `${MOOD_API_BASE}/books?q=${encodeURIComponent(query)}&maxResults=${encodeURIComponent(maxResults)}${extraParams}`;
+            const apiKey = CONFIG.GOOGLE_BOOKS_API_KEY || CONFIG.GOOGLE_BOOKS_API_KEYS[0] || '';
+            if (!apiKey) {
+                throw new Error('Google Books API key is not configured');
+            }
+            const url = `${CONFIG.API_BASE}?q=${encodeURIComponent(query)}&maxResults=${encodeURIComponent(maxResults)}&key=${encodeURIComponent(apiKey)}${extraParams}`;
 
             const response = await fetch(url);
             if (response.ok) {
