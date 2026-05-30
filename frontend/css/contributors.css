@@ -5,7 +5,7 @@ body {
   background:
     radial-gradient(circle at top left, rgba(212, 175, 55, 0.12), transparent 28%),
     radial-gradient(circle at bottom right, rgba(127, 150, 160, 0.12), transparent 26%),
-    var(--bg, #f7f2ea);
+    var(--bg-color, #f7f2ea);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -202,4 +202,28 @@ header {
   .contributors-hero p {
     max-width: 100%;
   }
+}
+
+[data-theme="night"] .contributor-card {
+  background: linear-gradient(180deg, rgba(34, 28, 25, 0.97), rgba(19, 16, 14, 0.92));
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="night"] .contributor-card:hover,
+[data-theme="night"] .contributor-card:focus-visible {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  border-color: rgba(252, 203, 78, 0.25);
+}
+
+[data-theme="night"] .contributor-avatar {
+  border-color: rgba(30, 26, 24, 0.95);
+  background: #2c2420;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="night"] .contributors-note {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #c4b8b0;
 }
