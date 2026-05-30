@@ -35,8 +35,8 @@ from werkzeug.utils import secure_filename
 import magic
 
 import logging
-from datetime import datetime, timezone
-from sanitizer import sanitize_payload
+from datetime import datetime, timedelta, timezone
+from backend.core.security.sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
@@ -75,7 +75,7 @@ from models import (
 )
 from price_tracker import get_price_tracker
 from cache_service import cache_service
-from validators import (
+from backend.core.validators.validators import (
     validate_request,
     validate_schema,
     validate_google_books_id,
@@ -112,19 +112,12 @@ from email_service import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from error_responses import (
-    ErrorCodes,
-    error_response,
-    success_response,
-    validation_error,
-    auth_error,
-    forbidden_error,
-    unauthorized_access_error,
-    not_found_error,
-    resource_exists_error,
-    rate_limit_error,
-    internal_error,
-    service_unavailable_error,
+from backend.core.responses.error_responses import (
+    ErrorCodes, error_response, success_response,
+    validation_error, missing_fields_error, invalid_json_error,
+    auth_error, forbidden_error, unauthorized_access_error,
+    not_found_error, resource_exists_error, rate_limit_error,
+    internal_error, service_unavailable_error
 )
 
 # =====================================================================
@@ -1151,14 +1144,12 @@ def handle_analyze_mood(validated_data):
 @validate_schema(MoodTagsRequest)
 def handle_mood_tags(validated_data):
     """Get mood tags for a book."""
-    from exceptions import (
-        LLMCircuitBreakerOpenError,
-        AIServiceException,
-        ValidationException,
-        InvalidInputError,
+    from backend.core.exceptions.exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException, 
+        ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
-
+    from backend.core.responses.error_responses import handle_exception
+    
     try:
 
         title = validated_data.title
@@ -1291,14 +1282,13 @@ def handle_purchase_links():
 @validate_schema(GenerateNoteRequest)
 def handle_generate_note(validated_data):
     """Generate AI-powered book recommendation with vibe support."""
-    from exceptions import (
-        LLMCircuitBreakerOpenError,
-        AIServiceException,
-        ValidationException,
-        InvalidInputError,
+    from backend.core.exceptions.exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException,
+        DatabaseQueryError, DatabaseIntegrityError,
+        ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
-
+    from backend.core.responses.error_responses import handle_exception
+    
     try:
 
         description = validated_data.description
@@ -1431,7 +1421,10 @@ def handle_socket_chat(data):
 @validate_schema(AddToLibraryRequest)
 def add_to_library(validated_data):
     """Add a book to the user's shelf."""
-
+    from sqlalchemy.exc import IntegrityError
+    from backend.core.exceptions.exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
+    from backend.core.responses.error_responses import handle_exception
+    
     try:
 
         if str(validated_data.user_id) != str(current_user_id):
@@ -1926,8 +1919,9 @@ def register(validated_data):
 @validate_schema(LoginRequest)
 def login(validated_data):
     """Authenticate user and return JWT token."""
-    from error_responses import handle_exception
-
+    from backend.core.exceptions.exceptions import DatabaseQueryError, ValidationException
+    from backend.core.responses.error_responses import handle_exception
+    
     try:
 
         username_or_email = validated_data.username

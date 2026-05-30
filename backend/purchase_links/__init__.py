@@ -20,7 +20,7 @@ Usage:
     links = manager.get_purchase_links(book_data)
 """
 
-from .config import config, SUPPORTED_PLATFORMS
+from .config import app.config, SUPPORTED_PLATFORMS
 from .link_generators import get_all_generators, PurchaseLink
 from .purchase_service import PurchaseLinkService
 from .purchase_manager import PurchaseManager, get_purchase_links_for_book, get_quick_purchase_links

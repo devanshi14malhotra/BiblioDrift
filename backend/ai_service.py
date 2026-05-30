@@ -19,7 +19,7 @@ from typing import Optional
 
 #to generate book spine images dynamically based on title and author
 
-from backend.spine_generator import create_spine
+from spine_generator import create_spine
 
 def process_new_book(book_data):
     # 1. Save book to your database first
