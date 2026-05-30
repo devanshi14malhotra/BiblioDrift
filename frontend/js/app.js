@@ -2631,6 +2631,78 @@ class LibraryManager {
         } else if (toShelf === 'current' && (book.progress == null || book.progress === 100)) {
             book.progress = 0;
         }
+
+        this.library[toShelf].push(book);
+        this.saveLocally();
+
+        const user = this.getUser();
+        if (user && book.db_id) {
+            try {
+                const res = await fetch(`${this.apiBase}/library/${book.db_id}`, {
+                    method: 'PUT',
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        shelf_type: toShelf,
+                        progress: book.progress,
+                        version: book.version
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    book.version = data.item.version;
+                    this.saveLocally();
+                    await this.updateSyncStatus();
+                } else if (res.status === 409) {
+                    showToast("Conflict detected! Syncing with server...", "error");
+                    await this.syncWithBackend();
+                    return false;
+                } else {
+                    const data = await res.json();
+                    console.error("Move failed:", data.error);
+                }
+            } catch (e) {
+                console.error("Failed to update backend during move", e);
+                await this._queueMutation('move', book, { fromShelf, toShelf });
+                showToast("Moved locally; sync queued", "info");
+            }
+        }
+
+        await this.updateSyncStatus();
+        return true;
+    }
+
+    saveLocally() {
+        const user = this.getUser();
+        if (user && window.db?.userLibrary) {
+            window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
+        }
+        SafeStorage.set(this.storageKey, JSON.stringify(this.library));
+    }
+
+    async renderShelf(shelfName, elementId) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+        const books = this.library[shelfName];
+        if (books.length === 0) {
+            // If we have no books, ensure empty state is visible (if we cleared it previously)
+            container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
+            return;
+        }
+
+        // Clear container for re-rendering (essential for sorting)
+        container.innerHTML = '';
+
+        try {
+            for (const book of books) {
+                const renderer = new BookRenderer(this);
+                const el = await renderer.createBookElement(book, shelfName);
+                container.appendChild(el);
+            }
+        } catch (error) {
+            console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
+        }
     }
 
     async syncOnReconnect() {
@@ -2759,6 +2831,9 @@ class ThemeManager {
     }
 }
 
+// Initialize once
+window.themeManager = new ThemeManager();
+
 
 class ConnectivityManager {
     constructor(libManager = null) {
@@ -2830,8 +2905,6 @@ class ConnectivityManager {
         this.showOfflineBanner();
     }
 }
-
-
 
 class GenreManager {
     constructor(libraryManager = null) {
