@@ -4651,4 +4651,55 @@ input:checked+.slider:before {
 .heatmap-cell:hover .heatmap-tooltip {
     opacity: 1;
     visibility: visible;
+}
+
+/* Offline Indicator Banner */
+.offline-banner {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    padding: 12px 24px;
+    border-radius: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    z-index: 10000;
+    font-family: 'Georgia', serif;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+    opacity: 0;
+    max-width: 90%;
+    text-align: center;
+    justify-content: center;
+    white-space: normal;
+}
+
+.offline-banner.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.offline-banner.online-state {
+    border-color: rgba(76, 175, 80, 0.3);
+    box-shadow: 0 8px 32px rgba(76, 175, 80, 0.1);
+}
+
+/* Night Mode support for offline banner */
+[data-theme="night"] .offline-banner {
+    background: rgba(30, 26, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e0d5cb;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="night"] .offline-banner.online-state {
+    border-color: rgba(129, 199, 132, 0.2);
 }
