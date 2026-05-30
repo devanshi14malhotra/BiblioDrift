@@ -3,6 +3,19 @@
  * Provides visual feedback for keyboard navigation and focus states
  */
 
+/* Screen reader only text - visually hidden but accessible */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
 /* Focused effect - keyboard navigation focus state */
 .book-spine-3d.focused {
     transform: rotateZ(0deg) rotateY(0deg) translateZ(15px) translateY(-8px);

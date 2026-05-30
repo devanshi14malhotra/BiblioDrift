@@ -516,7 +516,7 @@ class PriceTracker:
                 if shelf_item:
                     shelf_item.price_alert = False
             
-            self.db.session.delete(alert)
+            alert.soft_delete()
             self.db.session.commit()
             
             return {'success': True, 'message': 'Alert deleted'}

@@ -1,0 +1,99 @@
+name: Sync gssoc approved label
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  sync-approved-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync gssoc:approved label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labelName = 'gssoc:approved';
+            const pullRequest = context.payload.pull_request || context.payload.review?.pull_request;
+
+            if (!pullRequest?.number) {
+              core.info('No pull request context found.');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pullNumber = pullRequest.number;
+
+            const { data: currentPullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+
+            const headSha = currentPullRequest.head.sha;
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pullNumber,
+              per_page: 100,
+            });
+
+            const latestReviewsByUser = new Map();
+
+            for (const review of reviews) {
+              if (!review.user || review.user.type === 'Bot' || !review.submitted_at) {
+                continue;
+              }
+
+              const existing = latestReviewsByUser.get(review.user.login);
+              const reviewTime = Date.parse(review.submitted_at);
+              const existingTime = existing ? Date.parse(existing.submitted_at) : -1;
+
+              if (!existing || reviewTime >= existingTime) {
+                latestReviewsByUser.set(review.user.login, review);
+              }
+            }
+
+            const approvedOnCurrentHead = [...latestReviewsByUser.values()].some(
+              (review) => review.state === 'APPROVED' && review.commit_id === headSha
+            );
+
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner,
+              repo,
+              issue_number: pullNumber,
+            });
+
+            const hasLabel = labels.some((label) => label.name === labelName);
+
+            if (approvedOnCurrentHead && !hasLabel) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                labels: [labelName],
+              });
+              core.info(`Added ${labelName} to PR #${pullNumber}.`);
+              return;
+            }
+
+            if (!approvedOnCurrentHead && hasLabel) {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                name: labelName,
+              });
+              core.info(`Removed ${labelName} from PR #${pullNumber}.`);
+              return;
+            }
+
+            core.info(`No label change needed for PR #${pullNumber}.`);

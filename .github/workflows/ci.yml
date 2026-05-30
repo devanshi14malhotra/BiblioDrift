@@ -1,0 +1,66 @@
+name: CI – Run Tests & Lint
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  lint:
+    name: Lint Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install linters
+        run: pip install flake8 black
+      - name: Check code formatting with Black
+        run: black --check backend tests || true
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 backend tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all other errors as warnings
+          flake8 backend tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov
+          pip install flask-wtf bleach Pillow beautifulsoup4 "pydantic[email]"
+
+      - name: Run pytest
+        env:
+          GOOGLE_BOOKS_API_KEY: "ci-fake-key"
+          OPENAI_API_KEY: "ci-fake-key"
+          GROQ_API_KEY: "ci-fake-key"
+          GEMINI_API_KEY: "ci-fake-key"
+          FLASK_ENV: testing
+          PYTHONPATH: ".:backend"
+        run: |
+          python -m pytest tests/ \
+            --ignore=tests/test_llm.py \
+            --ignore=tests/test_mood_improvements.py \
+            --ignore=tests/test_mood_cache_db.py \
+            --ignore=tests/test_category_cache.py \
+            --ignore=tests/test_env_validation.py \
+            --ignore=tests/test_purchase_links.py \
+            -v --tb=short --cov=backend

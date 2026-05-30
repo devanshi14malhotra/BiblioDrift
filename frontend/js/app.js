@@ -2,44 +2,44 @@
  * ==============================================================================
  * BiblioDrift Core Logic - Main Application Entry Point
  * ==============================================================================
- * 
+ *
  * Overview:
  * ---------
  * This file serves as the primary orchestrator for the BiblioDrift application.
  * It ties together the DOM manipulation, state management, 3D rendering interactions,
  * and API communications (both Google Books API and our custom Python backend).
- * 
+ *
  * Key Components:
  * ---------------
- * 1. SafeStorage: 
- *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism. 
- *    This component is critical for offline-first capabilities and prevents the 
- *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent 
+ * 1. SafeStorage:
+ *    A robust wrapper around `localStorage` with an `IndexedDB` fallback mechanism.
+ *    This component is critical for offline-first capabilities and prevents the
+ *    entire app from crashing when iOS/Safari or restrictive browser quotas prevent
  *    standard `localStorage` operations.
  *    - Automatically handles QuotaExceeded exceptions.
  *    - Provides asynchronous data restoration algorithms.
  *    - Integrates closely with the LibraryManager to store thousands of books safely.
- * 
- * 2. LibraryManager: 
+ *
+ * 2. LibraryManager:
  *    The central state machine over the user's book collection.
  *    - Shelf Types: Manages three distinctive shelves: 'want', 'current', 'finished'.
- *    - Concurrency Control: Handles race conditions when syncing local states with 
+ *    - Concurrency Control: Handles race conditions when syncing local states with
  *      the backend utilizing optimistic locking techniques.
- *    - Merging Strategy: In the event of a conflict between the client data and 
- *      server data, it attempts a non-destructive merge, retaining the state with 
+ *    - Merging Strategy: In the event of a conflict between the client data and
+ *      server data, it attempts a non-destructive merge, retaining the state with
  *      the highest integer version map.
- * 
- * 3. BookRenderer: 
- *    An interface bridge to the DOM. Handles instantiation of HTML templates for 
- *    individual 3D book instances, binding their unique event listeners, and 
+ *
+ * 3. BookRenderer:
+ *    An interface bridge to the DOM. Handles instantiation of HTML templates for
+ *    individual 3D book instances, binding their unique event listeners, and
  *    applying their generated CSS styles and thematic properties.
  *    It integrates directly with `LibraryManager` to reflect real-time progress updates.
- * 
- * 4. ThemeManager: 
- *    Observes User Preferences and seamlessly toggles the UI's color palette between 
+ *
+ * 4. ThemeManager:
+ *    Observes User Preferences and seamlessly toggles the UI's color palette between
  *    predefined themes (e.g., dark mode and light mode, wood mode), persisting
  *    these preferences to SafeStorage for a seamless experience across reloads.
- * 
+ *
  * API Architecture Details:
  * -------------------------
  * - Google Books API: Facilitates the search and retrieval of rich book metadata
@@ -47,26 +47,26 @@
  * - Local Proxy/Backend: Certain complex interactions such as Machine Learning
  *   sentiment analysis (fetchAIVibe) are offloaded to `MOOD_API_BASE` to bypass
  *   client-side compute limitations and securely handle secret API keys.
- * 
+ *
  * Security & Data Integrity Considerations:
  * -----------------------------------------
- * - Data Sanitization: All text rendered from external APIs is strictly passed 
- *   through the `escapeHTML` utility safely converting brackets to entities to 
+ * - Data Sanitization: All text rendered from external APIs is strictly passed
+ *   through the `escapeHTML` utility safely converting brackets to entities to
  *   prevent XSS (Cross-Site Scripting) vectors.
  * - CSRF Protection: Interacts closely with the server-supplied `csrf_access_token`
- *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing 
+ *   to securely validate state-mutating requests (POST, PUT, DELETE) preventing
  *   Cross Site Request Forgery attacks against logged-in users.
- * 
+ *
  * Coding Standards and Development Guidelines:
  * --------------------------------------------
- * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are 
+ * 1. Offline-First Philosophy: Ensure that actions (add, remove, update) are
  *    optimistically applied to local state before waiting for server resolution.
- * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native 
+ * 2. Safe Storage Wrapper: Always use `SafeStorage.set()` instead of native
  *    `localStorage.setItem()`.
- * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in 
- *    `index.css` rather than directly overriding inline styles to maintain a 
+ * 3. Centralized Styling: For broad CSS manipulations, modify standard tokens in
+ *    `index.css` rather than directly overriding inline styles to maintain a
  *    dynamic and cohesive theme strategy.
- * 
+ *
  * File Structure:
  * ---------------
  * - [000-100]: Initialization and Utility Wrappers
@@ -79,9 +79,52 @@
 
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
-const IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+if (typeof window.IS_DEV === 'undefined') {
+    window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+const IS_DEV = window.IS_DEV;
+const moodAnalysisCache = new Map();
+const APP_ROUTE = window.location.pathname.endsWith('/app.html') ? 'app.html' : 'app.html';
 
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+// ── No-results empty state helpers ──
+function showNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'flex';
+}
+function hideNoResults() {
+  const el = document.getElementById('no-results-state');
+  if (el) el.style.display = 'none';
+}
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+/**
+ * Centralized Publish-Subscribe State Store
+ */
+class Store {
+    constructor(initialState = {}) {
+        this.state = initialState;
+        this.listeners = [];
+    }
+    getState() { return this.state; }
+    setState(updater) {
+        const newState = typeof updater === 'function' ? updater(this.state) : updater;
+        this.state = { ...this.state, ...newState };
+        this.notify();
+    }
+    subscribe(listener) {
+        this.listeners.push(listener);
+        return () => { this.listeners = this.listeners.filter(l => l !== listener); };
+    }
+    notify() { this.listeners.forEach(listener => listener(this.state)); }
+}
+
+window.appStore = new Store({
+    user: null,
+    libraryBooks: { current: [], want: [], finished: [] },
+    currentTheme: localStorage.getItem('bibliodrift_theme') || 'light'
+});
 
 let GOOGLE_API_KEY = '';
 
@@ -95,27 +138,130 @@ function getCookie(name) {
     return null;
 }
 
-async function loadConfig() {
-    try {
-        const res = await fetch(`${MOOD_API_BASE}/config`, { credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            GOOGLE_API_KEY = data.google_books_key || '';
-            if (window.GoogleBooksClient) {
-                window.GoogleBooksClient.setKeys([
-                    data.google_books_key,
-                    data.google_books_key_secondary
-                ]);
-            }
-            if (IS_DEV) {
-                console.log("Config loaded");
-            }
+const CollectionAPI = {
+    getHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        const csrf = getCookie('csrf_access_token');
+        if (csrf) {
+            headers['X-CSRF-TOKEN'] = csrf;
         }
-    } catch (e) {
-        console.warn("Failed to load backend config", e);
+        return headers;
+    },
+    async createCollection(userId, name, description = '', isPublic = false) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ user_id: parseInt(userId), name, description, is_public: isPublic })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async getCollections(userId) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections?user_id=${userId}`, {
+            method: 'GET',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        return data.collections || [];
+    },
+    async getCollection(id) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${id}`, {
+            method: 'GET',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        return data.collection;
+    },
+    async updateCollection(id, name, description, isPublic) {
+        const payload = {};
+        if (name !== undefined) payload.name = name;
+        if (description !== undefined) payload.description = description;
+        if (isPublic !== undefined) payload.is_public = isPublic;
+
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${id}`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async deleteCollection(id) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${id}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async addBookToCollection(collectionId, userId, bookId, title, authors = '', thumbnail = '') {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${collectionId}/books`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({
+                user_id: parseInt(userId),
+                google_books_id: bookId,
+                title: title,
+                authors: Array.isArray(authors) ? authors.join(', ') : authors,
+                thumbnail: thumbnail
+            })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async removeBookFromCollection(collectionId, bookId) {
+        const res = await fetch(`${MOOD_API_BASE}/api/v1/collections/${collectionId}/books/${bookId}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+            credentials: 'include'
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    }
+};
+window.CollectionAPI = CollectionAPI;
+
+// Example click handler for your custom "Save for Offline" icon
+async function handleDownloadToggle(bookCard, bookData) {
+    const isAlreadyDownloaded = await window.db.downloadedBooks.get(bookData.id);
+
+    if (isAlreadyDownloaded) {
+        const success = await window.removeOfflineBook(bookData.id);
+        if (success) bookCard.classList.remove('is-downloaded');
+    } else {
+        const success = await window.saveBookOffline(bookData);
+        if (success) bookCard.classList.add('is-downloaded');
     }
 }
-
 // Toast Notification Helper
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
@@ -130,6 +276,106 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+function clearStoredAuthState() {
+    SafeStorage.remove('bibliodrift_user');
+    SafeStorage.remove('bibliodrift_token');
+    SafeStorage.remove('isLoggedIn');
+    window.appStore.setState({ user: null });
+    authSessionPromise = null;
+}
+
+function parseStoredUser() {
+    const userStr = SafeStorage.get('bibliodrift_user');
+    if (!userStr) return null;
+
+    try {
+        return JSON.parse(userStr);
+    } catch (error) {
+        return null;
+    }
+}
+
+function renderAuthNavigation(authLink, tooltip, isAuthenticated) {
+    if (!authLink) return;
+
+    if (isAuthenticated) {
+        authLink.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
+        authLink.href = 'profile.html';
+        authLink.classList.remove('active');
+        authLink.setAttribute('aria-label', 'View profile');
+        if (tooltip) tooltip.innerHTML = '<i class="fa-solid fa-id-card"></i> View Profile';
+        return;
+    }
+
+    authLink.textContent = 'Sign In';
+    authLink.href = 'auth.html';
+    if (tooltip) tooltip.innerHTML = '<i class="fa-solid fa-key"></i> Access account';
+}
+
+let authSessionPromise = null;
+
+async function verifyStoredAuthSession() {
+    if (authSessionPromise) {
+        return authSessionPromise;
+    }
+
+    authSessionPromise = (async () => {
+        const token = SafeStorage.get('bibliodrift_token');
+        const storedUser = parseStoredUser();
+        const thinksLoggedIn = SafeStorage.get('isLoggedIn') === 'true';
+
+        if (token === 'demo-token-12345') {
+            return storedUser;
+        }
+
+        // Real logins use HttpOnly JWT cookies (see backend JWT_TOKEN_LOCATION). Optional CSRF cookie is readable by JS.
+        const shouldProbe = thinksLoggedIn || storedUser || getCookie('csrf_access_token');
+        if (!shouldProbe) {
+            return null;
+        }
+
+        try {
+            const headers = {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            };
+            const csrf = getCookie('csrf_access_token');
+            if (csrf) {
+                headers['X-CSRF-TOKEN'] = csrf;
+            }
+
+            const response = await fetch(`${MOOD_API_BASE}/auth/verify`, {
+                method: 'GET',
+                headers,
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const verifiedUser = data.user || storedUser;
+                if (verifiedUser) {
+                    SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+                    window.appStore.setState({ user: verifiedUser });
+                }
+                SafeStorage.set('isLoggedIn', 'true');
+                return verifiedUser || null;
+            }
+
+            if (response.status === 401 || response.status === 422) {
+                clearStoredAuthState();
+            }
+            return null;
+        } catch (error) {
+            console.warn('Auth verification failed (network error); using cached session state if available.', error);
+            return storedUser;
+        }
+    })();
+
+    return authSessionPromise;
+}
+
+window.verifyStoredAuthSession = verifyStoredAuthSession;
+window.renderAuthNavigation = renderAuthNavigation;
 
 /**
  * Robust Wrapper for Storage (LocalStorage + IndexedDB Fallback)
@@ -151,7 +397,7 @@ const SafeStorage = {
                     console.log(`[Storage] Persistent status: ${isPersisted}`);
                 }
             } catch (e) {
-                console.warn("[Storage] Persist request failed", e);
+                console.warn('[Storage] Persist request failed', e);
             }
         }
     },
@@ -175,8 +421,8 @@ const SafeStorage = {
 
     /**
      * Attempts to save data to localStorage with IndexedDB backup.
-     * @param {string} key 
-     * @param {string} value 
+     * @param {string} key
+     * @param {string} value
      * @returns {boolean} Success status
      */
     set(key, value) {
@@ -185,16 +431,16 @@ const SafeStorage = {
             localStorage.setItem(key, value);
         } catch (error) {
             const isQuotaError =
-                error instanceof DOMException && (
-                    error.code === 22 ||
+                error instanceof DOMException &&
+                (error.code === 22 ||
                     error.code === 1014 ||
                     error.name === 'QuotaExceededError' ||
                     error.name === 'NS_ERROR_DOM_QUOTA_REACHED');
 
             if (isQuotaError) {
-                showToast("Local storage full! Saving to secure backup.", "info");
+                showToast('Local storage full! Saving to secure backup.', 'info');
             } else {
-                console.error("LocalStorage Error:", error);
+                console.error('LocalStorage Error:', error);
             }
         }
 
@@ -212,10 +458,10 @@ const SafeStorage = {
             const store = transaction.objectStore(this._storeName);
             store.put(value, key);
         } catch (e) {
-            console.error("IndexedDB Backup Failed", e);
+            console.error('IndexedDB Backup Failed', e);
         }
 
-        showToast("Local storage full! Please sync to cloud and clear cache.", "error");
+        showToast('Local storage full! Please sync to cloud and clear cache.', 'error');
         return false;
     },
 
@@ -248,12 +494,14 @@ const SafeStorage = {
                 });
 
                 if (val) {
-                    if (IS_DEV) console.log("[Storage] Restored from IndexedDB backup");
+                    if (IS_DEV) console.log('[Storage] Restored from IndexedDB backup');
                     // Try to restore to LocalStorage for future sync calls
-                    try { localStorage.setItem(key, val); } catch (e) { }
+                    try {
+                        localStorage.setItem(key, val);
+                    } catch (e) { }
                 }
             } catch (e) {
-                console.warn("Backup retrieval failed", e);
+                console.warn('Backup retrieval failed', e);
             }
         }
         return val;
@@ -261,7 +509,7 @@ const SafeStorage = {
 
     /**
      * Safely removes data from storage.
-     * @param {string} key 
+     * @param {string} key
      */
     remove(key) {
         try {
@@ -286,7 +534,7 @@ const SafeStorage = {
         } catch (e) {
             return false;
         }
-    }
+    },
 };
 const MOCK_BOOKS = [
     {
@@ -413,38 +661,23 @@ class BookRenderer {
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
-        const description = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
+        const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
         const categories = volumeInfo.categories || [];
 
-        const vibe = this.generateVibe(description, categories);
+        const vibe = this.generateVibe(originalDescription, categories);
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
+        const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+        const spineImagePath = `assets/images/${cleanId}_spine.jpg`;
 
         const scene = document.createElement('div');
         scene.className = 'book-scene';
 
         // Load flip sound
         const flipSound = new Audio('../assets/sounds/page-flip.mp3');
+        flipSound.preload = 'auto';
         flipSound.volume = 0.5;
 
-        /**
-         * ============================================================================
-         * SECURE HTML ESCAPING HELPER & XSS PREVENTION
-         * ============================================================================
-         * Problem:
-         * Previously, book title and author data were injected directly into the 
-         * scene.innerHTML without sanitization. If data from the Google Books API 
-         * contained special HTML characters (e.g., <script> tags, <, >), this could 
-         * lead to rendering bugs or Cross-Site Scripting (XSS) vulnerabilities.
-         * 
-         * Fix:
-         * We introduce this `escapeHTML` helper function. It replaces sensitive 
-         * HTML characters with their harmless entity equivalents before injection. 
-         * This strictly forces the browser to treat the dynamic content as text 
-         * rather than executable code or structural markup. This is a crucial 
-         * security measure when constructing HTML strings manually.
-         * ============================================================================
-         */
         const escapeHTML = (str) => {
             if (!str) return "";
             return String(str)
@@ -457,18 +690,14 @@ class BookRenderer {
 
         const safeTitle = escapeHTML(title);
         const safeAuthors = escapeHTML(authors);
-        const safeDescription = escapeHTML(description);
+        const safeOriginalDescription = escapeHTML(originalDescription);
         const safeVibe = escapeHTML(vibe);
         const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
 
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <!-- 
-                      Using the sanitized title for the 'alt' attribute and 
-                      sanitized URL for 'src' ensures no attribute escape attacks.
-                    -->
-                    <img src="${safeThumb}" alt="${safeTitle}">
+                    <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -476,16 +705,19 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <!-- Safe data injection using escaped values -->
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: #2c2420;">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: #5d4037;">${safeVibe}</div>
                         ${bookData.moods && bookData.moods.length > 0 ? `
                         <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
                             ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
                         </div>
                         ` : ''}
-                        <div class="book-blurb" style="font-size: 0.8rem; line-height: 1.4; color: var(--text-muted); text-align: justify;">${safeDescription}</div>
                     </div>
+
+                    <button class="read-details-btn" title="Read Details">
+                        <i class="fa-solid fa-circle-info"></i> Read Details
+                    </button>
+
                     ${shelf === 'current' ? `
                     <div class="reading-progress">
                         <input type="range" min="0" max="100" value="${progress}" class="progress-slider" />
@@ -493,17 +725,17 @@ class BookRenderer {
                     </div>` : ''}
                     <div class="book-actions">
                         <button class="btn-icon add-btn" title="Add to Library"><i class="fa-regular fa-heart"></i></button>
-                        <button class="btn-icon info-btn" title="Read Details"><i class="fa-solid fa-info"></i></button>
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
+                        <button class="btn-icon mood-btn" title="Explore Mood"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
                         <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
                     </div>
                 </div>
             </div>
-            <div class="glass-overlay">
-                <!-- Safe author and title data injection in the overlay -->
-                <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
-            </div>
-        `;
+        <div class="book-pages-3d"></div>
+    <div class="glass-overlay">
+        <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
+    </div>
+`;
 
         // Interaction: Progress Slider
         const slider = scene.querySelector('.progress-slider');
@@ -523,7 +755,9 @@ class BookRenderer {
         const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
-                bookEl.classList.toggle('flipped');
+                if (bookEl) {
+                    bookEl.classList.toggle('flipped');
+                }
                 // Play sound
                 flipSound.play().catch(e => {
                     if (IS_DEV) {
@@ -551,7 +785,7 @@ class BookRenderer {
         });
 
         // Info Button
-        scene.querySelector('.info-btn').addEventListener('click', (e) => {
+        scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.openModal(bookData);
         });
@@ -566,6 +800,12 @@ class BookRenderer {
                 console.error('Failed to copy text: ', err);
                 showToast('Failed to copy book details.', 'error');
             });
+        });
+
+        // Explore Mood Button
+        scene.querySelector('.mood-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.exploreBookMood(title, authors);
         });
 
         // Flip Back Button
@@ -606,12 +846,51 @@ class BookRenderer {
             });
             if (res.ok) {
                 const data = await res.json();
-                return data.vibe;
+                const payload = data.data || data;
+                return payload?.vibe || payload?.bookseller_note || payload?.insight || payload?.note || null;
             }
         } catch (e) {
-            // Silently fail to mock vibe
+            // Silently fail to use fallback
         }
         return null;
+    }
+
+    async fetchAIBlurb(bookId, title, author, description, categories = []) {
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ bookId, title, author, description, categories })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                return data.data?.blurb || null;
+            }
+        } catch (e) {
+            // Silently fail to use fallback
+        }
+        return null;
+    }
+
+    async fetchMoodTags(title, author) {
+        try {
+            const csrfToken = getCookie('csrf_access_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) {
+                headers['X-CSRF-TOKEN'] = csrfToken;
+            }
+            const res = await fetch(`${MOOD_API_BASE}/mood-tags`, {
+                method: 'POST',
+                headers: headers,
+                credentials: 'include',
+                body: JSON.stringify({ title, author })
+            });
+            return res;
+        } catch (e) {
+            console.error("fetchMoodTags error", e);
+            return null;
+        }
     }
 
     generateVibe(text, categories = []) {
@@ -653,9 +932,10 @@ class BookRenderer {
         if (!modal) return;
 
         document.getElementById('modal-img').src = book.volumeInfo.imageLinks?.thumbnail.replace('http:', 'https:') || '';
+        document.getElementById('modal-img').alt = `Cover of '${book.volumeInfo.title}' by ${book.volumeInfo.authors?.join(', ') || 'Unknown Author'}`;
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
-        
+
         const summaryEl = document.getElementById('modal-summary');
         if (summaryEl) {
             // Show skeletons while AI is "thinking"
@@ -716,73 +996,439 @@ class BookRenderer {
             };
         }
 
-        modal.showModal();
-        document.getElementById('closeModalBtn').onclick = () => modal.close();
+        // Preview Button — opens the Google Books Embedded Viewer
+        const previewBtn = document.getElementById('modal-preview-btn');
+        if (previewBtn) {
+            previewBtn.onclick = () => {
+                if (window.BookPreview && book.id) {
+                    const author = book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author';
+                    const rating = book.volumeInfo.averageRating || 0;
+                    const genre = book.volumeInfo.categories ? book.volumeInfo.categories[0] : 'Fiction';
+                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview', author, rating, genre);
+                }
+            };
+        }
 
-        // Emotion Tagging UI
-        const emotionContainer = document.createElement('div');
-        emotionContainer.className = 'emotion-tagging-section';
-        emotionContainer.innerHTML = `
+        // Fetch and render purchase links
+        const purchaseLinksEl = document.getElementById('modal-purchase-links');
+        if (purchaseLinksEl) {
+            purchaseLinksEl.innerHTML = '<div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>';
+
+            const title = encodeURIComponent(book.volumeInfo.title || '');
+            const author = encodeURIComponent(book.volumeInfo.authors ? book.volumeInfo.authors[0] : '');
+            let isbn = '';
+            if (book.volumeInfo.industryIdentifiers) {
+                const identifier = book.volumeInfo.industryIdentifiers.find(i => i.type === 'ISBN_13' || i.type === 'ISBN_10');
+                if (identifier) isbn = encodeURIComponent(identifier.identifier);
+            }
+
+            fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.links && data.links.length > 0) {
+                        const linksHtml = data.links.map(link => {
+                            return `<a href="${link.url}" target="_blank" class="purchase-link-btn" style="background-color: ${link.color || 'var(--wood-dark)'}; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; margin-right: 5px; margin-bottom: 5px; font-size: 0.85rem;">
+                                <i class="${link.icon || 'fa-solid fa-book'}"></i> ${link.name}
+                            </a>`;
+                        }).join('');
+                        purchaseLinksEl.innerHTML = linksHtml;
+                    } else {
+                        purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">No purchase links available.</p>';
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load purchase links', err);
+                    purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
+                });
+            // Explore Mood Button
+            const moodBtnModal = document.getElementById('modal-mood-btn');
+            if (moodBtnModal) {
+                moodBtnModal.onclick = () => {
+                    this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
+                };
+            }
+
+            modal.showModal();
+            document.getElementById('closeModalBtn').onclick = () => modal.close();
+
+            // Emotion Tagging UI
+            const emotionContainer = document.createElement('div');
+            emotionContainer.className = 'emotion-tagging-section';
+            emotionContainer.innerHTML = `
             <h3 class="modal-section-title">How does this book make you feel?</h3>
             <div class="emotion-tags-container">
                 ${['Melancholic', 'Cozy', 'Tense', 'Inspiring', 'Whimsical', 'Dark', 'Adventurous'].map(mood => {
             const isActive = book.moods && book.moods.includes(mood);
-            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}">
+            return `<span class="emotion-tag ${isActive ? 'active' : ''}" data-mood="${mood}" style="color: var(--text-main); border-color: var(--control-border);">
                         <i class="fa-solid ${this.getMoodIcon(mood)}"></i> ${mood}
                     </span>`;
-        }).join('')}
+            }).join('')}
             </div>
         `;
-        // Insert before the buttons
-        const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
-        const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
-        
-        if (actions) {
-            // Remove existing tagging section if re-opening
-            const existing = actions.parentNode.querySelector('.emotion-tagging-section');
-            if (existing) existing.remove();
-            
-            actions.parentNode.insertBefore(emotionContainer, actions);
-        } else if (modalBody) {
-            // Fallback
-            const existing = modalBody.querySelector('.emotion-tagging-section');
-            if (existing) existing.remove();
-            modalBody.appendChild(emotionContainer);
+            // Insert before the buttons
+            const modalBody = modal.querySelector('.modal-body') || modal.querySelector('.book-details-content');
+            const actions = modal.querySelector('.modal-actions') || modal.querySelector('.book-actions-section');
+
+            if (actions) {
+                // Remove existing tagging section if re-opening
+                const existing = actions.parentNode.querySelector('.emotion-tagging-section');
+                if (existing) existing.remove();
+
+                actions.parentNode.insertBefore(emotionContainer, actions);
+            } else if (modalBody) {
+                // Fallback
+                const existing = modalBody.querySelector('.emotion-tagging-section');
+                if (existing) existing.remove();
+                modalBody.appendChild(emotionContainer);
+            }
+
+            // Add tag toggle listeners
+            emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
+                tag.onclick = async () => {
+                    const mood = tag.dataset.mood;
+                    if (!book.moods) book.moods = [];
+
+                    const index = book.moods.indexOf(mood);
+                    if (index > -1) {
+                        book.moods.splice(index, 1);
+                        tag.classList.remove('active');
+                    } else {
+                        book.moods.push(mood);
+                        tag.classList.add('active');
+                    }
+
+                    if (this.libraryManager) {
+                        await this.libraryManager.updateBook(book.id, { moods: book.moods });
+                    }
+                };
+            });
+
+            // Custom Collections Section
+            let collectionsSection = document.getElementById('modal-discovery-collections-tagging');
+            if (!collectionsSection) {
+                collectionsSection = document.createElement('div');
+                collectionsSection.id = 'modal-discovery-collections-tagging';
+                collectionsSection.className = 'collections-tagging-section';
+                collectionsSection.style.cssText = 'margin-top: 15px; margin-bottom: 15px; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+            }
+
+            if (actions) {
+                const existing = actions.parentNode.querySelector('#modal-discovery-collections-tagging');
+                if (existing) existing.remove();
+                actions.parentNode.insertBefore(collectionsSection, actions);
+            } else if (modalBody) {
+                const existing = modalBody.querySelector('#modal-discovery-collections-tagging');
+                if (existing) existing.remove();
+                modalBody.appendChild(collectionsSection);
+            }
+
+            const userObj = typeof parseStoredUser === 'function' ? parseStoredUser() : null;
+            if (!userObj) {
+                collectionsSection.innerHTML = `
+                <h4 style="margin: 0 0 5px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem;">Save in Custom Collections</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;"><a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to save this book in custom shelves.</p>
+            `;
+            } else {
+                collectionsSection.innerHTML = `
+                <h4 style="margin: 0 0 8px 0; color: var(--accent-gold); font-family: 'Playfair Display', serif; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-folder-open"></i> Add to Custom Collections
+                </h4>
+                <div id="modal-discovery-collections-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Retrieving collections...</span>
+                </div>
+            `;
+
+                (async () => {
+                    try {
+                        const cols = await window.CollectionAPI.getCollections(userObj.id);
+                        const listEl = document.getElementById('modal-discovery-collections-list');
+                        if (!listEl) return;
+
+                        if (cols.length === 0) {
+                            listEl.innerHTML = `
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">No custom collections created yet. Go to Custom Collections view to create one!</span>
+                        `;
+                            return;
+                        }
+
+                        const colsWithItems = await Promise.all(
+                            cols.map(async (c) => {
+                                try {
+                                    return await window.CollectionAPI.getCollection(c.id);
+                                } catch (e) {
+                                    return { id: c.id, name: c.name, items: [] };
+                                }
+                            })
+                        );
+
+                        listEl.innerHTML = '';
+                        colsWithItems.forEach(col => {
+                            const existingItem = col.items.find(item => item.google_books_id === book.id);
+                            const isChecked = !!existingItem;
+                            const label = document.createElement('label');
+                            label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none; margin-bottom: 4px;';
+
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = isChecked;
+                            checkbox.style.cssText = 'cursor: pointer; width: 15px; height: 15px; margin: 0;';
+
+                            if (isChecked) {
+                                checkbox.dataset.bookId = existingItem.book_id;
+                            }
+
+                            checkbox.onchange = async () => {
+                                checkbox.disabled = true;
+                                try {
+                                    if (checkbox.checked) {
+                                        const authorStr = Array.isArray(book.volumeInfo.authors) ? book.volumeInfo.authors.join(', ') : (book.volumeInfo.authors || 'Unknown Author');
+                                        const res = await window.CollectionAPI.addBookToCollection(
+                                            col.id,
+                                            userObj.id,
+                                            book.id,
+                                            book.volumeInfo.title,
+                                            authorStr,
+                                            book.volumeInfo.imageLinks?.thumbnail || ''
+                                        );
+                                        checkbox.dataset.bookId = res.item.book_id;
+                                        showToast(`Added to "${col.name}"`, 'success');
+                                    } else {
+                                        const bookId = checkbox.dataset.bookId;
+                                        if (bookId) {
+                                            await window.CollectionAPI.removeBookFromCollection(col.id, bookId);
+                                            delete checkbox.dataset.bookId;
+                                            showToast(`Removed from "${col.name}"`, 'success');
+                                        }
+                                    }
+                                } catch (err) {
+                                    checkbox.checked = !checkbox.checked; // Revert
+                                    showToast(err.message, 'error');
+                                } finally {
+                                    checkbox.disabled = false;
+                                }
+                            };
+
+                            label.appendChild(checkbox);
+
+                            const textSpan = document.createElement('span');
+                            textSpan.textContent = col.name;
+                            label.appendChild(textSpan);
+
+                            listEl.appendChild(label);
+                        });
+                    } catch (e) {
+                        console.error('Modal collections load failed', e);
+                        const listEl = document.getElementById('modal-discovery-collections-list');
+                        if (listEl) {
+                            listEl.innerHTML = `<span style="font-size: 0.8rem; color: #e53935;">Failed to load collections.</span>`;
+                        }
+                    }
+                })();
+            }
+        }
+    }
+
+    async exploreBookMood(title, author) {
+        const cacheKey = `${title.toLowerCase().trim()}|${(author || '').toLowerCase().trim()}`;
+
+        // 1. Create and show the mood modal dynamically
+        let modal = document.getElementById('mood-analysis-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'mood-analysis-modal';
+            modal.className = 'mood-modal';
+            document.body.appendChild(modal);
+        } else {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
         }
 
-        // Add tag toggle listeners
-        emotionContainer.querySelectorAll('.emotion-tag').forEach(tag => {
-            tag.onclick = async () => {
-                const mood = tag.dataset.mood;
-                if (!book.moods) book.moods = [];
+        const escapeHTML = (str) => {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        };
 
-                const index = book.moods.indexOf(mood);
-                if (index > -1) {
-                    book.moods.splice(index, 1);
-                    tag.classList.remove('active');
+        modal.innerHTML = `
+            <div class="mood-modal-content">
+                <div class="mood-modal-header">
+                    <h3>Mood Deep-Dive: ${escapeHTML(title)}</h3>
+                    <button class="close-modal" id="close-mood-modal">&times;</button>
+                </div>
+                <div class="mood-modal-body">
+                    <div id="mood-modal-loader" class="mood-loading-section" style="text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--accent-gold); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Scraping GoodReads reviews & analyzing sentiment...</p>
+                    </div>
+                    <div id="mood-modal-error" class="mood-error-section hidden" style="text-align: center; padding: 2rem;">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x" style="color: #f44336; margin-bottom: 1rem;"></i>
+                        <p id="mood-error-message" style="color: var(--text-main); font-size: 0.95rem;"></p>
+                    </div>
+                    <div id="mood-modal-results" class="mood-results-section hidden">
+                        <div class="mood-section">
+                            <h4>Primary Moods</h4>
+                            <div class="mood-tags-large" id="mood-modal-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.5rem;">
+                                <!-- Mood tags go here -->
+                            </div>
+                        </div>
+                        <div class="mood-section" style="margin-top: 1.5rem;">
+                            <h4>Overall Sentiment</h4>
+                            <div class="sentiment-bar">
+                                <div class="sentiment-fill" id="mood-modal-sentiment-fill" style="width: 0%;"></div>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;" id="mood-modal-sentiment-desc"></p>
+                        </div>
+                        <div class="mood-section" style="margin-top: 1.5rem;">
+                            <h4>Bookseller's Vibe</h4>
+                            <div class="vibe-quote" id="mood-modal-vibe" style="margin-top: 0.5rem;">
+                                <!-- Vibe quote goes here -->
+                            </div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 1.5rem;" id="mood-modal-meta">
+                            <!-- Meta info goes here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        };
+
+        modal.querySelector('#close-mood-modal').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const showLoader = () => {
+            modal.querySelector('#mood-modal-loader').classList.remove('hidden');
+            modal.querySelector('#mood-modal-error').classList.add('hidden');
+            modal.querySelector('#mood-modal-results').classList.add('hidden');
+        };
+
+        const showError = (msg) => {
+            modal.querySelector('#mood-modal-loader').classList.add('hidden');
+            modal.querySelector('#mood-modal-error').classList.remove('hidden');
+            modal.querySelector('#mood-modal-error p').textContent = msg;
+            modal.querySelector('#mood-modal-results').classList.add('hidden');
+        };
+
+        const renderResults = (analysis) => {
+            modal.querySelector('#mood-modal-loader').classList.add('hidden');
+            modal.querySelector('#mood-modal-error').classList.add('hidden');
+            const resultsSection = modal.querySelector('#mood-modal-results');
+            resultsSection.classList.remove('hidden');
+
+            // Render primary moods
+            const tagsContainer = modal.querySelector('#mood-modal-tags');
+            tagsContainer.innerHTML = '';
+            if (analysis.primary_moods && analysis.primary_moods.length > 0) {
+                analysis.primary_moods.forEach(moodObj => {
+                    const moodVal = moodObj.mood;
+                    const confidence = moodObj.confidence;
+                    const tag = document.createElement('span');
+                    const moodClass = `mood-${moodVal.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+                    tag.className = `mood-tag-large ${moodClass}`;
+                    tag.innerHTML = `<i class="fa-solid ${this.getMoodIcon(moodVal)}"></i> ${escapeHTML(moodVal)} (${Math.round(confidence * 100)}%)`;
+                    tagsContainer.appendChild(tag);
+                });
+            } else {
+                tagsContainer.innerHTML = '<span style="font-size: 0.9rem; color: var(--text-muted);">No distinct moods detected.</span>';
+            }
+
+            // Render sentiment bar
+            const compoundScore = analysis.overall_sentiment?.compound_score || 0;
+            const percentage = Math.round(((compoundScore + 1) / 2) * 100);
+            modal.querySelector('#mood-modal-sentiment-fill').style.width = `${percentage}%`;
+            modal.querySelector('#mood-modal-sentiment-desc').textContent = `${analysis.mood_description || 'Sentiment analyzed successfully.'} (Score: ${compoundScore.toFixed(2)})`;
+
+            // Render vibe
+            modal.querySelector('#mood-modal-vibe').innerHTML = `<p>${escapeHTML(analysis.bibliodrift_vibe || 'A quiet read with deep undertones.')}</p>`;
+
+            // Render metadata
+            const totalReviews = analysis.total_reviews_analyzed || 0;
+            const confidenceScore = analysis.analysis_confidence ? Math.round(analysis.analysis_confidence * 100) : 50;
+            modal.querySelector('#mood-modal-meta').textContent = `Analyzed ${totalReviews} Goodreads reviews. Vibe confidence: ${confidenceScore}%.`;
+        };
+
+        // 2. Fetch or load from cache
+        if (moodAnalysisCache.has(cacheKey)) {
+            if (IS_DEV) console.log(`Cache hit for mood analysis: ${cacheKey}`);
+            renderResults(moodAnalysisCache.get(cacheKey));
+            return;
+        }
+
+        showLoader();
+
+        try {
+            const csrf = getCookie('csrf_access_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrf) {
+                headers['X-CSRF-TOKEN'] = csrf;
+            }
+
+            const res = await fetch(`${MOOD_API_BASE}/analyze-mood`, {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ title, author })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const analysis = data.data?.mood_analysis || data.mood_analysis;
+                if (analysis && analysis.success) {
+                    moodAnalysisCache.set(cacheKey, analysis);
+                    renderResults(analysis);
                 } else {
-                    book.moods.push(mood);
-                    tag.classList.add('active');
+                    showError(analysis?.error || 'Could not parse mood analysis for this book.');
                 }
-
-                if (this.libraryManager) {
-                    await this.libraryManager.updateBook(book.id, { moods: book.moods });
+            } else {
+                if (res.status === 429) {
+                    const data = await res.json().catch(() => ({}));
+                    const retryAfter = data.retry_after || 60;
+                    showError(`Rate limit exceeded. Please try again in ${retryAfter} seconds.`);
+                } else if (res.status === 503) {
+                    showError('Mood analysis is currently offline (missing backend dependencies).');
+                } else if (res.status === 404) {
+                    showError('No Goodreads reviews found for this title to analyze.');
+                } else {
+                    showError(`Failed to fetch mood analysis (Server error: ${res.status}).`);
                 }
-            };
-        });
+            }
+        } catch (err) {
+            console.error('Failed to explore book mood:', err);
+            showError('Network error connecting to mood analysis service.');
+        }
     }
 
     getMoodIcon(mood) {
+        if (!mood) return 'fa-tag';
         const icons = {
-            'Melancholic': 'fa-cloud-showers-heavy',
-            'Cozy': 'fa-mug-hot',
-            'Tense': 'fa-bolt',
-            'Inspiring': 'fa-lightbulb',
-            'Whimsical': 'fa-wand-magic-sparkles',
-            'Dark': 'fa-moon',
-            'Adventurous': 'fa-compass'
+            'melancholic': 'fa-cloud-showers-heavy',
+            'melancholy': 'fa-cloud-showers-heavy',
+            'cozy': 'fa-mug-hot',
+            'tense': 'fa-bolt',
+            'intense': 'fa-bolt',
+            'inspiring': 'fa-lightbulb',
+            'uplifting': 'fa-lightbulb',
+            'whimsical': 'fa-wand-magic-sparkles',
+            'dark': 'fa-moon',
+            'adventurous': 'fa-compass',
+            'mysterious': 'fa-eye',
+            'romantic': 'fa-heart',
+            'atmospheric': 'fa-wind',
+            'thoughtful': 'fa-brain',
+            'thought-provoking': 'fa-brain',
+            'emotional': 'fa-face-sad-tear'
         };
-        return icons[mood] || 'fa-tag';
+        return icons[mood.toLowerCase().trim()] || 'fa-tag';
     }
 
     async renderCuratedSection(query, elementId, maxResults = 5) {
@@ -810,8 +1456,10 @@ class BookRenderer {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
                 const fallbackBooks = getFallbackBooks(query, maxResults);
-                if (fallbackBooks.length > 0) {
+                if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                     await this.renderBookCards(container, fallbackBooks);
+                } else if (container.id === 'search-results-grid') {
+                    showNoResults();
                 } else {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -823,21 +1471,107 @@ class BookRenderer {
         } catch (err) {
             console.error("Failed to fetch books", err);
             const fallbackBooks = getFallbackBooks(query, maxResults);
-            if (fallbackBooks.length > 0) {
+            if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
                 await this.renderBookCards(container, fallbackBooks);
+                return;
+            } else if (container.id === 'search-results-grid') {
+                showNoResults();
+                return;
+            }
+    }
+}
+
+    async renderMoodCategorySection(categoryConfig, elementId, maxResults = 5) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        this.renderSkeletons(container, maxResults);
+
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/category-books`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    category: categoryConfig.category,
+                    vibe_description: categoryConfig.vibeDescription,
+                    count: maxResults
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error(`Category API Error: ${res.status}`);
+            }
+
+            const payload = await res.json();
+            const categoryBooks = payload?.data?.books || [];
+
+            if (categoryBooks.length === 0) {
+                throw new Error(`No books returned for category: ${categoryConfig.category}`);
+            }
+
+            const resolvedBooks = await this.resolveCategoryBooks(categoryBooks);
+            if (resolvedBooks.length > 0) {
+                await this.renderBookCards(container, resolvedBooks.slice(0, maxResults));
                 return;
             }
 
-            showToast("Failed to load bookshelf.", "error");
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>Bookshelf Empty (API connection failed)</p>
-                </div>`;
+            throw new Error(`Could not resolve Google Books matches for category: ${categoryConfig.category}`);
+        } catch (err) {
+            console.error(`Failed to load category shelf "${categoryConfig.category}"`, err);
+            await this.renderCuratedSection(categoryConfig.fallbackQuery, elementId, maxResults);
         }
     }
 
+    async resolveCategoryBooks(categoryBooks) {
+        const resolvedBooks = [];
+
+        for (const item of categoryBooks) {
+            const title = String(item?.title || '').trim();
+            const author = String(item?.author || '').trim();
+            if (!title) continue;
+
+            const searchQuery = author
+                ? `intitle:${title} inauthor:${author}`
+                : `intitle:${title}`;
+
+            try {
+                const client = window.GoogleBooksClient;
+                const data = client
+                    ? await client.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' })
+                    : await (async () => {
+                        const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
+                        const res = await fetch(`${API_BASE}?q=${encodeURIComponent(searchQuery)}&maxResults=1&printType=books${keyParam}`);
+                        if (!res.ok) {
+                            throw new Error(`Google Books API Error: ${res.status}`);
+                        }
+                        return await res.json();
+                    })();
+
+                const matchedBook = data?.items?.[0];
+                if (matchedBook) {
+                    matchedBook.categoryReason = item.reason || '';
+                    resolvedBooks.push(matchedBook);
+                }
+            } catch (error) {
+                console.warn(`Failed to resolve category book "${title}"`, error);
+            }
+        }
+
+        return resolvedBooks;
+    }
+
     async renderBookCards(container, books) {
+        if (container.id === 'search-results-grid') {
+            if (!books || books.length === 0) {
+                showNoResults();
+                return;
+            }
+            hideNoResults();
+            window.searchFilterManager = new SearchFilterManager(container, books, this);
+            return;
+        }
+
         container.innerHTML = '';
         if (!books || books.length === 0) {
             container.innerHTML = '<p class="empty-state">No books available for this collection.</p>';
@@ -860,6 +1594,259 @@ class BookRenderer {
         if (container.children.length === 0) {
             container.innerHTML = '<p class="empty-state">Failed to load books. Please check your connection.</p>';
         }
+
+        
+    }
+}
+
+class SearchFilterManager {
+    constructor(container, books, renderer) {
+        this.container = container;
+        this.books = books;
+        this.renderer = renderer;
+        this.activeFilter = null;
+        this.uniqueMoods = new Set();
+        this.bookElements = new Map(); // bookId -> bookSceneElement
+
+        // Initialize UI elements
+        this.filterBar = document.getElementById('mood-filter-bar');
+        this.chipsContainer = document.getElementById('filter-chips');
+
+        if (this.filterBar && this.chipsContainer) {
+            this.filterBar.hidden = false;
+            this.chipsContainer.innerHTML = '';
+        }
+
+        // Restore active filter from URL query params or sessionStorage if exists
+        const urlParams = new URLSearchParams(window.location.search);
+        this.activeFilter = urlParams.get('mood') || sessionStorage.getItem('active_mood_filter');
+
+        this.init();
+    }
+
+    async init() {
+        // Clear previous grid
+        this.container.innerHTML = '';
+
+        // Render all books first
+        for (const book of this.books) {
+            try {
+                const bookElement = await this.renderer.createBookElement(book);
+                if (bookElement) {
+                    this.container.appendChild(bookElement);
+                    this.bookElements.set(book.id, bookElement);
+                }
+            } catch (err) {
+                console.error("Failed to render book in search filter:", book.id, err);
+            }
+        }
+
+        // Process hydration in a staggered fashion to avoid 429 rate limits
+        let delayMs = 0;
+        for (const book of this.books) {
+            const bookElement = this.bookElements.get(book.id);
+            if (bookElement) {
+                setTimeout(() => {
+                    this.hydrateBookMoodTags(book, bookElement);
+                }, delayMs);
+                delayMs += 350; // Stagger by 350ms to respect backend rate limits
+            }
+        }
+
+        // If no elements were rendered, show error/empty
+        if (this.container.children.length === 0) {
+            this.container.innerHTML = '<p class="empty-state">No books available for this collection.</p>';
+        }
+    }
+
+    async hydrateBookMoodTags(book, bookElement, retryCount = 0) {
+        const title = book.volumeInfo?.title || "Untitled";
+        const authors = book.volumeInfo?.authors ? book.volumeInfo?.authors.join(", ") : "Unknown Author";
+
+        try {
+            const res = await this.renderer.fetchMoodTags(title, authors);
+
+            if (res && res.status === 429) {
+                // Rate limited! Retry after a delay if retryCount < 3
+                if (retryCount < 3) {
+                    const backoff = (retryCount + 1) * 1000;
+                    setTimeout(() => {
+                        this.hydrateBookMoodTags(book, bookElement, retryCount + 1);
+                    }, backoff);
+                    return;
+                }
+            }
+
+            if (res && res.ok) {
+                const data = await res.json();
+                const moods = data.data?.mood_tags || [];
+                if (moods && moods.length > 0) {
+                    book.moods = moods; // Save to book object
+
+                    // Update back face tags in DOM
+                    const backFace = bookElement.querySelector('.book__face--back > div');
+                    if (backFace) {
+                        let tagsEl = backFace.querySelector('.book-mood-tags');
+                        if (!tagsEl) {
+                            tagsEl = document.createElement('div');
+                            tagsEl.className = 'book-mood-tags';
+                            tagsEl.style.cssText = 'margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;';
+                            backFace.appendChild(tagsEl);
+                        }
+                        tagsEl.innerHTML = moods.map(m => `
+                            <span class="mood-tag-badge" data-mood="${m}" style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px; text-transform: capitalize; color: var(--text-main);">
+                                <i class="fa-solid ${this.renderer.getMoodIcon(m)}"></i> ${m}
+                            </span>
+                        `).join('');
+                    }
+
+                    // Add to unique moods set
+                    moods.forEach(mood => {
+                        // Standardize casing to capitalize first letter for cleaner chips display
+                        const cleanMood = mood.charAt(0).toUpperCase() + mood.slice(1).toLowerCase();
+                        this.uniqueMoods.add(cleanMood);
+                    });
+
+                    // Update filter chips bar
+                    this.renderFilterChips();
+
+                    // If this book matches the active filter
+                    this.updateBookVisibility(book.id);
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to hydrate mood tags for", title, e);
+        }
+    }
+
+    renderFilterChips() {
+        if (!this.chipsContainer) return;
+
+        // If no moods loaded yet, don't show the bar
+        if (this.uniqueMoods.size === 0) {
+            this.filterBar.hidden = true;
+            return;
+        }
+
+        this.filterBar.hidden = false;
+
+        // Save current active element scroll or cursor position if needed
+        const prevScrollLeft = this.chipsContainer.scrollLeft;
+
+        this.chipsContainer.innerHTML = '';
+
+        // 1. Add "All" or "Clear Filter" chip
+        const allChip = document.createElement('div');
+        allChip.className = `filter-chip ${!this.activeFilter ? 'active' : ''}`;
+        allChip.innerHTML = `<i class="fa-solid fa-border-all"></i> All`;
+        allChip.addEventListener('click', () => this.setFilter(null));
+        this.chipsContainer.appendChild(allChip);
+
+        // 2. Add dynamic chips for unique moods
+        const sortedMoods = Array.from(this.uniqueMoods).sort();
+        sortedMoods.forEach(mood => {
+            const isChipActive = this.activeFilter && this.activeFilter.toLowerCase() === mood.toLowerCase();
+            const chip = document.createElement('div');
+            chip.className = `filter-chip ${isChipActive ? 'active' : ''}`;
+            chip.innerHTML = `<i class="fa-solid ${this.renderer.getMoodIcon(mood)}"></i> ${mood}`;
+            chip.addEventListener('click', () => this.setFilter(mood));
+            this.chipsContainer.appendChild(chip);
+        });
+
+        // Restore scroll position
+        this.chipsContainer.scrollLeft = prevScrollLeft;
+    }
+
+    setFilter(mood) {
+        if (mood) {
+            this.activeFilter = mood.toLowerCase();
+            sessionStorage.setItem('active_mood_filter', this.activeFilter);
+
+            // Update URL query parameters without reloading the page
+            const url = new URL(window.location);
+            url.searchParams.set('mood', this.activeFilter);
+            window.history.pushState({}, '', url);
+        } else {
+            this.activeFilter = null;
+            sessionStorage.removeItem('active_mood_filter');
+
+            // Remove mood query param
+            const url = new URL(window.location);
+            url.searchParams.delete('mood');
+            window.history.pushState({}, '', url);
+        }
+
+        // Render chips state update
+        this.renderFilterChips();
+
+        // Apply filtering logic to book elements
+        this.applyFilter();
+    }
+
+    updateBookVisibility(bookId) {
+        const element = this.bookElements.get(bookId);
+        if (!element) return;
+
+        const book = this.books.find(b => b.id === bookId);
+        if (!book) return;
+
+        let visible = true;
+        if (this.activeFilter) {
+            const bookMoods = (book.moods || []).map(m => m.toLowerCase());
+            visible = bookMoods.includes(this.activeFilter);
+        }
+
+        if (visible) {
+            element.style.display = 'block';
+            element.classList.remove('filtered-out');
+        } else {
+            element.style.display = 'none';
+            element.classList.add('filtered-out');
+        }
+    }
+
+    applyFilter() {
+        let visibleCount = 0;
+
+        for (const [bookId, element] of this.bookElements.entries()) {
+            const book = this.books.find(b => b.id === bookId);
+            if (!book) continue;
+
+            let visible = true;
+            if (this.activeFilter) {
+                const bookMoods = (book.moods || []).map(m => m.toLowerCase());
+                visible = bookMoods.includes(this.activeFilter);
+            }
+
+            if (visible) {
+                element.style.display = 'block';
+                element.classList.remove('filtered-out');
+                visibleCount++;
+            } else {
+                element.style.display = 'none';
+                element.classList.add('filtered-out');
+            }
+        }
+
+        // Handle empty matching filter state
+        const existingEmptyState = this.container.querySelector('.empty-filter-state');
+        if (existingEmptyState) {
+            existingEmptyState.remove();
+        }
+
+        if (visibleCount === 0 && this.books.length > 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-filter-state';
+            emptyState.id = 'empty-filter-state';
+
+            const activeMoodName = this.activeFilter.charAt(0).toUpperCase() + this.activeFilter.slice(1);
+            emptyState.innerHTML = `
+                <i class="fa-solid ${this.renderer.getMoodIcon(this.activeFilter)}"></i>
+                <h3>No "${activeMoodName}" vibes on this shelf</h3>
+                <p>Try selecting a different mood chip to explore other avenues.</p>
+            `;
+            this.container.appendChild(emptyState);
+        }
     }
 }
 
@@ -880,17 +1867,47 @@ class LibraryManager {
         this._initPromise = this.init();
     }
 
+    async ready() {
+        await this._initPromise;
+        return this;
+    }
+
     async init() {
         // 1. Request persistent storage to prevent wipes
         await SafeStorage.requestPersistence();
 
-        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
-        const stored = await SafeStorage.getAsync(this.storageKey);
-        if (stored) {
+        const user = this.getUser();
+        let storedLibrary = null;
+
+        // 2. Load from Dexie IndexedDB (Issue #875)
+        if (user && window.db?.userLibrary) {
             try {
-                this.library = JSON.parse(stored);
+                const record = await window.db.userLibrary.get(user.id);
+                if (record && record.library) {
+                    storedLibrary = record.library;
+                }
             } catch (e) {
-                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                console.error("[Library] Failed to read from Dexie", e);
+            }
+        }
+
+        // Fallback to SafeStorage for migration
+        if (!storedLibrary) {
+            const stored = await SafeStorage.getAsync(this.storageKey);
+            if (stored) {
+                try {
+                    storedLibrary = JSON.parse(stored);
+                } catch (e) {
+                    console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                }
+            }
+        }
+
+        if (storedLibrary) {
+            this.library = storedLibrary;
+            // Migrate to Dexie immediately
+            if (user && window.db?.userLibrary) {
+                window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
             }
         }
 
@@ -904,8 +1921,27 @@ class LibraryManager {
             this.renderShelf('finished', 'shelf-finished');
         }
 
-        // 4. Sync with backend if available (Full Refresh)
-        await this.syncWithBackend();
+        // 4. Sync with backend if available (Background Refresh)
+        if (!storedLibrary) {
+            await this.syncWithBackend();
+            if (navigator.onLine) {
+                await this.flushPendingLibraryMutations();
+            }
+            await this.updateSyncStatus();
+        } else {
+            // Background sync (stale-while-revalidate strategy)
+            (async () => {
+                try {
+                    await this.syncWithBackend();
+                    if (navigator.onLine) {
+                        await this.flushPendingLibraryMutations();
+                    }
+                    await this.updateSyncStatus();
+                } catch (e) {
+                    console.error("[Library] Background sync failed", e);
+                }
+            })();
+        }
     }
 
     getUser() {
@@ -923,6 +1959,194 @@ class LibraryManager {
             headers['X-CSRF-TOKEN'] = csrfToken;
         }
         return new Headers(headers);
+    }
+
+    async _getPendingSyncCount() {
+        const user = this.getUser();
+        if (!user || !window.db?.syncQueue) return 0;
+        return await window.db.syncQueue.where('userId').equals(user.id).count();
+    }
+
+    async updateSyncStatus() {
+        const statusEl = document.getElementById('library-sync-status');
+        if (!statusEl) return;
+
+        const pendingCount = await this._getPendingSyncCount();
+        statusEl.hidden = false;
+        statusEl.textContent = pendingCount > 0
+            ? `${pendingCount} pending sync${pendingCount === 1 ? '' : 's'}`
+            : 'Synced';
+        statusEl.dataset.state = pendingCount > 0 ? 'pending' : 'synced';
+    }
+
+    async _queueMutation(action, book, extra = {}) {
+        if (typeof window.enqueueLibraryMutation !== 'function') return;
+
+        const user = this.getUser();
+        if (!user || !window.db?.syncQueue) return;
+
+        const snapshot = JSON.parse(JSON.stringify(book));
+
+        const existingMutations = (await window.db.syncQueue.where('userId').equals(user.id).toArray())
+            .filter((mutation) => mutation.bookId === snapshot.id);
+
+        if (action === 'remove') {
+            await Promise.all(existingMutations.map((mutation) => window.db.syncQueue.delete(mutation.id)));
+            await this.updateSyncStatus();
+            return;
+        }
+
+        const shelf = extra.shelf || this.findBookShelf(snapshot.id) || null;
+        const mergedMutation = {
+            userId: user.id,
+            action,
+            bookId: snapshot.id,
+            db_id: snapshot.db_id || null,
+            shelf,
+            payload: extra,
+            book: snapshot
+        };
+
+        const pendingAdd = existingMutations.find((mutation) => mutation.action === 'add');
+        if (pendingAdd && (action === 'move' || action === 'update')) {
+            await window.db.syncQueue.put({
+                ...pendingAdd,
+                db_id: mergedMutation.db_id || pendingAdd.db_id || null,
+                shelf: action === 'move' ? extra.toShelf || pendingAdd.shelf : pendingAdd.shelf,
+                payload: {
+                    ...(pendingAdd.payload || {}),
+                    ...extra
+                },
+                book: snapshot,
+                createdAt: pendingAdd.createdAt || new Date().toISOString()
+            });
+            await this.updateSyncStatus();
+            return;
+        }
+
+        if (action === 'add') {
+            await Promise.all(existingMutations.map((mutation) => window.db.syncQueue.delete(mutation.id)));
+        }
+
+        await window.enqueueLibraryMutation(mergedMutation);
+        await this.updateSyncStatus();
+    }
+
+    async _applyQueuedMutation(mutation) {
+        const user = this.getUser();
+        if (!user) return;
+
+        const localBookResult = this.findBookInShelf(mutation.bookId);
+        const localBook = localBookResult?.book || mutation.book;
+        const dbId = localBook?.db_id || mutation.db_id;
+
+        if (mutation.action === 'add') {
+            if (!localBook) return;
+
+            const payload = {
+                user_id: user.id,
+                google_books_id: localBook.id,
+                title: localBook.volumeInfo?.title || localBook.title || '',
+                authors: localBook.volumeInfo?.authors ? localBook.volumeInfo.authors.join(', ') : '',
+                thumbnail: localBook.volumeInfo?.imageLinks?.thumbnail || '',
+                shelf_type: mutation.shelf || mutation.payload?.shelf || 'want'
+            };
+
+            const res = await fetch(`${this.apiBase}/library`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            if (localBook) {
+                localBook.db_id = data.item.id;
+                localBook.version = data.item.version;
+                this.saveLocally();
+            }
+            return;
+        }
+
+        if (mutation.action === 'remove') {
+            if (!dbId) return;
+
+            const res = await fetch(`${this.apiBase}/library/${dbId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders(),
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+            return;
+        }
+
+        if (mutation.action === 'move' || mutation.action === 'update') {
+            if (!dbId || !localBook) return;
+
+            const body = mutation.action === 'move'
+                ? {
+                    shelf_type: mutation.payload?.toShelf,
+                    progress: localBook.progress,
+                    version: localBook.version
+                }
+                : {
+                    ...mutation.payload?.updates,
+                    version: localBook.version
+                };
+
+            const res = await fetch(`${this.apiBase}/library/${dbId}`, {
+                method: 'PUT',
+                headers: this.getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            localBook.version = data.item.version;
+            this.saveLocally();
+        }
+    }
+
+    async flushPendingLibraryMutations() {
+        const user = this.getUser();
+        if (!user || !window.db?.syncQueue) {
+            await this.updateSyncStatus();
+            return 0;
+        }
+
+        const pendingMutations = await window.db.syncQueue.where('userId').equals(user.id).sortBy('createdAt');
+        if (pendingMutations.length === 0) {
+            await this.updateSyncStatus();
+            return 0;
+        }
+
+        let processed = 0;
+        for (const mutation of pendingMutations) {
+            await this._applyQueuedMutation(mutation);
+            await window.db.syncQueue.delete(mutation.id);
+            processed += 1;
+        }
+
+        if (processed > 0) {
+            await this.syncWithBackend();
+        }
+
+        await this.updateSyncStatus();
+        return processed;
     }
 
     async syncWithBackend() {
@@ -1017,6 +2241,7 @@ class LibraryManager {
                         this.renderShelf('finished', 'shelf-finished');
                     }
                 }
+                await this.updateSyncStatus();
             }
         } catch (e) {
             console.error("Sync failed", e);
@@ -1074,6 +2299,7 @@ class LibraryManager {
 
                 // After upload, pull fresh state from backend to get the new DB IDs and versions
                 await this.syncWithBackend();
+                await this.updateSyncStatus();
             } else {
                 const data = await res.json();
                 console.error("Backend refused sync", data);
@@ -1243,10 +2469,12 @@ class LibraryManager {
                     enrichedBook.db_id = data.item.id;
                     enrichedBook.version = data.item.version;
                     this.saveLocally();
+                    await this.updateSyncStatus();
                 }
             } catch (e) {
                 console.error("Failed to save to backend", e);
-                showToast("Saved locally (Sync failed)", "info");
+                await this._queueMutation('add', enrichedBook, { shelf });
+                showToast("Saved locally; sync queued", "info");
             }
         }
     }
@@ -1292,6 +2520,7 @@ class LibraryManager {
                     const data = await res.json();
                     book.version = data.item.version;
                     this.saveLocally();
+                    await this.updateSyncStatus();
                 } else if (res.status === 409) {
                     const data = await res.json();
                     showToast("Conflict detected! Syncing with server...", "error");
@@ -1303,7 +2532,8 @@ class LibraryManager {
                 }
             } catch (e) {
                 console.error("Failed to update backend", e);
-                showToast("Saved locally (Sync failed)", "info");
+                await this._queueMutation('update', book, { updates });
+                showToast("Saved locally; sync queued", "info");
             }
         }
     }
@@ -1330,6 +2560,19 @@ class LibraryManager {
         }
         return null;
     }
+
+    getShelfBooks(shelf) {
+        return Array.isArray(this.library[shelf]) ? [...this.library[shelf]] : [];
+    }
+
+    getLibrarySnapshot() {
+        return {
+            current: this.getShelfBooks('current'),
+            want: this.getShelfBooks('want'),
+            finished: this.getShelfBooks('finished')
+        };
+    }
+
     async removeBook(id) {
         const result = this.findBookInShelf(id);
         if (result) {
@@ -1354,9 +2597,11 @@ class LibraryManager {
                         headers: this.getAuthHeaders(),
                         credentials: 'include'
                     });
+                    await this.updateSyncStatus();
                 } catch (e) {
                     console.error("Failed to delete from backend", e);
-                    showToast("Removed locally (Backend sync failed)", "info");
+                    await this._queueMutation('remove', book, { shelf });
+                    showToast("Removed locally; sync queued", "info");
                 }
             } else if (user) {
                 // Fallback: If we don't have db_id locally (maybe added before login logic), 
@@ -1371,31 +2616,20 @@ class LibraryManager {
         return false;
     }
 
-    saveLocally() {
-        SafeStorage.set(this.storageKey, JSON.stringify(this.library));
-    }
+    async moveBook(id, toShelf) {
+        const result = this.findBookInShelf(id);
+        if (!result) return false;
 
-    async renderShelf(shelfName, elementId) {
-        const container = document.getElementById(elementId);
-        if (!container) return;
-        const books = this.library[shelfName];
-        if (books.length === 0) {
-            // If we have no books, ensure empty state is visible (if we cleared it previously)
-            container.innerHTML = '<div class="empty-state">This shelf is empty.</div>';
-            return;
-        }
+        const { shelf: fromShelf, book } = result;
+        if (fromShelf === toShelf) return true;
+        if (!this.library[toShelf]) return false;
 
-        // Clear container for re-rendering (essential for sorting)
-        container.innerHTML = '';
+        this.library[fromShelf] = this.library[fromShelf].filter(b => b.id !== id);
 
-        try {
-            for (const book of books) {
-                const renderer = new BookRenderer(this);
-                const el = await renderer.createBookElement(book, shelfName);
-                container.appendChild(el);
-            }
-        } catch (error) {
-            console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
+        if (toShelf === 'finished' && book.progress !== 100) {
+            book.progress = 100;
+        } else if (toShelf === 'current' && (book.progress == null || book.progress === 100)) {
+            book.progress = 0;
         }
     }
 
@@ -1423,43 +2657,104 @@ class LibraryManager {
 class ThemeManager {
     constructor() {
         this.themeKey = 'bibliodrift_theme';
-        this.toggleBtn = document.getElementById('themeToggle');
-        // Read directly from localStorage — no abstraction layer
-        const stored = localStorage.getItem(this.themeKey);
-        this.currentTheme = stored === 'night' ? 'night' : 'light';
-        // Named handler so we can remove & re-add cleanly (no stacking)
+        this.toggleBtn = null;
+        this.currentTheme = 'light';
+
+        // Named handler so we can safely remove/re-add without stacking listeners
         this._handler = this._onClick.bind(this);
-        this.init();
+
+        // Wait until the DOM is ready before querying #themeToggle
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init(), { once: true });
+        } else {
+            this.init();
+        }
+    }
+
+    _getStoredTheme() {
+        // Safe fallback if SafeStorage is not loaded yet
+        try {
+            if (typeof SafeStorage !== 'undefined' && SafeStorage.get) {
+                const stored = SafeStorage.get(this.themeKey);
+                return stored === 'night' ? 'night' : 'light';
+            }
+
+            const stored = localStorage.getItem(this.themeKey);
+            return stored === 'night' ? 'night' : 'light';
+        } catch {
+            return 'light';
+        }
+    }
+
+    _saveTheme(theme) {
+        try {
+            if (typeof SafeStorage !== 'undefined' && SafeStorage.set) {
+                SafeStorage.set(this.themeKey, theme);
+            } else {
+                localStorage.setItem(this.themeKey, theme);
+            }
+        } catch {
+            // Ignore storage errors
+        }
     }
 
     _onClick() {
-        this.currentTheme = this.currentTheme === 'night' ? 'light' : 'night';
+        this.currentTheme =
+            this.currentTheme === 'night' ? 'light' : 'night';
+
         this.applyTheme(this.currentTheme);
-        localStorage.setItem(this.themeKey, this.currentTheme);
+        this._saveTheme(this.currentTheme);
     }
 
     init() {
-        if (!this.toggleBtn) return;
+        // Re-query in case the button wasn't available during construction
+        this.toggleBtn = document.getElementById('themeToggle');
+
+        // Load saved theme and apply it even if the button doesn't exist
+        this.currentTheme = this._getStoredTheme();
         this.applyTheme(this.currentTheme);
-        // Remove before add to prevent duplicate listeners if init is called twice
+
+        // Exit if no toggle button on this page
+        if (!this.toggleBtn) return;
+
+        // Prevent duplicate listeners if init() runs more than once
         this.toggleBtn.removeEventListener('click', this._handler);
         this.toggleBtn.addEventListener('click', this._handler);
     }
 
     applyTheme(theme) {
-        if (theme === 'night') {
+        const isNight = theme === 'night';
+
+        // Apply theme to <html>
+        if (isNight) {
             document.documentElement.setAttribute('data-theme', 'night');
         } else {
             document.documentElement.removeAttribute('data-theme');
         }
-        // Update icon — use className directly, cannot fail
+
+        // Update toggle button icon and accessibility labels
         if (this.toggleBtn) {
             const icon = this.toggleBtn.querySelector('i');
+
             if (icon) {
-                icon.className = theme === 'night'
+                icon.className = isNight
                     ? 'fa-solid fa-sun'
                     : 'fa-solid fa-moon';
             }
+
+            this.toggleBtn.title = isNight
+                ? 'Switch to Light Mode'
+                : 'Switch to Dark Mode';
+
+            this.toggleBtn.setAttribute(
+                'aria-label',
+                this.toggleBtn.title
+            );
+
+            this.toggleBtn.setAttribute(
+                'aria-pressed',
+                String(isNight)
+            );
         }
     }
 }
@@ -1649,6 +2944,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize Managers
     const libManager = new LibraryManager();
     window.libManager = libManager;
+    window.dispatchEvent(new CustomEvent('bibliodrift:library-manager-ready', {
+        detail: { libraryManager: libManager }
+    }));
+    libManager.ready().then(() => {
+        window.dispatchEvent(new CustomEvent('bibliodrift:library-manager-synced', {
+            detail: { libraryManager: libManager }
+        }));
+    });
 
     window.renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
@@ -1656,15 +2959,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.connectivityManager = connectivityManager;
 
     // 2. Load Config (Non-blocking)
-    loadConfig();
-
-
-
     // --- AUTH LOGIC ---
-    const toggleLink = document.querySelector('.toggle-link');
-    const authTitle = document.querySelector('.auth-container h2');
-    const authBtn = document.querySelector('.auth-btn');
-    const authForm = document.querySelector('form');
+    const toggleLink = document.getElementById('toggleText');
+    const authTitle = document.getElementById('authTitle');
+    const authBtn = document.getElementById('submitBtn');
+    const authForm = document.getElementById('authForm');
+    const nameField = document.getElementById('nameField');
 
     if (toggleLink && authTitle && authBtn && authForm) {
         let isLogin = true;
@@ -1672,15 +2972,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         toggleLink.addEventListener('click', () => {
             isLogin = !isLogin;
-            authForm.dataset.mode = isLogin ? 'login' : 'register';
-            authTitle.textContent = isLogin ? 'Sign In' : 'Join BiblioDrift';
-            authBtn.textContent = isLogin ? 'Sign In' : 'Create Account';
-            toggleLink.textContent = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In";
+
+            if (!isLogin) {
+                // Switch to Register Mode
+                authForm.dataset.mode = 'register';
+                authTitle.textContent = 'Create Account';
+                authBtn.textContent = 'Sign Up';
+                toggleLink.textContent = 'Already have an account? Sign in.';
+                if (nameField) nameField.style.display = 'block';
+            } else {
+                // Switch to Login Mode
+                authForm.dataset.mode = 'login';
+                authTitle.textContent = 'Welcome Back';
+                authBtn.textContent = 'Sign In';
+                toggleLink.textContent = 'No account? Create one.';
+                if (nameField) nameField.style.display = 'none';
+            }
         });
     }
 
     const genreManager = new GenreManager(libManager);
     genreManager.init();
+
+    // ── No-results suggestion tag clicks ──
+    document.querySelectorAll('.mood-suggestion-tag').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (!input) return;
+        input.value = btn.dataset.mood;
+        window.location.href = `index.html?q=${encodeURIComponent(btn.dataset.mood)}`;
+    });
+    });
+
     const exportBtn = document.getElementById("export-library");
     if (exportBtn) {
         const isLibraryPage = document.getElementById("shelf-want");
@@ -1709,13 +3032,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-    const isLoggedIn = !!libManager.getUser(); // Rely on user object instead of forgeable flag
+    const verifiedUser = await verifyStoredAuthSession();
+    const isLoggedIn = !!verifiedUser;
     const authLink = document.getElementById('navAuthLink');
-    if (isLoggedIn && authLink) {
-        authLink.innerHTML = '<i class="fa-solid fa-user"></i>';
-        authLink.href = 'profile.html';
-        const tooltip = document.getElementById('navAuthTooltip');
-        if (tooltip) tooltip.innerHTML = '<i class="fa-solid fa-id-card"></i> Profile';
+    const tooltip = document.getElementById('navAuthTooltip');
+    renderAuthNavigation(authLink, tooltip, isLoggedIn);
+
+    // Redirect if already logged in and on the sign-in page
+    if (verifiedUser && window.location.pathname.endsWith('auth.html')) {
+        window.location.href = 'profile.html';
+        return;
+    }
+
+    if (verifiedUser) {
+        await libManager.syncWithBackend();
     }
 
     const searchInput = document.getElementById('searchInput');
@@ -1726,7 +3056,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Only redirect to discovery search if we're not already on the library page 
             // where search is handled by the local library filter.
             if (!window.location.pathname.includes('library.html')) {
-                window.location.href = `index.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+                window.location.href = `${APP_ROUTE}?q=${encodeURIComponent(searchInput.value.trim())}`;
             }
         }
     };
@@ -1750,27 +3080,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.value = query;
     }
 
-    if (query && document.getElementById('row-rainy')) {
-        document.querySelector('main').innerHTML = `
-            <section class="hero">
-                <h1>Results for "${query}"</h1>
-                <p>Found specific books matching your vibe.</p>
-            </section>
-            <section class="curated-section">
-                <div class="curated-row" id="search-results" style="flex-wrap: wrap; justify-content: center;"></div>
-            </section>`;
-        renderer.renderCuratedSection(query, 'search-results', 20);
-    } else if (document.getElementById('row-rainy')) {
+    if (query && document.getElementById('search-results-section')) {
+        const searchSection = document.getElementById('search-results-section');
+        const queryDisplay = document.getElementById('search-query-display');
+
+        queryDisplay.textContent = `Results for "${query}"`;
+        searchSection.removeAttribute('hidden');
+
+        // Hide other main content to focus on search without destroying modals
+        document.querySelectorAll('.curated-section:not(#search-results-section), .hero').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        renderer.renderCuratedSection(query, 'search-results-grid', 20);
+    } else if (document.getElementById('dynamic-shelves-container')) {
         console.log('📚 Initializing Curated Discovery Sections...');
+        const container = document.getElementById('dynamic-shelves-container');
+        
+        const fallbackShelves = [
+            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy', title: 'Rainy Evening Reads', subtitle: 'Mystery & Melancholy', icon: 'fa-cloud-rain' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian', title: 'Indian Authors', subtitle: 'Subcontinent Voices', icon: 'fa-feather' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics', title: 'Forgotten Classics', subtitle: 'Timeless & Dust-free', icon: 'fa-hourglass' },
+            { type: 'query', query: 'subject:gothic fiction subject:dark academia subject:campus', elementId: 'row-dark-academia', title: 'Dark Academia', subtitle: 'Gothic, cerebral, candlelit', icon: 'fa-feather-pointed', vibeDescription: 'gothic, intellectual, melancholic, and candlelit', fallbackQuery: 'subject:gothic fiction subject:campus' },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction', title: 'General Fiction', subtitle: 'Stories for everyone', icon: 'fa-book-open' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller', title: 'Thriller & Suspense', subtitle: 'Edge of Your Seat', icon: 'fa-skull' }
+        ];
+
         (async () => {
             try {
-                await renderer.renderCuratedSection('subject:mystery atmosphere', 'row-rainy');
-                await delay(500);
-                await renderer.renderCuratedSection('authors:arundhati roy|subject:india', 'row-indian');
-                await delay(500);
-                await renderer.renderCuratedSection('subject:classic fiction', 'row-classics');
-                await delay(500);
-                await renderer.renderCuratedSection('subject:fiction', 'row-fiction');
+                let discoveryShelves = fallbackShelves;
+                try {
+                    const response = await fetch(`${MOOD_API_BASE}/content/live-shelves`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data && data.data.shelves) {
+                            discoveryShelves = data.data.shelves;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn('⚠️ Could not fetch live shelves, falling back to local config:', apiErr);
+                }
+
+                // Render HTML for shelves
+                container.innerHTML = discoveryShelves.map(shelf => `
+                    <section class="curated-section">
+                        <div class="section-header">
+                            <h2>${shelf.title}</h2>
+                            <span><i class="fa-solid ${shelf.icon}"></i> ${shelf.subtitle}</span>
+                        </div>
+                        <div class="curated-row" id="${shelf.elementId}"></div>
+                    </section>
+                `).join('');
+
+                for (const shelf of discoveryShelves) {
+                    if (shelf.type === 'category') {
+                        await renderer.renderMoodCategorySection(shelf, shelf.elementId);
+                    } else {
+                        await renderer.renderCuratedSection(shelf.query, shelf.elementId);
+                    }
+                    await delay(500);
+                }
                 console.log('✅ Discovery shelves populated.');
             } catch (err) {
                 console.error('❌ Critical error during shelf initialization:', err);
@@ -1789,7 +3158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Check if Profile Page
     if (document.getElementById('profile-page')) {
-        const user = libManager.getUser();
+        const user = verifiedUser;
         if (!user) {
             window.location.href = 'auth.html';
             return;
@@ -1813,7 +3182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ...(libManager.library.want || []),
             ...(libManager.library.finished || [])
         ];
-        
+
         const categoryCounts = {};
         allBooks.forEach(book => {
             const categories = book.volumeInfo?.categories || [];
@@ -1821,7 +3190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             });
         });
-        
+
         let topVibe = 'Mystery'; // Fallback
         if (Object.keys(categoryCounts).length > 0) {
             topVibe = Object.keys(categoryCounts).reduce((a, b) => categoryCounts[a] > categoryCounts[b] ? a : b);
@@ -1832,24 +3201,344 @@ document.addEventListener('DOMContentLoaded', async () => {
         const statTotalEl = document.getElementById('stat-total');
         const statWantDashEl = document.getElementById('stat-want-dash');
         const statVibeEl = document.getElementById('stat-vibe');
-        
+
         if (statTotalEl) statTotalEl.textContent = totalBooks;
         if (statWantDashEl) statWantDashEl.textContent = wantCount;
         if (statVibeEl) statVibeEl.textContent = topVibe;
+
+        // Initialize Extended Stats (Goals, Streak, Leaderboard)
+        const currentYear = new Date().getFullYear();
+        if (document.getElementById('current-year-display')) {
+            document.getElementById('current-year-display').textContent = currentYear;
+        }
+
+        const loadExtendedStats = async () => {
+            const token = SafeStorage.get('bibliodrift_token');
+            if (!token) return;
+
+            try {
+                // Fetch Stats & Goals
+                const statsResponse = await fetch(`${MOOD_API_BASE}/stats?user_id=${user.id}&year=${currentYear}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+
+                    // Update Streak
+                    if (stats.current_streak > 0) {
+                        const streakBadge = document.getElementById('streak-badge');
+                        const streakCount = document.getElementById('streak-count');
+                        if (streakBadge && streakCount) {
+                            streakBadge.style.display = 'inline-block';
+                            streakCount.textContent = stats.current_streak;
+                        }
+                    }
+
+                    // Update Goal Progress
+                    if (stats.goal) {
+                        const progressText = document.getElementById('goal-progress-text');
+                        const barGoal = document.getElementById('bar-goal');
+                        const target = stats.goal.target_books || 0;
+                        const completed = stats.books_this_year || 0;
+
+                        if (progressText) progressText.textContent = `${completed} / ${target} books`;
+                        if (barGoal && target > 0) {
+                            barGoal.style.width = `${Math.min(100, (completed / target) * 100)}%`;
+                        }
+                    } else {
+                        const progressText = document.getElementById('goal-progress-text');
+                        if (progressText) progressText.textContent = 'No goal set for this year';
+                    }
+                }
+
+                // Fetch Leaderboard
+                const lbResponse = await fetch(`${MOOD_API_BASE}/stats/leaderboard?year=${currentYear}&limit=5`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (lbResponse.ok) {
+                    const leaderboard = await lbResponse.json();
+                    const lbSection = document.getElementById('leaderboard-section');
+                    const lbList = document.getElementById('leaderboard-list');
+
+                    if (leaderboard && leaderboard.length > 0 && lbSection && lbList) {
+                        lbSection.style.display = 'block';
+                        lbList.innerHTML = leaderboard.map((entry, index) => `
+                            <div class="leaderboard-entry" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--border-color); ${entry.user_id === user.id ? 'background: rgba(139, 115, 85, 0.1); border-radius: 8px;' : ''}">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <span style="font-weight: bold; min-width: 25px;">#${index + 1}</span>
+                                    <span>${entry.username} ${entry.user_id === user.id ? '(You)' : ''}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 600;">${entry.total_books} books</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">${entry.total_pages.toLocaleString()} pages</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading extended stats:', error);
+            }
+        };
+
+        // Goal Editing Logic
+        const editGoalBtn = document.getElementById('edit-goal-btn');
+        const saveGoalBtn = document.getElementById('save-goal-btn');
+        const goalInput = document.getElementById('goal-input');
+        const goalEditGroup = document.getElementById('goal-edit-group');
+
+        if (editGoalBtn) {
+            editGoalBtn.addEventListener('click', () => {
+                goalEditGroup.style.display = goalEditGroup.style.display === 'none' ? 'flex' : 'none';
+                if (goalEditGroup.style.display === 'flex') goalInput.focus();
+            });
+        }
+
+        if (saveGoalBtn) {
+            saveGoalBtn.addEventListener('click', async () => {
+                const target = parseInt(goalInput.value);
+                if (isNaN(target) || target < 1) return;
+
+                const token = SafeStorage.get('bibliodrift_token');
+                try {
+                    const response = await fetch(`${MOOD_API_BASE}/stats/goal`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            year: currentYear,
+                            target_books: target
+                        })
+                    });
+
+                    if (response.ok) {
+                        goalEditGroup.style.display = 'none';
+                        loadExtendedStats(); // Refresh
+                    }
+                } catch (error) {
+                    console.error('Failed to save goal:', error);
+                }
+            });
+        }
+
+        loadExtendedStats();
+
+        // =====================================================================
+        // READER IDENTITY LOGIC
+        // Fetches reviews, determines archetype/mood/cluster, and renders states.
+        // =====================================================================
+        const renderErrorIdentityState = () => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted); background: rgba(229, 57, 53, 0.05); border: 1px solid rgba(229, 57, 53, 0.2); border-radius: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #e53935; margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin-bottom: 1rem;">Failed to load Reader Identity profile.</p>
+                    <button id="retry-identity-btn" class="action-btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">Retry</button>
+                </div>
+            `;
+
+            const retryBtn = document.getElementById('retry-identity-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    loadReaderIdentity();
+                });
+            }
+        };
+
+        const fetchAndRenderArchetype = async (genres, reviewsList) => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            const token = SafeStorage.get('bibliodrift_token');
+            const response = await fetch(`${MOOD_API_BASE}/reader-archetype`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ genres, reviews: reviewsList })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch archetype (Status: ${response.status})`);
+            }
+
+            const data = await response.json();
+            if (!data.success || !data.reader_profile) {
+                throw new Error('API returned unsuccessful profile generation');
+            }
+
+            const profile = data.reader_profile;
+            const archetype = profile.archetype || "Unknown Reader";
+            const mood = profile.reader_mood || "Balanced Analytical Reader";
+            const sentimentScore = typeof profile.sentiment_score === 'number' ? profile.sentiment_score.toFixed(2) : '0.00';
+            const cluster = typeof profile.reader_cluster === 'number' ? (profile.reader_cluster === -1 ? 'Unclassified' : `Group #${profile.reader_cluster}`) : 'Unclassified';
+
+            const archetypeDescriptions = {
+                "Deep Thinker": "Drawn to philosophy, existential questions, and reflective/psychological themes.",
+                "Emotional Reader": "Connects deeply with romance, relationships, emotional journeys, and human feelings.",
+                "Dark Reader": "Enjoys crime, violence, psychological thrillers, horror, and mystery.",
+                "Adventurous Reader": "Seeks sci-fi, fantasy, action-packed adventures, and exploration."
+            };
+            const desc = archetypeDescriptions[archetype] || "Based on your current reading habits and preferences.";
+
+            identityContent.innerHTML = `
+                <div class="reader-identity-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem; text-align: left;">
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Archetype</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-brain" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-archetype">${archetype}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;" id="identity-archetype-desc">
+                            ${desc}
+                        </div>
+                    </div>
+                    
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Mood</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-masks-theater" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-mood">${mood}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Sentiment Score: <strong id="identity-sentiment">${sentimentScore}</strong>
+                        </div>
+                    </div>
+
+                    <div class="identity-card" style="background: rgba(255, 255, 255, 0.03); padding: 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.5px;">Reader Group</div>
+                        <div style="font-size: 1.3rem; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-people-group" style="font-size: 1.3rem; margin: 0; color: var(--accent-gold);"></i> 
+                            <span id="identity-cluster">${cluster}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Based on review text analysis.
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderEmptyIdentityState = (genres) => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="empty-state" style="padding: 1rem 0; text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-info" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                    <p style="margin-bottom: 1.5rem;">We couldn't find any reviews in your profile yet. Add reviews to your finished books to unlock your reader identity!</p>
+                    <div style="max-width: 450px; margin: 0 auto; background: rgba(255, 255, 255, 0.02); padding: 1.5rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: left;">
+                        <h4 style="color: var(--text-main); margin-bottom: 0.5rem;">Or try a quick test right now:</h4>
+                        <p style="font-size: 0.85rem; margin-bottom: 1rem;">Write a brief summary of the kinds of books you love reading (e.g. "I love deep space adventures with complex characters"):</p>
+                        <textarea id="onboarding-review-text" placeholder="I love exploring dark mystery novels and fast-paced thrillers..." style="width: 100%; height: 80px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); margin-bottom: 1rem; font-family: inherit; font-size: 0.9rem; resize: none;"></textarea>
+                        <button id="submit-onboarding-btn" class="action-btn-primary" style="font-size: 0.85rem; padding: 6px 15px;">Analyze Mood & Archetype</button>
+                    </div>
+                </div>
+            `;
+
+            const submitBtn = document.getElementById('submit-onboarding-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async () => {
+                    const textInput = document.getElementById('onboarding-review-text').value.trim();
+                    if (!textInput) return;
+
+                    identityContent.innerHTML = `
+                        <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                            <p>Analyzing your custom input...</p>
+                        </div>
+                    `;
+
+                    try {
+                        await fetchAndRenderArchetype(genres, [textInput]);
+                    } catch (error) {
+                        console.error('Error analyzing custom onboarding input:', error);
+                        renderErrorIdentityState();
+                    }
+                });
+            }
+        };
+
+        const loadReaderIdentity = async () => {
+            const identityContent = document.getElementById('reader-identity-content');
+            if (!identityContent) return;
+
+            identityContent.innerHTML = `
+                <div class="loading-state" style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 1rem; display: block;"></i>
+                    <p>Analyzing your reading profile and reviews...</p>
+                </div>
+            `;
+
+            const token = SafeStorage.get('bibliodrift_token');
+            if (!token) {
+                identityContent.innerHTML = `
+                    <div class="error-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
+                        <p>Please log in to view your Reader Identity.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // 1. Fetch user reviews
+                const reviewsResponse = await fetch(`${MOOD_API_BASE}/users/${user.id}/reviews`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!reviewsResponse.ok) {
+                    throw new Error(`Failed to fetch reviews (Status: ${reviewsResponse.status})`);
+                }
+
+                const reviewsData = await reviewsResponse.json();
+                const reviewsList = (reviewsData.reviews || []).map(r => r.review_text).filter(Boolean);
+
+                // Derive genres
+                const allBooks = [
+                    ...(libManager.library.current || []),
+                    ...(libManager.library.want || []),
+                    ...(libManager.library.finished || [])
+                ];
+                const genres = Array.from(new Set(
+                    allBooks.flatMap(book => book.volumeInfo?.categories || [])
+                ));
+
+                // 2. Render empty/onboarding or loaded state
+                if (reviewsList.length === 0) {
+                    renderEmptyIdentityState(genres);
+                } else {
+                    await fetchAndRenderArchetype(genres, reviewsList);
+                }
+            } catch (error) {
+                console.error('Error loading reader identity:', error);
+                renderErrorIdentityState();
+            }
+        };
+
+        // Initialize reader identity loading
+        loadReaderIdentity();
 
         // Progress Bar Calculation
         const barFinished = document.getElementById('bar-finished');
         const barCurrent = document.getElementById('bar-current');
         const barWant = document.getElementById('bar-want');
-        
+
         const countFinishedEl = document.getElementById('count-finished');
         const countCurrentEl = document.getElementById('count-current');
         const countWantEl = document.getElementById('count-want');
-        
+
         if (countFinishedEl) countFinishedEl.textContent = finishedCount;
         if (countCurrentEl) countCurrentEl.textContent = currentCount;
         if (countWantEl) countWantEl.textContent = wantCount;
-        
+
         if (totalBooks > 0) {
             setTimeout(() => {
                 if (barFinished) barFinished.style.width = `${(finishedCount / totalBooks) * 100}%`;
@@ -1858,22 +3547,151 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 100);
         }
 
+        // =====================================================================
+        // READING PROGRESS OVERVIEW
+        // Renders a progress card for each book currently being read.
+        // =====================================================================
+        const progressGrid = document.getElementById('progress-overview-grid');
+        if (progressGrid) {
+            const currentBooks = libManager.library.current || [];
+            if (currentBooks.length === 0) {
+                progressGrid.innerHTML = '<div class="empty-state"><p>No books currently in progress. <a href="library.html">Visit your library</a> to start reading.</p></div>';
+            } else {
+                progressGrid.innerHTML = '';
+                currentBooks.forEach(book => {
+                    const title = book.volumeInfo?.title || book.title || 'Untitled';
+                    const author = (book.volumeInfo?.authors?.[0]) || book.author || 'Unknown Author';
+                    const cover = book.volumeInfo?.imageLinks?.thumbnail || book.cover || '';
+                    const progress = typeof book.progress === 'number' ? book.progress : 0;
+
+                    const card = document.createElement('div');
+                    card.className = 'progress-overview-card';
+                    card.innerHTML = `
+                        <div class="progress-card-cover">
+                            ${cover ? `<img src="${cover.replace('http:', 'https:')}" alt="Cover of '${title}' by ${author}" loading="lazy">` : '<i class="fa-solid fa-book"></i>'}
+                        </div>
+                        <div class="progress-card-info">
+                            <div class="progress-card-title">${title}</div>
+                            <div class="progress-card-author">${author}</div>
+                            <div class="progress-card-bar-wrap">
+                                <div class="progress-card-bar-track">
+                                    <div class="progress-card-bar-fill" style="width:${progress}%"></div>
+                                </div>
+                                <span class="progress-card-pct">${progress}%</span>
+                            </div>
+                            <div class="progress-card-quick-update">
+                                <input type="range" min="0" max="100" value="${progress}"
+                                    class="progress-card-slider"
+                                    aria-label="Update reading progress for ${title}">
+                                <button class="progress-card-save-btn" data-book-id="${book.id}">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Wire up the quick-update slider
+                    const slider = card.querySelector('.progress-card-slider');
+                    const barFill = card.querySelector('.progress-card-bar-fill');
+                    const pctLabel = card.querySelector('.progress-card-pct');
+                    const saveBtn = card.querySelector('.progress-card-save-btn');
+
+                    slider.addEventListener('input', () => {
+                        const val = parseInt(slider.value);
+                        barFill.style.width = `${val}%`;
+                        pctLabel.textContent = `${val}%`;
+                    });
+
+                    saveBtn.addEventListener('click', async () => {
+                        const newProgress = parseInt(slider.value);
+                        saveBtn.disabled = true;
+                        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        try {
+                            await libManager.updateBook(book.id, { progress: newProgress });
+                            book.progress = newProgress;
+                            saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                            saveBtn.style.background = '#4caf50';
+                            setTimeout(() => {
+                                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+                                saveBtn.style.background = '';
+                                saveBtn.disabled = false;
+                            }, 2000);
+                        } catch (err) {
+                            saveBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                            saveBtn.style.background = '#e53935';
+                            setTimeout(() => {
+                                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+                                saveBtn.style.background = '';
+                                saveBtn.disabled = false;
+                            }, 2000);
+                        }
+                    });
+
+                    progressGrid.appendChild(card);
+                });
+            }
+        }
+
         // Populate Achievements
         const achievementsGrid = document.getElementById('achievements-grid');
         achievementsGrid.innerHTML = '';
 
         const achievements = [
-            { id: 'reader', icon: 'fa-book', title: 'Avid Reader', desc: 'Finished 5 books', condition: finishedCount >= 5 },
-            { id: 'collector', icon: 'fa-layer-group', title: 'Curator', desc: 'Added 10 books', condition: (currentCount + wantCount + finishedCount) >= 10 },
-            { id: 'critic', icon: 'fa-pen-fancy', title: 'Critic', desc: 'Saved 3 reviews', condition: false }, // Mock
-            { id: 'focused', icon: 'fa-glasses', title: 'Focused', desc: 'Reading 3 at once', condition: currentCount >= 3 }
+            {
+                id: 'reader',
+                badge: 'badge--gold',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M3 6a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v12a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6z"></path>
+                        <path fill="currentColor" d="M21 6h-2v12h2V6z" opacity="0.18"></path>
+                    </svg>`,
+                title: 'Avid Reader',
+                desc: 'Finished 5 books',
+                condition: finishedCount >= 5
+            },
+            {
+                id: 'collector',
+                badge: 'badge--teal',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <rect x="3" y="4" width="18" height="3" rx="1" fill="currentColor"></rect>
+                        <rect x="5" y="9" width="14" height="3" rx="1" fill="currentColor" opacity="0.9"></rect>
+                        <rect x="7" y="14" width="10" height="3" rx="1" fill="currentColor" opacity="0.7"></rect>
+                    </svg>`,
+                title: 'Curator',
+                desc: 'Added 10 books',
+                condition: (currentCount + wantCount + finishedCount) >= 10
+            },
+            {
+                id: 'critic',
+                badge: 'badge--purple',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12.3 2.3l2.4 2.4-8.5 8.5-2.4-2.4L12.3 2.3zM3 21l6-1 10.7-10.7 1.3 1.3L10.3 22 3 21z"></path>
+                    </svg>`,
+                title: 'Critic',
+                desc: 'Saved 3 reviews',
+                condition: false
+            },
+            {
+                id: 'focused',
+                badge: 'badge--gray',
+                icon: `
+                    <svg class="ach-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M4 10a3 3 0 0 1 6 0 1 1 0 0 0 2 0 3 3 0 0 1 6 0v2h-2v6H4v-6H2v-2h2zM8 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+                    </svg>`,
+                title: 'Focused',
+                desc: 'Reading 3 at once',
+                condition: currentCount >= 3
+            }
         ];
 
         achievements.forEach(ach => {
             const card = document.createElement('div');
             card.className = `achievement-card ${ach.condition ? 'unlocked' : 'locked'}`;
             card.innerHTML = `
-                <i class="fa-solid ${ach.icon}"></i>
+                <span class="achievement-badge ${ach.badge}" aria-hidden="true"></span>
+                ${ach.icon}
                 <h4>${ach.title}</h4>
                 <p>${ach.desc}</p>
             `;
@@ -1891,7 +3709,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             SafeStorage.remove('bibliodrift_user');
             SafeStorage.remove('bibliodrift_token');
             SafeStorage.remove('isLoggedIn');
-            window.location.href = 'index.html';
+            window.location.href = APP_ROUTE;
         });
     }
     // Scroll Manager (Back to Top)
@@ -1944,18 +3762,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function handleAuth(event) {
     event.preventDefault();
     const form = event.target;
+    const btn = form.querySelector('button[type="submit"]') || document.getElementById('submitBtn');
+    const originalText = btn ? btn.innerHTML : (form.dataset.mode === 'register' ? 'Sign Up' : 'Sign In');
+
+    // 1. Immediate UI Feedback: Disable button and show loading state
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+    }
+
     // Determine mode from dataset (set by our toggle logic) or default to login
     const mode = form.dataset.mode || 'login';
 
     const email = document.getElementById("email").value;
-    const password = form.querySelector('input[type="password"]').value;
+    const password = document.getElementById("password").value;
     const usernameInput = document.getElementById("username");
+
+    // Helper to reset button state on failure
+    const resetBtn = () => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
 
     // Validate Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         if (typeof showToast === 'function') showToast("Enter a valid email address", "error");
         else alert("Enter a valid email address");
+        resetBtn();
+        return;
+    }
+
+    // Demo bypass logic
+    if (email === 'demo@bibliodrift.com') {
+        const demoUser = { id: 1, username: 'Demo User', email: 'demo@bibliodrift.com' };
+        SafeStorage.set('bibliodrift_user', JSON.stringify(demoUser));
+        SafeStorage.set('isLoggedIn', 'true');
+        SafeStorage.set('bibliodrift_token', 'demo-token-12345');
+
+        if (typeof showToast === 'function')
+            showToast(`Welcome, Demo User!`, "success");
+
+        // Keep button disabled during redirect delay
+        setTimeout(() => {
+            window.location.href = "library.html";
+        }, 1000);
         return;
     }
 
@@ -1972,53 +3825,69 @@ async function handleAuth(event) {
         payload = { username: email, password: password };
     }
 
-    try {
-        const btn = form.querySelector('button');
-        const originalText = btn.textContent;
-        btn.textContent = 'Processing...';
-        btn.disabled = true;
+    // =========================================================================
+    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
+    // =========================================================================
+    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
+    // This token is then injected into the 'X-CSRF-Token' header. 
+    // The Flask-WTF backend expects this header for all state-changing
+    // AJAX requests. This protects against Cross-Site Request Forgery 
+    // by ensuring that the request is authenticated via the browser's 
+    // Same-Origin Policy and session-bound secrets.
+    // =========================================================================
+    const csrfToken = document.getElementById('csrf_token')?.value;
 
-        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
+    try {
+        const fetchOptions = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             credentials: 'include',
             body: JSON.stringify(payload)
-        });
+        };
+
+        // Inject CSRF token into headers if available
+        if (csrfToken) {
+            fetchOptions.headers['X-CSRF-Token'] = csrfToken;
+        } else if (IS_DEV) {
+            console.warn('[Security] No CSRF token found in DOM. Request may be rejected by server.');
+        }
+
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
 
         const data = await res.json();
-
-        btn.textContent = originalText;
-        btn.disabled = false;
 
         if (res.ok) {
             // Success!
             // Token is now in an HttpOnly cookie (managed by backend)
             SafeStorage.set('bibliodrift_user', JSON.stringify(data.user));
+            SafeStorage.set('isLoggedIn', 'true');
 
             if (typeof showToast === 'function')
                 showToast(`${mode === 'login' ? 'Welcome back' : 'Welcome'}, ${data.user.username}!`, "success");
 
             // SYNC LOGIC
-            // If we have a library manager exposed, use it to sync anonymous data
             if (window.libManager) {
                 if (typeof showToast === 'function') showToast("Syncing your library...", "info");
                 await window.libManager.syncLocalToBackend(data.user);
             }
 
-            // Redirect
+            // Redirect - Button remains disabled
             setTimeout(() => {
                 window.location.href = "library.html";
             }, 1000);
         } else {
+            // Authentication failed - re-enable button
             if (typeof showToast === 'function') showToast(data.error || "Authentication failed", "error");
             else alert(data.error || "Authentication failed");
+            resetBtn();
         }
     } catch (e) {
         console.error("Auth Error", e);
         if (typeof showToast === 'function') showToast("Server connection failed", "error");
         else alert("Server connection failed");
-        const btn = form.querySelector('button');
-        if (btn) btn.disabled = false;
+        resetBtn();
     }
 }
 
@@ -2065,8 +3934,13 @@ enableTapEffects();
 
 // --- creak and page flip effects ---
 const pageFlipSound = new Audio('../assets/sounds/page-flip.mp3');
+pageFlipSound.preload = 'auto';
 pageFlipSound.volume = 0.2;
 pageFlipSound.muted = true;
+
+document.addEventListener('click', () => {
+    pageFlipSound.play().catch(() => { });
+}, { once: true });
 
 
 document.addEventListener("click", (e) => {
@@ -2235,12 +4109,22 @@ const KeyboardShortcuts = {
             // Get the book data from the element
             const bookId = bookElement.dataset.bookId;
             if (window.bookshelfRenderer && bookId) {
-                // Find the book data by traversing the library
-                const storage = JSON.parse(localStorage.getItem('bibliodrift_library')) || { current: [], want: [], finished: [] };
+                const storage = window.libManager?.getLibrarySnapshot?.() || { current: [], want: [], finished: [] };
                 for (const shelf of ['current', 'want', 'finished']) {
                     const book = storage[shelf].find(b => b.id === bookId);
                     if (book) {
-                        window.bookshelfRenderer.currentBook = book;
+                        window.bookshelfRenderer.currentBook = book.volumeInfo ? {
+                            id: book.id,
+                            title: book.volumeInfo.title || 'Untitled',
+                            author: (book.volumeInfo.authors && book.volumeInfo.authors[0]) || 'Unknown',
+                            cover: book.volumeInfo.imageLinks?.thumbnail || '',
+                            description: book.volumeInfo.description || '',
+                            rating: book.volumeInfo.averageRating || 0,
+                            ratingCount: book.volumeInfo.ratingsCount || 0,
+                            categories: book.volumeInfo.categories || [],
+                            moods: book.moods || [],
+                            reviews: []
+                        } : book;
                         break;
                     }
                 }
@@ -2294,7 +4178,7 @@ const KeyboardShortcuts = {
         }
 
         const currentBook = window.bookshelfRenderer.currentBook;
-        const storage = JSON.parse(localStorage.getItem('bibliodrift_library')) || { current: [], want: [], finished: [] };
+        const storage = window.libManager?.getLibrarySnapshot?.() || { current: [], want: [], finished: [] };
 
         // Find current shelf
         let currentShelf = null;
@@ -2336,3 +4220,366 @@ if (document.readyState === 'loading') {
 } else {
     KeyboardShortcuts.init();
 }
+
+// --- Connection Management & Offline Fallback Fallback Hooks ---
+
+// Function to automatically track network status changes
+function handleConnectivityChange() {
+    const offlineIndicator = document.getElementById('offline-indicator');
+
+    if (!navigator.onLine) {
+        console.warn("🌐 Connection dropped. Switching to local sanctuary archives...");
+
+        // Show an elegant banner to let the user know they are reading offline
+        if (offlineIndicator) {
+            offlineIndicator.style.display = 'block';
+        }
+
+        // Fall back to loading cached books from IndexedDB
+        triggerOfflineLibraryView();
+    } else {
+        console.log("🌐 Connection restored! Connected back to the live backend cloud server.");
+        if (offlineIndicator) {
+            offlineIndicator.style.display = 'none';
+        }
+
+        // Reload live API content if the user comes back online
+        if (typeof loadDiscoverBooks === 'function') {
+            loadDiscoverBooks();
+        }
+    }
+}
+
+// Fallback logic to retrieve data from Dexie when offline
+async function triggerOfflineLibraryView() {
+    // Look up the database instance initialized on the global window context
+    if (!window.db) {
+        console.error("Database layer is missing from window.db context.");
+        return;
+    }
+
+    try {
+        const savedBooks = await window.db.books.toArray();
+        // Target your bookshelf or matching layout grid element from the page markup
+        const libraryContainer = document.getElementById('search-results-grid') || document.querySelector('.bookshelf');
+
+        if (!libraryContainer) return;
+
+        if (savedBooks.length === 0) {
+            // Friendly empty state UI explaining how to save books
+            libraryContainer.innerHTML = `
+                <div class="offline-empty-state" style="grid-column: 1/-1; text-align: center; color: #a0a0a0; padding: 3rem 1rem;">
+                    <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">✨ You are wandering offline</p>
+                    <p style="font-size: 1rem; opacity: 0.8;">No cached books found on your shelf. Save books while online to read them anywhere.</p>
+                </div>`;
+        } else {
+            libraryContainer.innerHTML = ""; // Wipe standard layout containers
+
+            // Render cached items back onto the UI shelf
+            savedBooks.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card offline-card';
+                bookCard.innerHTML = `
+                    <div class="book-cover-wrapper">
+                        <img src="${book.coverUrl || '../assets/images/default-cover.png'}" alt="Cover of '${book.title}' by ${book.author || 'Unknown Author'}" class="book-cover-img" />
+                    </div>
+                    <div class="book-details">
+                        <h3>${book.title}</h3>
+                        <p class="author-tag">By ${book.author}</p>
+                        <p class="offline-summary">${book.content}</p>
+                        <span class="offline-badge" style="background: #2c3e50; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">Saved Offline</span>
+                    </div>
+                `;
+                libraryContainer.appendChild(bookCard);
+            });
+        }
+    } catch (error) {
+        console.error("Failed to load local offline assets:", error);
+    }
+}
+
+// Attach network listeners directly to the window lifecycle
+window.addEventListener('online', handleConnectivityChange);
+window.addEventListener('offline', handleConnectivityChange);
+
+// Run a status check right away on startup in case the user loads the app while already disconnected
+document.addEventListener('DOMContentLoaded', handleConnectivityChange);
+
+// Reading Mood Quiz - manager-based implementation
+class ReadingMoodQuizManager {
+        constructor(libraryManager, renderer) {
+                this.libraryManager = libraryManager;
+                this.renderer = renderer;
+                this.section = null;
+                this.quizAnswers = {};
+        }
+
+        init() {
+                this.section = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!this.section) return;
+
+                this.quizOptionGroups = this.section.querySelectorAll('.quiz-options');
+                this.generateBtn = this.section.querySelector('#generateMoodTags');
+                this.results = this.section.querySelector('#quizResults');
+                this.moodTagsContainer = this.section.querySelector('#moodTags');
+                this.retakeBtn = this.section.querySelector('#retakeQuiz');
+
+                if (!this.quizOptionGroups.length || !this.generateBtn || !this.results || !this.moodTagsContainer || !this.retakeBtn) {
+                        return;
+                }
+
+                this._wireOptions();
+                this._wireButtons();
+                this.loadSavedMoodTags();
+                this._updateGenerateButtonState();
+        }
+
+        _wireOptions() {
+                this.quizOptionGroups.forEach(group => {
+                        const key = group.dataset.question;
+                        const buttons = group.querySelectorAll('button');
+                        buttons.forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                        buttons.forEach(b => b.classList.remove('selected'));
+                                        btn.classList.add('selected');
+                                        this.quizAnswers[key] = btn.dataset.value;
+                                        this._updateGenerateButtonState();
+                                });
+                        });
+                });
+        }
+
+        _wireButtons() {
+                this.generateBtn.addEventListener('click', async () => {
+                        const tags = Object.values(this.quizAnswers).filter(Boolean);
+                        this.renderMoodTags(tags);
+                        // Persist using SafeStorage wrapper
+                        try { SafeStorage.set('readingMoodTags', JSON.stringify(tags)); } catch (e) { localStorage.setItem('readingMoodTags', JSON.stringify(tags)); }
+
+                        // Compose a generated query from tags and render results
+                        const generatedMoodQuery = tags.join(' ');
+                        try {
+                                if (this.renderer && typeof this.renderer.renderCuratedSection === 'function') {
+                                        this.renderer.renderCuratedSection(generatedMoodQuery, 'mood-quiz-results-grid', 16);
+                                }
+                        } catch (e) {
+                                console.error('Mood quiz: failed to render curated section', e);
+                        }
+                });
+
+                this.retakeBtn.addEventListener('click', () => {
+                        this.quizAnswers = {};
+                        this.quizOptionGroups.forEach(group => {
+                                group.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                        });
+                        this.moodTagsContainer.innerHTML = '';
+                        this.results.hidden = true;
+                        try { SafeStorage.remove('readingMoodTags'); } catch (e) { localStorage.removeItem('readingMoodTags'); }
+                        this._updateGenerateButtonState();
+                });
+        }
+
+        _updateGenerateButtonState() {
+                const total = this.quizOptionGroups.length;
+                const answered = Object.keys(this.quizAnswers).length;
+                this.generateBtn.disabled = answered !== total;
+        }
+
+        renderMoodTags(tags) {
+                this.moodTagsContainer.innerHTML = '';
+                tags.forEach(tag => {
+                        const span = document.createElement('span');
+                        span.textContent = `#${tag}`;
+                        this.moodTagsContainer.appendChild(span);
+                });
+                this.results.hidden = false;
+        }
+
+        loadSavedMoodTags() {
+                let saved = null;
+                try { saved = SafeStorage.get('readingMoodTags'); } catch (e) { saved = localStorage.getItem('readingMoodTags'); }
+                if (saved) {
+                        try {
+                                const tags = JSON.parse(saved);
+                                if (Array.isArray(tags) && tags.length > 0) this.renderMoodTags(tags);
+                        } catch (e) { /* ignore */ }
+                }
+        }
+}
+
+// Initialize the manager if the page contains the quiz. Wait for library/renderer readiness.
+function _startReadingMoodQuiz() {
+        const startIfReady = () => {
+                const el = document.getElementById('reading-mood-quiz') || document.getElementById('readingMoodQuiz');
+                if (!el) return;
+                if (window.libManager && window.renderer) {
+                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                        window.moodQuizManager.init();
+                } else {
+                        // Wait for library-manager-ready event
+                        window.addEventListener('bibliodrift:library-manager-ready', () => {
+                                if (window.libManager && window.renderer) {
+                                        window.moodQuizManager = new ReadingMoodQuizManager(window.libManager, window.renderer);
+                                        window.moodQuizManager.init();
+                                }
+                        }, { once: true });
+                }
+        };
+
+        if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startIfReady, { once: true });
+        } else {
+                startIfReady();
+        }
+}
+
+_startReadingMoodQuiz();
+
+function showForgotResetLink(resetUrl) {
+    const box = document.getElementById('forgotResetLinkBox');
+    if (!box || !resetUrl) return;
+    box.style.display = 'block';
+    box.innerHTML = `
+        <strong>Development reset link</strong> (no email was sent):<br>
+        <a href="${resetUrl}">Open link to set a new password</a>
+    `;
+}
+
+async function handleForgotPassword(event) {
+    if (event) event.preventDefault();
+    const btn = document.getElementById('forgotSubmitBtn');
+    const emailInput = document.getElementById('forgotEmail');
+    const linkBox = document.getElementById('forgotResetLinkBox');
+    const email = emailInput?.value?.trim() || '';
+    const originalText = btn ? btn.textContent : 'Send reset link';
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        if (typeof showToast === 'function') showToast('Enter a valid email address', 'error');
+        else alert('Enter a valid email address');
+        return;
+    }
+
+    if (linkBox) {
+        linkBox.style.display = 'none';
+        linkBox.innerHTML = '';
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        const message = data.message
+            || 'If an account exists for that email, password reset instructions have been sent.';
+
+        if (res.ok) {
+            if (data.reset_url) {
+                showForgotResetLink(data.reset_url);
+                console.info('[Dev] Password reset link:', data.reset_url);
+                if (typeof showToast === 'function') {
+                    showToast('No email sent — use the reset link shown on this page.', 'info');
+                }
+            } else if (typeof showToast === 'function') {
+                showToast(message, 'success');
+            } else {
+                alert(message + '\n\n(No email is sent by the server yet.)');
+            }
+        } else {
+            const err = data.error || data.message || 'Unable to send reset link.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Forgot password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Use http://127.0.0.1:5500 (not file://) and ensure Flask is running.', 'error');
+        } else {
+            alert('Network error. Use http://127.0.0.1:5500 and ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleForgotPassword = handleForgotPassword;
+
+async function handleResetPassword(event) {
+    if (event) event.preventDefault();
+
+    const btn = document.getElementById('resetSubmitBtn');
+    const pwdInput = document.getElementById('resetNewPassword');
+    const originalText = btn ? btn.textContent : 'Reset password';
+    const newPassword = pwdInput?.value || '';
+
+    // Get the token from the URL e.g. auth.html?mode=reset&token=xxx
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        const err = 'Reset token is missing from the URL.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        const err = 'Password must be at least 6 characters long.';
+        if (typeof showToast === 'function') showToast(err, 'error');
+        else alert(err);
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Resetting...';
+    }
+
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/auth/reset-password/${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ new_password: newPassword }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast('Password reset successfully! You can now log in.', 'success');
+            else alert('Password reset successfully! You can now log in.');
+
+            setTimeout(() => {
+                window.location.href = 'auth.html?mode=login';
+            }, 2000);
+        } else {
+            const err = data.error || data.message || 'Failed to reset password.';
+            if (typeof showToast === 'function') showToast(err, 'error');
+            else alert(err);
+        }
+    } catch (error) {
+        console.error('Reset password failed:', error);
+        if (typeof showToast === 'function') {
+            showToast('Could not reach the server. Ensure backend is running.', 'error');
+        } else {
+            alert('Network error. Ensure the backend is running on port 5000.');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+
+window.handleResetPassword = handleResetPassword;

@@ -1,0 +1,49 @@
+name: Generate Contributors
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0,8,16 * * *' # three times a day at 00:00, 08:00, and 16:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install (none required)
+        run: node -v
+
+      - name: Run generator
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: devanshi14malhotra
+          REPO: BiblioDrift
+          PER_PAGE: '100'
+        run: |
+          node scripts/generate_contributors.js
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/data/contributors.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update contributors.json"
+            git push
+          else
+            echo "No changes to commit"
+          fi

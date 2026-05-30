@@ -1,0 +1,18 @@
+BiblioDrift Database Migrations
+================================
+
+This directory is managed by Flask-Migrate (Alembic).
+
+Quick reference
+---------------
+Apply all pending migrations:
+    flask db upgrade
+
+Roll back one migration:
+    flask db downgrade
+
+Generate a new migration after changing models.py:
+    flask db migrate -m "short description of change"
+    flask db upgrade
+
+See full usage guide: docs/MIGRATIONS.md

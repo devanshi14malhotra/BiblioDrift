@@ -7,8 +7,72 @@
  * Initialize DOMPurify configuration
  * Configures DOMPurify with strict defaults to prevent XSS
  */
+function isDOMPurifyAvailable() {
+    return typeof globalThis !== 'undefined'
+        && typeof globalThis.DOMPurify !== 'undefined'
+        && globalThis.DOMPurify
+        && typeof globalThis.DOMPurify.sanitize === 'function'
+        && typeof globalThis.DOMPurify.addHook === 'function';
+}
+
+const SAFE_HREF_PROTOCOLS = ['http:', 'https:', 'mailto:'];
+const SAFE_HREF_PATTERN = /^(?:(?:https?:|mailto:)[^\s]*|#.*|\/(?!\/)[^\s]*|[^:/\s][^:\s]*)$/i;
+let domPurifyHooksRegistered = false;
+
+function getDOMPurify() {
+    return isDOMPurifyAvailable() ? globalThis.DOMPurify : null;
+}
+
+function isSafeHref(href) {
+    if (typeof href !== 'string') return false;
+
+    const trimmed = href.trim();
+    if (!trimmed) return false;
+
+    if (!SAFE_HREF_PATTERN.test(trimmed)) return false;
+
+    try {
+        const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'https://example.invalid/';
+        const parsed = new URL(trimmed, base);
+        if (SAFE_HREF_PROTOCOLS.includes(parsed.protocol)) {
+            return true;
+        }
+    } catch (e) {
+        // Relative paths and fragment links may fail URL parsing in some environments.
+        return trimmed.startsWith('#') || trimmed.startsWith('/');
+    }
+
+    return trimmed.startsWith('#') || trimmed.startsWith('/');
+}
+
+function createSanitizeHTMLConfig() {
+    return {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'a'],
+        ALLOWED_ATTR: {
+            'a': ['href', 'title']
+        },
+        ALLOWED_URI_REGEXP: SAFE_HREF_PATTERN,
+        KEEP_CONTENT: true,
+        RETURN_DOM: false,
+    };
+}
+
+function registerDOMPurifyHooks() {
+    const purify = getDOMPurify();
+    if (!purify || domPurifyHooksRegistered) return;
+
+    purify.addHook('uponSanitizeAttribute', (node, data) => {
+        if (!node || !data || node.nodeName !== 'A' || data.attrName !== 'href') return;
+        if (!isSafeHref(data.attrValue)) {
+            data.keepAttr = false;
+        }
+    });
+
+    domPurifyHooksRegistered = true;
+}
+
 function initializeDOMPurify() {
-    if (typeof DOMPurify === 'undefined') {
+    if (!isDOMPurifyAvailable()) {
         console.error('DOMPurify library not loaded. XSS protection may be compromised.');
         return null;
     }
@@ -44,7 +108,7 @@ function sanitizeForDisplay(dirty, customConfig = null) {
     const config = customConfig || initializeDOMPurify();
     if (!config) return HTML.escape(dirty);
 
-    return DOMPurify.sanitize(dirty, config);
+    return getDOMPurify().sanitize(dirty, config);
 }
 
 /**
@@ -58,16 +122,14 @@ function sanitizeHTML(dirty) {
     if (!dirty) return '';
     if (typeof dirty !== 'string') return String(dirty);
 
-    const config = {
-        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'a'],
-        ALLOWED_ATTR: {
-            'a': ['href', 'title']
-        },
-        KEEP_CONTENT: true,
-        RETURN_DOM: false,
-    };
+    const purify = getDOMPurify();
+    if (!purify) {
+        console.error('DOMPurify library not loaded. Falling back to escaped text for safe rendering.');
+        return HTML.escape(dirty);
+    }
 
-    return DOMPurify.sanitize(dirty, config);
+    registerDOMPurifyHooks();
+    return purify.sanitize(dirty, createSanitizeHTMLConfig());
 }
 
 /**
@@ -86,7 +148,7 @@ function setElementContent(element, content, asHTML = false) {
 
     if (asHTML) {
         // Sanitize before inserting as HTML
-        element.innerHTML = sanitizeForDisplay(content);
+        element.innerHTML = sanitizeHTML(content);
     } else {
         // Use textContent for plain text (always safe)
         element.textContent = content;
@@ -229,13 +291,15 @@ function getCSRFToken() {
     }
 
     // Try cookie
-    const name = 'CSRF_TOKEN=';
+    const name = 'CSRF_TOKEN';
     const decodedCookie = decodeURIComponent(document.cookie);
     const cookieArray = decodedCookie.split(';');
     for (let i = 0; i < cookieArray.length; i++) {
         let cookie = cookieArray[i].trim();
-        if (cookie.indexOf(name) === 0) {
-            return cookie.substring(name.length);
+        // Properly check if this cookie starts with the name and has = separator
+        if (cookie.startsWith(name + '=')) {
+            // Extract value after "CSRF_TOKEN="
+            return cookie.substring(name.length + 1);
         }
     }
 
@@ -361,6 +425,11 @@ function makeContentEditableSafe(element) {
 // Export for use in modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        isDOMPurifyAvailable,
+        getDOMPurify,
+        isSafeHref,
+        createSanitizeHTMLConfig,
+        registerDOMPurifyHooks,
         initializeDOMPurify,
         sanitizeForDisplay,
         sanitizeHTML,

@@ -1,6 +1,15 @@
 # AI service logic with LLM integration (OpenAI/Gemini)
 # Implements 'generate_book_note' and 'get_ai_recommendations'. All recommendations MUST be AI-based.
+
 # Enhanced with comprehensive caching for expensive operations
+
+
+"""
+Enhanced recommendation system:
+- Improved mood detection
+- Better conversational responses
+- Reduced generic outputs
+"""
 
 import os
 import logging
@@ -8,12 +17,33 @@ import json
 import re
 from typing import Optional
 
+#to generate book spine images dynamically based on title and author
+
+from backend.spine_generator import create_spine
+
+def process_new_book(book_data):
+    # 1. Save book to your database first
+    title = book_data.get("title")
+    author = book_data.get("author")
+    
+    # Create a safe, clean file ID (e.g., "The God of Small Things" -> "the_god_of_small_things")
+    clean_id = "".join([c if c.isalnum() else "_" for c in title.lower().strip()])
+    
+    # 2. Trigger the script to dynamically output the image asset
+    create_spine(title, author, clean_id)
+    
+    # 3. Save the image file pathway string into your database entry
+    spine_image_url = f"/assets/images/{clean_id}_spine.jpg"
+    return spine_image_url
+
+
 # Import caching decorators
 from cache_service import (
     cache_recommendations, 
     cache_mood_tags, 
     cache_chat_response,
-    cache_mood_analysis
+    cache_mood_analysis,
+    cache_category_books,
 )
 
 # Setup logging from environment
@@ -89,26 +119,36 @@ class PromptTemplates:
     
     @staticmethod
     def get_book_note_prompt(title: str, author: str, description: str, mood_context: str = "", vibe: str = "") -> str:
-        """Generate book note prompt template with vibe support."""
-        template = os.getenv('BOOK_NOTE_PROMPT_TEMPLATE', 
-            """You are a cozy, knowledgeable bookseller in a quiet shop. A customer is looking for a book recommendation based on their current vibe: "{vibe}".
+        """Generate engaging mini-blurb for a book."""
+        template = os.getenv(
+    'RECOMMENDATION_PROMPT_TEMPLATE',
+    """You are Elara, an emotionally intelligent bookstore guide inside BiblioDrift.
 
-Book: "{title}" by {author}
-Description: {description}
-{mood_context}
+A user describes their emotional mood, reading vibe, or atmosphere preference.
 
-IMPORTANT: Do NOT use hardcoded lists. Generate a recommendation dynamically based purely on the provided vibe: "{vibe}".
+User input:
+"{query}"
 
-Output a JSON object with the following structure:
-{{
-  "title": "A compelling book title that matches the vibe",
-  "author": "Author name that fits the recommendation", 
-  "cover_url": "URL or placeholder for book cover image",
-  "bookseller_note": "A warm, 3-4 sentence paragraph describing the reading experience for this specific vibe"
-}}
+Your task:
+- Understand the emotional tone behind the request
+- Identify the atmosphere, pacing, and emotional energy the reader wants
+- Recommend immersive and emotionally relevant books
+- Avoid repetitive or overly generic recommendations
+- Prefer diverse and meaningful suggestions over famous defaults
+- Make the response feel personal, cozy, and conversational
 
-Constraint: Keep the bookseller_note under 50 words and make it feel personal and atmospheric.
-Style: Warm, insightful, like a trusted bookseller sharing a hidden gem.""")
+Guidelines:
+- Interpret mixed moods intelligently (example: "sad but hopeful")
+- Understand abstract vibes (example: "rainy day mystery", "dark academia fantasy")
+- Focus on emotional resonance, not just genre labels
+- Explain briefly WHY the recommendations fit the vibe
+
+Style:
+Warm, thoughtful, immersive, like a trusted indie bookstore bookseller.
+
+Keep response under {max_words} words.
+Output only the recommendation response."""
+)
         
         max_words = os.getenv('BOOK_NOTE_MAX_WORDS', '30')
         return template.format(
@@ -121,22 +161,27 @@ Style: Warm, insightful, like a trusted bookseller sharing a hidden gem.""")
         )
     
     @staticmethod
-    def get_recommendation_prompt(query: str) -> str:
+    def get_recommendation_recommend(query: str) -> str:
         """Generate recommendation prompt template."""
-        template = os.getenv('RECOMMENDATION_PROMPT_TEMPLATE',
-            """You are a knowledgeable librarian helping someone find books.
-            
-User is looking for: "{query}"
 
-Provide book recommendation guidance that captures the mood and feeling they're seeking.
-Focus on the emotional experience and atmosphere rather than specific titles.
-Keep response under {max_words} words and make it warm and helpful.
-Style: Personal, insightful, like talking to a trusted book friend.""")
-        
+        template = os.getenv(
+            'RECOMMENDATION_PROMPT_TEMPLATE',
+            """You are Elara, an emotionally intelligent bookstore guide inside BiblioDrift.
+
+    User input:
+    "{query}"
+
+    Your task:
+    - Understand emotional tone...
+    - Recommend immersive books...
+
+    Keep response under {max_words} words.
+    Output only the recommendation response."""
+        )
+
         max_words = os.getenv('RECOMMENDATION_MAX_WORDS', '100')
-        
-        return template.format(query=query, max_words=max_words)
 
+        return template.format(query=query, max_words=max_words)
     @staticmethod
     def get_category_books_prompt(category: str, vibe_description: str, count: int = 5) -> str:
         """
@@ -175,6 +220,25 @@ Rules:
 - Output the JSON array only.
 """
 
+    @staticmethod
+    def get_vibe_check_prompt(vibe_prompt: str, count: int = 3) -> str:
+        """
+        Prompt for generating hyper-personalized vibe-based book recommendations.
+        """
+        return f"""You are Elara, an emotionally intuitive bookseller.
+A reader is looking for books matching this exact hyper-specific vibe or mood: "{vibe_prompt}"
+
+Return exactly {count} real, verifiable books that perfectly capture this energy.
+Output ONLY a valid JSON array. No markdown fences. No text before or after.
+Schema:
+[
+  {{
+    "title": "Exact book title",
+    "author": "Author full name",
+    "reason": "One brilliant, atmospheric sentence explaining why it fits the requested vibe perfectly."
+  }}
+]
+"""
 
 class LLMService:
     """
@@ -253,6 +317,80 @@ class LLMService:
         """Check if any LLM service is available."""
         return (self.openai_client is not None) or (self.groq_client is not None) or (self.gemini_client is not None)
 
+    @staticmethod
+    def _estimate_tokens(text: str) -> int:
+        """
+        Estimate token count for a string using the standard ~4 chars/token
+        heuristic. This avoids a hard tiktoken dependency while being accurate
+        enough for context-window budget management.
+        """
+        return max(1, len(text) // 4)
+
+    def trim_history_to_token_budget(
+        self,
+        system_prompt: str,
+        messages: list,
+        max_tokens_response: int,
+        model_context_limit: int = 4096,
+    ) -> list:
+        """
+        Trim the conversation history so that:
+            estimated_tokens(system) + estimated_tokens(history) + max_tokens_response
+            <= model_context_limit
+
+        Strategy: always keep the most recent messages. Older messages are
+        dropped first. The current user message (last item) is never dropped.
+
+        Args:
+            system_prompt: The system/persona prompt sent to the model.
+            messages: Full list of role/content dicts (current message included).
+            max_tokens_response: Tokens reserved for the model's reply.
+            model_context_limit: Hard token ceiling for the chosen model.
+
+        Returns:
+            A trimmed list of messages that fits within the budget.
+        """
+        # Budget = total context - system tokens - response reservation - 64 safety margin
+        system_tokens = self._estimate_tokens(system_prompt)
+        budget = model_context_limit - system_tokens - max_tokens_response - 64
+
+        if budget <= 0:
+            # System prompt alone is too large — just send the last user message
+            logger.warning(
+                "trim_history_to_token_budget: system prompt (%d tokens) leaves no room "
+                "for history (budget=%d). Sending only the current message.",
+                system_tokens, budget,
+            )
+            return [messages[-1]] if messages else []
+
+        # Walk from newest to oldest, accumulating until budget is exhausted
+        kept = []
+        tokens_used = 0
+        for msg in reversed(messages):
+            msg_tokens = self._estimate_tokens(msg.get("content", ""))
+            if tokens_used + msg_tokens > budget:
+                # This message would overflow — stop here
+                logger.debug(
+                    "trim_history_to_token_budget: dropping older messages "
+                    "(used=%d, budget=%d, next_msg=%d tokens)",
+                    tokens_used, budget, msg_tokens,
+                )
+                break
+            kept.append(msg)
+            tokens_used += msg_tokens
+
+        kept.reverse()
+
+        dropped = len(messages) - len(kept)
+        if dropped > 0:
+            logger.info(
+                "trim_history_to_token_budget: dropped %d old message(s) to stay within "
+                "%d-token context budget (system=%d, history=%d, response_reserve=%d).",
+                dropped, model_context_limit, system_tokens, tokens_used, max_tokens_response,
+            )
+
+        return kept
+
     def generate_chat(self, system_prompt: str, messages: list, max_tokens: Optional[int] = None) -> Optional[str]:
         """
         Generate a response for a multi-turn conversation.
@@ -272,40 +410,69 @@ class LLMService:
         if max_tokens is None:
             max_tokens = self.config.get('gemini_max_tokens', 600)
 
-        # Build a combined prompt for providers that don't have native chat API
+        # Per-model context window limits (conservative estimates)
+        _MODEL_CONTEXT_LIMITS = {
+            # Groq-hosted models
+            'llama-3.1-8b-instant': 8192,
+            'llama-3.3-70b-versatile': 32768,
+            'llama3-8b-8192': 8192,
+            'llama3-70b-8192': 8192,
+            'mixtral-8x7b-32768': 32768,
+            'gemma2-9b-it': 8192,
+            # OpenAI models
+            'gpt-3.5-turbo': 4096,
+            'gpt-4': 8192,
+            'gpt-4o': 16384,
+            'gpt-4o-mini': 16384,
+            # Gemini models
+            'models/gemini-2.0-flash-lite': 32768,
+            'models/gemini-1.5-flash': 32768,
+            'gemini-1.5-flash': 32768,
+            'gemini-1.5-pro': 32768,
+        }
+
+        def _get_context_limit(model_name: str) -> int:
+            """Return the context limit for a model, defaulting to 4096."""
+            return _MODEL_CONTEXT_LIMITS.get(model_name, 4096)
+
+        # Build a combined flat prompt for providers without a native chat API
         def _build_flat_prompt(system: str, msgs: list) -> str:
             lines = [system, ""]
             for m in msgs:
-                role = "You" if m.get("role") == "assistant" else "Customer"
-                lines.append(f"{role}: {m.get('content', '')}")            
-            lines.append("You:")
+                role = "Elara" if m.get("role") == "assistant" else "Customer"
+                lines.append(f"{role}: {m.get('content', '')}")
+            lines.append("Elara:")
             return "\n".join(lines)
 
         try:
-            # --- Gemini (preferred for persona chat) ---
+            # --- Gemini ---
             if self.gemini_client and (self.preferred_llm == 'gemini' or not self.groq_client):
                 try:
-                    # Universal AI Mode: Simplest possible call
+                    context_limit = _get_context_limit(self.config['gemini_model'])
+                    trimmed = self.trim_history_to_token_budget(
+                        system_prompt, messages, max_tokens, context_limit
+                    )
+                    flat_prompt = _build_flat_prompt(system_prompt, trimmed)
                     response = self.gemini_client.models.generate_content(
                         model=self.config['gemini_model'],
-                        contents=f"{system_prompt}\n\nCustomer: {user_message}\nElara:"
+                        contents=flat_prompt,
                     )
                     if response and response.text:
                         return response.text.strip()
-                    if response and response.text:
-                        return response.text.strip()
-                    else:
-                        print(f"[DIAGNOSTIC] Gemini response empty. Status: {getattr(response, 'status', 'unknown')}")
+                    logger.warning("Gemini chat returned empty response")
                 except Exception as e:
-                    print(f"[DIAGNOSTIC] Gemini chat failed: {type(e).__name__} - {str(e)}")
                     logger.warning(f"Gemini multi-turn chat failed, falling back: {e}")
 
             # --- Groq (OpenAI-compatible chat API) ---
             if self.groq_client:
                 try:
+                    context_limit = _get_context_limit(self.config['groq_model'])
+                    trimmed = self.trim_history_to_token_budget(
+                        system_prompt, messages, max_tokens, context_limit
+                    )
                     groq_messages = [{"role": "system", "content": system_prompt}] + [
                         {"role": m.get("role", "user"), "content": m.get("content", "")}
-                        for m in messages
+                        for m in trimmed
                     ]
                     response = self.groq_client.chat.completions.create(
                         model=self.config['groq_model'],
@@ -321,9 +488,13 @@ class LLMService:
             if self.openai_client:
                 from openai import OpenAI
                 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+                context_limit = _get_context_limit(self.config['openai_model'])
+                trimmed = self.trim_history_to_token_budget(
+                    system_prompt, messages, max_tokens, context_limit
+                )
                 oai_messages = [{"role": "system", "content": system_prompt}] + [
                     {"role": m.get("role", "user"), "content": m.get("content", "")}
-                    for m in messages
+                    for m in trimmed
                 ]
                 response = client.chat.completions.create(
                     model=self.config['openai_model'],
@@ -337,6 +508,113 @@ class LLMService:
             logger.error(f"generate_chat failed: {type(e).__name__}: {e}", exc_info=True)
 
         return None
+
+    def generate_chat_stream(self, system_prompt: str, messages: list, max_tokens: Optional[int] = None):
+        """Yield chunks of text from the LLM for streaming."""
+        if not self.is_available():
+            yield "The candles are flickering and my connection to the ether seems troubled today. "
+            return
+
+        if max_tokens is None:
+            max_tokens = self.config.get('gemini_max_tokens', 600)
+
+        # Per-model context window limits (conservative estimates)
+        _MODEL_CONTEXT_LIMITS = {
+            'llama-3.1-8b-instant': 8192,
+            'llama-3.3-70b-versatile': 32768,
+            'gpt-3.5-turbo': 4096,
+            'gpt-4': 8192,
+            'gpt-4o': 16384,
+            'models/gemini-2.0-flash-lite': 32768,
+            'models/gemini-1.5-flash': 32768,
+        }
+
+        def _get_context_limit(model_name: str) -> int:
+            return _MODEL_CONTEXT_LIMITS.get(model_name, 4096)
+
+        try:
+            # --- Gemini ---
+            if self.gemini_client and (self.preferred_llm == 'gemini' or not self.groq_client):
+                try:
+                    from google.genai import types
+                    context_limit = _get_context_limit(self.config['gemini_model'])
+                    trimmed = self.trim_history_to_token_budget(
+                        system_prompt, messages, max_tokens, context_limit
+                    )
+                    
+                    flat_prompt = system_prompt + "\n\n"
+                    for m in trimmed:
+                        role = "Elara" if m.get("role") == "assistant" else "Customer"
+                        flat_prompt += f"{role}: {m.get('content', '')}\n"
+                    flat_prompt += "Elara:"
+                    
+                    response = self.gemini_client.models.generate_content_stream(
+                        model=self.config['gemini_model'],
+                        contents=flat_prompt,
+                    )
+                    for chunk in response:
+                        if chunk.text:
+                            yield chunk.text
+                    return
+                except Exception as e:
+                    logger.warning(f"Gemini streaming chat failed, falling back: {e}")
+
+            # --- Groq ---
+            if self.groq_client:
+                try:
+                    context_limit = _get_context_limit(self.config['groq_model'])
+                    trimmed = self.trim_history_to_token_budget(
+                        system_prompt, messages, max_tokens, context_limit
+                    )
+                    
+                    groq_messages = [{"role": "system", "content": system_prompt}] + [
+                        {"role": m.get("role", "user"), "content": m.get("content", "")}
+                        for m in trimmed
+                    ]
+                    response = self.groq_client.chat.completions.create(
+                        model=self.config['groq_model'],
+                        messages=groq_messages,
+                        max_tokens=min(max_tokens, self.config['groq_max_tokens']),
+                        temperature=self.config['groq_temperature'],
+                        stream=True
+                    )
+                    for chunk in response:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            yield content
+                    return
+                except Exception as e:
+                    logger.warning(f"Groq streaming chat failed, falling back: {e}")
+
+            # --- OpenAI ---
+            if self.openai_client:
+                from openai import OpenAI
+                client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+                context_limit = _get_context_limit(self.config['openai_model'])
+                trimmed = self.trim_history_to_token_budget(
+                    system_prompt, messages, max_tokens, context_limit
+                )
+                
+                oai_messages = [{"role": "system", "content": system_prompt}] + [
+                    {"role": m.get("role", "user"), "content": m.get("content", "")}
+                    for m in trimmed
+                ]
+                response = client.chat.completions.create(
+                    model=self.config['openai_model'],
+                    messages=oai_messages,
+                    max_tokens=min(max_tokens, self.config['openai_max_tokens']),
+                    temperature=self.config['openai_temperature'],
+                    stream=True
+                )
+                for chunk in response:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+                return
+
+        except Exception as e:
+            logger.error(f"generate_chat_stream failed: {type(e).__name__}: {e}", exc_info=True)
+            yield "An error occurred while peering into the books. Please ask again."
     
     def generate_text(self, prompt: str, max_tokens: Optional[int] = None, retry_count: int = 0) -> Optional[str]:
         """Generate text using available LLM service with retry logic."""
@@ -482,12 +760,21 @@ class LLMService:
 llm_service = LLMService()
 
 __all__ = ['generate_book_note', 'get_ai_recommendations', 'get_category_books',
-           'get_book_mood_tags_safe', 'generate_chat_response', 'llm_service', 
+           'get_book_mood_tags_safe', 'generate_chat_response', 'generate_chat_response_stream', 'llm_service', 
            'LLMService', 'PromptTemplates']
 
 
+def _count_words(text: str) -> int:
+    return len(re.findall(r'\S+', text or ''))
+
+
+def _is_valid_book_note(text: str) -> bool:
+    word_count = _count_words(text)
+    return 80 <= word_count <= 120
+
+
 def generate_book_note(description, title="", author="", vibe=""):
-    """Generate book note using LLM with vibe-based recommendations."""
+    """Generate AI mini-blurb for a book."""
     mood_context = ""
     if MOOD_ANALYSIS_AVAILABLE and title and author:
         try:
@@ -502,39 +789,37 @@ def generate_book_note(description, title="", author="", vibe=""):
             llm_response = llm_service.generate_text(prompt, llm_service.config['book_note_max_tokens'])
             
             if llm_response:
-                try:
-                    import json
-                    parsed_response = json.loads(llm_response)
-                    if isinstance(parsed_response, dict) and all(key in parsed_response for key in ['title', 'author', 'bookseller_note']):
-                        logger.info(f"Successfully generated structured recommendation for vibe: {vibe}")
-                        return parsed_response
-                except (json.JSONDecodeError, TypeError):
-                    logger.warning("LLM response was not valid JSON, using as plain text")
-                    return {
-                        "vibe": llm_response,
-                        "title": title or "A Perfect Match",
-                        "author": author or "Recommended Author"
-                    }
+                cleaned_response = llm_response.strip()
+                if _is_valid_book_note(cleaned_response):
+                    return {"blurb": cleaned_response}
+
+                retry_prompt = (
+                    f"{prompt}\n\n"
+                    "Your last answer did not meet the 80-120 word requirement. "
+                    "Rewrite it as a single mini-blurb between 80 and 120 words. "
+                    "Do not add JSON, bullets, or extra commentary."
+                )
+                retry_response = llm_service.generate_text(retry_prompt, llm_service.config['book_note_max_tokens'])
+                if retry_response:
+                    cleaned_retry = retry_response.strip()
+                    if _is_valid_book_note(cleaned_retry):
+                        return {"blurb": cleaned_retry}
+
+                logger.warning(
+                    "Generated book note did not meet the 80-120 word target for %s by %s",
+                    title,
+                    author,
+                )
+                return {"blurb": cleaned_response}
                 
         except Exception as e:
             logger.error(f"LLM book note generation failed: {e}")
     
-    if MOOD_ANALYSIS_AVAILABLE and title and author:
-        try:
-            return generate_enhanced_book_note(description, title, author)
-        except Exception as e:
-            logger.debug(f"Mood analysis fallback failed: {e}")
+    # Fallback: use original description or generic fallback
+    if description and len(description) > 0:
+        return {"blurb": description[:200] + "..." if len(description) > 200 else description}
     
-    if len(description) > 200:
-        return {"vibe": "A deep, complex narrative that readers find emotionally resonant."}
-    elif len(description) > 100:
-        return {"vibe": "A compelling story with layers waiting to be discovered."}
-    elif "mystery" in description.lower():
-        return {"vibe": "A mysterious tale that will keep you guessing."}
-    elif "romance" in description.lower():
-        return {"vibe": "A heartwarming story perfect for cozy reading."}
-    else:
-        return {"vibe": "A delightful read for any quiet moment."}
+    return {"blurb": "A remarkable book waiting to be discovered."}
 
 
 @cache_recommendations
@@ -542,7 +827,7 @@ def get_ai_recommendations(query):
     """Generate AI-powered book recommendations based on query."""
     if llm_service.is_available():
         try:
-            prompt = PromptTemplates.get_recommendation_prompt(query)
+            prompt = PromptTemplates.get_recommendation_recommend(query)
             llm_response = llm_service.generate_text(prompt, llm_service.config['recommendation_max_tokens'])
             if llm_response:
                 return llm_response
@@ -567,7 +852,7 @@ def get_ai_recommendations(query):
     
     return f"Based on your interest in '{query}', I'd recommend exploring books that capture similar themes and emotional resonance."
 
-
+@cache_category_books
 def get_category_books(category: str, vibe_description: str, count: int = 5) -> list:
     """
     Generate a list of real, relevant books for a specific shelf category.
@@ -621,6 +906,46 @@ def get_category_books(category: str, vibe_description: str, count: int = 5) -> 
     logger.info("get_category_books: %d books returned for '%s'", len(valid_books), category)
     return valid_books
 
+def get_vibe_recommendations(vibe_prompt: str, count: int = 3) -> list:
+    """
+    Generate a list of real books based on a highly specific natural-language vibe.
+    Returns a list of dicts: [{"title": ..., "author": ..., "reason": ...}, ...]
+    """
+    if not llm_service.is_available():
+        logger.warning("get_vibe_recommendations: no LLM configured")
+        return []
+
+    prompt = PromptTemplates.get_vibe_check_prompt(vibe_prompt, count)
+    
+    # Utilizing the existing LLMService pipeline
+    raw = llm_service.generate_text(
+        prompt,
+        max_tokens=llm_service.config.get('category_books_max_tokens', 600),
+    )
+
+    if not raw:
+        logger.error("get_vibe_recommendations: LLM returned None")
+        return []
+
+    # Use the file's existing robust JSON extractor
+    parsed = _extract_json(raw)
+
+    if not isinstance(parsed, list):
+        logger.error("get_vibe_recommendations: expected JSON array")
+        return []
+
+    # Validate and clean the output
+    valid_books = []
+    for item in parsed:
+        if isinstance(item, dict) and "title" in item and "author" in item:
+            valid_books.append({
+                "title": item["title"],
+                "author": item["author"],
+                "reason": item.get("reason", "This perfectly matches your requested vibe."),
+            })
+
+    logger.info("get_vibe_recommendations: %d books returned for vibe '%s'", len(valid_books), vibe_prompt)
+    return valid_books
 
 @cache_mood_tags
 def get_book_mood_tags_safe(title: str, author: str = "") -> list:
@@ -694,15 +1019,12 @@ def generate_chat_response(user_message: str, conversation_history: list = []) -
             "Come back in a moment — the books are waiting, and so am I."
         )
 
-    # Build conversation messages for the LLM
-    # We keep only the last 8 exchanges to stay within token limits
-    recent_history = conversation_history[-8:] if conversation_history else []
-
-    # Normalise history into role/content format
+    # Normalise history into role/content format expected by generate_chat.
+    # We do NOT pre-slice here — trim_history_to_token_budget handles that
+    # dynamically based on actual token estimates, not a fixed message count.
     messages = []
-    for msg in recent_history:
+    for msg in (conversation_history or []):
         role = msg.get("type", msg.get("role", "user"))
-        # Map chat UI types to LLM roles
         if role in ("bookseller", "assistant"):
             role = "assistant"
         else:
@@ -747,3 +1069,146 @@ def generate_chat_response(user_message: str, conversation_history: list = []) -
     ]
     import random
     return random.choice(variations)
+
+def generate_chat_response_stream(user_message: str, conversation_history: list = []):
+    """
+    Yield an emotionally rich, persona-driven chat response from Elara.
+    """
+    if not llm_service.is_available():
+        logger.warning("generate_chat_response_stream: No LLM available")
+        yield "The candles are flickering and my connection to the ether seems troubled today. "
+        yield "Come back in a moment — the books are waiting, and so am I."
+        return
+
+    messages = []
+    for msg in (conversation_history or []):
+        role = msg.get("type", msg.get("role", "user"))
+        if role in ("bookseller", "assistant"):
+            role = "assistant"
+        else:
+            role = "user"
+        content = msg.get("content", "")
+        if content:
+            messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": user_message})
+
+    yield from llm_service.generate_chat_stream(
+        system_prompt=_WISE_BOOKSELLER_SYSTEM_PROMPT,
+        messages=messages,
+    )
+
+    # SMART FALLBACK: A variety of poetic responses that adapt to keywords
+    msg_lower = user_message.lower()
+    
+    if any(k in msg_lower for k in ['rain', 'melancholy', 'sad', 'quiet']):
+        yield "The rain has a way of turning the heart into a library of its own. I've gathered these quiet, thoughtful volumes for your pensive mood."
+    elif any(k in msg_lower for k in ['adventure', 'journey', 'travel', 'exciting']):
+        yield "Ah, a soul that yearns for the horizon! The dust on these covers is from distant worlds... here are a few maps for your next great journey."
+    elif any(k in msg_lower for k in ['cozy', 'warm', 'happy', 'gentle']):
+        yield "There is a particular warmth in finding the right story at the right time. Let me tuck these gentle tales into your shelf for a comfortable evening."
+    elif any(k in msg_lower for k in ['dark', 'mystery', 'thriller', 'shadow']):
+        yield "Some stories prefer the shadows, whispering truths we only dare to hear at night. I've pulled these mysterious tomes from the back shelf for you."
+    else:
+        # Generic but varied fallbacks
+        variations = [
+            "The books have been whispering your name today. I've pulled a few that seem particularly eager to meet you.",
+            "Every reader is a traveler, and every book a destination. Which of these paths shall we walk today?",
+            "I've spent a lifetime listening to the scent of old paper... and it tells me these stories belong in your hands.",
+            "The stars and the ink seem to be in alignment. Here is what I've found in the quiet corners of the shop for you."
+        ]
+        import random
+        yield random.choice(variations)
+
+# =========================================================================
+# VIBE-CHECK ENDPOINT LOGIC
+# Implements strict validation and caching per PR #903 feedback.
+# =========================================================================
+
+import hashlib
+from cache_service import cache_service
+
+def generate_vibe_check(raw_vibe_prompt: str, raw_count: int = 5) -> Optional[dict]:
+    """
+    Generate an AI vibe check with strict server-side validation and caching.
+    
+    Args:
+        raw_vibe_prompt: The raw emotional/vibe query from the user.
+        raw_count: The requested number of book recommendations.
+        
+    Returns:
+        Dict containing the AI response and recommendations, or None on failure.
+    """
+    
+    # ---------------------------------------------------------
+    # 1. VALIDATION: Clamp the Count (Security & Cost Control)
+    # ---------------------------------------------------------
+    try:
+        count = int(raw_count)
+        if count < 1:
+            count = 1
+        elif count > 10:  # Hard limit to prevent API abuse
+            count = 10
+    except (ValueError, TypeError):
+        count = 5  # Safe default
+
+    # ---------------------------------------------------------
+    # 2. VALIDATION: Vibe Prompt Length (Prompt Injection Prevention)
+    # ---------------------------------------------------------
+    if not raw_vibe_prompt or not isinstance(raw_vibe_prompt, str):
+        logger.warning("generate_vibe_check: Empty or invalid prompt received.")
+        return None
+        
+    safe_vibe_prompt = raw_vibe_prompt.strip()
+    
+    # Restrict prompt to 400 characters to prevent huge payload bills
+    if len(safe_vibe_prompt) > 400:
+        logger.warning(f"generate_vibe_check: Prompt truncated from {len(safe_vibe_prompt)} chars.")
+        safe_vibe_prompt = safe_vibe_prompt[:400]
+
+    # ---------------------------------------------------------
+    # 3. CACHING: Prevent Expensive Redundant LLM Calls
+    # ---------------------------------------------------------
+    # Create a deterministic hash of the sanitized inputs
+    prompt_hash = hashlib.md5(f"{safe_vibe_prompt}_{count}".encode('utf-8')).hexdigest()
+    cache_key = f"vibe_check_{prompt_hash}"
+    
+    cached_result = cache_service.get(cache_key)
+    if cached_result:
+        logger.info(f"generate_vibe_check: Serving cached response for key {cache_key}")
+        return cached_result
+
+    # ---------------------------------------------------------
+    # 4. LLM GENERATION
+    # ---------------------------------------------------------
+    if not llm_service.is_available():
+        logger.error("generate_vibe_check: No LLM service available.")
+        return None
+
+    # Construct a specific prompt for the vibe check
+    system_prompt = (
+        f"You are a literary vibe-checker. The user has described their current mood: '{safe_vibe_prompt}'. "
+        f"Give them a short, poetic reading diagnosis (under 50 words) and recommend exactly {count} books "
+        "that perfectly match this specific emotional frequency. Format your response clearly."
+    )
+
+    try:
+        response_text = llm_service.generate_text(
+            prompt=system_prompt,
+            max_tokens=llm_service.config.get('recommendation_max_tokens', 250)
+        )
+        
+        if response_text:
+            result = {
+                "vibe_diagnosis": response_text,
+                "sanitized_query": safe_vibe_prompt,
+                "count_returned": count
+            }
+            
+            # Cache the successful result for 24 hours
+            cache_service.set(cache_key, result, timeout=86400)
+            return result
+            
+    except Exception as e:
+        logger.error(f"generate_vibe_check failed: {str(e)}", exc_info=True)
+        return None
