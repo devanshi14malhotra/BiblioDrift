@@ -1,191 +1,782 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Find bookstores near you — explore cozy independent shops, used bookstores, and literary cafes in your neighbourhood." />
+  <title>Nearby Bookstores | BiblioDrift</title>
 
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Theme persistence (matches rest of app) -->
+  <script>
+    (function () {
+      const t = localStorage.getItem('bibliodrift_theme');
+      if (t === 'night') document.documentElement.setAttribute('data-theme', 'night');
+    })();
+  </script>
 
-    <title>Nearby Bookstores | BiblioDrift</title>
+  <!-- Fonts matching app -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
 
-    <!-- Main CSS -->
-    <link rel="stylesheet" href="../css/style.css" />
-    <link rel="stylesheet" href="../css/style-responsive.css" />
+  <!-- Existing app styles -->
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/style-responsive.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png" />
 
-    <!-- Leaflet Map CSS -->
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet/dist/leaflet.css"
-    />
+  <!-- Leaflet.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 
-    <!-- Font Awesome -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+  <style>
+    /* ─── Design tokens (mirrors BiblioDrift landing palette) ─── */
+    :root {
+      --nb-bg:       #f9f7f2;
+      --nb-surface:  rgba(255, 250, 243, 0.80);
+      --nb-surface-strong: rgba(255, 255, 255, 0.90);
+      --nb-border:   rgba(93, 64, 55, 0.12);
+      --nb-shadow:   0 18px 50px rgba(44, 36, 32, 0.08);
+      --nb-shadow-lg:0 28px 80px rgba(44, 36, 32, 0.12);
+      --nb-gold:     #d4af37;
+      --nb-wood:     #5d4037;
+      --nb-ink:      #2c2420;
+      --nb-muted:    #6b5e55;
+      --nb-mist:     #e7e1d8;
+      --nb-rain:     #7f96a0;
+      --nb-forest:   #6e8b74;
+      --nb-open:     #4a7c59;
+      --nb-closed:   #a04040;
+      --nb-radius:   24px;
+      --nb-font-serif: "Fraunces", Georgia, serif;
+      --nb-font-sans:  "DM Sans", system-ui, sans-serif;
+    }
+    [data-theme="night"] {
+      --nb-bg:       #1a1410;
+      --nb-surface:  rgba(30, 22, 16, 0.88);
+      --nb-surface-strong: rgba(38, 28, 20, 0.95);
+      --nb-border:   rgba(212, 175, 55, 0.12);
+      --nb-ink:      #f5ede4;
+      --nb-muted:    #a89080;
+      --nb-mist:     #3a2e28;
+      --nb-shadow:   0 18px 50px rgba(0, 0, 0, 0.35);
+    }
 
-    <link rel="stylesheet" href="../css/nearby-bookstores.css" />
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <link rel="manifest" href="../manifest.json">
-    <link rel="stylesheet" href="../css/pwa.css">
+    body {
+      font-family: var(--nb-font-sans);
+      background: var(--nb-bg);
+      color: var(--nb-ink);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(212,175,55,0.10) 0%, transparent 30%),
+        radial-gradient(circle at 90% 80%, rgba(93,64,55,0.10) 0%, transparent 30%);
+    }
+
+    /* ─── Nav (matches app pattern) ─── */
+    .nb-nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; padding: 0.85rem 1.5rem;
+      background: rgba(255, 252, 246, 0.82);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--nb-border);
+      box-shadow: 0 2px 20px rgba(44,36,32,0.06);
+    }
+    [data-theme="night"] .nb-nav {
+      background: rgba(26, 20, 16, 0.88);
+    }
+    .nb-nav-brand {
+      display: flex; align-items: center; gap: 0.7rem;
+      text-decoration: none; color: var(--nb-ink);
+      font-family: var(--nb-font-serif);
+      font-size: 1.05rem;
+    }
+    .nb-nav-brand i { color: var(--nb-wood); font-size: 1.25rem; }
+    .nb-nav-links { display: flex; gap: 0.4rem; }
+    .nb-nav-links a {
+      color: var(--nb-muted); text-decoration: none;
+      padding: 0.45rem 0.85rem; border-radius: 999px; font-size: 0.92rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nb-nav-links a:hover, .nb-nav-links a.active {
+      background: rgba(212,175,55,0.12); color: var(--nb-ink);
+    }
+    .nb-nav-links a.active { font-weight: 500; }
+    .nb-theme-btn {
+      width: 2.6rem; height: 2.6rem; border-radius: 999px;
+      border: 1px solid var(--nb-border);
+      background: var(--nb-surface-strong);
+      color: var(--nb-ink); cursor: pointer;
+      display: grid; place-items: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nb-theme-btn:hover { transform: translateY(-1px); box-shadow: var(--nb-shadow); }
+
+    /* ─── Shell ─── */
+    .nb-shell {
+      max-width: 1320px; margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+      display: grid; gap: 1.25rem;
+    }
+
+    /* ─── Hero header ─── */
+    .nb-hero {
+      padding: 1.75rem 1.75rem 1.5rem;
+      border: 1px solid var(--nb-border);
+      border-radius: var(--nb-radius);
+      background: var(--nb-surface);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--nb-shadow);
+      display: flex; align-items: flex-end;
+      justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+      position: relative; overflow: hidden;
+    }
+    .nb-hero::before {
+      content: "";
+      position: absolute; inset: auto -4rem -4rem auto;
+      width: 14rem; height: 14rem; border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,175,55,0.14), transparent 68%);
+      pointer-events: none;
+    }
+    .nb-hero-text { position: relative; z-index: 1; }
+    .nb-kicker {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      font-size: 0.73rem; font-weight: 700; letter-spacing: 0.13em;
+      text-transform: uppercase; color: var(--nb-wood);
+      background: rgba(212,175,55,0.12);
+      border: 1px solid rgba(212,175,55,0.18);
+      border-radius: 999px; padding: 0.4rem 0.85rem;
+      margin-bottom: 0.7rem;
+    }
+    .nb-hero h1 {
+      font-family: var(--nb-font-serif);
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      font-weight: 500; line-height: 1.0;
+      color: var(--nb-ink); margin-bottom: 0.55rem;
+    }
+    .nb-hero p { color: var(--nb-muted); font-size: 0.96rem; line-height: 1.7; max-width: 46ch; }
+    .nb-locate-btn {
+      display: inline-flex; align-items: center; gap: 0.75rem;
+      padding: 0.9rem 1.4rem; border-radius: 999px;
+      background: linear-gradient(135deg, #2f2723, var(--nb-wood));
+      color: #fff7ef; border: none; cursor: pointer;
+      font-family: var(--nb-font-sans); font-size: 0.95rem; font-weight: 500;
+      box-shadow: 0 14px 28px rgba(44,36,32,0.18);
+      transition: transform 0.2s, box-shadow 0.2s; white-space: nowrap;
+      position: relative; z-index: 1;
+    }
+    .nb-locate-btn:hover { transform: translateY(-2px); box-shadow: 0 20px 36px rgba(44,36,32,0.22); }
+    .nb-locate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .nb-locate-btn .spin { animation: spin 1s linear infinite; }
+
+    /* ─── Body grid: map + list side-by-side ─── */
+    .nb-content {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.25rem; align-items: start;
+    }
+    @media (max-width: 860px) {
+      .nb-content { grid-template-columns: 1fr; }
+      .nb-list-panel { order: -1; }
+    }
+
+    /* ─── Map ─── */
+    .nb-map-wrap {
+      border: 1px solid var(--nb-border); border-radius: var(--nb-radius);
+      overflow: hidden; box-shadow: var(--nb-shadow);
+      position: relative; min-height: 520px;
+    }
+    #nb-map { width: 100%; height: 520px; }
+
+    /* Leaflet popup styling */
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px !important;
+      background: rgba(255,250,243,0.97) !important;
+      border: 1px solid rgba(93,64,55,0.12) !important;
+      box-shadow: 0 18px 40px rgba(44,36,32,0.14) !important;
+      padding: 0 !important;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important; width: auto !important;
+    }
+    .leaflet-popup-tip { background: rgba(255,250,243,0.97) !important; }
+    .nb-popup {
+      padding: 1rem 1.1rem; min-width: 200px;
+      font-family: var(--nb-font-sans);
+    }
+    .nb-popup-name {
+      font-family: var(--nb-font-serif); font-size: 1.05rem;
+      color: #2c2420; margin-bottom: 0.3rem; line-height: 1.3;
+    }
+    .nb-popup-addr { font-size: 0.83rem; color: #6b5e55; margin-bottom: 0.5rem; }
+    .nb-popup-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .nb-popup-badge {
+      font-size: 0.75rem; padding: 0.25rem 0.65rem;
+      border-radius: 999px; font-weight: 500;
+    }
+    .nb-popup-badge.open { background: rgba(74,124,89,0.12); color: #2d6040; }
+    .nb-popup-badge.closed { background: rgba(160,64,64,0.12); color: #7a2020; }
+    .nb-popup-badge.dist { background: rgba(212,175,55,0.14); color: #7a5e20; }
+
+    /* ─── List panel ─── */
+    .nb-list-panel {
+      border: 1px solid var(--nb-border); border-radius: var(--nb-radius);
+      background: var(--nb-surface); backdrop-filter: blur(16px);
+      box-shadow: var(--nb-shadow); overflow: hidden;
+    }
+    .nb-panel-header {
+      padding: 1rem 1.25rem 0.85rem;
+      border-bottom: 1px solid var(--nb-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nb-panel-title {
+      font-family: var(--nb-font-serif); font-size: 1.15rem;
+      color: var(--nb-ink);
+    }
+    .nb-count-badge {
+      font-size: 0.8rem; padding: 0.3rem 0.75rem;
+      background: rgba(212,175,55,0.14); color: var(--nb-wood);
+      border-radius: 999px; font-weight: 500;
+    }
+    .nb-radius-row {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--nb-border);
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .nb-radius-row label { font-size: 0.83rem; color: var(--nb-muted); white-space: nowrap; }
+    .nb-radius-row input[type="range"] {
+      flex: 1; accent-color: var(--nb-wood);
+    }
+    .nb-radius-val { font-size: 0.83rem; font-weight: 500; color: var(--nb-ink); min-width: 3.5rem; }
+
+    .nb-list { max-height: 460px; overflow-y: auto; }
+    .nb-list::-webkit-scrollbar { width: 4px; }
+    .nb-list::-webkit-scrollbar-track { background: transparent; }
+    .nb-list::-webkit-scrollbar-thumb { background: var(--nb-mist); border-radius: 4px; }
+
+    .nb-store-card {
+      padding: 0.95rem 1.25rem;
+      border-bottom: 1px solid var(--nb-border);
+      cursor: pointer;
+      transition: background 0.18s;
+      display: grid; gap: 0.35rem;
+    }
+    .nb-store-card:last-child { border-bottom: none; }
+    .nb-store-card:hover { background: rgba(212,175,55,0.06); }
+    .nb-store-card.selected { background: rgba(212,175,55,0.1); }
+    .nb-store-row1 { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+    .nb-store-name {
+      font-family: var(--nb-font-serif); font-size: 0.97rem;
+      color: var(--nb-ink); line-height: 1.3;
+    }
+    .nb-store-dist {
+      font-size: 0.78rem; font-weight: 600; color: var(--nb-wood);
+      white-space: nowrap; padding-top: 0.1rem;
+    }
+    .nb-store-addr { font-size: 0.82rem; color: var(--nb-muted); }
+    .nb-store-meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .nb-store-open {
+      font-size: 0.75rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 0.35rem;
+    }
+    .nb-store-open.open { color: var(--nb-open); }
+    .nb-store-open.closed { color: var(--nb-closed); }
+    .nb-store-open.unknown { color: var(--nb-muted); }
+    .nb-rating {
+      font-size: 0.78rem; color: var(--nb-muted);
+      display: flex; align-items: center; gap: 0.25rem;
+    }
+    .nb-rating i { color: #d4af37; font-size: 0.7rem; }
+
+    /* ─── State screens ─── */
+    .nb-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 3rem 1.5rem; text-align: center; gap: 1rem;
+    }
+    .nb-state-icon {
+      width: 4rem; height: 4rem; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 1.5rem;
+    }
+    .nb-state-icon.idle    { background: rgba(212,175,55,0.12); color: var(--nb-wood); }
+    .nb-state-icon.loading { background: rgba(127,150,160,0.12); color: var(--nb-rain); }
+    .nb-state-icon.error   { background: rgba(160,64,64,0.12);  color: var(--nb-closed); }
+    .nb-state-icon.empty   { background: rgba(110,139,116,0.12); color: var(--nb-forest); }
+    .nb-state h3 { font-family: var(--nb-font-serif); font-size: 1.25rem; color: var(--nb-ink); }
+    .nb-state p  { font-size: 0.9rem; color: var(--nb-muted); max-width: 30ch; line-height: 1.65; }
+    .nb-retry-btn {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      padding: 0.7rem 1.2rem; border-radius: 999px;
+      background: rgba(212,175,55,0.12); color: var(--nb-wood);
+      border: 1px solid rgba(212,175,55,0.22);
+      cursor: pointer; font-family: var(--nb-font-sans);
+      font-size: 0.88rem; font-weight: 500;
+      transition: background 0.2s;
+    }
+    .nb-retry-btn:hover { background: rgba(212,175,55,0.2); }
+
+    /* ─── Map state overlay ─── */
+    .nb-map-overlay {
+      position: absolute; inset: 0; z-index: 400;
+      background: rgba(249,247,242,0.88);
+      backdrop-filter: blur(6px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0.75rem; text-align: center; padding: 1.5rem;
+      transition: opacity 0.3s;
+    }
+    [data-theme="night"] .nb-map-overlay { background: rgba(26,20,16,0.9); }
+    .nb-map-overlay.hidden { opacity: 0; pointer-events: none; }
+    .nb-map-overlay-icon {
+      font-size: 2.5rem; color: var(--nb-wood); opacity: 0.6;
+    }
+    .nb-map-overlay h3 {
+      font-family: var(--nb-font-serif); font-size: 1.2rem; color: var(--nb-ink);
+    }
+    .nb-map-overlay p { font-size: 0.85rem; color: var(--nb-muted); max-width: 28ch; line-height: 1.6; }
+
+    /* ─── Skeleton loader ─── */
+    .nb-skeleton {
+      display: grid; gap: 0;
+    }
+    .nb-skel-item {
+      padding: 0.95rem 1.25rem; border-bottom: 1px solid var(--nb-border);
+      display: grid; gap: 0.5rem;
+    }
+    .nb-skel-line {
+      height: 0.85rem; border-radius: 6px;
+      background: linear-gradient(90deg, var(--nb-mist) 25%, rgba(231,225,216,0.4) 50%, var(--nb-mist) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    .nb-skel-line.short  { width: 40%; }
+    .nb-skel-line.medium { width: 65%; }
+    .nb-skel-line.long   { width: 85%; }
+    .nb-skel-row { display: flex; justify-content: space-between; gap: 1rem; }
+
+    /* ─── Animations ─── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .nb-store-card { animation: fadeUp 0.25s ease both; }
+  </style>
 </head>
 
 <body>
 
-    <!-- =========================
-         Navbar
-    ========================== -->
-
-<header>
-    <a href="index.html" class="logo">
-      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+  <!-- Nav -->
+  <nav class="nb-nav" role="navigation" aria-label="BiblioDrift navigation">
+    <a class="nb-nav-brand" href="../pages/index.html">
+      <i class="fa-solid fa-book-open-reader" aria-hidden="true"></i>
+      BiblioDrift
     </a>
-    <div class="header-controls">
-      <div class="search-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
-      </div>
-      <nav class="nav-links">
-        <div class="tooltip">
-          <a href="index.html">Discovery</a>
-          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
-        </div>
-        <div class="tooltip">
-          <a href="vault.html" >My Vault</a>
-          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
-        </div>
-        <div class="tooltip">
-          <a href="library.html" >My Library</a>
-          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-        </div>
-        <div class="tooltip">
-           <a href="community-stories.html">Community</a>
-           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
-        </div>
-        <div class="tooltip">
-          <a href="nearby-bookstores.html" class="active">Nearby Bookstores</a>
-          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
-        </div>
-        <div class="tooltip">
-          <a href="chat.html" >Chat</a>
-          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-        </div>
-        <!-- DYNAMIC AUTH LINK -->
-        <div class="tooltip">
-          <a href="auth.html" id="navAuthLink" >Sign In</a>
-          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
-        </div>
-      </nav>
-      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-        <i class="fa-solid fa-moon"></i>
-      </button>
+    <div class="nb-nav-links">
+      <a href="../pages/index.html">Discover</a>
+      <a href="../pages/library.html">Library</a>
+      <a href="../pages/chat.html">Elara</a>
+      <a href="../pages/nearby-bookstores.html" class="active">Nearby</a>
     </div>
-  </header>
-    <!-- =========================
-         Main Container
-    ========================== -->
+    <button class="nb-theme-btn" id="themeToggle" aria-label="Toggle dark mode">
+      <i class="fa-solid fa-moon" id="themeIcon"></i>
+    </button>
+  </nav>
 
-    <main class="nearby-bookstores-container">
+  <!-- Shell -->
+  <main class="nb-shell" id="main-content">
 
-        <!-- =========================
-             Header Section
-        ========================== -->
+    <!-- Hero -->
+    <header class="nb-hero">
+      <div class="nb-hero-text">
+        <div class="nb-kicker">
+          <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+          Your neighbourhood
+        </div>
+        <h1>Nearby<br>Bookstores</h1>
+        <p>Find cozy independents, used bookshops, and literary cafes around you — real places to get lost in.</p>
+      </div>
+      <button class="nb-locate-btn" id="locateBtn" aria-live="polite">
+        <i class="fa-solid fa-location-crosshairs" id="locateIcon"></i>
+        <span id="locateTxt">Find bookstores near me</span>
+      </button>
+    </header>
 
-        <section class="bookstores-header">
+    <!-- Content grid -->
+    <div class="nb-content" id="nbContent">
 
-            <div>
+      <!-- Map -->
+      <div class="nb-map-wrap">
+        <div id="nb-map" role="application" aria-label="Map showing nearby bookstores"></div>
+        <div class="nb-map-overlay" id="mapOverlay">
+          <div class="nb-map-overlay-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></div>
+          <h3>Map ready</h3>
+          <p>Hit "Find bookstores near me" to see bookshops on the map.</p>
+        </div>
+      </div>
 
-                <h1 class="bookstores-heading">
-                    Nearby Bookstores
-                </h1>
-
-                <p class="bookstores-subtitle">
-                    Discover local bookstores around your location.
-                </p>
-
-            </div>
-
-            <div class="bookstore-controls">
-
-                <button
-                    id="findStoresBtn"
-                    class="find-bookstore-btn"
-                >
-
-                    <i class="fa-solid fa-location-crosshairs"></i>
-
-                    Find Nearby Stores
-
-                </button>
-
-            </div>
-
-        </section>
-
-        <!-- =========================
-             Location Status
-        ========================== -->
-
-        <div id="locationStatus"></div>
-
-        <!-- =========================
-             Map Section
-        ========================== -->
-
-        <section class="bookstore-map-container">
-
-            <div id="bookstoreMap"></div>
-
-        </section>
-
-        <!-- =========================
-             Bookstore Grid
-        ========================== -->
-
-        <section>
-
-            <div
-                class="bookstores-grid"
-                id="bookstoresGrid"
-            ></div>
-
-        </section>
-
-    </main>
-
-    <!-- =========================
-         Leaflet JS
-    ========================== -->
-
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-    <!-- =========================
-         Nearby Bookstores JS
-    ========================== -->
-    <script src="../js/app.js"></script>
-    <script src="../js/theme-manager.js"></script>
-    <script src="../js/ambient.js"></script>
-    <script src="../js/footer.js"></script>
-    <script src="../js/nearby-bookstores.js"></script>
-
-      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
-      <div class="pwa-banner-content">
-          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
-          <div class="pwa-banner-text">
-              <strong>Install BiblioDrift.</strong>
-              <span>Read offline, anytime.</span>
+      <!-- List panel -->
+      <aside class="nb-list-panel" aria-label="Bookstore list">
+        <div class="nb-panel-header">
+          <span class="nb-panel-title">Bookstores</span>
+          <span class="nb-count-badge" id="storeCount" aria-live="polite">—</span>
+        </div>
+        <div class="nb-radius-row" id="radiusRow" aria-hidden="true">
+          <label for="radiusSlider"><i class="fa-solid fa-circle-dot" aria-hidden="true"></i> Radius</label>
+          <input type="range" id="radiusSlider" min="500" max="10000" step="500" value="5000" aria-label="Search radius in metres" />
+          <span class="nb-radius-val" id="radiusVal">5 km</span>
+        </div>
+        <div class="nb-list" id="storeList" role="list" aria-live="polite" aria-label="Nearby bookstores">
+          <!-- Idle state -->
+          <div class="nb-state" id="idleState" role="status">
+            <div class="nb-state-icon idle"><i class="fa-solid fa-book" aria-hidden="true"></i></div>
+            <h3>No location yet</h3>
+            <p>Share your location to discover bookstores nearby.</p>
           </div>
-      </div>
-      <div class="pwa-banner-actions">
-          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
-          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-  </div>
-  <script src="../js/pwa.js"></script>
+        </div>
+      </aside>
+    </div>
+
+  </main>
+
+  <script>
+    /* ─── Theme toggle ─── */
+    (function () {
+      const btn  = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeIcon');
+      const KEY  = 'bibliodrift_theme';
+      function apply(t) {
+        if (t === 'night') {
+          document.documentElement.setAttribute('data-theme', 'night');
+          icon.className = 'fa-solid fa-sun';
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          icon.className = 'fa-solid fa-moon';
+        }
+        localStorage.setItem(KEY, t);
+      }
+      apply(localStorage.getItem(KEY) || 'light');
+      btn.addEventListener('click', () => {
+        apply(document.documentElement.getAttribute('data-theme') === 'night' ? 'light' : 'night');
+      });
+    })();
+
+    /* ─── Radius slider ─── */
+    const radiusSlider = document.getElementById('radiusSlider');
+    const radiusVal    = document.getElementById('radiusVal');
+    radiusSlider.addEventListener('input', () => {
+      const km = (radiusSlider.value / 1000).toFixed(radiusSlider.value >= 1000 ? 0 : 1);
+      radiusVal.textContent = km + ' km';
+      if (window._nbLastCoords) {
+        fetchStores(window._nbLastCoords.lat, window._nbLastCoords.lng);
+      }
+    });
+
+    /* ─── Map init (after Leaflet loads) ─── */
+    let map, userMarker, storeLayerGroup;
+    window.addEventListener('load', () => {
+      map = L.map('nb-map', { zoomControl: true }).setView([20, 0], 2);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(map);
+
+      storeLayerGroup = L.layerGroup().addTo(map);
+    });
+
+    /* ─── Custom map markers ─── */
+    function makeStoreIcon(isSelected) {
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          width:32px;height:32px;border-radius:50% 50% 50% 0;
+          background:${isSelected ? '#5d4037' : '#d4af37'};
+          border:2px solid #fff;
+          box-shadow:0 4px 12px rgba(44,36,32,0.3);
+          transform:rotate(-45deg);
+          display:grid;place-items:center;
+          transition:transform 0.2s,background 0.2s;
+        ">
+          <i class="fa-solid fa-book" style="
+            transform:rotate(45deg);
+            color:${isSelected ? '#fff7ef' : '#2c2420'};
+            font-size:12px;
+          "></i>
+        </div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -34]
+      });
+    }
+    function makeUserIcon() {
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          width:18px;height:18px;border-radius:50%;
+          background:#5d4037;border:3px solid #fff;
+          box-shadow:0 0 0 4px rgba(93,64,55,0.2),0 4px 12px rgba(44,36,32,0.3);
+        "></div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+    }
+
+    /* ─── Geolocation ─── */
+    const locateBtn  = document.getElementById('locateBtn');
+    const locateIcon = document.getElementById('locateIcon');
+    const locateTxt  = document.getElementById('locateTxt');
+    const mapOverlay = document.getElementById('mapOverlay');
+
+    locateBtn.addEventListener('click', requestLocation);
+
+    function requestLocation() {
+      if (!navigator.geolocation) {
+        showError('Geolocation not supported', 'Your browser does not support location access. Try a modern browser like Chrome or Firefox.');
+        return;
+      }
+      setLocateBtnState('loading');
+      showListSkeleton();
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          window._nbLastCoords = { lat, lng };
+          centreMap(lat, lng);
+          fetchStores(lat, lng);
+        },
+        (err) => {
+          setLocateBtnState('idle');
+          const msgs = {
+            1: ['Location access denied', 'Please allow location access in your browser settings, then try again.'],
+            2: ['Location unavailable', 'Your device could not determine your position. Check that location services are enabled.'],
+            3: ['Location timed out', 'The location request took too long. Please try again.'],
+          };
+          const [title, body] = msgs[err.code] || ['Location error', 'An unknown error occurred. Please try again.'];
+          showError(title, body);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    function setLocateBtnState(state) {
+      if (state === 'loading') {
+        locateBtn.disabled = true;
+        locateIcon.className = 'fa-solid fa-circle-notch spin';
+        locateTxt.textContent = 'Finding your location…';
+      } else {
+        locateBtn.disabled = false;
+        locateIcon.className = 'fa-solid fa-location-crosshairs';
+        locateTxt.textContent = window._nbLastCoords ? 'Refresh results' : 'Find bookstores near me';
+      }
+    }
+
+    function centreMap(lat, lng) {
+      if (!map) return;
+      map.setView([lat, lng], 14);
+      if (userMarker) userMarker.remove();
+      userMarker = L.marker([lat, lng], { icon: makeUserIcon(), zIndexOffset: 1000 })
+        .bindTooltip('You are here', { permanent: false, direction: 'top' })
+        .addTo(map);
+      mapOverlay.classList.add('hidden');
+    }
+
+    /* ─── Fetch bookstores from backend proxy ─── */
+    async function fetchStores(lat, lng) {
+      const radius = parseInt(radiusSlider.value, 10);
+      const API_BASE = (window.MOOD_API_BASE || '').replace(/\/$/, '');
+      const url = `${API_BASE}/api/v1/bookstores/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
+
+      showListSkeleton();
+      storeLayerGroup && storeLayerGroup.clearLayers();
+
+      try {
+        const resp = await fetch(url, { credentials: 'include' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        if (!data.bookstores || data.bookstores.length === 0) {
+          showEmpty(radius);
+          setLocateBtnState('idle');
+          return;
+        }
+
+        renderStores(data.bookstores, lat, lng);
+        setLocateBtnState('idle');
+      } catch (err) {
+        console.error('[NearbyBookstores] fetch error:', err);
+        showError(
+          'Could not load bookstores',
+          'The server could not be reached. Make sure the backend is running and try again.',
+          true
+        );
+        setLocateBtnState('idle');
+      }
+    }
+
+    /* ─── Render stores ─── */
+    let selectedStoreId = null;
+    let storeMarkers = {};
+
+    function renderStores(stores, userLat, userLng) {
+      const list = document.getElementById('storeList');
+      list.innerHTML = '';
+      storeLayerGroup.clearLayers();
+      storeMarkers = {};
+
+      document.getElementById('storeCount').textContent = stores.length + ' found';
+      document.getElementById('radiusRow').removeAttribute('aria-hidden');
+
+      stores.forEach((store, i) => {
+        const dist = store.distance_m != null
+          ? formatDist(store.distance_m)
+          : (userLat != null ? formatDist(haversine(userLat, userLng, store.lat, store.lng)) : null);
+
+        /* List card */
+        const card = document.createElement('div');
+        card.className = 'nb-store-card';
+        card.setAttribute('role', 'listitem');
+        card.setAttribute('tabindex', '0');
+        card.style.animationDelay = (i * 35) + 'ms';
+        card.dataset.id = store.place_id || i;
+        card.innerHTML = `
+          <div class="nb-store-row1">
+            <span class="nb-store-name">${escHtml(store.name)}</span>
+            ${dist ? `<span class="nb-store-dist">${dist}</span>` : ''}
+          </div>
+          <div class="nb-store-addr">${escHtml(store.address || store.vicinity || '—')}</div>
+          <div class="nb-store-meta">
+            ${openBadge(store.opening_hours)}
+            ${store.rating ? `<span class="nb-rating"><i class="fa-solid fa-star" aria-hidden="true"></i> ${store.rating.toFixed(1)}</span>` : ''}
+          </div>`;
+
+        card.addEventListener('click',  () => selectStore(store, card));
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') selectStore(store, card); });
+        list.appendChild(card);
+
+        /* Map marker */
+        if (store.lat && store.lng) {
+          const marker = L.marker([store.lat, store.lng], { icon: makeStoreIcon(false) })
+            .bindPopup(buildPopup(store, dist), { maxWidth: 260 })
+            .addTo(storeLayerGroup);
+          storeMarkers[card.dataset.id] = { marker, card };
+          marker.on('click', () => {
+            selectStore(store, card);
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
+        }
+      });
+    }
+
+    function selectStore(store, card) {
+      /* Deselect previous */
+      if (selectedStoreId !== null && storeMarkers[selectedStoreId]) {
+        storeMarkers[selectedStoreId].card.classList.remove('selected');
+        storeMarkers[selectedStoreId].marker.setIcon(makeStoreIcon(false));
+      }
+      const id = card.dataset.id;
+      selectedStoreId = id;
+      card.classList.add('selected');
+      if (storeMarkers[id]) {
+        storeMarkers[id].marker.setIcon(makeStoreIcon(true));
+        storeMarkers[id].marker.openPopup();
+        if (store.lat && store.lng) map.panTo([store.lat, store.lng], { animate: true });
+      }
+    }
+
+    function buildPopup(store, dist) {
+      const oh = store.opening_hours;
+      const openNow = oh ? (oh.open_now ? 'open' : 'closed') : null;
+      return `<div class="nb-popup">
+        <div class="nb-popup-name">${escHtml(store.name)}</div>
+        <div class="nb-popup-addr">${escHtml(store.address || store.vicinity || '')}</div>
+        <div class="nb-popup-meta">
+          ${dist ? `<span class="nb-popup-badge dist">${dist} away</span>` : ''}
+          ${openNow === 'open'   ? `<span class="nb-popup-badge open">Open now</span>` : ''}
+          ${openNow === 'closed' ? `<span class="nb-popup-badge closed">Closed</span>` : ''}
+          ${store.rating ? `<span class="nb-popup-badge dist">★ ${store.rating.toFixed(1)}</span>` : ''}
+        </div>
+      </div>`;
+    }
+
+    function openBadge(oh) {
+      if (!oh) return `<span class="nb-store-open unknown"><i class="fa-regular fa-clock"></i> Hours unknown</span>`;
+      if (oh.open_now) return `<span class="nb-store-open open"><i class="fa-solid fa-circle" style="font-size:7px"></i> Open now</span>`;
+      return `<span class="nb-store-open closed"><i class="fa-regular fa-circle" style="font-size:7px"></i> Closed</span>`;
+    }
+
+    /* ─── UI states ─── */
+    function showListSkeleton() {
+      const list = document.getElementById('storeList');
+      document.getElementById('storeCount').textContent = '—';
+      let html = '<div class="nb-skeleton" aria-label="Loading bookstores" role="status">';
+      for (let i = 0; i < 5; i++) {
+        html += `<div class="nb-skel-item">
+          <div class="nb-skel-row">
+            <div class="nb-skel-line medium"></div>
+            <div class="nb-skel-line short" style="width:18%"></div>
+          </div>
+          <div class="nb-skel-line long"></div>
+          <div class="nb-skel-line short"></div>
+        </div>`;
+      }
+      html += '</div>';
+      list.innerHTML = html;
+    }
+
+    function showError(title, body, showRetry = false) {
+      const list = document.getElementById('storeList');
+      document.getElementById('storeCount').textContent = '—';
+      list.innerHTML = `
+        <div class="nb-state" role="alert">
+          <div class="nb-state-icon error"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
+          <h3>${escHtml(title)}</h3>
+          <p>${escHtml(body)}</p>
+          ${showRetry ? `<button class="nb-retry-btn" id="retryBtn"><i class="fa-solid fa-rotate-right"></i> Try again</button>` : ''}
+        </div>`;
+      if (showRetry) {
+        document.getElementById('retryBtn').addEventListener('click', () => {
+          if (window._nbLastCoords) fetchStores(window._nbLastCoords.lat, window._nbLastCoords.lng);
+          else requestLocation();
+        });
+      }
+    }
+
+    function showEmpty(radius) {
+      const km = (radius / 1000).toFixed(0);
+      const list = document.getElementById('storeList');
+      document.getElementById('storeCount').textContent = '0 found';
+      list.innerHTML = `
+        <div class="nb-state" role="status">
+          <div class="nb-state-icon empty"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></div>
+          <h3>No bookstores found</h3>
+          <p>Nothing within ${km} km. Try increasing the search radius above.</p>
+        </div>`;
+    }
+
+    /* ─── Helpers ─── */
+    function haversine(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function formatDist(m) {
+      return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
+    }
+
+    function escHtml(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
 </body>
 </html>
-
-
-
-
-
-
