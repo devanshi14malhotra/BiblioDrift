@@ -1919,6 +1919,167 @@ def verify_auth():
     return jsonify({"user": user.to_dict()}), 200
 
 
+
+logger = logging.getLogger(__name__)
+
+# ─── Constants ───────────────────────────────────────────────────────────────
+
+PLACES_NEARBY_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+PLACES_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
+
+DEFAULT_RADIUS  = 5000   # metres
+MAX_RADIUS      = 10000
+MIN_RADIUS      = 500
+MAX_RESULTS     = 20     # cap to avoid large payloads
+
+
+# ─── Helper: haversine distance ───────────────────────────────────────────────
+
+def _haversine_m(lat1, lng1, lat2, lng2):
+    """Return distance in metres between two lat/lng points."""
+    R = 6_371_000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi  = math.radians(lat2 - lat1)
+    dlam  = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+# ─── Route ────────────────────────────────────────────────────────────────────
+
+@app.route("/api/v1/bookstores/nearby", methods=["GET"])
+def get_nearby_bookstores():
+    """
+    GET /api/v1/bookstores/nearby?lat=<float>&lng=<float>&radius=<int>
+
+    Returns:
+        {
+          "bookstores": [
+            {
+              "place_id":      "ChIJ...",
+              "name":          "The Bookshop on the Corner",
+              "address":       "12 High Street, Edinburgh",
+              "lat":           55.9533,
+              "lng":           -3.1883,
+              "distance_m":    342,
+              "rating":        4.5,          # may be null
+              "opening_hours": {             # may be null
+                "open_now": true
+              },
+              "google_maps_url": "https://www.google.com/maps/place/?q=place_id:ChIJ..."
+            },
+            ...
+          ],
+          "count": 12,
+          "radius_m": 5000,
+          "user_location": { "lat": 55.95, "lng": -3.19 }
+        }
+
+    Error responses follow the app's existing error_responses.py patterns.
+    """
+
+    # ── Validate query params ──
+    try:
+        lat = float(request.args["lat"])
+        lng = float(request.args["lng"])
+    except (KeyError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "lat and lng are required numeric query parameters"
+        }), 400
+
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        return jsonify({
+            "status": "error",
+            "message": "lat must be in [-90, 90] and lng in [-180, 180]"
+        }), 400
+
+    try:
+        radius = int(request.args.get("radius", DEFAULT_RADIUS))
+    except ValueError:
+        radius = DEFAULT_RADIUS
+
+    radius = max(MIN_RADIUS, min(radius, MAX_RADIUS))
+
+    # ── Check API key ──
+    api_key = os.environ.get("GOOGLE_PLACES_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        logger.error("GOOGLE_PLACES_API_KEY is not set — nearby bookstores unavailable")
+        return jsonify({
+            "status": "error",
+            "message": "Bookstore search is not configured on this server."
+        }), 503
+
+    # ── Call Google Places Nearby Search ──
+    params = {
+        "location": f"{lat},{lng}",
+        "radius":   radius,
+        "type":     "book_store",
+        "key":      api_key,
+    }
+
+    try:
+        resp = http_requests.get(PLACES_NEARBY_URL, params=params, timeout=8)
+        resp.raise_for_status()
+        places_data = resp.json()
+    except http_requests.exceptions.Timeout:
+        logger.warning("Google Places API timed out for lat=%s lng=%s", lat, lng)
+        return jsonify({"status": "error", "message": "Bookstore search timed out. Please try again."}), 504
+    except http_requests.exceptions.RequestException as exc:
+        logger.error("Google Places API request failed: %s", exc)
+        return jsonify({"status": "error", "message": "Could not reach the bookstore search service."}), 502
+
+    status = places_data.get("status")
+    if status not in ("OK", "ZERO_RESULTS"):
+        logger.warning("Google Places returned status=%s for lat=%s lng=%s", status, lat, lng)
+        if status == "REQUEST_DENIED":
+            return jsonify({"status": "error", "message": "API key is invalid or missing Places API permission."}), 503
+        if status == "OVER_QUERY_LIMIT":
+            return jsonify({"status": "error", "message": "Search quota exceeded. Please try again later."}), 429
+        return jsonify({"status": "error", "message": f"Places API error: {status}"}), 502
+
+    raw_results = places_data.get("results", [])[:MAX_RESULTS]
+
+    # ── Normalise results ──
+    bookstores = []
+    for place in raw_results:
+        geom     = place.get("geometry", {}).get("location", {})
+        place_lat = geom.get("lat")
+        place_lng = geom.get("lng")
+
+        dist_m = None
+        if place_lat is not None and place_lng is not None:
+            dist_m = round(_haversine_m(lat, lng, place_lat, place_lng))
+
+        oh = place.get("opening_hours")
+        opening_hours = {"open_now": oh["open_now"]} if oh and "open_now" in oh else None
+
+        bookstores.append({
+            "place_id":        place.get("place_id"),
+            "name":            place.get("name", "Unknown bookstore"),
+            "address":         place.get("vicinity", ""),
+            "lat":             place_lat,
+            "lng":             place_lng,
+            "distance_m":      dist_m,
+            "rating":          place.get("rating"),
+            "opening_hours":   opening_hours,
+            "google_maps_url": (
+                f"https://www.google.com/maps/place/?q=place_id:{place.get('place_id')}"
+                if place.get("place_id") else None
+            ),
+        })
+
+    # Sort by distance ascending (None distances go to end)
+    bookstores.sort(key=lambda s: s["distance_m"] if s["distance_m"] is not None else float("inf"))
+
+    return jsonify({
+        "status":        "success",
+        "bookstores":    bookstores,
+        "count":         len(bookstores),
+        "radius_m":      radius,
+        "user_location": {"lat": lat, "lng": lng},
+    }), 200
+
 @app.route('/api/v1/logout', methods=['POST'])
 def logout():
     """Clear JWT cookies for logout."""
@@ -2738,4 +2899,4 @@ if __name__ == '__main__':
         logger.info("  POST /api/v1/chat - Chat with bookseller (DEPRECATED - Use WebSockets)")
         logger.info("  GET  /api/v1/health - Health check")
 
-    socketio.run(app, debug=server_config.debug, port=server_config.port, host=server_config.host)
+    socketio.run(app, debug=True, port=5000, host='127.0.0.1')

@@ -23,3 +23,7 @@ PYTHON_VERSION = "3.10"
   for = "/*.png"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+[[redirects]]
+  from = "/api/v1/bookstores/nearby"
+  to   = "/.netlify/functions/bookstores-nearby"
+  status = 200
