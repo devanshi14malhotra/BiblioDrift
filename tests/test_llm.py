@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables
-loaded = load_dotenv()
+loaded = load_dotenv(override=True)
 print(f".env loaded: {loaded}")
 
 if os.path.exists(".env"):

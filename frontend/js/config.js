@@ -60,37 +60,17 @@ if (typeof window !== 'undefined') {
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
-            const keys = this.getKeys();
-            const candidates = keys.length > 0 ? keys : [null];
-            let lastError = null;
-
-            for (let index = 0; index < candidates.length; index += 1) {
-                const key = candidates[index];
-                const keyParam = key ? `&key=${encodeURIComponent(key)}` : '';
-                const url = `${CONFIG.API_BASE}?q=${encodeURIComponent(query)}&maxResults=${maxResults}${extraParams}${keyParam}`;
-
-                try {
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        return await response.json();
-                    }
-
-                    const retryableStatuses = [429, 403, 503];
-                    if (retryableStatuses.includes(response.status) && index < candidates.length - 1) {
-                        lastError = new Error(`Google Books API returned ${response.status}`);
-                        continue;
-                    }
-
-                    throw new Error(`Google Books API returned ${response.status}`);
-                } catch (error) {
-                    lastError = error;
-                    if (index < candidates.length - 1) {
-                        continue;
-                    }
-                }
+            const apiKey = CONFIG.GOOGLE_BOOKS_API_KEY || CONFIG.GOOGLE_BOOKS_API_KEYS[0] || '';
+            if (!apiKey) {
+                throw new Error('Google Books API key is not configured');
             }
+            const url = `${CONFIG.API_BASE}?q=${encodeURIComponent(query)}&maxResults=${encodeURIComponent(maxResults)}&key=${encodeURIComponent(apiKey)}${extraParams}`;
 
-            throw lastError || new Error('Google Books request failed');
+            const response = await fetch(url);
+            if (response.ok) {
+                return await response.json();
+            }
+            throw new Error(`Google Books API returned ${response.status}`);
         }
     };
 }
