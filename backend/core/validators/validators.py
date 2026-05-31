@@ -15,7 +15,7 @@ from flask import request, jsonify
 try:
     from .sanitizer import sanitize_string, sanitize_for_ai
 except ImportError:
-    from sanitizer import sanitize_string, sanitize_for_ai
+    from core.security.sanitizer import sanitize_string, sanitize_for_ai
 
 
 GOOGLE_BOOKS_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{12,13}$')

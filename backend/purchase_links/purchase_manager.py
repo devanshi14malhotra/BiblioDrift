@@ -5,7 +5,7 @@ import logging
 from typing import Dict, List, Optional, Any
 
 from .purchase_service import PurchaseLinkService
-from .config import config, SUPPORTED_PLATFORMS, PlatformConfig
+from .config import app.config, SUPPORTED_PLATFORMS, PlatformConfig
 
 # Setup logging
 logger = logging.getLogger(__name__)

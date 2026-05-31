@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 
-from .config import config, SUPPORTED_PLATFORMS, PlatformConfig
+from .config import app.config, SUPPORTED_PLATFORMS, PlatformConfig
 from .link_generators import get_all_generators, PurchaseLink
 
 # Setup logging
