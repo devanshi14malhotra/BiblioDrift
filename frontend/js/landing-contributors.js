@@ -247,7 +247,7 @@
         async function fetchStaticContributors(){
             for(const path of STATIC_PATHS){
                 try{
-                    const res = await fetch(path);
+                    const res = await fetch(path, { cache: 'no-store' });
                     if(!res.ok) continue;
                     const data = await res.json();
                     if(Array.isArray(data) && data.length){
@@ -294,11 +294,6 @@
 
         async function refreshContributorSource(force = false){
             const cached = readCachedContributors();
-            if(cached.length && !force && cacheAgeMs() < REFRESH_INTERVAL_MS){
-                renderContributors(cached);
-                return;
-            }
-
             const staticData = await fetchStaticContributors();
             if(staticData.length){
                 renderContributors(staticData);

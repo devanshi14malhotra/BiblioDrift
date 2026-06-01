@@ -2196,7 +2196,7 @@
                     <a class="btn-ghost contributors-view-all" href="contributors.html">
                         <i class="fa-solid fa-users"></i> View all contributors
                     </a>
-                    <span class="contributors-refresh-note"><i class="fa-solid fa-rotate"></i> Refreshes up to 3 times a day</span>
+                    <span class="contributors-refresh-note"><i class="fa-solid fa-rotate"></i> Refreshes daily at 12:00 AM IST</span>
                 </div>
 
                 <div class="contributors-list" data-owner="devanshi14malhotra" data-repo="BiblioDrift" aria-live="polite">
@@ -2511,7 +2511,7 @@
                     async function fetchStaticContributors(){
                         for(const path of STATIC_PATHS){
                             try{
-                                const res = await fetch(path);
+                                const res = await fetch(path, { cache: 'no-store' });
                                 if(!res.ok) continue;
                                 const data = await res.json();
                                 if(Array.isArray(data) && data.length){
@@ -2558,11 +2558,6 @@
 
                     async function refreshContributorSource(force = false){
                         const cached = readCachedContributors();
-                        if(cached.length && !force && cacheAgeMs() < REFRESH_INTERVAL_MS){
-                            renderContributors(cached);
-                            return;
-                        }
-
                         const staticData = await fetchStaticContributors();
                         if(staticData.length){
                             renderContributors(staticData);
