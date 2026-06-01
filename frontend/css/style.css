@@ -8254,3 +8254,67 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+
+/* Scroll To Top Button */
+
+:root {
+  --scroll-btn-bg: #ffffff;
+  --scroll-btn-color: #111111;
+  --scroll-btn-shadow: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="night"] {
+  --scroll-btn-bg: #1f1f1f;
+  --scroll-btn-color: #ffffff;
+  --scroll-btn-shadow: rgba(255, 255, 255, 0.15);
+}
+
+.scroll-top-btn {
+  position: fixed;
+  bottom: 96px;
+  right: 36px;
+
+  width: 52px;
+  height: 52px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: var(--scroll-btn-bg);
+  color: var(--scroll-btn-color);
+
+  font-size: 1.5rem;
+  cursor: pointer;
+
+  box-shadow: 0 4px 12px var(--scroll-btn-shadow);
+
+  opacity: 0;
+  visibility: hidden;
+
+  transform: translateY(20px);
+
+  transition: all 0.3s ease;
+
+  z-index: 1000;
+}
+
+.scroll-top-btn.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.scroll-top-btn:hover {
+  transform: translateY(-3px);
+}
+
+@media (max-width: 768px) {
+  .scroll-top-btn {
+    width: 46px;
+    height: 46px;
+    bottom: 18px;
+    right: 18px;
+    font-size: 1.2rem;
+  }
+}
+
