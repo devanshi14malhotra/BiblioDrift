@@ -14,7 +14,7 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
-from spine_generator import create_spine
+from backend.spine_generator import create_spine
 import os
 import requests
 
@@ -23,16 +23,16 @@ from datetime import datetime, timedelta, timezone
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from sanitizer import sanitize_payload
-from reader_identity.routes import reader_identity_bp
+from backend.sanitizer import sanitize_payload
+from backend.reader_identity.routes import reader_identity_bp
 
 # Environment variables are now loaded centrally in backend/config.py
-from config import app_config, setup_logging, validate_required_env_vars
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
-from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
-from price_tracker import get_price_tracker
-from cache_service import cache_service
-from validators import (
+from backend.config import app_config, setup_logging, validate_required_env_vars
+from backend.ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
+from backend.models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
+from backend.price_tracker.price_tracker import get_price_tracker
+from backend.cache_service import cache_service
+from backend.validators import (
     validate_request,
     validate_google_books_id,
     AnalyzeMoodRequest,
@@ -62,7 +62,7 @@ from validators import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from error_responses import (
+from backend.error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
@@ -81,7 +81,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import enhanced mood analysis
 try:
-    from mood_analysis.ai_service_enhanced import AIBookService
+    from backend.mood_analysis.ai_service_enhanced import AIBookService
     MOOD_ANALYSIS_AVAILABLE = True
 except ImportError:
     MOOD_ANALYSIS_AVAILABLE = False

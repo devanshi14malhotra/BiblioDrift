@@ -37,7 +37,7 @@ def process_new_book(book_data):
 
 
 # Import caching decorators
-from cache_service import (
+from backend.cache_service import (
     cache_recommendations, 
     cache_mood_tags, 
     cache_chat_response,
@@ -73,7 +73,7 @@ except ImportError:
 
 # Try to import mood analysis
 try:
-    from mood_analysis.ai_service_enhanced import get_book_mood_tags, generate_enhanced_book_note
+    from backend.mood_analysis.ai_service_enhanced import get_book_mood_tags, generate_enhanced_book_note
     MOOD_ANALYSIS_AVAILABLE = True
 except ImportError:
     MOOD_ANALYSIS_AVAILABLE = False
