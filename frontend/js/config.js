@@ -51,6 +51,9 @@ if (typeof window !== 'undefined') {
     window.MOOD_API_BASE = MOOD_API_BASE;
     window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
+        // 🌟 Tier 0: Isolated genre cache dictionary
+        _genreCache: {},
+
         setKeys(keys) {
             CONFIG.GOOGLE_BOOKS_API_KEYS = Array.from(new Set((keys || []).map(key => String(key || '').trim()).filter(Boolean)));
         },
@@ -60,6 +63,14 @@ if (typeof window !== 'undefined') {
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
+            
+            // 🌟 Tier 0: Check if we have already fetched this specific query/genre
+            const cacheKey = `${query}_${maxResults}_${extraParams}`;
+            if (this._genreCache[cacheKey]) {
+                console.log(`[Cache Hit] Serving recommendations for: ${query}`);
+                return this._genreCache[cacheKey];
+            }
+
             const keys = this.getKeys();
             const candidates = keys.length > 0 ? keys : [null];
             let lastError = null;
@@ -72,7 +83,29 @@ if (typeof window !== 'undefined') {
                 try {
                     const response = await fetch(url);
                     if (response.ok) {
-                        return await response.json();
+                        const data = await response.json();
+
+                        // 🌟 Tier 1: Content-Based Filtering / Sorting Logic
+                        // "Weight by: genre match → avg rating → publication recency"
+                        if (data && data.items) {
+                            data.items.sort((a, b) => {
+                                // 1. Average Rating Weighting (Descending)
+                                const ratingA = a.volumeInfo?.averageRating || 0;
+                                const ratingB = b.volumeInfo?.averageRating || 0;
+                                if (ratingB !== ratingA) {
+                                    return ratingB - ratingA;
+                                }
+                                
+                                // 2. Publication Recency Weighting (Newest First)
+                                const dateA = new Date(a.volumeInfo?.publishedDate || 0);
+                                const dateB = new Date(b.volumeInfo?.publishedDate || 0);
+                                return dateB - dateA;
+                            });
+                        }
+
+                        // 🌟 Tier 0: Save the sorted data into our localized cache
+                        this._genreCache[cacheKey] = data;
+                        return data;
                     }
 
                     const retryableStatuses = [429, 403, 503];
@@ -94,7 +127,6 @@ if (typeof window !== 'undefined') {
         }
     };
 }
-
 // Export for module systems (if needed)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
