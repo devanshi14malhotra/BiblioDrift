@@ -11,7 +11,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
-    get_jwt_identity, set_access_cookies, unset_jwt_cookies
+    get_jwt_identity, set_access_cookies, unset_jwt_cookiesS
 )
 from flask_limiter import Limiter
 from flask_limiter.errors import RateLimitExceeded
@@ -31,16 +31,8 @@ import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
-<<<<<<< bug/Refactor-Backend-Imports-to-Support-Consistent-Execution
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from backend.sanitizer import sanitize_payload
-from backend.reader_identity.routes import reader_identity_bp
-=======
 from backend.core.security.sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
->>>>>>> main
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -54,21 +46,12 @@ else:
     load_dotenv()
 
 # Environment variables are now loaded centrally in backend/config.py
-<<<<<<< bug/Refactor-Backend-Imports-to-Support-Consistent-Execution
-from backend.config import app_config, setup_logging, validate_required_env_vars
-from backend.ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
-from backend.models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
-from backend.price_tracker.price_tracker import get_price_tracker
-from backend.cache_service import cache_service
-from backend.validators import (
-=======
 from config import app_config, setup_logging, validate_required_env_vars
 from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, generate_chat_response_stream, llm_service, get_vibe_recommendations
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
 from price_tracker import get_price_tracker
 from cache_service import cache_service
 from backend.core.validators.validators import (
->>>>>>> main
     validate_request,
     validate_schema,
     validate_google_books_id,
@@ -112,11 +95,7 @@ from email_service import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-<<<<<<< bug/Refactor-Backend-Imports-to-Support-Consistent-Execution
-from backend.error_responses import (
-=======
 from backend.core.responses.error_responses import (
->>>>>>> main
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
