@@ -115,9 +115,8 @@ def safe_get_json(
                 logger.warning(error_msg)
                 return False, None, error_msg
         
-        raw_data = request.get_data(as_text=True)
+        raw_data = request.stream.read(max_size + 1).decode('utf-8', errors='replace')
         
-        # Check raw data size as backup
         if len(raw_data) > max_size:
             error_msg = f"Request data too large: {len(raw_data)} bytes (max: {max_size})"
             logger.warning(error_msg)

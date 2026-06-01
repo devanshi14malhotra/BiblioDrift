@@ -1311,6 +1311,7 @@ def handle_socket_chat(data):
 @validate_schema(AddToLibraryRequest)
 def add_to_library(validated_data):
     """Add a book to the user's shelf."""
+    current_user_id = get_jwt_identity()
     from sqlalchemy.exc import IntegrityError
     from backend.core.exceptions.exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
     from backend.core.responses.error_responses import handle_exception
@@ -1488,6 +1489,7 @@ def _get_yearly_stats(user_id, year):
 @validate_schema(UpdateLibraryItemRequest)
 def update_library_item(item_id, validated_data):
     """Update a library item (e.g. move to different shelf)."""
+    current_user_id = get_jwt_identity()
     try:
         
         item = ShelfItem.query.with_for_update().get(item_id)
