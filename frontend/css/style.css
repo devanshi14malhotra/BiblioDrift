@@ -8254,3 +8254,10 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+/* Fix: mobile viewport horizontal overflow (Issue #785) */
+body,
+#root {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
