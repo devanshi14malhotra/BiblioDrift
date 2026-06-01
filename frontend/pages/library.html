@@ -3,10 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <script>
+    <script type="module">
+        import {
+            getStorageData,
+            STORAGE_KEYS
+        } from '../js/storage-manager.js';
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme') || 'night';
-            document.documentElement.setAttribute('data-theme', theme);
+            const theme = getStorageData(STORAGE_KEYS.THEME);
+            if (theme === 'night') {
+                document.documentElement.setAttribute('data-theme', 'night');
+            }
         })();
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
