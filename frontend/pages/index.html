@@ -81,179 +81,179 @@
   <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
 </head>
 
-<body>
-  <div id="sc-glow-outer"></div>
-  <div id="sc-glow-mid"></div>
-  <div id="sc-glow-inner"></div>
-  <div id="sc-dot"></div>
-  <header>
-    <a href="index.html" class="logo">
-      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
-    </a>
-    <div class="header-controls">
-      <div class="search-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search for a feeling...">
-        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
-      </div>
-      <nav class="nav-links">
-        <div class="tooltip">
-          <a href="index.html" class="active">Discovery</a>
-          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+<body class="landing-page">
+    <div id="sc-glow-outer"></div>
+    <div id="sc-glow-mid"></div>
+    <div id="sc-glow-inner"></div>
+    <div id="sc-dot"></div>
+    <div class="landing-shell">
+        <header class="landing-header">
+            <a class="landing-brand" href="index.html" aria-label="BiblioDrift home">
+                <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift logo" />
+                <span>BiblioDrift</span>
+            </a>
+            <nav class="landing-nav" aria-label="Landing sections">
+                <a href="#about-project">About</a>
+                <a href="#key-features">Features</a>
+                <a href="#community">Community</a>
+                <a href="#contribute">Contribute</a>
+            </nav>
+            <div class="landing-header-actions">
+                <button id="themeToggle" class="landing-icon-btn" aria-label="Toggle dark mode">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <a class="btn-ghost app-link" href="app.html"><i class="fa-solid fa-door-open"></i> Open App</a>
+            </div>
+        </header>
+
+        <main class="landing-main">
+            <section class="landing-hero reveal is-visible" id="top">
+                <div class="hero-copy">
+                    <div class="eyebrow-row">
+                        <span class="eyebrow-pill"><i class="fa-solid fa-leaf"></i> Ambient reading sanctuary</span>
+                        <span class="eyebrow-note">cozy, open-source, and intentionally unhurried</span>
+                    </div>
+                    <h1>Find yourself in the pages.</h1>
+                    <p>
+                        BiblioDrift is a warm reading space for mood-driven discovery, thoughtful curation, and
+                        community-led book journeys.
+                        Explore softly, collect meaningfully, and step into the shelves when you are ready.
+                    </p>
+                    <div class="landing-cta-group">
+                        <a class="btn-primary landing-cta-primary app-link" href="app.html#discover-shelves"><i
+                                class="fa-solid fa-wand-magic-sparkles"></i> Explore Project</a>
+                        <a class="btn-ghost app-link" href="app.html"><i class="fa-solid fa-arrow-right"></i> Get
+                            Started</a>
+                    </div>
+                    <div class="hero-metrics" aria-label="Project highlights">
+                        <article class="metric-card reveal" data-delay="1">
+                            <strong data-count="4">0</strong>
+                            <span>cozy reading moods</span>
+                        </article>
+                        <article class="metric-card reveal" data-delay="2">
+                            <strong data-count="3">0</strong>
+                            <span>core app spaces</span>
+                        </article>
+                        <article class="metric-card reveal" data-delay="3">
+                            <strong data-count="100">0</strong>
+                            <span>responsive design</span>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="hero-visual" aria-hidden="true">
+                    <div class="hero-orb orb-one"></div>
+                    <div class="hero-orb orb-two"></div>
+                    <div class="hero-book-stack">
+                        <div class="hero-book book-large">
+                            <img src="../assets/images/pride.jpg" alt="" />
+                        </div>
+                        <div class="hero-book book-small-top">
+                            <img src="../assets/images/gatsby.jpg" alt="" />
+                        </div>
+                        <div class="hero-book book-small-bottom">
+                            <img src="../assets/images/dune.jpg" alt="" />
+                        </div>
+                        <div class="hero-caption">
+                            <span>Curated for slow afternoons</span>
+                            <strong>Search by feeling, not just genre.</strong>
+                        </div>
+                    </div>
+                    <div class="hero-note">
+                        <i class="fa-solid fa-moon"></i>
+                        <span>Ambient Sanctuary ready for rainy evenings and quiet focus.</span>
+                    </div>
+                </div>
+            </section>
+            <!-- 
+      <nav class="landing-section landing-anchors reveal" aria-label="Landing page sections">
+        <a href="#about-project">About</a>
+        <a href="#key-features">Features</a>
+        <a href="#community">Community</a>
+        <a href="#reader-experience">Reader notes</a>
+        <a href="#contribute">Contribute</a>
+        <a href="#footer">Footer</a>
+      </nav> -->
+
+            <section class="landing-section reveal ambient-about-section" id="about-project">
+
+    <div class="ambient-blur ambient-blur-left"></div>
+    <div class="ambient-blur ambient-blur-right"></div>
+
+    <div class="section-header about-header">
+
+        <div class="about-heading-content">
+            <p class="section-kicker">About the project</p>
+
+            <h2>
+                A reading room you want to
+                return to.
+            </h2>
+
+            <p class="about-subtext">
+                BiblioDrift turns book discovery into a slower ritual with
+                mood-first browsing, ambient exploration, and a tactile
+                interface that keeps the atmosphere warm and personal.
+            </p>
+
+            <div class="about-cta-row">
+                <a href="app.html" class="primary-about-btn">
+                    Enter Library
+                </a>
+
+                <a href="#community" class="secondary-about-btn">
+                    Meet Contributors
+                </a>
+            </div>
         </div>
-        <div class="tooltip">
-          <a href="vault.html" >My Vault</a>
-          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+
+        <div class="about-floating-chip">
+            <i class="fa-solid fa-book-open"></i>
+            Mood-first discovery
         </div>
-        <div class="tooltip">
-          <a href="library.html" >My Library</a>
-          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
-        </div>
-        <div class="tooltip">
-          <a href="chat.html" >Chat</a>
-          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
-        </div>
-        <!-- DYNAMIC AUTH LINK -->
-        <div class="tooltip">
-          <a href="auth.html" id="navAuthLink" >Sign In</a>
-          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
-        </div>
-      </nav>
-      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
-        <i class="fa-solid fa-moon"></i>
-      </button>
+
     </div>
-  </header>
 
-  <main>
-    <section class="hero">
-      <h1>Find yourself in the pages.</h1>
-      <p>A curated sanctuary for those who read through emotions.</p>
-    </section>
+    <div class="about-grid">
 
-    <!-- SEARCH RESULTS SECTION (Initially Hidden) -->
-    <section id="search-results-section" class="curated-section" hidden>
-      <div class="section-header">
-        <h2 id="search-query-display">Search Results</h2>
-        <span><i class="fa-solid fa-magnifying-glass"></i> Exploring your query</span>
-      </div>
-      <!-- Mood-Tag Filter Bar -->
-      <div id="mood-filter-bar" class="mood-filter-bar" hidden>
-        <div class="filter-label">Filter by mood:</div>
-        <div class="filter-chips" id="filter-chips">
-          <!-- Dynamically populated chips -->
-        </div>
-      </div>
-      <div class="curated-row" id="search-results-grid">
-        <!-- Dynamically Appended Books -->
-      </div>
-    </section>
+        <article class="about-card">
 
-    <!-- Curated Sections -->
-    <section class="curated-section">
-      <div class="section-header">
-        <h2>Rainy Evening Reads</h2>
-        <span><i class="fa-solid fa-cloud-rain"></i> Mystery & Melancholy</span>
-      </div>
-      <div class="curated-row" id="row-rainy"></div>
-    </section>
-
-    <section class="curated-section">
-      <div class="section-header">
-        <h2>Indian Authors</h2>
-        <span><i class="fa-solid fa-feather"></i> Subcontinent Voices</span>
-      </div>
-      <div class="curated-row" id="row-indian"></div>
-    </section>
-
-    <section class="curated-section">
-      <div class="section-header">
-        <h2>Forgotten Classics</h2>
-        <span><i class="fa-solid fa-hourglass"></i> Timeless & Dust-free</span>
-      </div>
-      <div class="curated-row" id="row-classics"></div>
-    </section>
-
-    <section class="curated-section">
-      <div class="section-header">
-        <h2>Dark Academia</h2>
-        <span><i class="fa-solid fa-feather-pointed"></i> Gothic, cerebral, candlelit</span>
-      </div>
-      <div class="curated-row" id="row-dark-academia"></div>
-    </section>
-
-    <section class="curated-section">
-      <div class="section-header">
-        <h2>General Fiction</h2>
-        <span><i class="fa-solid fa-book-open"></i> Stories for everyone</span>
-      </div>
-      <div class="curated-row" id="row-fiction"></div>
-    </section>
-
-    <!-- Genre Grid Section -->
-    <section class="curated-section genre-section">
-      <div class="section-header">
-        <h2>Browse by Genre</h2>
-        <span><i class="fa-solid fa-compass"></i> Find your next read</span>
-      </div>
-      <div class="genre-grid" id="genre-grid">
-        <div class="genre-card" data-genre="romance"><i class="fa-solid fa-heart"></i><span>Romance</span></div>
-        <div class="genre-card" data-genre="mystery"><i class="fa-solid fa-magnifying-glass"></i><span>Mystery</span>
-        </div>
-        <div class="genre-card" data-genre="fiction"><i class="fa-solid fa-book"></i><span>Fiction</span></div>
-        <div class="genre-card" data-genre="crime"><i class="fa-solid fa-user-secret"></i><span>Crime</span></div>
-        <div class="genre-card" data-genre="fantasy"><i class="fa-solid fa-wand-sparkles"></i><span>Fantasy</span></div>
-        <div class="genre-card" data-genre="thriller"><i class="fa-solid fa-skull"></i><span>Thriller</span></div>
-        <div class="genre-card" data-genre="biography"><i class="fa-solid fa-user"></i><span>Biography</span></div>
-        <div class="genre-card" data-genre="self-help"><i
-            class="fa-solid fa-hand-holding-heart"></i><span>Self-Help</span></div>
-        <div class="genre-card" data-genre="science"><i class="fa-solid fa-flask"></i><span>Science</span></div>
-        <div class="genre-card" data-genre="history"><i class="fa-solid fa-landmark"></i><span>History</span></div>
-      </div>
-    </section>
-
-    <!-- Genre Modal -->
-    <dialog id="genre-modal" class="genre-modal">
-      <div class="genre-modal-content">
-        <div class="genre-modal-header">
-          <h2 id="genre-modal-title">Genre Books</h2>
-          <button class="close-genre-modal" id="close-genre-modal"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="genre-modal-body">
-          <div class="genre-books-grid" id="genre-books-grid"></div>
-        </div>
-      </div>
-    </dialog>
-
-    <!-- Book Details Modal -->
-    <dialog id="book-details-modal" class="glass-modal">
-      <div class="modal-content">
-        <button class="close-modal-btn" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
-        <div class="modal-body">
-          <div class="modal-media"><img id="modal-img" src="" alt="Book Cover" /></div>
-          <div class="modal-info">
-            <h2 id="modal-title">Book Title</h2>
-            <p id="modal-author" class="modal-subtitle">Author Name</p>
-            <div class="ai-insight-box">
-              <div class="ai-header"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI Insight</span></div>
-              <div id="modal-summary">
-                <div class="text-skeleton skeleton"></div>
-                <div class="text-skeleton skeleton" style="width: 90%"></div>
-                <div class="text-skeleton skeleton" style="width: 70%"></div>
-              </div>
+            <div class="card-icon-wrap">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
-            <!-- Added "Where to Buy" section -->
-            <div class="purchase-links-box" style="margin-top: 15px;">
-              <div class="purchase-header"><i class="fa-solid fa-cart-shopping"></i><span> Where to Buy</span></div>
-              <div id="modal-purchase-links" class="purchase-links-container">
-                <div class="text-skeleton skeleton"></div>
-              </div>
-            </div>
-            <div class="modal-actions">
-              <button id="modal-add-btn" class="btn-primary"><i class="fa-regular fa-heart"></i> Add to Library</button>
-              <button id="modal-preview-btn" class="btn-preview"><i class="fa-solid fa-book-open"></i> Preview</button>
-              <button id="modal-share-btn" class="btn-secondary modal-share-btn"><i class="fa-solid fa-share-nodes"></i>
-                Share</button>
-              <button id="modal-mood-btn" class="btn-secondary"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore Mood</button>
+
+            <div>
+                <p class="section-kicker">Reading sanctuary</p>
+
+                <p class="about-lede">
+                    A softer way to discover books, built around
+                    atmosphere first.
+                </p>
+
+                <p class="section-copy">
+                    The experience blends mood-based discovery with a quiet,
+                    editorial interface that keeps books centered while making
+                    exploration feel calm, cinematic, and personal.
+                </p>
+
+                <div class="about-mood-row" aria-label="Project highlights">
+
+                    <span class="about-mood-pill">
+                        <i class="fa-solid fa-fire"></i>
+                        Cozy
+                    </span>
+
+                    <span class="about-mood-pill">
+                        <i class="fa-solid fa-sparkles"></i>
+                        Curated
+                    </span>
+
+                    <span class="about-mood-pill">
+                        <i class="fa-solid fa-users"></i>
+                        Community
+                    </span>
+
+                </div>
             </div>
           </div>
         </div>
@@ -307,8 +307,555 @@
           <div class="range-fill" aria-hidden="true"></div>
           <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
         </div>
-      </div>
+
     </div>
-  </div>
+
+</section>
+
+            <section class="landing-section reveal" id="key-features">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Key features</p>
+                        <h2>Designed like a reading ritual, not a dashboard.</h2>
+                    </div>
+                    <span class="section-chip"><i class="fa-solid fa-sparkles"></i> subtle motion, warm surfaces</span>
+                </div>
+                <div class="feature-grid">
+                    <article class="feature-card" tabindex="0">
+                        <i class="fa-solid fa-feather-pointed"></i>
+                        <h3>Search by feeling</h3>
+                        <p>Explore books through moods, genres, and the tone you want to inhabit.</p>
+                    </article>
+                    <article class="feature-card" tabindex="0">
+                        <i class="fa-solid fa-book-open-reader"></i>
+                        <h3>Library with memory</h3>
+                        <p>Track what you want to read, what you are reading, and what stayed with you.</p>
+                    </article>
+                    <article class="feature-card" tabindex="0">
+                        <i class="fa-solid fa-headphones-simple"></i>
+                        <h3>Ambient atmosphere</h3>
+                        <p>Use sound layers to make the page feel lived in without overwhelming the content.</p>
+                    </article>
+                    <article class="feature-card" tabindex="0">
+                        <i class="fa-solid fa-comments"></i>
+                        <h3>Conversation-ready</h3>
+                        <p>Move from discovery into chat and community flows without losing context.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="landing-section reveal" id="community">
+                <div class="section-header community-header-row">
+                    <div>
+                        <p class="section-kicker">Community / contributors</p>
+                        <h2 class="community-title-inline">Meet the people shaping BiblioDrift.</h2>
+                    </div>
+                    <span class="section-chip"><i class="fa-solid fa-users"></i> open-source and community-driven</span>
+                </div>
+                <!-- <p class="section-copy contributors-intro">We welcome readers, designers, reviewers, and contributors. This roster updates from GitHub and expands on demand.</p> -->
+
+                <div class="contributors-actions-row">
+                    <a class="btn-ghost contributors-view-all" href="contributors.html">
+                        <i class="fa-solid fa-users"></i> View all contributors
+                    </a>
+                    <span class="contributors-refresh-note"><i class="fa-solid fa-rotate"></i> Refreshes up to 3 times a day</span>
+                </div>
+
+                <div class="contributors-list" data-owner="devanshi14malhotra" data-repo="BiblioDrift" aria-live="polite">
+                    <div class="contributors-loading">Loading contributors…</div>
+                </div>
+            </section>
+
+            <section class="landing-section reveal" id="reader-experience">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Reader experience</p>
+                        <h2>What it feels like to stay a while.</h2>
+                    </div>
+                    <span class="section-chip"><i class="fa-solid fa-quote-left"></i> gentle, tactile, and
+                        immersive</span>
+                </div>
+                <p class="reader-experience-intro">BiblioDrift is designed to feel calm, readable, and responsive, so the interface fades into the background and the books, sounds, and moods stay in focus.</p>
+                <div class="testimonial-grid">
+                    <article class="quote-card">
+                        <p>“It feels like stepping into a quiet bookstore where the shelves respond to the mood you brought with you.”</p>
+                        <span>Discovery stays intimate instead of mechanical.</span>
+                    </article>
+                    <article class="quote-card">
+                        <p>“The interface knows when to be present and when to get out of the way, which makes reading feel unhurried.”</p>
+                        <span>Motion stays calm, useful, and atmospheric.</span>
+                    </article>
+                    <article class="quote-card">
+                        <p>“Every section belongs to the same room, so the page feels like one place instead of a stack of screens.”</p>
+                        <span>Typography, spacing, and warmth stay consistent.</span>
+                    </article>
+                </div>
+            </section>
+
+            <section class="landing-section reveal" id="contribute">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Contribution workflow</p>
+                        <h2>There is room for your next pull request here.</h2>
+                    </div>
+                    <span class="section-chip"><i class="fa-solid fa-code-pull-request"></i> easy to join, easy to
+                        improve</span>
+                </div>
+                <div class="workflow-grid">
+                    <article class="workflow-step">
+                        <span>01</span>
+                        <h3>Pick a gentle task</h3>
+                        <p>Start with UI polish, accessibility tweaks, content, or issue triage.</p>
+                    </article>
+                    <article class="workflow-step">
+                        <span>02</span>
+                        <h3>Test the experience</h3>
+                        <p>Check light and dark themes, then verify the layout on mobile.</p>
+                    </article>
+                    <article class="workflow-step">
+                        <span>03</span>
+                        <h3>Open the conversation</h3>
+                        <p>Submit the change, describe the feeling it improves, and invite feedback.</p>
+                    </article>
+                </div>
+                <div class="contribute-actions" style="margin-top: 1.1rem;">
+                    <a class="btn-primary landing-cta-primary"
+                        href="https://github.com/devanshi14malhotra/BiblioDrift/issues" target="_blank"
+                        rel="noopener noreferrer"><i class="fa-brands fa-github"></i> Find an issue</a>
+                    <a class="btn-ghost" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Read
+                        contributing guide</a>
+                </div>
+            </section>
+
+            <script src="../js/landing-contributors.js"></script>
+            <script>
+            (function(){
+                const lists = document.querySelectorAll('.contributors-list');
+                if(!lists.length) return;
+
+                const REFRESH_INTERVAL_MS = 8 * 60 * 60 * 1000;
+                const FEATURED_LIMIT = 10;
+                const STATIC_PATHS = [
+                    '../data/contributors.json',
+                    '/data/contributors.json',
+                    'frontend/data/contributors.json'
+                ];
+
+                function storageGet(key){
+                    try { return window.localStorage.getItem(key); }
+                    catch(e){ return null; }
+                }
+
+                function storageSet(key, value){
+                    try { window.localStorage.setItem(key, value); }
+                    catch(e){}
+                }
+
+                lists.forEach(container => {
+                    const owner = container.dataset.owner || 'devanshi14malhotra';
+                    const repo = container.dataset.repo || 'BiblioDrift';
+                    const loading = container.querySelector('.contributors-loading');
+                    const section = container.closest('.landing-section');
+                    const cacheKey = `biblioDrift.contributors.${owner}.${repo}`;
+                    const cacheTimeKey = `${cacheKey}.fetchedAt`;
+
+                    let contributors = [];
+                    let renderVersion = 0;
+
+                    function readCachedContributors(){
+                        const raw = storageGet(cacheKey);
+                        if(!raw) return [];
+                        try { return JSON.parse(raw); }
+                        catch(e){ return []; }
+                    }
+
+                    function writeCachedContributors(data){
+                        storageSet(cacheKey, JSON.stringify(data));
+                        storageSet(cacheTimeKey, String(Date.now()));
+                    }
+
+                    function cacheAgeMs(){
+                        const raw = storageGet(cacheTimeKey);
+                        if(!raw) return Number.POSITIVE_INFINITY;
+                        const parsed = Number(raw);
+                        if(!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
+                        return Date.now() - parsed;
+                    }
+
+                    function createContributorCard(user){
+                        const a = document.createElement('a');
+                        a.className = 'contributor-item';
+                        a.href = user.html_url;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+
+                        const img = document.createElement('img');
+                        img.className = 'contributor-avatar-img';
+                        img.loading = 'lazy';
+                        img.alt = user.login;
+                        img.src = `${user.avatar_url}?s=160`;
+
+                        const meta = document.createElement('div');
+                        meta.className = 'contributor-meta';
+                        const name = document.createElement('div');
+                        name.className = 'contributor-name';
+                        name.textContent = user.login;
+                        const count = document.createElement('div');
+                        count.className = 'contrib-count';
+                        count.textContent = user.contributions ? `${user.contributions} contributions` : 'GitHub contributor';
+
+                        meta.appendChild(name);
+                        meta.appendChild(count);
+                        a.appendChild(img);
+                        a.appendChild(meta);
+                        return a;
+                    }
+
+                    function startTicker(track, slider, version){
+                        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+                            return;
+                        }
+
+                        const originals = Array.from(track.children);
+                        let singleWidth = 0;
+                        const imgs = track.querySelectorAll('img');
+                        let started = false;
+                        let bootAttempts = 0;
+                        let animationFrameId = 0;
+                        let resizeObserver = null;
+
+                        const compute = ()=>{
+                            let width = track.scrollWidth ? track.scrollWidth / 2 : 0;
+                            if(!width){
+                                width = originals.reduce((sum, el)=> sum + el.getBoundingClientRect().width, 0);
+                            }
+                            if(!width){
+                                width = originals.reduce((sum, el)=> sum + el.offsetWidth, 0);
+                            }
+                            singleWidth = Math.max(0, width);
+                            track.style.width = `${Math.max(singleWidth * 2, track.scrollWidth)}px`;
+                        };
+
+                        const run = ()=>{
+                            if(started){
+                                return;
+                            }
+                            started = true;
+                            track.style.display = 'flex';
+                            track.style.transition = 'none';
+                            compute();
+
+                            if(window.ResizeObserver){
+                                resizeObserver = new ResizeObserver(()=> {
+                                    const previousWidth = singleWidth;
+                                    compute();
+                                    if(previousWidth !== singleWidth && singleWidth > 0){
+                                        pos = singleWidth ? pos % singleWidth : 0;
+                                        track.style.transform = `translateX(-${pos}px)`;
+                                    }
+                                });
+                                resizeObserver.observe(track);
+                            }
+
+                            let pos = 0;
+                            const speed = 90;
+                            let last = performance.now();
+
+                            function frame(now){
+                                if(container.dataset.renderVersion !== String(version)){
+                                    if(resizeObserver){
+                                        resizeObserver.disconnect();
+                                    }
+                                    return;
+                                }
+
+                                const dt = (now - last) / 1000;
+                                last = now;
+                                if(singleWidth > 0){
+                                    pos = (pos + speed * dt) % singleWidth;
+                                    track.style.transform = `translateX(-${pos}px)`;
+                                }
+                                animationFrameId = requestAnimationFrame(frame);
+                            }
+
+                            animationFrameId = requestAnimationFrame(frame);
+                        };
+
+                        const boot = ()=>{
+                            if(container.dataset.renderVersion !== String(version)){
+                                return;
+                            }
+
+                            compute();
+
+                            if(singleWidth > 0){
+                                run();
+                                return;
+                            }
+
+                            if(bootAttempts < 45){
+                                bootAttempts += 1;
+                                requestAnimationFrame(boot);
+                                return;
+                            }
+
+                            run();
+                        };
+
+                        imgs.forEach(img => {
+                            const retry = ()=> {
+                                if(!started){
+                                    boot();
+                                } else {
+                                    compute();
+                                }
+                            };
+
+                            if(img.complete){
+                                retry();
+                                return;
+                            }
+
+                            img.addEventListener('load', retry, { once: true });
+                            img.addEventListener('error', retry, { once: true });
+                        });
+
+                        requestAnimationFrame(boot);
+                        setTimeout(boot, 600);
+                    }
+
+                    function renderContributors(data){
+                        if(!Array.isArray(data) || !data.length){
+                            if(loading) loading.textContent = 'No contributors found.';
+                            return;
+                        }
+
+                        contributors = data;
+                        container.dataset.renderVersion = String(renderVersion += 1);
+                        if(loading && loading.parentNode){
+                            loading.remove();
+                        }
+
+                        container.innerHTML = '';
+                        const panel = document.createElement('div');
+                        panel.className = 'contributors-panel';
+
+                        const slider = document.createElement('div');
+                        slider.className = 'contributors-slider';
+                        const track = document.createElement('div');
+                        track.className = 'slider-track';
+
+                        const shown = data.slice(0, Math.min(FEATURED_LIMIT, data.length));
+                        shown.forEach(user => {
+                            const slide = document.createElement('div');
+                            slide.className = 'slide';
+                            slide.appendChild(createContributorCard(user));
+                            track.appendChild(slide);
+                        });
+
+                        slider.appendChild(track);
+                        panel.appendChild(slider);
+
+                        const grid = document.createElement('div');
+                        grid.className = 'contributors-grid-view';
+                        data.forEach(user => {
+                            grid.appendChild(createContributorCard(user));
+                        });
+                        panel.appendChild(grid);
+
+                        container.appendChild(panel);
+                        const duplicates = Array.from(track.children);
+                        duplicates.forEach(node => track.appendChild(node.cloneNode(true)));
+
+                        startTicker(track, slider, renderVersion);
+                    }
+
+                    async function fetchStaticContributors(){
+                        for(const path of STATIC_PATHS){
+                            try{
+                                const res = await fetch(path);
+                                if(!res.ok) continue;
+                                const data = await res.json();
+                                if(Array.isArray(data) && data.length){
+                                    return data;
+                                }
+                            }catch(e){
+                                continue;
+                            }
+                        }
+                        return [];
+                    }
+
+                    async function fetchGitHubContributors(){
+                        const perPage = 100;
+                        const all = [];
+
+                        for(let page = 1; page <= 20; page += 1){
+                            const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=${perPage}&page=${page}`;
+                            const res = await fetch(url, {
+                                headers: {
+                                    'Accept': 'application/vnd.github+json',
+                                    'X-GitHub-Api-Version': '2022-11-28',
+                                    'User-Agent': 'BiblioDrift-contributors'
+                                }
+                            });
+
+                            if(!res.ok){
+                                throw new Error(`GitHub returned ${res.status}`);
+                            }
+
+                            const data = await res.json();
+                            if(!Array.isArray(data) || !data.length){
+                                break;
+                            }
+
+                            all.push(...data);
+                            if(data.length < perPage){
+                                break;
+                            }
+                        }
+
+                        return Array.from(new Map(all.filter(user => user && user.login).map(user => [user.login, user])).values());
+                    }
+
+                    async function refreshContributorSource(force = false){
+                        const cached = readCachedContributors();
+                        if(cached.length && !force && cacheAgeMs() < REFRESH_INTERVAL_MS){
+                            renderContributors(cached);
+                            return;
+                        }
+
+                        const staticData = await fetchStaticContributors();
+                        if(staticData.length){
+                            renderContributors(staticData);
+                        } else if(cached.length){
+                            renderContributors(cached);
+                        }
+
+                        try{
+                            if(!force && cached.length && cacheAgeMs() < REFRESH_INTERVAL_MS){
+                                return;
+                            }
+
+                            const liveData = await fetchGitHubContributors();
+                            if(liveData.length){
+                                writeCachedContributors(liveData);
+                                renderContributors(liveData);
+                            }
+                        }catch(e){
+                            if(!staticData.length && !cached.length){
+                                if(loading){
+                                    loading.textContent = 'Contributors not available.';
+                                    const link = document.createElement('a');
+                                    link.href = `https://github.com/${owner}/${repo}/graphs/contributors`;
+                                    link.target = '_blank';
+                                    link.rel = 'noopener noreferrer';
+                                    link.textContent = 'View contributors on GitHub';
+                                    link.style.display = 'inline-block';
+                                    link.style.marginTop = '8px';
+                                    loading.appendChild(link);
+                                }
+                            }
+                        }
+                    }
+
+                    refreshContributorSource(false);
+                    setInterval(()=> refreshContributorSource(true), REFRESH_INTERVAL_MS);
+                });
+            })();
+            </script>
+
+            <footer class="landing-footer reveal" id="footer">
+                <div class="footer-banner">
+                    <div>
+                        <span class="footer-banner-kicker"><i class="fa-solid fa-book-open"></i> Reader links</span>
+                        <h2>Keep exploring BiblioDrift</h2>
+                        <p>Move between the app, the guide, and the community without losing your place.</p>
+                    </div>
+                    <div class="footer-banner-actions">
+                        <a class="footer-pill app-link" href="app.html"><i class="fa-solid fa-book-open-reader"></i> Open App</a>
+                        <a class="footer-pill" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Contribute</a>
+                    </div>
+                </div>
+
+                <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+                    <div class="pwa-banner-content">
+                        <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+                        <div class="pwa-banner-text">
+                            <strong>Install BiblioDrift.</strong>
+                            <span>Read offline, anytime.</span>
+                        </div>
+                    </div>
+                    <div class="pwa-banner-actions">
+                        <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+                        <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+
+                <div class="footer-grid">
+                    <div class="footer-block">
+                        <a class="landing-brand" href="#top" aria-label="Back to top">
+                            <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift logo" />
+                            <span>BiblioDrift</span>
+                        </a>
+                        <p>
+                            A cozy reading sanctuary for mood-based discovery, community contributions, and thoughtful
+                            book exploration.
+                        </p>
+                    </div>
+                    <div class="footer-block">
+                        <h3>Explore</h3>
+                        <div class="footer-links">
+                            <a href="#about-project">About</a>
+                            <a href="#key-features">Features</a>
+                            <a href="#community">Community</a>
+                            <a class="app-link" href="app.html">Open App</a>
+                        </div>
+                    </div>
+                    <div class="footer-block">
+                        <h3>App pages</h3>
+                        <div class="footer-links">
+                            <a class="app-link" href="app.html">Discovery</a>
+                            <a class="app-link" href="app.html">My Library</a>
+                            <a class="app-link" href="app.html">Literary Chat</a>
+                            <a class="app-link" href="app.html">Account</a>
+                        </div>
+                    </div>
+                    <div class="footer-block">
+                        <h3>Connect</h3>
+                        <div class="social-links">
+                            <a href="https://github.com/devanshi14malhotra/BiblioDrift" target="_blank"
+                                rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                            <a href="https://www.linkedin.com/in/devanshi5malhotra/" target="_blank"
+                                rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                                <a href="contributing.html" aria-label="Contributing guide"><i
+                                    class="fa-solid fa-file-lines"></i></a>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">
+                              <img src="https://www.netlify.com/assets/badges/netlify-badge-dark.svg" alt="Deploys by Netlify" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p class="footer-meta"><strong>&copy; <span id="currentYear"></span> BiblioDrift</strong> <span>Curated with <i class="fa-solid fa-heart"></i> for book lovers.</span></p>
+                    <p class="footer-link-row"><a class="app-link" href="app.html">Enter the app</a><span>·</span><a href="#top">Back to top</a></p>
+                </div>
+            </footer>
+            <button id="blossomToggle" class="blossom-toggle" type="button" aria-pressed="false" aria-label="Start cherry blossom effect">
+                <i class="fa-solid fa-spa"></i>
+                <span class="blossom-toggle-label">Bloom</span>
+            </button>
+        </main>
+    </div>
+
+    <script src="../js/theme-manager.js"></script>
+    <script src="../js/landing-interactions.js"></script>
+    <script src="../js/ambient.js"></script>
+    <script src="../js/pwa.js"></script>
 </body>
+
 </html>
+
+

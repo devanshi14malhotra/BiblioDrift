@@ -39,9 +39,20 @@
             downloadedBooks: DOWNLOADED_BOOKS_SCHEMA,
             syncQueue: SYNC_QUEUE_SCHEMA
         });
+        window.db.version(3).stores({
+            books: BOOKS_SCHEMA,
+            downloadedBooks: DOWNLOADED_BOOKS_SCHEMA,
+            syncQueue: SYNC_QUEUE_SCHEMA,
+            userLibrary: 'userId'
+        });
 
-        window.db.open().catch((error) => {
+        window.db.open().catch(async (error) => {
             console.error('Failed to open BiblioDrift IndexedDB', error);
+            if (error.name === 'VersionError') {
+                console.warn('Deleting old IndexedDB due to version mismatch...');
+                await Dexie.delete(DB_NAME);
+                window.location.reload();
+            }
         });
 
         window.saveBookOffline = async function (book) {

@@ -12,16 +12,16 @@ from unittest.mock import patch, MagicMock
 from flask import Flask, jsonify
 
 # Import security modules
-from backend.security_parsers import (
+from backend.core.security.security_parsers import (
     safe_get_json, get_request_arg_safe, validate_content_type, _validate_depth,
     JSONParseError, MAX_JSON_SIZE_BYTES
 )
 from backend.middleware import validate_content_type_middleware, safe_request_handler
-from backend.sanitizer import (
+from backend.core.security.sanitizer import (
     sanitize_string, sanitize_payload, contains_malicious_patterns,
     is_likely_html_attack, sanitize_for_ai, sanitize_for_display, sanitize_for_storage
 )
-from backend.validators import validate_google_books_id, validate_request, AddToLibraryRequest
+from backend.core.validators.validators import validate_google_books_id, validate_request, AddToLibraryRequest
 
 
 class TestJSONParsing:
@@ -70,7 +70,7 @@ class TestJSONParsing:
         """Force mode should not bypass object-root validation."""
         payload = json.dumps([{"id": 1}])
 
-        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+        with patch("backend.core.security.security_parsers.request", self._mock_json_request(payload)):
             success, data, error = safe_get_json(force=True)
 
         assert not success
@@ -81,7 +81,7 @@ class TestJSONParsing:
         """Callers can explicitly accept array roots when they need to."""
         payload = json.dumps([{"id": 1}])
 
-        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+        with patch("backend.core.security.security_parsers.request", self._mock_json_request(payload)):
             success, data, error = safe_get_json(force=True, require_object=False)
 
         assert success
@@ -92,7 +92,7 @@ class TestJSONParsing:
         """safe_get_json should enforce required fields when a schema is provided."""
         payload = json.dumps({"user_id": 123, "message": "hello"})
 
-        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+        with patch("backend.core.security.security_parsers.request", self._mock_json_request(payload)):
             success, data, error = safe_get_json(
                 force=True,
                 fields={"user_id": int, "message": str},
@@ -106,7 +106,7 @@ class TestJSONParsing:
         """safe_get_json should fail fast when a required field is absent."""
         payload = json.dumps({"user_id": 123})
 
-        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+        with patch("backend.core.security.security_parsers.request", self._mock_json_request(payload)):
             success, data, error = safe_get_json(
                 force=True,
                 fields={"user_id": int, "message": str},
@@ -120,7 +120,7 @@ class TestJSONParsing:
         """safe_get_json should reject unexpected keys unless explicitly allowed."""
         payload = json.dumps({"user_id": 123, "message": "hello", "extra": True})
 
-        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+        with patch("backend.core.security.security_parsers.request", self._mock_json_request(payload)):
             success, data, error = safe_get_json(
                 force=True,
                 fields={"user_id": int, "message": str},
@@ -134,7 +134,7 @@ class TestJSONParsing:
         """safe_get_json should reject shallow payloads with huge arrays."""
         payload = json.dumps({"data": [1, 2, 3, 4, 5]})
 
-        with patch("backend.security_parsers.request", self._mock_json_request(payload)):
+        with patch("backend.core.security.security_parsers.request", self._mock_json_request(payload)):
             success, data, error = safe_get_json(
                 force=True,
                 max_array_len=3,
@@ -476,7 +476,7 @@ class TestContentTypeValidation:
 
     def test_allows_form_urlencoded_by_default(self):
         """Default allowed types should include form submissions."""
-        with patch("backend.security_parsers.request", SimpleNamespace(content_type="application/x-www-form-urlencoded")):
+        with patch("backend.core.security.security_parsers.request", SimpleNamespace(content_type="application/x-www-form-urlencoded")):
             is_valid, error = validate_content_type()
 
         assert is_valid
@@ -485,7 +485,7 @@ class TestContentTypeValidation:
     def test_normalizes_case_and_parameters(self):
         """Content-Type validation should ignore charset parameters and casing."""
         with patch(
-            "backend.security_parsers.request",
+            "backend.core.security.security_parsers.request",
             SimpleNamespace(content_type="Application/JSON; charset=utf-8")
         ):
             is_valid, error = validate_content_type()
@@ -496,7 +496,7 @@ class TestContentTypeValidation:
     def test_allows_only_configured_content_types(self):
         """Explicit allowlists should reject content types that are not listed."""
         with patch(
-            "backend.security_parsers.request",
+            "backend.core.security.security_parsers.request",
             SimpleNamespace(content_type="application/x-www-form-urlencoded; charset=utf-8")
         ):
             is_valid, error = validate_content_type(allowed_types=["application/json"])

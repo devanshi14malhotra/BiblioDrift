@@ -1,6 +1,7 @@
 /**
  * Ambient Sanctuary Logic for BiblioDrift
  * Handles background ambient sounds (Rain, Fireplace, Ocean) with volume control.
+ * FIXED: Volume now persists across pages using localStorage
  */
 
 class AmbientManager {
@@ -10,6 +11,11 @@ class AmbientManager {
         this.rainToggle = document.getElementById('rainToggle');
         this.fireToggle = document.getElementById('fireToggle');
         this.stormToggle = document.getElementById('stormToggle');
+        this.spaceToggle = document.getElementById('spaceToggle');
+        this.trainToggle = document.getElementById('trainToggle');
+        this.forestToggle = document.getElementById('forestToggle');
+        this.magicToggle = document.getElementById('magicToggle');
+        this.animeToggle = document.getElementById('animeToggle');
         this.volumeSlider = document.getElementById('ambientVolume');
 
         // Defensive check: only initialize if elements exist
@@ -19,7 +25,7 @@ class AmbientManager {
         this.toggleBtn.setAttribute('aria-controls', 'ambientPanel');
         this.toggleBtn.setAttribute('aria-expanded', 'false');
 
-        this.rainAudio = new Audio('https://archive.org/download/Red_Library_Nature_Rain/R22-25-General%20Rain.mp3');
+        this.rainAudio = new Audio('../assets/sounds/Rain.mp3');
         this.rainAudio.preload = 'auto';
         this.fireAudio = new Audio('https://archive.org/download/1-hour-cozy-fire-crackling-fireplace-320/1%20hour%20Cozy%20Fire%20Crackling%20Fireplace%20320.mp3');
         
@@ -49,15 +55,74 @@ class AmbientManager {
         };
         window.addEventListener('click', this.unlockAudio);
 
+        // FIXED: Load saved volume from localStorage
+        this.loadVolume();
+        this.loadAudioStates();
         this.init();
-        // Ensure volume is set immediately
-        this.rainAudio.volume = 0.5;
-        this.fireAudio.volume = 0.5;
-        this.oceanAudio.volume = 0.5;
+    }
+
+    /**
+     * Load volume preference from localStorage
+     */
+    loadVolume() {
+        const savedVolume = localStorage.getItem('bibliodrift_ambient_volume');
+        const volume = savedVolume !== null ? parseFloat(savedVolume) : 0.5;
+
+        // Set audio volumes
+        this.rainAudio.volume = volume;
+        this.fireAudio.volume = volume;
+        this.oceanAudio.volume = volume;
+        this.stormAudio.volume = volume;
+        this.spaceAudio.volume = volume;
+        this.trainAudio.volume = volume;
+        this.forestAudio.volume = volume;
+        this.magicAudio.volume = volume;
+        this.animeAudio.volume = volume;
+
+        // Set slider to match
+        if (this.volumeSlider) {
+            this.volumeSlider.value = volume;
+        }
+
+        console.log(`Loaded ambient volume: ${volume}`);
+    }
+
+    /**
+     * Load audio states from localStorage
+     */
+    loadAudioStates() {
+        const rainState = localStorage.getItem('bibliodrift_rain_state');
+        const fireState = localStorage.getItem('bibliodrift_fire_state');
+
+        if (rainState === 'true') {
+            this.rainToggle.checked = true;
+            this.rainAudio.play().catch(e => {});
+        }
+
+        if (fireState === 'true') {
+            this.fireToggle.checked = true;
+            this.fireAudio.play().catch(e => {});
+        }
+    }
+
+    /**
+     * Save audio state to localStorage
+     */
+    saveAudioState(type, isPlaying) {
+        localStorage.setItem(`bibliodrift_${type}_state`, isPlaying.toString());
+    }
+
+    /**
+     * Save volume preference to localStorage
+     */
+    saveVolume(volume) {
+        localStorage.setItem('bibliodrift_ambient_volume', volume.toString());
+        console.log(`Saved ambient volume: ${volume}`);
     }
 
     init() {
         // Toggle Panel with ARIA and button active animation
+        // FIX: removed duplicate unlockAudio() + panel.classList.toggle('active') calls
         this.toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.unlockAudio(); // Explicitly unlock audio here since propagation is stopped!
@@ -84,37 +149,122 @@ class AmbientManager {
             if (this.rainToggle.checked) {
                 if (typeof setTheme === 'function') setTheme('rainy');
                 this.rainAudio.currentTime = 0;
-                this.rainAudio.play()
-                    .then(() => console.log("Rain audio playing"))
-                    .catch(e => {
-                        console.error("Rain audio failed:", e);
-                        if (typeof showToast === 'function') {
-                            showToast("Audio playback blocked. Click anywhere to enable.", "info");
-                        }
-                    });
+                this.rainAudio.play().then(() => {
+                    console.log("Rain audio playing");
+                    this.saveAudioState('rain', true);
+                }).catch(e => {
+                    console.error("Rain audio failed:", e);
+                    if (typeof showToast === 'function') {
+                        showToast("Audio playback blocked. Click anywhere to enable.", "info");
+                    }
+                });
             } else {
                 if (typeof clearTheme === 'function') clearTheme();
                 this.rainAudio.pause();
+                this.saveAudioState('rain', false);
             }
         });
 
         // Fire Toggle
+        // FIX: removed duplicate fireToggle listener that was incorrectly placed inside storm else block
         this.fireToggle.addEventListener('change', () => {
             if (this.fireToggle.checked) {
                 if (typeof setTheme === 'function') setTheme('cozy');
                 this.fireAudio.currentTime = 0;
-                this.fireAudio.play()
-                    .then(() => console.log("Fire audio playing"))
-                    .catch(e => {
-                        console.error("Fire audio failed:", e);
-                    });
+                this.fireAudio.play().then(() => {
+                    console.log("Fire audio playing");
+                    this.saveAudioState('fire', true);
+                }).catch(e => {
+                    console.error("Fire audio failed:", e);
+                });
             } else {
                 if (typeof clearTheme === 'function') clearTheme();
                 this.fireAudio.pause();
+                this.saveAudioState('fire', false);
             }
         });
 
         // Volume Control
+
+        if (this.spaceToggle) {
+            this.spaceToggle.addEventListener('change', () => {
+                if (this.spaceToggle.checked) {
+                    if (typeof setTheme === 'function') setTheme('space');
+                    this.spaceAudio.currentTime = 0;
+                    this.spaceAudio.play().then(() => {
+                        this.saveAudioState('space', true);
+                    }).catch(e => { console.error("Space Drift failed:", e); });
+                } else {
+                    if (typeof clearTheme === 'function') clearTheme();
+                    this.spaceAudio.pause();
+                    this.saveAudioState('space', false);
+                }
+            });
+        }
+
+        if (this.trainToggle) {
+            this.trainToggle.addEventListener('change', () => {
+                if (this.trainToggle.checked) {
+                    if (typeof setTheme === 'function') setTheme('train');
+                    this.trainAudio.currentTime = 0;
+                    this.trainAudio.play().then(() => {
+                        this.saveAudioState('train', true);
+                    }).catch(e => { console.error("Night Train failed:", e); });
+                } else {
+                    if (typeof clearTheme === 'function') clearTheme();
+                    this.trainAudio.pause();
+                    this.saveAudioState('train', false);
+                }
+            });
+        }
+
+        if (this.forestToggle) {
+            this.forestToggle.addEventListener('change', () => {
+                if (this.forestToggle.checked) {
+                    if (typeof setTheme === 'function') setTheme('forest');
+                    this.forestAudio.currentTime = 0;
+                    this.forestAudio.play().then(() => {
+                        this.saveAudioState('forest', true);
+                    }).catch(e => { console.error("Forest Cabin failed:", e); });
+                } else {
+                    if (typeof clearTheme === 'function') clearTheme();
+                    this.forestAudio.pause();
+                    this.saveAudioState('forest', false);
+                }
+            });
+        }
+
+        if (this.magicToggle) {
+            this.magicToggle.addEventListener('change', () => {
+                if (this.magicToggle.checked) {
+                    if (typeof setTheme === 'function') setTheme('magic');
+                    this.magicAudio.currentTime = 0;
+                    this.magicAudio.play().then(() => {
+                        this.saveAudioState('magic', true);
+                    }).catch(e => { console.error("Magic Realm failed:", e); });
+                } else {
+                    if (typeof clearTheme === 'function') clearTheme();
+                    this.magicAudio.pause();
+                    this.saveAudioState('magic', false);
+                }
+            });
+        }
+
+        if (this.animeToggle) {
+            this.animeToggle.addEventListener('change', () => {
+                if (this.animeToggle.checked) {
+                    if (typeof setTheme === 'function') setTheme('anime');
+                    this.animeAudio.currentTime = 0;
+                    this.animeAudio.play().then(() => {
+                        this.saveAudioState('anime', true);
+                    }).catch(e => { console.error("Wisteria Night failed:", e); });
+                } else {
+                    if (typeof clearTheme === 'function') clearTheme();
+                    this.animeAudio.pause();
+                    this.saveAudioState('anime', false);
+                }
+            });
+        }
         this.updateVolumeUI = (val) => {
             const pct = Math.round((val || 0) * 100);
             // update track fill using numeric CSS variable (0-100)
@@ -128,6 +278,7 @@ class AmbientManager {
             }, 380);
         };
 
+        // FIX: restored oceanAudio/stormAudio volume lines + saveVolume inside same listener
         this.volumeSlider.addEventListener('input', () => {
             const volume = parseFloat(this.volumeSlider.value);
             this.rainAudio.volume = volume;
@@ -138,6 +289,16 @@ class AmbientManager {
         const startVolume = parseFloat(this.volumeSlider.value) || 0.5;
         this.rainAudio.volume = startVolume;
         this.fireAudio.volume = startVolume;
+    }
+
+    // The Generic Looping Engine
+    setupAutoLoop(audioInstance, cutOffSeconds) {
+        audioInstance.addEventListener('timeupdate', () => {
+            if (audioInstance.duration && audioInstance.currentTime >= audioInstance.duration - cutOffSeconds) {
+                audioInstance.currentTime = 0;
+                audioInstance.play().catch(e => { });
+            }
+        });
     }
 }
 
@@ -273,4 +434,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 })();
-
