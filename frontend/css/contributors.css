@@ -202,4 +202,15 @@ header {
   .contributors-hero p {
     max-width: 100%;
   }
+  
 }
+body.dark-mode .contributor-card{
+    background : #1e1e1e !important;
+    border-color : rgba(255, 255, 255, 0.1) !important;
+  }
+   body.dark-mode .contributor-name{
+      color : #f8fafc  !important;
+    }
+    body.dark-mode .contributor-count{
+      color : #94a3b8 !important;
+    }
