@@ -3104,9 +3104,22 @@ class BookshelfRenderer3D {
                 newAddBtn.setAttribute('aria-label', 'Book added to library');
 
                 // Store in localStorage (integrate with existing library system)
-                if (this.currentBook) {
-                    await this.addToLibrary(this.currentBook);
-                }
+               if (this.currentBook) {
+    try {
+        
+        console.log("Adding book to storage:", this.currentBook.title);
+        
+        await this.addToLibrary(this.currentBook);
+    } catch (error) {
+        console.error("Library me add nahi ho paya:", error);
+        
+        // Agar local storage full ho toh purana data clear karne ka option dena
+        if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+            alert("Storage full hai! Please browser cache clear karein.");
+            localStorage.clear(); // Ye temporary saaf kar dega
+        }
+    }
+}
 
                 setTimeout(() => {
                     newAddBtn.innerHTML = '<i class="fa-regular fa-heart"></i> Add to Library';
@@ -3145,22 +3158,36 @@ class BookshelfRenderer3D {
     }
 
     async addToLibrary(book) {
-        if (window.libManager && typeof window.libManager.addBook === 'function') {
-            const normalizedBook = {
-                id: book.id,
-                volumeInfo: {
-                    title: book.title,
-                    authors: [book.author],
-                    imageLinks: { thumbnail: book.cover },
-                    description: book.description,
-                    categories: book.categories
-                }
-            };
 
+    if (window.libManager && typeof window.libManager.addBook === 'function') {
+        
+       
+        const isBase64 = book.cover && (book.cover.startsWith('data:image') || book.cover.length > 500);
+        
+        const normalizedBook = {
+            id: book.id,
+            volumeInfo: {
+                title: book.title,
+                authors: [book.author],
+                
+                imageLinks: { thumbnail: isBase64 ? '' : book.cover },
+                description: book.description ? book.description.substring(0, 200) : '',
+                categories: book.categories
+            }
+        };
+
+        try {
             await window.libManager.addBook(normalizedBook, 'want');
-            this.refreshShelves();
-            return;
+            if (typeof this.refreshShelves === 'function') {
+                this.refreshShelves();
+            }
+        } catch (storageError) {
+            console.error("Storage write failed:", storageError);
+            alert("Local storage is full! Clearing space...");
+            localStorage.clear();
         }
+        return;
+    }
 
         // Get existing library from localStorage
         const storageKey = 'bibliodrift_library';
@@ -3177,17 +3204,23 @@ class BookshelfRenderer3D {
             return;
         }
 
-        // Add to 'want' shelf by default
+       
+        const checkBase64 = book.cover && (book.cover.startsWith('data:image') || book.cover.length > 500);
+
         library.want.push({
             id: book.id,
             volumeInfo: {
                 title: book.title,
                 authors: [book.author],
-                imageLinks: { thumbnail: book.cover },
-                description: book.description,
+                
+                imageLinks: { thumbnail: checkBase64 ? '' : book.cover },
+                description: book.description ? book.description.substring(0, 200) : '',
                 categories: book.categories
             }
         });
+
+        StorageHelper.set(storageKey, JSON.stringify(library));
+        console.log(`Added ${book.title} to library`);
 
         StorageHelper.set(storageKey, JSON.stringify(library));
         console.log(`Added ${book.title} to library`);

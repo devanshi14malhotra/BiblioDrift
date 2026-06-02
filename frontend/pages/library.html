@@ -2,6 +2,36 @@
 <html lang="en">
 
 <head>
+    <script>
+        (function() {
+            const originalSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, value) {
+                if (key === 'bibliodrift_library' && value) {
+                    try {
+                        let library = JSON.parse(value);
+                        const cleanShelf = (shelf) => {
+                            if (Array.isArray(shelf)) {
+                                shelf.forEach(book => {
+                                    if (book && book.volumeInfo && book.volumeInfo.imageLinks) {
+                                        let thumb = book.volumeInfo.imageLinks.thumbnail || '';
+                                        if (thumb.startsWith('data:image') || thumb.length > 500) {
+                                            book.volumeInfo.imageLinks.thumbnail = ''; 
+                                        }
+                                    }
+                                });
+                            }
+                        };
+                        if (library.current) cleanShelf(library.current);
+                        if (library.want) cleanShelf(library.want);
+                        value = JSON.stringify(library);
+                    } catch (e) {
+                        console.error("Interceptor parse error:", e);
+                    }
+                }
+                return originalSetItem.call(localStorage, key, value);
+            };
+        })();
+    </script>
     <meta charset="UTF-8">
     <script>
         (function () {

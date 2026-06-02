@@ -79,6 +79,32 @@
 
 // API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
+// GSSoC Strict Fix: Global storage cleaner interceptor
+(function() {
+    const originalSet = localStorage.setItem;
+    localStorage.setItem = function(key, value) {
+        if (key === 'bibliodrift_library' && value) {
+            try {
+                let lib = JSON.parse(value);
+                const clean = (arr) => {
+                    if (Array.isArray(arr)) {
+                        arr.forEach(b => {
+                            if (b && b.volumeInfo && b.volumeInfo.imageLinks) {
+                                if (b.volumeInfo.imageLinks.thumbnail && b.volumeInfo.imageLinks.thumbnail.startsWith('data:image')) {
+                                    b.volumeInfo.imageLinks.thumbnail = ''; // Destroy heavy base64
+                                }
+                            }
+                        });
+                    }
+                };
+                if (lib.current) clean(lib.current);
+                if (lib.want) clean(lib.want);
+                value = JSON.stringify(lib);
+            } catch(e) {}
+        }
+        return originalSet.call(localStorage, key, value);
+    };
+})();
 if (typeof window.IS_DEV === 'undefined') {
     window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 }
@@ -451,20 +477,44 @@ const SafeStorage = {
         return true;
     },
 
-    async _saveToDB(key, value) {
+ async _saveToDB(key, value) {
+        if (key === 'bibliodrift_library' && value) {
+            try {
+                let library = (typeof value === 'string') ? JSON.parse(value) : value;
+                
+                const cleanShelf = (shelf) => {
+                    if (Array.isArray(shelf)) {
+                        shelf.forEach(book => {
+                            if (book && book.volumeInfo && book.volumeInfo.imageLinks) {
+                                let thumb = book.volumeInfo.imageLinks.thumbnail || '';
+                                if (thumb.startsWith('data:image') || thumb.length > 500) {
+                                    book.volumeInfo.imageLinks.thumbnail = '';
+                                }
+                            }
+                        });
+                    }
+                };
+                
+                if (library.current) cleanShelf(library.current);
+                if (library.want) cleanShelf(library.want);
+                
+                value = (typeof value === 'string') ? JSON.stringify(library) : library;
+            } catch (e) {
+                console.error("Sanitizer error:", e);
+            }
+        }
+
         try {
             const db = await this._openDB();
             const transaction = db.transaction(this._storeName, 'readwrite');
             const store = transaction.objectStore(this._storeName);
             store.put(value, key);
+            return true;
         } catch (e) {
             console.error('IndexedDB Backup Failed', e);
+            return false;
         }
-
-        showToast('Local storage full! Please sync to cloud and clear cache.', 'error');
-        return false;
     },
-
     /**
      * Safely retrieves data from localStorage.
      */
@@ -1883,7 +1933,8 @@ class LibraryManager {
         if (user && window.db?.userLibrary) {
             try {
                 const record = await window.db.userLibrary.get(user.id);
-                if (record && record.library) {
+                if (record && record.library) { 
+                    
                     storedLibrary = record.library;
                 }
             } catch (e) {
@@ -2411,6 +2462,12 @@ class LibraryManager {
 
     async addBook(book, shelf) {
         // Check if book exists ANYWHERE in library specifically by ID
+        
+if (book && book.volumeInfo && book.volumeInfo.imageLinks) {
+    if (book.volumeInfo.imageLinks.thumbnail && book.volumeInfo.imageLinks.thumbnail.startsWith('data:image')) {
+        book.volumeInfo.imageLinks.thumbnail = ''; 
+    }
+}
         if (this.findBook(book.id)) {
             // It exists. Check where.
             const existingShelf = this.findBookShelf(book.id);
@@ -2930,6 +2987,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         detail: { libraryManager: libManager }
     }));
     libManager.ready().then(() => {
+        
+        if (window.libManager && typeof window.libManager.addBook === 'function') {
+            const originalAddBook = window.libManager.addBook;
+            window.libManager.addBook = async function(book, shelf) {
+                if (book && book.volumeInfo && book.volumeInfo.imageLinks) {
+                    let thumb = book.volumeInfo.imageLinks.thumbnail || '';
+                    if (thumb.startsWith('data:image') || thumb.length > 500) {
+                        console.log("Interceptor: Wiped heavy base64 data payload");
+                        book.volumeInfo.imageLinks.thumbnail = ''; // Payload zeroed out!
+                    }
+                }
+                return originalAddBook.apply(this, arguments);
+            };
+        }
         window.dispatchEvent(new CustomEvent('bibliodrift:library-manager-synced', {
             detail: { libraryManager: libManager }
         }));
@@ -4563,3 +4634,22 @@ async function handleResetPassword(event) {
 }
 
 window.handleResetPassword = handleResetPassword;
+
+document.addEventListener('DOMContentLoaded', () => {
+   
+    const buttons = document.querySelectorAll('button');
+    
+    buttons.forEach(btn => {
+        if (btn.textContent.includes('Constellation')) {
+            btn.addEventListener('click', () => {
+                alert("Constellation View: Feature coming soon!");
+               
+            });
+        }
+        if (btn.textContent.includes('Custom Collections')) {
+            btn.addEventListener('click', () => {
+                alert("Custom Collections: Feature under development!");
+            });
+        }
+    });
+});
