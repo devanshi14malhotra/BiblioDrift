@@ -10,7 +10,6 @@ class AmbientManager {
         this.panel = document.getElementById('ambientPanel');
         this.rainToggle = document.getElementById('rainToggle');
         this.fireToggle = document.getElementById('fireToggle');
-        this.oceanToggle = document.getElementById('oceanToggle');
         this.stormToggle = document.getElementById('stormToggle');
         this.spaceToggle = document.getElementById('spaceToggle');
         this.trainToggle = document.getElementById('trainToggle');
@@ -28,42 +27,21 @@ class AmbientManager {
 
         this.rainAudio = new Audio('../assets/sounds/Rain.mp3');
         this.rainAudio.preload = 'auto';
-        this.fireAudio = new Audio('../assets/sounds/fire.mp3');
-        this.fireAudio.preload = 'auto';
-        this.oceanAudio = new Audio('../assets/sounds/calm-ocean-waves.mp3');
-        this.oceanAudio.preload = 'auto';
-        this.stormAudio = new Audio('../assets/sounds/rain_and_storm.mp3');
-        this.stormAudio.preload = 'auto';
-        this.spaceAudio = new Audio('../assets/sounds/space.mp3');
-        this.spaceAudio.preload = 'auto';
-        this.trainAudio = new Audio('../assets/sounds/train.mp3');
-        this.trainAudio.preload = 'auto';
-        this.forestAudio = new Audio('../assets/sounds/forest.mp3');
-        this.forestAudio.preload = 'auto';
-        this.magicAudio = new Audio('../assets/sounds/magic.mp3');
-        this.magicAudio.preload = 'auto';
-        this.animeAudio = new Audio('../assets/sounds/anime.mp3');
-        this.animeAudio.preload = 'auto';
-      
-        this.rainAudio.loop = false;
-        this.fireAudio.loop = false;
-        this.oceanAudio.loop = false;
-        this.stormAudio.loop = false;
-        this.spaceAudio.loop = false;
-        this.trainAudio.loop = false;
-        this.forestAudio.loop = false;
-        this.magicAudio.loop = false;
-        this.animeAudio.loop = false;
+        this.fireAudio = new Audio('https://archive.org/download/1-hour-cozy-fire-crackling-fireplace-320/1%20hour%20Cozy%20Fire%20Crackling%20Fireplace%20320.mp3');
+        
+        this.rainAudio.loop = true;
+        this.fireAudio.loop = true;
 
-        this.setupAutoLoop(this.stormAudio, 3);
-        this.setupAutoLoop(this.rainAudio, 3);
-        this.setupAutoLoop(this.fireAudio, 3);
-        this.setupAutoLoop(this.oceanAudio, 3);
-        this.setupAutoLoop(this.spaceAudio, 3);
-        this.setupAutoLoop(this.trainAudio, 3);
-        this.setupAutoLoop(this.forestAudio, 3);
-        this.setupAutoLoop(this.magicAudio, 3);
-        this.setupAutoLoop(this.animeAudio, 3);
+        // Prevent the weird 'high bass' or thunder sound at the very end of the rain track
+        // by artificially looping it a few seconds before the track actually ends.
+        this.rainAudio.addEventListener('timeupdate', () => {
+            // Cut off the last 4 seconds to bypass the microphone bump/thunder
+            if (this.rainAudio.duration && this.rainAudio.currentTime >= this.rainAudio.duration - 4) {
+                this.rainAudio.currentTime = 0;
+                // Ensure it keeps playing after reset
+                this.rainAudio.play().catch(e => {});
+            }
+        });
 
         // Global Audio Unlock (Required by modern browsers)
         this.audioUnlocked = false;
@@ -71,12 +49,6 @@ class AmbientManager {
             if (this.audioUnlocked) return;
             this.rainAudio.play().then(() => { this.rainAudio.pause(); }).catch(e => {});
             this.fireAudio.play().then(() => { this.fireAudio.pause(); }).catch(e => {});
-            this.oceanAudio.play().then(() => { this.oceanAudio.pause(); }).catch(e => {});
-            this.spaceAudio.play().then(() => { this.spaceAudio.pause(); }).catch(e => {});
-            this.trainAudio.play().then(() => { this.trainAudio.pause(); }).catch(e => {});
-            this.forestAudio.play().then(() => { this.forestAudio.pause(); }).catch(e => {});
-            this.magicAudio.play().then(() => { this.magicAudio.pause(); }).catch(e => {});
-            this.animeAudio.play().then(() => { this.animeAudio.pause(); }).catch(e => {});
             console.log("Audio Context Unlocked");
             this.audioUnlocked = true;
             window.removeEventListener('click', this.unlockAudio);
@@ -212,44 +184,6 @@ class AmbientManager {
             }
         });
 
-        // Ocean Waves Toggle
-        this.oceanToggle.addEventListener('change', () => {
-            if (this.oceanToggle.checked) {
-                if (typeof setTheme === 'function') setTheme('ocean');
-                this.oceanAudio.currentTime = 0;
-                this.oceanAudio.play()
-                    .then(() => console.log("Ocean audio playing"))
-                    .catch(e => {
-                        console.error("Ocean audio failed:", e);
-                        if (typeof showToast === 'function') {
-                            showToast("Audio playback blocked. Click anywhere to enable.", "info");
-                        }
-                    });
-            } else {
-                if (typeof clearTheme === 'function') clearTheme();
-                this.oceanAudio.pause();
-            }
-        });
-
-        // Stormy Rain Toggle
-        this.stormToggle.addEventListener('change', () => {
-            if (this.stormToggle.checked) {
-                if (typeof setTheme === 'function') setTheme('stormy');
-                this.stormAudio.currentTime = 0;
-                this.stormAudio.play()
-                    .then(() => console.log("Storm audio playing"))
-                    .catch(e => {
-                        console.error("Storm audio failed:", e);
-                        if (typeof showToast === 'function') {
-                            showToast("Audio playback blocked. Click anywhere to enable.", "info");
-                        }
-                    });
-            } else {
-                if (typeof clearTheme === 'function') clearTheme();
-                this.stormAudio.pause();
-            }
-        });
-
         // Volume Control
 
         if (this.spaceToggle) {
@@ -349,95 +283,12 @@ class AmbientManager {
             const volume = parseFloat(this.volumeSlider.value);
             this.rainAudio.volume = volume;
             this.fireAudio.volume = volume;
-            this.oceanAudio.volume = volume;
-            this.stormAudio.volume = volume;
-            this.spaceAudio.volume = volume;
-            this.trainAudio.volume = volume;
-            this.forestAudio.volume = volume;
-            this.magicAudio.volume = volume;
-            this.animeAudio.volume = volume;
-            this.updateVolumeUI(volume);
-            this.saveVolume(volume); // persist to localStorage
-        });
-
-        // cache the fill element for the track (if present)
-        this.rangeFill = this.panel.querySelector('.volume-control .range-fill');
-
-        // Also attempt to play any checked audio immediately on input (more responsive than 'change')
-        this.volumeSlider.addEventListener('input', () => {
-            const vol = parseFloat(this.volumeSlider.value);
-            console.log('Ambient volume (input):', vol, 'rain paused?', this.rainAudio.paused, 'fire paused?', this.fireAudio.paused);
-            const tryPlayNow = (audio, toggle) => {
-                if (!toggle) return;
-                if (toggle.checked) {
-                    audio.volume = vol;
-                    audio.play().catch(e => {
-                        // log at debug level; autoplay policies may block play()
-                        console.debug('Play attempt blocked:', e);
-                    });
-                }
-            };
-
-            tryPlayNow(this.rainAudio, this.rainToggle);
-            tryPlayNow(this.fireAudio, this.fireToggle);
-            tryPlayNow(this.oceanAudio, this.oceanToggle);
-            tryPlayNow(this.stormAudio, this.stormToggle);
-            tryPlayNow(this.spaceAudio, this.spaceToggle);
-            tryPlayNow(this.trainAudio, this.trainToggle);
-            tryPlayNow(this.forestAudio, this.forestToggle);
-            tryPlayNow(this.magicAudio, this.magicToggle);
-            tryPlayNow(this.animeAudio, this.animeToggle);
-
-            // update overlay fill width if element exists
-            if (this.rangeFill) {
-                const pct = Math.round(vol * 100);
-                this.rangeFill.style.width = pct + '%';
-            }
-        });
-
-        // Ensure any enabled ambient sound starts playing when the user adjusts volume
-        this.volumeSlider.addEventListener('change', () => {
-            const vol = parseFloat(this.volumeSlider.value);
-            // Debug log to help trace issues where volume changes but no sound is heard
-            console.log('Ambient volume set to', vol);
-
-            const tryPlay = (audio, toggle) => {
-                if (!toggle) return;
-                if (toggle.checked) {
-                    // If audio is paused, try to play at the new volume
-                    if (audio.paused) {
-                        audio.play().catch(e => {
-                            // ignore play errors (browser autoplay policy) but log for debugging
-                            console.debug('Ambient audio play blocked or failed:', e);
-                        });
-                    }
-                }
-            };
-
-            tryPlay(this.rainAudio, this.rainToggle);
-            tryPlay(this.fireAudio, this.fireToggle);
-            tryPlay(this.oceanAudio, this.oceanToggle);
-            tryPlay(this.stormAudio, this.stormToggle);
-            tryPlay(this.spaceAudio, this.spaceToggle);
-            tryPlay(this.trainAudio, this.trainToggle);
-            tryPlay(this.forestAudio, this.forestToggle);
-            tryPlay(this.magicAudio, this.magicToggle);
-            tryPlay(this.animeAudio, this.animeToggle);
         });
 
         // Initial sync
         const startVolume = parseFloat(this.volumeSlider.value) || 0.5;
         this.rainAudio.volume = startVolume;
         this.fireAudio.volume = startVolume;
-        this.oceanAudio.volume = startVolume;
-        this.stormAudio.volume = startVolume;
-        this.spaceAudio.volume = startVolume;
-        this.trainAudio.volume = startVolume;
-        this.forestAudio.volume = startVolume;
-        this.magicAudio.volume = startVolume;
-        this.animeAudio.volume = startVolume;
-        // initialize UI fill
-        this.updateVolumeUI(startVolume);
     }
 
     // The Generic Looping Engine

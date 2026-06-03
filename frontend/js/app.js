@@ -538,7 +538,7 @@ const SafeStorage = {
 };
 const MOCK_BOOKS = [
     {
-        id: "mock-dune",
+        id: "lon4DwAAQBAJ",
         volumeInfo: {
             title: "Dune",
             authors: ["Frank Herbert"],
@@ -547,7 +547,7 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-1984",
+        id: "kotPYEqx7kMC",
         volumeInfo: {
             title: "1984",
             authors: ["George Orwell"],
@@ -556,7 +556,7 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-hobbit",
+        id: "aQl4DwAAQBAJ",
         volumeInfo: {
             title: "The Hobbit",
             authors: ["J.R.R. Tolkien"],
@@ -565,7 +565,7 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-pride",
+        id: "iRawlAEACAAJ",
         volumeInfo: {
             title: "Pride and Prejudice",
             authors: ["Jane Austen"],
@@ -574,7 +574,7 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-gatsby",
+        id: "OndBDwAAQBAJ",
         volumeInfo: {
             title: "The Great Gatsby",
             authors: ["F. Scott Fitzgerald"],
@@ -583,7 +583,7 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-sapiens",
+        id: "FmyBDwAAQBAJ",
         volumeInfo: {
             title: "Sapiens",
             authors: ["Yuval Noah Harari"],
@@ -592,7 +592,7 @@ const MOCK_BOOKS = [
         }
     },
     {
-        id: "mock-hail-mary",
+        id: "fRoYEAAAQBAJ",
         volumeInfo: {
             title: "Project Hail Mary",
             authors: ["Andy Weir"],
@@ -622,16 +622,24 @@ function scoreMockBook(book, queryTerms) {
     return queryTerms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
 }
 
-function getFallbackBooks(query, maxResults = 5) {
-    const queryTerms = normalizeQueryTerms(query);
-    const ranked = MOCK_BOOKS
-        .map(book => ({ book, score: scoreMockBook(book, queryTerms) }))
-        .sort((a, b) => b.score - a.score);
+async function getFallbackBooks(query, maxResults = 5) {
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${maxResults}&langRestrict=en&orderBy=relevance`
+        );
 
-    const matches = ranked.filter(item => item.score > 0).map(item => item.book);
-    const pool = matches.length > 0 ? matches : MOCK_BOOKS;
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
 
-    return pool.slice(0, maxResults);
+        const data = await response.json();
+        const items = data.items || [];
+
+        if (items.length > 0) return items;
+
+        return []; 
+    } catch (error) {
+        console.error("getFallbackBooks failed:", error);
+        return [];
+    }
 }
 
 
@@ -661,7 +669,7 @@ class BookRenderer {
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
         const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
-        const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
+        const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 80) + "..." : "A mysterious tome waiting to be opened.";
         const categories = volumeInfo.categories || [];
 
         const vibe = this.generateVibe(originalDescription, categories);
@@ -705,8 +713,8 @@ class BookRenderer {
                 <div class="book__face book__face--bottom"></div>
                 <div class="book__face book__face--back">
                     <div style="overflow-y: auto; height: 100%; padding-right: 5px; scrollbar-width: thin;">
-                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: #2c2420;">${safeTitle}</div>
-                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: #5d4037;">${safeVibe}</div>
+                        <div style="font-weight: bold; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-main);">${safeTitle}</div>
+                        <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: var(--wood-dark);">${safeVibe}</div>
                         ${bookData.moods && bookData.moods.length > 0 ? `
                         <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
                             ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
@@ -731,11 +739,24 @@ class BookRenderer {
                     </div>
                 </div>
             </div>
-        <div class="book-pages-3d"></div>
-    <div class="glass-overlay">
-        <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
-    </div>
-`;
+            <div class="glass-overlay">
+                <strong>${safeTitle}</strong><br><small>${safeAuthors}</small>
+            </div>
+        `;
+
+        // Fetch AI-generated blurb asynchronously
+        // const blurbElement = scene.querySelector('.book-blurb');
+        // if (blurbElement) {
+        //     this.fetchAIBlurb(id, title, authors, volumeInfo.description || "", categories)
+        //         .then(aiBlurb => {
+        //             if (aiBlurb && blurbElement) {
+        //                 blurbElement.textContent = aiBlurb;
+        //             }
+        //         })
+        //         .catch(err => {
+        //             // Silently keep fallback description
+        //         });
+        // }
 
         // Interaction: Progress Slider
         const slider = scene.querySelector('.progress-slider');
@@ -819,22 +840,33 @@ class BookRenderer {
             });
         });
 
-        // Async fetch AI Vibe - Hydrate the UI
-        this.fetchAIVibe(title, authors, volumeInfo.description || "").then(aiVibe => {
-            if (aiVibe) {
-                // Strip any accidental prefix the AI might return
-                const cleanVibe = aiVibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
-
-                const noteEl = scene.querySelector('.handwritten-note');
-                if (noteEl) {
-                    noteEl.innerHTML = cleanVibe;
-                    noteEl.classList.add('fade-in'); // Optional animation hook
-                }
-            }
-        });
+       
+        
+        const blurbElement = scene.querySelector('.book-blurb');
 
         return scene;
     }
+    async _fetchAIContent(bookId, title, author, description, categories = []) {
+    try {
+        const res = await fetch(`${MOOD_API_BASE}/generate-note`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ bookId, title, author, description, categories })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            return {
+                vibe: data.data?.vibe || null,
+                blurb: data.data?.blurb || null
+            };
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return { vibe: null, blurb: null };
+}
 
     async fetchAIVibe(title, author, description) {
         try {
@@ -846,8 +878,7 @@ class BookRenderer {
             });
             if (res.ok) {
                 const data = await res.json();
-                const payload = data.data || data;
-                return payload?.vibe || payload?.bookseller_note || payload?.insight || payload?.note || null;
+                return data.data?.vibe || null;
             }
         } catch (e) {
             // Silently fail to use fallback
@@ -871,26 +902,6 @@ class BookRenderer {
             // Silently fail to use fallback
         }
         return null;
-    }
-
-    async fetchMoodTags(title, author) {
-        try {
-            const csrfToken = getCookie('csrf_access_token');
-            const headers = { 'Content-Type': 'application/json' };
-            if (csrfToken) {
-                headers['X-CSRF-TOKEN'] = csrfToken;
-            }
-            const res = await fetch(`${MOOD_API_BASE}/mood-tags`, {
-                method: 'POST',
-                headers: headers,
-                credentials: 'include',
-                body: JSON.stringify({ title, author })
-            });
-            return res;
-        } catch (e) {
-            console.error("fetchMoodTags error", e);
-            return null;
-        }
     }
 
     generateVibe(text, categories = []) {
@@ -948,13 +959,25 @@ class BookRenderer {
             this.fetchAIVibe(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "", book.volumeInfo.description || "").then(vibe => {
                 if (vibe) {
                     const cleanVibe = vibe.replace(/^(Bookseller's Note:|Note:|Recommendation:)\s*/i, "");
-                    summaryEl.innerHTML = `<p class="fade-in">${cleanVibe}</p>`;
+                    summaryEl.innerHTML = `<p class="fade-in" style="
+                        max-height: 180px;
+                        overflow-y: auto;
+                        font-size: 0.85rem;
+                        line-height: 1.5;
+                        scrollbar-width: thin;
+                        ">${cleanVibe}</p>`;
                 } else {
                     // Fallback to description if AI vibe fails
-                    summaryEl.textContent = book.volumeInfo.description || "No description available.";
-                }
-            });
-        }
+                   const desc = book.volumeInfo.description || "No description available.";
+                    summaryEl.innerHTML = `<p style="
+                    max-height: 180px;
+                    overflow-y: auto;
+                    font-size: 0.85rem;
+                    line-height: 1.5;
+                    scrollbar-width: thin;">${desc.substring(0, 400)}...</p>`;
+                    }
+                });
+            }
 
         const addBtn = document.getElementById('modal-add-btn');
         const shareBtn = document.getElementById('modal-share-btn');
@@ -1040,13 +1063,15 @@ class BookRenderer {
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
-            // Explore Mood Button
-            const moodBtnModal = document.getElementById('modal-mood-btn');
-            if (moodBtnModal) {
-                moodBtnModal.onclick = () => {
-                    this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
-                };
-            }
+        }
+
+        // Explore Mood Button
+        const moodBtnModal = document.getElementById('modal-mood-btn');
+        if (moodBtnModal) {
+            moodBtnModal.onclick = () => {
+                this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
+            };
+        }
 
             modal.showModal();
             document.getElementById('closeModalBtn').onclick = () => modal.close();
@@ -1431,7 +1456,7 @@ class BookRenderer {
         return icons[mood.toLowerCase().trim()] || 'fa-tag';
     }
 
-    async renderCuratedSection(query, elementId, maxResults = 5) {
+    async renderCuratedSection(query, elementId, maxResults = 20) {
         const container = document.getElementById(elementId);
         if (!container) return;
 
@@ -1455,8 +1480,8 @@ class BookRenderer {
             if (data.items && data.items.length > 0) {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
             } else {
-                const fallbackBooks = getFallbackBooks(query, maxResults);
-                if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
+                const fallbackBooks = await getFallbackBooks(query, maxResults);
+                if (fallbackBooks.length > 0) {
                     await this.renderBookCards(container, fallbackBooks);
                 } else if (container.id === 'search-results-grid') {
                     showNoResults();
@@ -1470,8 +1495,8 @@ class BookRenderer {
             }
         } catch (err) {
             console.error("Failed to fetch books", err);
-            const fallbackBooks = getFallbackBooks(query, maxResults);
-            if (fallbackBooks.length > 0 && container.id !== 'search-results-grid') {
+            const fallbackBooks = await getFallbackBooks(query, maxResults);
+            if (fallbackBooks.length > 0) {
                 await this.renderBookCards(container, fallbackBooks);
                 return;
             } else if (container.id === 'search-results-grid') {
@@ -1504,11 +1529,14 @@ class BookRenderer {
             }
 
             const payload = await res.json();
-            const categoryBooks = payload?.data?.books || [];
+            const categoryBooks = payload?.items || payload?.data?.items || [];
 
-            if (categoryBooks.length === 0) {
-                throw new Error(`No books returned for category: ${categoryConfig.category}`);
+            
+            if (!categoryBooks || categoryBooks.length === 0) {
+                console.warn(`No books found for: ${categoryConfig.category}`);
+                return; 
             }
+            
 
             const resolvedBooks = await this.resolveCategoryBooks(categoryBooks);
             if (resolvedBooks.length > 0) {
@@ -2822,7 +2850,7 @@ class GenreManager {
         this.modal = document.getElementById('genre-modal');
         this.closeBtn = document.getElementById('close-genre-modal');
         this.modalTitle = document.getElementById('genre-modal-title');
-        this.booksGrid = document.getElementById('genre-books-grid');
+        this.booksGrid = document.getElementById("search-results-grid");
     }
 
     init() {
@@ -2898,11 +2926,11 @@ class GenreManager {
             if (items.length > 0) {
                 this.renderBooks(items);
             } else {
-                this.renderBooks(getFallbackBooks(genre, 20));
+                this.renderBooks(await getFallbackBooks(genre, 20));
             }
         } catch (error) {
             console.error('Error fetching genre books:', error);
-            this.renderBooks(getFallbackBooks(genre, 20));
+            this.renderBooks(await getFallbackBooks(genre, 20));
         }
     }
 
@@ -3073,17 +3101,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         renderer.renderCuratedSection(query, 'search-results-grid', 20);
-    } else if (document.getElementById('dynamic-shelves-container')) {
-        console.log('📚 Initializing Curated Discovery Sections...');
-        const container = document.getElementById('dynamic-shelves-container');
         
-        const fallbackShelves = [
-            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy', title: 'Rainy Evening Reads', subtitle: 'Mystery & Melancholy', icon: 'fa-cloud-rain' },
-            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian', title: 'Indian Authors', subtitle: 'Subcontinent Voices', icon: 'fa-feather' },
-            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics', title: 'Forgotten Classics', subtitle: 'Timeless & Dust-free', icon: 'fa-hourglass' },
-            { type: 'query', query: 'subject:gothic fiction subject:dark academia subject:campus', elementId: 'row-dark-academia', title: 'Dark Academia', subtitle: 'Gothic, cerebral, candlelit', icon: 'fa-feather-pointed', vibeDescription: 'gothic, intellectual, melancholic, and candlelit', fallbackQuery: 'subject:gothic fiction subject:campus' },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction', title: 'General Fiction', subtitle: 'Stories for everyone', icon: 'fa-book-open' },
-            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller', title: 'Thriller & Suspense', subtitle: 'Edge of Your Seat', icon: 'fa-skull' }
+    } else if (document.getElementById('row-rainy')) {
+        console.log('📚 Initializing Curated Discovery Sections...');
+        const discoveryShelves = [
+            { type: 'query', query: 'subject:mystery thriller', elementId: 'row-rainy' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
+           {
+                 type: 'query',
+                 query: 'the secret history donna tartt',
+                 elementId: 'row-dark-academia',
+                 vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
+                 fallbackQuery: 'subject:gothic fiction subject:campus'
+            },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' }
         ];
 
         (async () => {
@@ -3805,36 +3837,21 @@ async function handleAuth(event) {
         payload = { username: email, password: password };
     }
 
-    // =========================================================================
-    // SECURITY ENHANCEMENT: CSRF TOKEN INTEGRATION
-    // =========================================================================
-    // We retrieve the CSRF token from the hidden input field 'csrf_token'.
-    // This token is then injected into the 'X-CSRF-Token' header. 
-    // The Flask-WTF backend expects this header for all state-changing
-    // AJAX requests. This protects against Cross-Site Request Forgery 
-    // by ensuring that the request is authenticated via the browser's 
-    // Same-Origin Policy and session-bound secrets.
-    // =========================================================================
-    const csrfToken = document.getElementById('csrf_token')?.value;
-
     try {
-        const fetchOptions = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(payload)
-        };
-
-        // Inject CSRF token into headers if available
+        const csrfToken = getCookie('csrf_access_token');
+        const fetchHeaders = { 'Content-Type': 'application/json' };
         if (csrfToken) {
-            fetchOptions.headers['X-CSRF-Token'] = csrfToken;
+            fetchHeaders['X-CSRF-Token'] = csrfToken;
         } else if (IS_DEV) {
             console.warn('[Security] No CSRF token found in DOM. Request may be rejected by server.');
         }
 
-        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, fetchOptions);
+        const res = await fetch(`${MOOD_API_BASE}${endpoint.replace('/api/v1', '')}`, {
+            method: 'POST',
+            headers: fetchHeaders,
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
 
         const data = await res.json();
 

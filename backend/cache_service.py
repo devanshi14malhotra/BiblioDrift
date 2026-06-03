@@ -12,8 +12,7 @@ from typing import Optional, Any, Dict, Callable, List, Union
 from functools import wraps
 from datetime import datetime, timedelta
 from enum import Enum
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from backend.config import app_config
+from flask_caching import Cache
 
 try:
     import redis
@@ -82,17 +81,17 @@ class CacheConfig:
     
     # Cache configuration
     CACHE_TYPE = os.getenv('CACHE_TYPE', 'simple')  # 'redis', 'simple', or 'null'
-    REDIS_URL = app_config.redis.url
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', 3600))
     
     # Redis Connection Timeouts
-    REDIS_SOCKET_TIMEOUT = app_config.redis.socket_timeout
-    REDIS_CONNECT_TIMEOUT = app_config.redis.connect_timeout
+    REDIS_SOCKET_TIMEOUT = float(os.getenv("REDIS_SOCKET_TIMEOUT", 2.0))
+    REDIS_CONNECT_TIMEOUT = float(os.getenv("REDIS_CONNECT_TIMEOUT", 2.0))
     
     # Redis Memory Management & Eviction
     # Prevents OOM by defining how Redis should behave when it reaches memory limits
-    REDIS_MAXMEMORY = app_config.redis.max_memory
-    REDIS_EVICTION_POLICY = app_config.redis.eviction_policy
+    REDIS_MAXMEMORY = os.getenv("REDIS_MAXMEMORY", "2gb")
+    REDIS_EVICTION_POLICY = os.getenv("REDIS_EVICTION_POLICY", "allkeys-lru")
 
 
 class CacheKey:

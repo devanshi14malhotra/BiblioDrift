@@ -1,12 +1,7 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from flask import Flask, request, jsonify, redirect, url_for
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from flask_jwt_extended import (
@@ -31,8 +26,11 @@ import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
-from backend.core.security.sanitizer import sanitize_payload
-from reader_identity.routes import reader_identity_bp
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from backend.sanitizer import sanitize_payload
+from backend.reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -46,12 +44,12 @@ else:
     load_dotenv()
 
 # Environment variables are now loaded centrally in backend/config.py
-from config import app_config, setup_logging, validate_required_env_vars
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, generate_chat_response_stream, llm_service, get_vibe_recommendations
-from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
-from price_tracker import get_price_tracker
-from cache_service import cache_service
-from backend.core.validators.validators import (
+from backend.config import app_config, setup_logging, validate_required_env_vars
+from backend.ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service
+from backend.models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
+from backend.price_tracker import get_price_tracker
+from backend.cache_service import cache_service
+from backend.validators import (
     validate_request,
     validate_schema,
     validate_google_books_id,
@@ -95,7 +93,7 @@ from email_service import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from backend.core.responses.error_responses import (
+from backend.error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
@@ -129,8 +127,8 @@ except ImportError:
 # to ensure API integrity across all origins.
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
-app.register_blueprint(reader_identity_bp)
 
+# app = Flask(__name__)
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
 validate_required_env_vars()
@@ -274,16 +272,9 @@ def _apply_security_headers(response):
 # optionally load allowed origins from environment variables.
 # =====================================================================
 # ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5000,http://localhost:5000
-# For development, we keep a strict explicit allowlist and never use '*'
-_cors_origins = _load_cors_origins()
-CORS(
-    app,
-    supports_credentials=True,
-    resources={r"/api/*": {"origins": _cors_origins}},
-)
+# For development, we'll allow all to be safe, then restrict in prod
+CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5501", "http://localhost:5501", "http://127.0.0.1:5000", "http://localhost:5000", "http://127.0.0.1:3000", "http://localhost:3000"])
 
-# Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins=_cors_origins)
 
 # Initialize cache service
 cache_service.init_app(app)
@@ -331,7 +322,7 @@ def _handle_rate_limit_exceeded(e: RateLimitExceeded):
 limiter = Limiter(
     rate_limit_key_func,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["300 per hour"],
     storage_uri="memory://"
 )
 app.register_error_handler(RateLimitExceeded, _handle_rate_limit_exceeded)
@@ -340,11 +331,26 @@ app.register_error_handler(RateLimitExceeded, _handle_rate_limit_exceeded)
 
 
 
+@limiter.request_filter
+def ignore_options():
+    return request.method == "OPTIONS"
+
+@app.before_request
+def handle_options():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.status_code = 200
+        return response
+
 @app.errorhandler(404)
 def page_not_found(e: Exception):
     if request.path.startswith('/api/'):
         return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
-    return app.send_static_file('404.html'), 404
+    return jsonify({'error': '404 Not Found'}), 404
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 # =========================================================================
 # GLOBAL EXCEPTION HANDLER (SECURITY & COMPLIANCE UPDATE)
@@ -1170,83 +1176,6 @@ def handle_vibe_check(validated_data):
         logger.error(f"Error in handle_category_books: {str(e)}", exc_info=True)
         return internal_error(str(e))
 
-
-@app.route('/api/v1/books/purchase-links', methods=['GET'])
-@limiter.limit("20 per minute")
-def handle_purchase_links():
-    """Get purchase links for a book."""
-    try:
-        title = request.args.get('title')
-        author = request.args.get('author', '')
-        isbn = request.args.get('isbn', '')
-        
-        if not title:
-            return jsonify({'success': False, 'error': 'Title is required'}), 400
-            
-        from purchase_links import PurchaseManager
-        manager = PurchaseManager()
-        
-        links = manager.get_quick_links(title=title, author=author, isbn=isbn)
-        
-        return success_response(data={"links": links})
-        
-    except Exception as e:
-        logger.error(f"Error getting purchase links: {str(e)}", exc_info=True)
-        return internal_error(str(e))
-
-@app.route('/api/v1/generate-note', methods=['POST'])
-@limiter.limit("10 per minute")
-@validate_schema(GenerateNoteRequest)
-def handle_generate_note(validated_data):
-    """Generate AI-powered book recommendation with vibe support."""
-    from backend.core.exceptions.exceptions import (
-        LLMCircuitBreakerOpenError, AIServiceException,
-        DatabaseQueryError, DatabaseIntegrityError,
-        ValidationException, InvalidInputError
-    )
-    from backend.core.responses.error_responses import handle_exception
-    
-    try:
-        
-        description = validated_data.description
-        title = validated_data.title
-        author = validated_data.author
-        vibe = getattr(validated_data, 'vibe', 'cozy discovery')
-        
-        # Check cache
-        cached_note = BookNote.query.filter_by(book_title=title, book_author=author).first()
-        if cached_note:
-            logger.debug(f"Cache hit for {title} by {author}")
-            return success_response(data={"blurb": cached_note.content})
-        
-        # Generate AI recommendation with vibe context
-        recommendation = generate_book_note(description, title, author, vibe)
-        
-        try:
-            if recommendation and isinstance(recommendation, dict):
-                blurb_content = recommendation.get('blurb', str(recommendation))
-                new_note = BookNote(book_title=title, book_author=author, content=blurb_content)
-                db.session.add(new_note)
-                db.session.commit()
-        except SQLAlchemyError as e:
-            logger.error(f"Database error caching note: {e}")
-            db.session.rollback()
-        except Exception as e:
-            logger.error(f"Unexpected error caching note: {e}")
-            db.session.rollback()
-
-        return success_response(data=recommendation)
-        
-    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
-        logger.error(f"AI service error in handle_generate_note: {e}", exc_info=True)
-        return handle_exception(e, "handle_generate_note")
-    except (ValidationException, InvalidInputError) as e:
-        logger.warning(f"Validation error in handle_generate_note: {e}")
-        return handle_exception(e, "handle_generate_note")
-    except Exception as e:
-        logger.error(f"Unexpected error in handle_generate_note: {type(e).__name__}: {e}", exc_info=True)
-        return handle_exception(e, "handle_generate_note")
-
 @app.route('/api/v1/chat', methods=['POST'])
 @limiter.limit("10 per minute")
 def handle_chat():
@@ -1390,7 +1319,7 @@ def get_library(user_id):
         return forbidden_error("Cannot access another user's library")
         
     try:
-        items = ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id).all()
+        items = (ShelfItem.query.options(joinedload(ShelfItem.book)).filter_by(user_id=user_id).all())
         return success_response(data={"library": [item.to_dict() for item in items]})
     except Exception as e:
         return internal_error(str(e))
@@ -1699,9 +1628,8 @@ def sync_library(validated_data):
 # immediately responds with an active session ready to go.
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
-@limiter.limit("5 per 10 seconds")
-@validate_schema(RegisterRequest)
-def register(validated_data):
+@limiter.limit("30 per minute")
+def register():
     """Register a new user and return JWT token."""
     try:
         
@@ -1737,9 +1665,8 @@ def register(validated_data):
 
 
 @app.route('/api/v1/login', methods=['POST'])
-@limiter.limit("5 per 10 seconds")
-@validate_schema(LoginRequest)
-def login(validated_data):
+@limiter.limit("30 per minute")
+def login():
     """Authenticate user and return JWT token."""
     from backend.core.exceptions.exceptions import DatabaseQueryError, ValidationException
     from backend.core.responses.error_responses import handle_exception
@@ -1927,162 +1854,20 @@ def logout():
     return resp, status
 
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'avatars')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-@app.route('/api/v1/users/<int:user_id>/avatar', methods=['POST'])
-@jwt_required()
-def upload_avatar(user_id):
-    """Upload and update user avatar with MIME type and magic number validation."""
-    current_user_id = get_jwt_identity()
-    
-    if str(user_id) != str(current_user_id):
-        return forbidden_error("Unauthorized access to another user's profile")
-        
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-        
-    file = request.files['file']
-    
-    if file.filename == '':
-        return jsonify({"error": "No file selected for uploading"}), 400
-        
-    if not allowed_file(file.filename):
-        return jsonify({"error": "Allowed file types are png, jpg, jpeg, gif"}), 400
-        
-    # Validate Content-Type header
-    file_content_type = file.content_type
-    if file_content_type not in ALLOWED_MIME_TYPES:
-        return jsonify({"error": "Invalid Content-Type"}), 400
-        
-    # Verify file magic numbers
-    file_bytes = file.read(2048)
-    file.seek(0) # Reset file pointer after reading
-    
-    try:
-        mime = magic.Magic(mime=True)
-        file_mime = mime.from_buffer(file_bytes)
-        
-        if file_mime not in ALLOWED_MIME_TYPES:
-            return jsonify({"error": "Invalid file content (magic number mismatch)"}), 400
-    except Exception as e:
-        logger.error(f"Error validating file magic numbers: {e}")
-        return jsonify({"error": "Could not validate file format"}), 500
-        
-    filename = secure_filename(file.filename)
-    unique_filename = f"user_{user_id}_{filename}"
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-    
-    try:
-        file.save(filepath)
-        
-        user = User.query.get(user_id)
-        if user:
-            user.profile_picture = f"/uploads/avatars/{unique_filename}"
-            db.session.commit()
-            
-        return jsonify({
-            "message": "Avatar uploaded successfully", 
-            "profile_picture": f"/uploads/avatars/{unique_filename}"
-        }), 200
-    except Exception as e:
-        logger.error(f"Failed to save avatar: {e}")
-        return jsonify({"error": "Failed to save file"}), 500
-
-
-@app.route('/api/v1/auth/forgot-password', methods=['POST'])
-@csrf.exempt
-@limiter.limit("5 per minute")
-@validate_schema(ForgotPasswordRequest)
-def forgot_password(validated_data):
-    """Request a password reset link (always returns a generic success message)."""
-    try:
-
-        plain_token = None
-        try:
-            plain_token = request_password_reset(validated_data.email)
-        except SQLAlchemyError as e:
-            logger.error("forgot-password database error: %s", e, exc_info=True)
-
-        response_data = {"message": FORGOT_PASSWORD_MESSAGE}
-        frontend_base = os.getenv('FRONTEND_ORIGIN', 'http://127.0.0.1:5500').rstrip('/')
-        email_config = app_config.email
-
-        if plain_token:
-            reset_url = build_password_reset_url(plain_token, frontend_base)
-            if is_email_configured(email_config):
-                send_result = send_password_reset_email(
-                    validated_data.email,
-                    reset_url,
-                    email_config,
-                )
-                if not send_result.ok:
-                    logger.error(
-                        "Password reset email not sent for %s: %s",
-                        validated_data.email,
-                        send_result.detail,
-                    )
-            elif app_config.is_development():
-                response_data["reset_url"] = reset_url
-                logger.info(
-                    "Dev password reset link for %s (email not configured): %s",
-                    validated_data.email,
-                    reset_url,
-                )
-            elif app_config.is_production():
-                logger.warning(
-                    "Password reset token created but EMAIL_* is not configured; "
-                    "user %s will not receive mail.",
-                    validated_data.email,
-                )
-
-        return success_response(data=response_data)
-    except Exception as e:
-        logger.error("forgot-password failed: %s", e, exc_info=True)
-        return success_response(data={"message": FORGOT_PASSWORD_MESSAGE})
-
-
-@app.route('/api/v1/auth/reset-password', methods=['POST'])
-@csrf.exempt
-@limiter.limit("5 per minute")
-@validate_schema(ResetPasswordRequest)
-def reset_password(validated_data):
-    """Set a new password using a valid reset token."""
-    try:
-
-        ok, message = reset_password_with_token(
-            validated_data.token,
-            validated_data.password,
-        )
-        if not ok:
-            return jsonify({"error": message}), 400
-
-        return success_response(data={"message": message})
-    except Exception as e:
-        logger.error("reset-password failed: %s", e, exc_info=True)
-        return internal_error("Unable to reset password.")
-
-
-@app.route('/api/v1/auth/verify', methods=['GET'])
-@jwt_required()
-def verify_auth_session():
-    """Validate JWT from access cookie and return the current user (session restore)."""
-    try:
-        uid = get_jwt_identity()
-        user = User.query.get(int(uid))
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        return jsonify({
-            "user": {"id": user.id, "username": user.username, "email": user.email}
-        }), 200
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid session"}), 401
+# @app.route('/api/v1/auth/verify', methods=['GET'])
+# @jwt_required()
+# def verify_auth_session():
+#     """Validate JWT from access cookie and return the current user (session restore)."""
+#     try:
+#         uid = get_jwt_identity()
+#         user = User.query.get(int(uid))
+#         if not user:
+#             return jsonify({"error": "User not found"}), 404
+#         return jsonify({
+#             "user": {"id": user.id, "username": user.username, "email": user.email}
+#         }), 200
+#     except (TypeError, ValueError):
+#         return jsonify({"error": "Invalid session"}), 401
 
 
 # ==================== READING STATS ENDPOINTS ====================
@@ -2707,35 +2492,797 @@ def delete_price_alert(alert_id):
 with app.app_context():
     db.create_all()
 
-# NOTE: Book search is performed directly from the frontend using the Google Books API.
-# The old backend proxy endpoint /api/books has been removed to avoid unnecessary
-# load on the backend server.
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    query = request.args.get('q', 'python')  # default query
+
+    try:
+        max_results = int(request.args.get('maxResults', 10))
+    except:
+        max_results = 10
+
+    API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
+
+    url = (
+        "https://www.googleapis.com/books/v1/volumes"
+        f"?q={query}&maxResults={max_results}&key={API_KEY}"
+    )
+
+    try:
+        response = requests.get(url, timeout=10)
+
+        # 🔥 check API success
+        if response.status_code != 200:
+            return jsonify({
+                "error": "Google Books API failed",
+                "status": response.status_code,
+                "details": response.text
+            }), 500
+
+        data = response.json()
+
+        return jsonify(data)
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "message": "Failed to fetch books"
+        }), 500
+
+
+
+# Load environment variables from config directory based on APP_ENV
+env = os.getenv('APP_ENV', 'development')
+env_path = os.path.join(os.path.dirname(__file__), '..', 'config', f'.env.{env}')
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
+
+
+
+# =====================================================================
+# FLASK APPLICATION INSTANTIATION
+# We initialize the Flask application instance here.
+# Note that the static folder is configured to serve local files.
+# Additional security measures, including updated strict CORS policies,
+# and enhanced token security are applied later in this file 
+# to ensure API integrity across all origins.
+# =====================================================================
+print("ROUTES:", app.url_map)
+
+# Apply configuration to Flask app
+app.config.update(app_config.flask_config)
+
+# Initialize JWT Manager
+jwt = JWTManager(app)
+
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: CORS CONFIGURATION
+# The previous CORS(app) was overly permissive and allowed all origins.
+# An open CORS policy (equivalent to Access-Control-Allow-Origin: *)
+# exposes all API endpoints to cross-origin requests from any domain, 
+# which can enable CSRF-type attacks.
+# The fix below restricts CORS to specific trusted origins. We can 
+# optionally load allowed origins from environment variables.
+# =====================================================================
+# ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5000,http://localhost:5000
+# For development, we'll allow all to be safe, then restrict in prod
+# CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:5501", "http://localhost:5501", "http://127.0.0.1:5000", "http://localhost:5000", "http://127.0.0.1:3000", "http://localhost:3000"])
+
+# Initialize cache service
+cache_service.init_app(app)
+
+@app.errorhandler(404)
+def page_not_found(e: Exception):
+    if request.path.startswith('/api/'):
+        return error_response(ErrorCodes.ENDPOINT_NOT_FOUND, "Endpoint not found", 404)
+    return jsonify({
+    "error": "Not Found",
+    "path": request.path
+    }), 404
+
+
+# @app.after_request
+# def add_security_headers(response):
+#     """
+#     Add security headers to all responses for defense-in-depth XSS prevention.
+    
+#     Headers Added:
+#     - Content-Security-Policy: Restricts resource loading and inline scripts
+#     - X-Content-Type-Options: Prevents MIME type sniffing
+#     - X-Frame-Options: Prevents clickjacking by disallowing framing
+#     - X-XSS-Protection: Legacy XSS protection (browser-level)
+#     - Strict-Transport-Security: Forces HTTPS for next 1 year
+#     - Referrer-Policy: Controls referrer information sharing
+    
+#     Args:
+#         response: Flask response object
+        
+#     Returns:
+#         response: Response with added security headers
+#     """
+#     # Content Security Policy: Restrict resource loading to prevent inline scripts/XSS
+#     # - default-src 'self': Only allow resources from the same origin
+#     # - script-src 'self' https://cdn.jsdelivr.net: Allow scripts from self and DOMPurify CDN
+#     # - style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com: Allow styles from self and CDN
+#     # - img-src 'self' data: blob: https:: Allow images from self, data URLs, blob URLs, and HTTPS
+#     # - font-src 'self' https://fonts.gstatic.com: Allow fonts from self and Google Fonts
+#     # - connect-src 'self' ws: wss: https:: Allow connections to own origin, secure WebSocket, and HTTPS
+#     # - frame-ancestors 'none': Prevent framing/clickjacking
+#     # - base-uri 'self': Restrict base tag to same origin
+#     # - form-action 'self': Restrict form submissions to same origin
+#     # - upgrade-insecure-requests: Upgrade HTTP to HTTPS
+#     csp_policy = (
+#         "default-src 'self'; "
+#         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+#         "style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+#         "img-src 'self' data: blob: https:; "
+#         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+#         "connect-src 'self' ws: wss: https:; "
+#         "frame-ancestors 'none'; "
+#         "base-uri 'self'; "
+#         "form-action 'self'; "
+#         "upgrade-insecure-requests"
+#     )
+#     response.headers['Content-Security-Policy'] = csp_policy
+    
+#     # Prevent MIME type sniffing (forces browser to respect Content-Type header)
+#     response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+#     # Prevent clickjacking by disallowing the site to be framed
+#     response.headers['X-Frame-Options'] = 'DENY'
+    
+#     # Legacy XSS protection header (for older browsers)
+#     response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+#     # Force HTTPS for 1 year (including subdomains)
+#     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    
+#     # Control referrer information to reduce information leakage
+#     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+#     # Restrict permissions and features the page can use
+#     response.headers['Permissions-Policy'] = (
+#         'geolocation=(), '
+#         'microphone=(), '
+#         'camera=(), '
+#         'payment=(), '
+#         'usb=(), '
+#         'magnetometer=(), '
+#         'gyroscope=(), '
+#         'accelerometer=()'
+#     )
+    
+#     return response
+
+# # Rate limiting configuration
+# RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))
+# RATE_LIMIT_MAX_REQUESTS = int(os.getenv('RATE_LIMIT_MAX_REQUESTS', '30'))
+
+# _request_log = defaultdict(deque)
+# _request_calls = 0
+
+
+# def _cleanup_expired_keys(cutoff: float) -> None:
+#     """Remove keys whose newest timestamp is already outside the window."""
+#     stale_keys = [key for key, dq in _request_log.items() if not dq or dq[-1] <= cutoff]
+#     for key in stale_keys:
+#         _request_log.pop(key, None)
+
+
+# def _rate_limited(endpoint: str) -> tuple[bool, int]:
+#     """Sliding window limiter per IP/endpoint."""
+#     if not app_config.rate_limit.enabled:
+#         return False, 0
+    
+#     global _request_calls
+#     key = f"{request.remote_addr}|{endpoint}"
+#     now = time()
+#     window_start = now - RATE_LIMIT_WINDOW
+#     _request_calls += 1
+
+#     dq = _request_log[key]
+#     while dq and dq[0] <= window_start:
+#         dq.popleft()
+
+#     if len(dq) >= RATE_LIMIT_MAX_REQUESTS:
+#         oldest = dq[0]
+#         retry_after = max(1, ceil(RATE_LIMIT_WINDOW - (now - oldest)))
+#         return True, retry_after
+
+#     dq.append(now)
+
+#     if _request_calls % 100 == 0:
+#         _cleanup_expired_keys(window_start)
+
+#     return False, 0
+
+
+# def rate_limit(endpoint_name: str):
+#     """Decorator to apply rate limiting to an endpoint."""
+#     def decorator(f):
+#         def wrapped(*args, **kwargs):
+#             limited, retry_after = _rate_limited(endpoint_name)
+#             if limited:
+#                 response = jsonify({
+#                     "success": False,
+#                     "error": "Rate limit exceeded. Try again shortly.",
+#                     "retry_after": retry_after
+#                 })
+#                 response.status_code = 429
+#                 response.headers['Retry-After'] = retry_after
+#                 return response
+#             return f(*args, **kwargs)
+#         wrapped.__name__ = f.__name__
+#         return wrapped
+#     return decorator
+
+# # Initialize AI service if available
+# if MOOD_ANALYSIS_AVAILABLE:
+#     ai_service = AIBookService()
+
+
+# # ==================== JWT SECRET VALIDATION AT STARTUP ====================
+# def _validate_jwt_secret_startup():
+#     is_valid, errors = app_config.validate()
+    
+#     if not is_valid:
+#         if app_config.is_production():
+#             logger.critical("=" * 70)
+#             logger.critical("CRITICAL SECURITY ERROR - APPLICATION REFUSING TO START")
+#             logger.critical("=" * 70)
+#             for error in errors:
+#                 logger.critical(f"  - {error}")
+#             logger.critical("=" * 70)
+#             import sys
+#             sys.exit(1)
+#         else:
+#             logger.warning("=" * 70)
+#             logger.warning("WARNING: CONFIGURATION ISSUES DETECTED")
+#             logger.warning("=" * 70)
+#             for error in errors:
+#                 logger.warning(f"  - {error}")
+#             logger.warning("=" * 70)
+#     else:
+#         if app_config.is_development():
+#             logger.info("=" * 70)
+#             logger.info("CONFIGURATION VALIDATION: OK")
+#             logger.info("=" * 70)
+#             logger.info(f"Environment: {app_config.get_environment_name()}")
+#             logger.info(f"Rate limiting: {'Enabled' if app_config.rate_limit.enabled else 'Disabled'}")
+#             logger.info("=" * 70)
+
+
+# _validate_jwt_secret_startup()
+
+# @app.route('/api/v1/config', methods=['GET'])
+# def get_config():
+#     """Serve public configuration values like Google Books API Key."""
+#     return jsonify({
+#         "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
+#         "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
+#     })
+
+# @app.route('/')
+# def index():
+#     """Simple index page showing available API endpoints."""
+#     endpoints_info = {
+#         "service": "BiblioDrift Mood Analysis API",
+#         "version": "1.0.0",
+#         "status": "running",
+#         "endpoints": {
+#             "GET /": "This page - API documentation",
+#             "GET /api/v1/health": "Health check endpoint",
+#             "POST /api/v1/generate-note": "Generate AI book notes",
+#             "POST /api/v1/chat": "Chat with bookseller",
+#             "POST /api/v1/mood-search": "Search books by mood/vibe",
+#             "POST /api/v1/category-books": "Get AI-curated books for a specific shelf category"
+#         },
+#         "note": "All endpoints except / and /api/v1/health require POST requests with JSON body",
+#         "example_usage": {
+#             "chat": {
+#                 "url": "/api/v1/chat",
+#                 "method": "POST",
+#                 "body": {"message": "I want something cozy for a rainy evening"}
+#             },
+#             "mood_search": {
+#                 "url": "/api/v1/mood-search",
+#                 "method": "POST",
+#                 "body": {"query": "mystery thriller"}
+#             },
+#             "category_books": {
+#                 "url": "/api/v1/category-books",
+#                 "method": "POST",
+#                 "body": {
+#                     "category": "Rainy Evening Reads",
+#                     "vibe_description": "quiet, melancholy, introspective — best read on grey afternoons",
+#                     "count": 5
+#                 }
+#             }
+#         }
+#     }
+    
+#     if MOOD_ANALYSIS_AVAILABLE:
+#         endpoints_info["endpoints"]["POST /api/v1/analyze-mood"] = "Analyze book mood from GoodReads"
+#         endpoints_info["endpoints"]["POST /api/v1/mood-tags"] = "Get mood tags for a book"
+#     else:
+#         endpoints_info["note"] += " | Mood analysis endpoints disabled (missing dependencies)"
+    
+#     return jsonify(endpoints_info)
+
+# @app.route('/api/v1/analyze-mood', methods=['POST'])
+# @rate_limit('analyze_mood')
+# def handle_analyze_mood():
+#     """Analyze book mood using GoodReads reviews."""
+#     if not MOOD_ANALYSIS_AVAILABLE:
+#         return service_unavailable_error("Mood analysis not available - missing dependencies")
+    
+#     try:
+#         data = request.get_json()
+        
+#         is_valid, validated_data = validate_request(AnalyzeMoodRequest, data)
+#         if not is_valid:
+#             return jsonify(validated_data), 400
+        
+#         title = validated_data.title
+#         author = validated_data.author
+        
+#         mood_analysis = ai_service.analyze_book_mood(title, author)
+        
+#         if mood_analysis:
+#             return success_response(data={"mood_analysis": mood_analysis})
+#         else:
+#             return not_found_error("Mood analysis for this book")
+            
+#     except Exception as e:
+#         logger.error(f"Error in handle_analyze_mood: {str(e)}", exc_info=True)
+#         return internal_error(str(e))
+
+# @app.route('/api/v1/mood-tags', methods=['POST'])
+# @rate_limit('mood_tags')
+# def handle_mood_tags():
+#     """Get mood tags for a book."""
+#     from exceptions import (
+#         LLMCircuitBreakerOpenError, AIServiceException, 
+#         ValidationException, InvalidInputError
+#     )
+#     from error_responses import handle_exception
+    
+#     try:
+#         data = request.get_json()
+        
+#         is_valid, validated_data = validate_request(MoodTagsRequest, data)
+#         if not is_valid:
+#             return jsonify(validated_data), 400
+        
+#         title = validated_data.title
+#         author = validated_data.author
+        
+#         mood_tags = get_book_mood_tags_safe(title, author)
+#         return success_response(
+#             data={"mood_tags": mood_tags}
+#         )
+        
+#     except (LLMCircuitBreakerOpenError, AIServiceException) as e:
+#         logger.error(f"AI service error in handle_mood_tags: {e}", exc_info=True)
+#         return handle_exception(e, "handle_mood_tags")
+#     except (ValidationException, InvalidInputError) as e:
+#         logger.warning(f"Validation error in handle_mood_tags: {e}")
+#         return handle_exception(e, "handle_mood_tags")
+#     except Exception as e:
+#         logger.error(f"Unexpected error in handle_mood_tags: {type(e).__name__}: {e}", exc_info=True)
+#         return handle_exception(e, "handle_mood_tags")
+
+# @app.route('/api/v1/mood-search', methods=['POST'])
+# @rate_limit('mood_search')
+# def handle_mood_search():
+#     """Search for books based on mood/vibe."""
+#     from exceptions import (
+#         LLMCircuitBreakerOpenError, AIServiceException,
+#         ValidationException, InvalidInputError
+#     )
+#     from error_responses import handle_exception
+    
+#     try:
+#         data = request.get_json()
+        
+#         is_valid, validated_data = validate_request(MoodSearchRequest, data)
+#         if not is_valid:
+#             return jsonify(validated_data), 400
+        
+#         mood_query = validated_data.query
+        
+#         recommendations = get_ai_recommendations(mood_query)
+#         return success_response(
+#             data={
+#                 "recommendations": recommendations,
+#                 "query": mood_query
+#             }
+# #         )
+#     except SQLAlchemyError as e:
+#         logger.error(f"Database error searching mood: {e}")
+#         return internal_error("A database error occurred during search.")
+#     except Exception as e:
+#         logger.error(f"Unexpected error searching mood: {e}")
+#         return internal_error(str(e))
+
+
+# @app.route('/api/v1/category-books', methods=['POST'])
+# @rate_limit('category_books')
+# def handle_category_books():
+#     """
+#     Return AI-generated, category-specific book recommendations.
+
+#     Fix for: all shelf categories displaying the same default books.
+
+#     Each category sends its name + vibe description. The LLM returns a list
+#     of real book titles and authors specific to that vibe. The frontend uses
+#     these titles to query the Google Books API for actual cover images and
+#     metadata — ensuring each shelf displays genuinely different, relevant books.
+
+#     Request body:
+#         {
+#             "category": "Rainy Evening Reads",
+#             "vibe_description": "quiet and melancholy, best read on grey afternoons",
+#             "count": 5
+#         }
+
+#     Response:
+#         {
+#             "success": true,
+#             "data": {
+#                 "category": "Rainy Evening Reads",
+#                 "books": [
+#                     {
+#                         "title": "The Remains of the Day",
+#                         "author": "Kazuo Ishiguro",
+#                         "reason": "A quiet, melancholy novel about regret — perfect for a rainy afternoon."
+#                     },
+#                     ...
+#                 ]
+#             }
+#         }
+#     """
+#     try:
+#         data = request.get_json()
+
+#         is_valid, validated_data = validate_request(CategoryBooksRequest, data)
+#         if not is_valid:
+#             return jsonify(validated_data), 400
+
+#         books = get_category_books(
+#             category=validated_data.category,
+#             vibe_description=validated_data.vibe_description,
+#             count=validated_data.count,
+#         )
+
+#         if not books:
+#             return service_unavailable_error(
+#                 "Could not generate book recommendations right now. Please try again shortly."
+#             )
+
+#         return success_response(
+#             data={
+#                 "category": validated_data.category,
+#                 "books": books,
+#             }
+#         )
+
+#     except Exception as e:
+#         logger.error(f"Error in handle_category_books: {str(e)}", exc_info=True)
+#         return internal_error(str(e))
+
+
+@app.route('/api/v1/generate-note', methods=['POST', 'OPTIONS'])
+@limiter.limit("10000 per hour" if app.debug else "300 per hour")
+@rate_limit('generate_note')
+def handle_generate_note():
+    """Generate AI-powered book recommendation with vibe support."""
+    from exceptions import (
+        LLMCircuitBreakerOpenError, AIServiceException,
+        DatabaseQueryError, DatabaseIntegrityError,
+        ValidationException, InvalidInputError
+    )
+    from error_responses import handle_exception
+    
+    try:
+        data = request.get_json()
+        
+        is_valid, validated_data = validate_request(GenerateNoteRequest, data)
+        if not is_valid:
+            return jsonify(validated_data), 400
+        
+        description = validated_data.description
+        title = validated_data.title
+        author = validated_data.author
+        vibe = getattr(validated_data, 'vibe', 'cozy discovery')
+        
+        # Check cache
+        cached_note = BookNote.query.filter_by(book_title=title, book_author=author).first()
+        if cached_note:
+            logger.debug(f"Cache hit for {title} by {author}")
+            return success_response(data={"blurb": cached_note.content})
+        
+        # Generate AI recommendation with vibe context
+        recommendation = generate_book_note(description, title, author, vibe)
+        
+        try:
+            if recommendation and isinstance(recommendation, dict):
+                blurb_content = recommendation.get('blurb', str(recommendation))
+                new_note = BookNote(book_title=title, book_author=author, content=blurb_content)
+                db.session.add(new_note)
+                db.session.commit()
+        except SQLAlchemyError as e:
+            logger.error(f"Database error caching note: {e}")
+            db.session.rollback()
+        except Exception as e:
+            logger.error(f"Unexpected error caching note: {e}")
+            db.session.rollback()
+            # Don't fail the request if caching fails - still return the recommendation
+
+        return success_response(data=recommendation)
+        
+    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
+        logger.error(f"AI service error in handle_generate_note: {e}", exc_info=True)
+        return handle_exception(e, "handle_generate_note")
+    except (ValidationException, InvalidInputError) as e:
+        logger.warning(f"Validation error in handle_generate_note: {e}")
+        return handle_exception(e, "handle_generate_note")
+    except Exception as e:
+        logger.error(f"Unexpected error in handle_generate_note: {type(e).__name__}: {e}", exc_info=True)
+        return handle_exception(e, "handle_generate_note")
+
+
+
+
+
+
+
+# ==================== READING STATS HELPER FUNCTIONS ====================
+# =========================================================================
+# HELPER: Update Reading Statistics
+# Helper function invoked primarily when a user marks a book as "finished".
+# 
+# How it works:
+# - ReadingStats are bucketed by (user_id, year, month) records.
+# - It first checks for an existing record for the current month.
+# - If missing, it seeds a new record starting at 0 for bounds checking.
+# - It aggressively increments books_completed and adds page counts if the
+#   underlying Google Books API returned valid page_count metadata.
+# =========================================================================
+def _update_reading_stats(user_id, book):
+    """Update reading stats when a book is finished."""
+    now = datetime.now(timezone.utc)
+    year = now.year
+    month = now.month
+    
+    stats = ReadingStats.query.filter_by(user_id=user_id, year=year, month=month).first()
+    
+    if not stats:
+        stats = ReadingStats(user_id=user_id, year=year, month=month, books_completed=0, pages_read=0)
+        db.session.add(stats)
+    
+    stats.books_completed += 1
+    
+    if book and book.page_count:
+        stats.pages_read += book.page_count
+    
+    db.session.commit()
+
+
+def _calculate_reading_streak(user_id):
+    """Calculate the user's current reading streak in days."""
+    finished_items = ShelfItem.query.filter_by(
+        user_id=user_id, shelf_type='finished'
+    ).filter(ShelfItem.finished_at.isnot(None)).order_by(ShelfItem.finished_at.desc()).all()
+    
+    if not finished_items:
+        return 0
+    
+    now = datetime.now(timezone.utc)
+    today = now.date()
+    most_recent = finished_items[0].finished_at.date()
+    
+    if (today - most_recent).days > 1:
+        return 0
+    
+    streak = 1
+    prev_date = most_recent
+    
+    for item in finished_items[1:]:
+        finish_date = item.finished_at.date()
+        days_diff = (prev_date - finish_date).days
+        
+        if days_diff == 1:
+            streak += 1
+            prev_date = finish_date
+        elif days_diff > 1:
+            break
+    
+    return streak
+
+
+def _get_yearly_stats(user_id, year):
+    """Get yearly reading statistics."""
+    stats = ReadingStats.query.filter_by(user_id=user_id, year=year).all()
+    
+    total_books = sum(s.books_completed for s in stats)
+    total_pages = sum(s.pages_read for s in stats)
+    monthly = {s.month: s.books_completed for s in stats}
+    
+    return {"total_books": total_books, "total_pages": total_pages, "monthly": monthly}
+
+
+
+
+@app.route('/api/v1/auth/google', methods=['GET'])
+@limiter.limit("10 per minute")
+def google_login_active():
+    google_client_id = app.config.get('GOOGLE_CLIENT_ID')
+    google_redirect_uri = app.config.get('GOOGLE_OAUTH_REDIRECT_URI') or url_for('google_oauth_callback_active', _external=True)
+    google_scope = app.config.get('GOOGLE_OAUTH_SCOPE', 'openid email profile')
+
+    if not google_client_id:
+        return internal_error("Google OAuth client ID is not configured.")
+
+    oauth_state = secrets.token_urlsafe(32)
+    params = {
+        'client_id': google_client_id,
+        'redirect_uri': google_redirect_uri,
+        'response_type': 'code',
+        'scope': google_scope,
+        'state': oauth_state,
+        'access_type': 'offline',
+        'prompt': 'select_account'
+    }
+
+    response = redirect(f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}")
+    response.set_cookie(
+        'google_oauth_state',
+        oauth_state,
+        httponly=True,
+        secure=app_config.is_production(),
+        samesite='Lax',
+        max_age=600
+    )
+    return response
+
+
+@app.route('/api/v1/auth/google/callback', methods=['GET'])
+@limiter.limit("10 per minute")
+def google_oauth_callback_active():
+    code = request.args.get('code')
+    state = request.args.get('state')
+    stored_state = request.cookies.get('google_oauth_state')
+    google_client_id = app.config.get('GOOGLE_CLIENT_ID')
+    google_client_secret = app.config.get('GOOGLE_CLIENT_SECRET')
+    google_redirect_uri = app.config.get('GOOGLE_OAUTH_REDIRECT_URI') or url_for('google_oauth_callback_active', _external=True)
+    frontend_redirect_url = app.config.get('GOOGLE_OAUTH_FRONTEND_REDIRECT_URL', 'http://127.0.0.1:5500/frontend/pages/library.html')
+
+    if not code:
+        return auth_error("Google OAuth authorization code is missing.")
+
+    if not stored_state or not state or stored_state != state:
+        return auth_error("Invalid Google OAuth state.")
+
+    if not google_client_id or not google_client_secret:
+        return internal_error("Google OAuth client credentials are not configured.")
+
+    try:
+        token_response = requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'code': code,
+                'client_id': google_client_id,
+                'client_secret': google_client_secret,
+                'redirect_uri': google_redirect_uri,
+                'grant_type': 'authorization_code'
+            },
+            timeout=10
+        )
+        token_response.raise_for_status()
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
+
+        if not access_token:
+            return auth_error("Google OAuth access token is missing.")
+
+        userinfo_response = requests.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10
+        )
+        userinfo_response.raise_for_status()
+        google_user = userinfo_response.json()
+
+        google_id = google_user.get('sub')
+        email = google_user.get('email')
+        username = google_user.get('name') or (email.split('@')[0] if email else None)
+
+        if not google_id or not email or not username:
+            return auth_error("Google account did not provide required profile information.")
+
+        user = User.query.filter_by(google_id=google_id).first()
+        if not user:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.google_id = google_id
+                user.auth_provider = 'google'
+                user.profile_picture = google_user.get('picture')
+                user.email_verified = bool(google_user.get('email_verified'))
+            else:
+                base_username = ''.join(ch for ch in username.strip().replace(' ', '_') if ch.isalnum() or ch == '_')[:50]
+                if len(base_username) < 3:
+                    base_username = email.split('@')[0][:50]
+
+                unique_username = base_username
+                suffix = 1
+                while User.query.filter_by(username=unique_username).first():
+                    suffix_text = str(suffix)
+                    unique_username = f"{base_username[:50 - len(suffix_text)]}{suffix_text}"
+                    suffix += 1
+
+                user = User(
+                    username=unique_username,
+                    email=email,
+                    google_id=google_id,
+                    auth_provider='google',
+                    profile_picture=google_user.get('picture'),
+                    email_verified=bool(google_user.get('email_verified'))
+                )
+                db.session.add(user)
+
+        db.session.commit()
+
+        jwt_access_token = create_access_token(identity=str(user.id))
+        response = redirect(frontend_redirect_url)
+        set_access_cookies(response, jwt_access_token)
+        response.delete_cookie('google_oauth_state')
+        return response
+    except requests.RequestException as e:
+        logger.error(f"Google OAuth request failed: {e}", exc_info=True)
+        return service_unavailable_error("Google authentication service is unavailable.")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Google OAuth callback failed: {e}", exc_info=True)
+        return internal_error("Google authentication failed.")
+
+
+@app.route('/api/v1/auth/verify', methods=['GET'])
+@jwt_required()
+def verify_auth_session():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        return auth_error("Invalid or expired session.")
+
+    return jsonify({"user": user.to_dict()}), 200
+
+
+
+
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
-    # Print the available endpoints
-    with app.app_context():
-        logger.info("\nAvailable endpoints:")
-        logger.info("  POST /api/v1/auth/register - Register a new user")
-        logger.info("  POST /api/v1/auth/login - Login user")
-        logger.info("  POST /api/v1/auth/logout - Logout user")
-        logger.info("  GET  /api/v1/auth/me - Get current user")
-        logger.info("  GET  /api/v1/library/shelves - Get shelves (counts only)")
-        logger.info("  GET  /api/v1/library/items - Get library items")
-        logger.info("  POST /api/v1/library/items - Add item to library")
-        logger.info("  PUT  /api/v1/library/items/<id> - Update item status/rating")
-        logger.info("  DELETE /api/v1/library/items/<id> - Remove item from library")
-        logger.info("  GET  /api/v1/library/collections - Get collections")
-        logger.info("  POST /api/v1/library/collections - Create collection")
-        logger.info("  GET  /api/v1/library/collections/<id>/items - Get collection items")
-        logger.info("  POST /api/v1/library/collections/<id>/items - Add item to collection")
-        logger.info("  GET  /api/v1/recommendations - Get AI recommendations")
-        logger.info("  GET  /api/v1/reading-goals - Get reading goals")
-        logger.info("  POST /api/v1/reading-goals - Create reading goal")
-        logger.info("  GET  /api/v1/reading-stats - Get reading statistics")
-        logger.info("  POST /api/v1/book-notes - Add book note")
-        logger.info("  GET  /api/v1/book-notes/<book_id> - Get book notes")
-        logger.info("  POST /api/v1/ai/generate-note - Generate AI book blurb")
-        logger.info("  POST /api/v1/chat - Chat with bookseller (DEPRECATED - Use WebSockets)")
+    server_config = app_config.server
+    
+    if server_config.debug:
+        logger.info("--- BIBLIODRIFT MOOD ANALYSIS SERVER STARTING ON PORT %d ---", server_config.port)
+        logger.info("Environment: %s", app_config.get_environment_name())
+        logger.info("Available endpoints:")
+        logger.info("  POST /api/v1/generate-note - Generate AI book notes")
+        logger.info("  POST /api/v1/category-books - Get category-specific book recommendations")
+        if MOOD_ANALYSIS_AVAILABLE:
+            logger.info("  POST /api/v1/analyze-mood - Analyze book mood from GoodReads")
+            logger.info("  POST /api/v1/mood-tags - Get mood tags for a book")
+        else:
+            logger.warning("  [DISABLED] Mood analysis endpoints (missing dependencies)")
+        logger.info("  POST /api/v1/mood-search - Search books by mood/vibe")
+        logger.info("  POST /api/v1/chat - Chat with bookseller")
         logger.info("  GET  /api/v1/health - Health check")
 
     socketio.run(app, debug=server_config.debug, port=server_config.port, host=server_config.host)
