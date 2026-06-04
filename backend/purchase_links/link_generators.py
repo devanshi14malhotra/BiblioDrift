@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import re
 
-from .config import config, SEARCH_PATTERNS, PlatformConfig
+from .config import app.config, SEARCH_PATTERNS, PlatformConfig
 
 # Setup logging
 logger = logging.getLogger(__name__)

@@ -1917,6 +1917,8 @@
             .contributors-grid-view { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="manifest" href="../manifest.json">
+    <link rel="stylesheet" href="../css/pwa.css">
 </head>
 
 <body class="landing-page">
@@ -2035,7 +2037,7 @@
             </p>
 
             <div class="about-cta-row">
-                <a href="#library" class="primary-about-btn">
+                <a href="app.html" class="primary-about-btn">
                     Enter Library
                 </a>
 
@@ -2613,6 +2615,21 @@
                         <a class="footer-pill" href="contributing.html"><i class="fa-solid fa-handshake-angle"></i> Contribute</a>
                     </div>
                 </div>
+
+                <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+                    <div class="pwa-banner-content">
+                        <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+                        <div class="pwa-banner-text">
+                            <strong>Install BiblioDrift.</strong>
+                            <span>Read offline, anytime.</span>
+                        </div>
+                    </div>
+                    <div class="pwa-banner-actions">
+                        <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+                        <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+
                 <div class="footer-grid">
                     <div class="footer-block">
                         <a class="landing-brand" href="#top" aria-label="Back to top">
@@ -2652,6 +2669,11 @@
                                 <a href="contributing.html" aria-label="Contributing guide"><i
                                     class="fa-solid fa-file-lines"></i></a>
                         </div>
+                        <div style="margin-top: 1.5rem;">
+                            <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">
+                              <img src="https://www.netlify.com/assets/badges/netlify-badge-dark.svg" alt="Deploys by Netlify" />
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="footer-bottom">
@@ -2669,6 +2691,9 @@
     <script src="../js/theme-manager.js"></script>
     <script src="../js/landing-interactions.js"></script>
     <script src="../js/ambient.js"></script>
+    <script src="../js/pwa.js"></script>
 </body>
 
 </html>
+
+

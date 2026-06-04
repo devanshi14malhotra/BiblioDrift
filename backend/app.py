@@ -1,8 +1,14 @@
 # Flask backend application with GoodReads mood analysis integration
 # Initialize Flask app, configure CORS, and setup mood analysis endpoints
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
     get_jwt_identity, set_access_cookies, unset_jwt_cookies
@@ -20,14 +26,13 @@ import os
 import requests
 import secrets
 from urllib.parse import urlencode
+from werkzeug.utils import secure_filename
+import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from backend.sanitizer import sanitize_payload
-from backend.reader_identity.routes import reader_identity_bp
+from backend.core.security.sanitizer import sanitize_payload
+from reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
@@ -42,16 +47,18 @@ else:
 
 # Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service, get_vibe_recommendations
+from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, generate_chat_response_stream, llm_service, get_vibe_recommendations
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
 from price_tracker import get_price_tracker
 from cache_service import cache_service
-from validators import (
+from backend.core.validators.validators import (
     validate_request,
+    validate_schema,
     validate_google_books_id,
     AnalyzeMoodRequest,
     MoodTagsRequest,
     MoodSearchRequest,
+    VibeCheckRequest,
     GenerateNoteRequest,
     ChatRequest,
     CategoryBooksRequest,
@@ -80,11 +87,15 @@ from password_reset_service import (
     request_password_reset,
     reset_password_with_token,
 )
+from email_service import (
+    build_password_reset_url,
+    is_email_configured,
+    send_password_reset_email,
+)
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from urllib.parse import quote
-from error_responses import (
+from backend.core.responses.error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
@@ -170,8 +181,54 @@ ALLOWED_CORS_HEADERS = [
     "Accept",
 ]
 
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: STRICT CORS ORIGIN RESOLUTION
+# =====================================================================
+# This function enforces strict Cross-Origin Resource Sharing (CORS) 
+# policies, which is a critical security measure to prevent malicious
+# third-party websites from making unauthorized requests on behalf
+# of an authenticated user.
+#
+# The previous implementation was overly permissive, potentially
+# allowing wildcard ('*') origins in production environments.
+# A wildcard policy (Access-Control-Allow-Origin: *) exposes all
+# API endpoints to cross-origin requests from any domain on the
+# internet, severely undermining security and leaving the application
+# vulnerable to various attacks, including CSRF (Cross-Site Request Forgery)
+# and data exfiltration.
+#
+# To mitigate these risks, this updated function dynamically checks
+# the application's current environment. When operating in production
+# mode (as determined by `is_production_mode()`), it implements a
+# strict allowlist approach:
+#
+# 1. It attempts to read the `FRONTEND_URL` environment variable.
+#    If absent, it defaults to the known production domain 
+#    ('https://bibliodrift.com').
+# 2. It then checks the `ALLOWED_ORIGINS` environment variable,
+#    which allows for multiple comma-separated origins.
+# 3. CRITICAL: It actively parses the provided origins and strips out
+#    any wildcard ('*') entries, ensuring they cannot be used to
+#    bypass the strict policy.
+# 4. Empty strings and purely whitespace entries are also removed.
+# 5. If the resulting list of safe origins is empty (e.g., if the
+#    only provided origin was a wildcard), it forcefully falls back
+#    to the safe `FRONTEND_URL` default.
+#
+# In non-production environments (like local development), the rules
+# are slightly relaxed to facilitate testing and debugging, falling
+# back to a set of predefined `DEFAULT_CORS_ORIGINS` if no explicit
+# configuration is provided in the environment variables.
+# =====================================================================
 def _load_cors_origins() -> list[str]:
     """Load an explicit CORS allowlist from the environment or defaults."""
+    if is_production_mode():
+        frontend_url = os.getenv("FRONTEND_URL", "https://bibliodrift.com")
+        raw_origins = os.getenv("ALLOWED_ORIGINS", frontend_url)
+        # Prevent wildcard in production
+        origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip() and origin.strip() != "*"]
+        return origins if origins else [frontend_url]
+
     raw_origins = os.getenv("ALLOWED_ORIGINS", "")
     if raw_origins.strip():
         return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
@@ -200,6 +257,11 @@ def _apply_security_headers(response):
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
     response.headers['X-Frame-Options'] = 'DENY'
+    
+    # Add Cache-Control for 3D assets and static images
+    if request.path.endswith(('.gltf', '.obj', '.png')):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        
     return response
 
 # =====================================================================
@@ -217,12 +279,11 @@ _cors_origins = _load_cors_origins()
 CORS(
     app,
     supports_credentials=True,
-    origins=_cors_origins,
-    methods=ALLOWED_CORS_METHODS,
-    allow_headers=ALLOWED_CORS_HEADERS,
-    expose_headers=['Retry-After'],
     resources={r"/api/*": {"origins": _cors_origins}},
 )
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins=_cors_origins)
 
 # Initialize cache service
 cache_service.init_app(app)
@@ -718,13 +779,55 @@ def _validate_jwt_secret_startup():
 
 _validate_jwt_secret_startup()
 
-@app.route('/api/v1/config', methods=['GET'])
-def get_config():
-    """Serve public configuration values like Google Books API Key."""
-    return jsonify({
-        "google_books_key": os.getenv('GOOGLE_BOOKS_API_KEY', ''),
-        "google_books_key_secondary": os.getenv('GOOGLE_BOOKS_API_KEY_SECONDARY', '')
-    })
+
+@app.route('/api/v1/content/live-shelves', methods=['GET'])
+def get_live_shelves():
+    """Return the configuration for live discovery shelves on the frontend."""
+    discovery_shelves = [
+        {
+            "type": "query",
+            "query": "subject:mystery atmosphere",
+            "elementId": "row-rainy",
+            "title": "Rainy Evening Reads",
+            "subtitle": "Mystery & Melancholy",
+            "icon": "fa-cloud-rain"
+        },
+        {
+            "type": "query",
+            "query": "authors:arundhati roy|subject:india",
+            "elementId": "row-indian",
+            "title": "Indian Authors",
+            "subtitle": "Subcontinent Voices",
+            "icon": "fa-feather"
+        },
+        {
+            "type": "query",
+            "query": "subject:classic fiction",
+            "elementId": "row-classics",
+            "title": "Forgotten Classics",
+            "subtitle": "Timeless & Dust-free",
+            "icon": "fa-hourglass"
+        },
+        {
+            "type": "query",
+            "query": "subject:gothic fiction subject:dark academia subject:campus",
+            "elementId": "row-dark-academia",
+            "title": "Dark Academia",
+            "subtitle": "Gothic, cerebral, candlelit",
+            "icon": "fa-feather-pointed",
+            "vibeDescription": "gothic, intellectual, melancholic, and candlelit",
+            "fallbackQuery": "subject:gothic fiction subject:campus"
+        },
+        {
+            "type": "query",
+            "query": "subject:fiction",
+            "elementId": "row-fiction",
+            "title": "General Fiction",
+            "subtitle": "Stories for everyone",
+            "icon": "fa-book-open"
+        }
+    ]
+    return success_response(data={"shelves": discovery_shelves})
 
 # =====================================================================
 # ENDPOINT: CSRF Token Retrieval
@@ -744,6 +847,142 @@ def get_csrf_token():
     """
     token = generate_csrf()
     return success_response(data={"csrf_token": token})
+
+# =====================================================================
+# ENDPOINT: System Health & Environment Diagnostics
+# =====================================================================
+# This endpoint provides comprehensive health checks for the API, 
+# Database, Redis Cache, and external AI/Service Integrations.
+# 
+# Security & Compliance:
+# - In 'production', it returns only essential health status to prevent
+#   information leakage, which is critical for attack surface reduction.
+# - In 'development' or 'testing', it returns detailed configuration
+#   states, database connection metrics, and dummy key validations.
+# - Validates that 'testing' environments correctly utilize dummy API 
+#   keys to prevent accidental financial charges against real services.
+# - Automatically degrades system status from 200 OK to 503 Service 
+#   Unavailable if critical infrastructural components (DB, Cache) fail.
+# =====================================================================
+@app.route('/api/v1/health', methods=['GET'])
+def health_check():
+    """
+    Comprehensive system health and environment diagnostic check.
+    Behavior and verbosity scale dynamically according to the active environment config.
+    """
+    from sqlalchemy import text
+    import time
+    
+    # Initialize the base health response structure
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "environment": app_config.get_environment_name(),
+        "version": "1.0.0",
+        "maintenance_mode": os.getenv("MAINTENANCE_MODE", "false").lower() == "true"
+    }
+    
+    # 1. Database Connectivity & Latency Check
+    db_status = "unknown"
+    db_latency_ms = 0
+    try:
+        start_time = time.time()
+        # Execute a lightweight, read-only query to test the active connection pool
+        # This confirms that SQLAlchemy can successfully speak to the database
+        db.session.execute(text("SELECT 1"))
+        db_latency_ms = round((time.time() - start_time) * 1000, 2)
+        db_status = "connected"
+    except Exception as e:
+        logger.error(f"Health Check: Database connection failed: {e}")
+        db_status = "disconnected"
+        health_status["status"] = "degraded"
+        # Only append specific error messages in non-production environments
+        if not app_config.is_production():
+            health_status["db_error"] = str(e)
+            
+    # 2. Redis Cache Connectivity Check
+    # Important for rate limiting and temporary data storage
+    redis_status = "unknown"
+    try:
+        # Check if the cache service was successfully initialized and bound to a client
+        if hasattr(cache_service, 'redis_client') and cache_service.redis_client:
+            if cache_service.redis_client.ping():
+                redis_status = "connected"
+            else:
+                redis_status = "unresponsive"
+                health_status["status"] = "degraded"
+        else:
+            redis_status = "disabled"
+    except Exception as e:
+        logger.error(f"Health Check: Redis connection failed: {e}")
+        redis_status = "disconnected"
+        health_status["status"] = "degraded"
+        if not app_config.is_production():
+            health_status["redis_error"] = str(e)
+    
+    # Assemble core services status payload
+    health_status["services"] = {
+        "database": {
+            "status": db_status,
+            "latency_ms": db_latency_ms
+        },
+        "redis_cache": {
+            "status": redis_status
+        }
+    }
+    
+    # 3. Environment-Specific Detailed Diagnostics
+    # In non-production environments, we expose more detailed configuration
+    # data to assist developers, CI/CD pipelines, and integration tests.
+    if not app_config.is_production():
+        # Validate AI Services configuration without exposing full keys
+        ai_services_state = {
+            "openai_configured": bool(app_config.ai_service.openai_api_key),
+            "groq_configured": bool(app_config.ai_service.groq_api_key),
+            "gemini_configured": bool(app_config.ai_service.gemini_api_key),
+            "google_books_configured": bool(app_config.ai_service.google_books_api_key)
+        }
+        
+        # Check if dummy test keys are active (from TestingConfig)
+        is_using_dummy_keys = (
+            app_config.ai_service.openai_api_key == 'test-dummy-openai-key' or
+            app_config.ai_service.groq_api_key == 'test-dummy-groq-key' or
+            app_config.email.api_key == 'test-dummy-email-key'
+        )
+        
+        health_status["diagnostics"] = {
+            "db_url_scheme": str(app_config.database.url).split("://")[0] if app_config.database.url else "none",
+            "rate_limiting_enabled": app_config.rate_limit.enabled,
+            "log_level": app_config.logging.level,
+            "ai_services": ai_services_state,
+            "is_using_dummy_keys": is_using_dummy_keys,
+            "security": {
+                "csrf_enabled": app.config.get('WTF_CSRF_ENABLED', False),
+                "cors_origins": _cors_origins,
+                "jwt_cookie_secure": app.config.get('JWT_COOKIE_SECURE', False)
+            }
+        }
+        
+        # Defensive Check: Add critical warning if testing in an environment 
+        # that explicitly should use dummy keys, but real ones are engaged.
+        if app_config.get_environment_name() in ['test', 'testing'] and not is_using_dummy_keys:
+            if "warnings" not in health_status["diagnostics"]:
+                health_status["diagnostics"]["warnings"] = []
+            health_status["diagnostics"]["warnings"].append(
+                "CRITICAL: Testing environment is active but dummy API keys are NOT engaged. Real credits may be consumed."
+            )
+            
+    # Return 503 Service Unavailable if core services are severely degraded
+    # Return 200 OK if system is healthy or experiencing minor non-critical issues
+    http_status = 200 if health_status["status"] == "healthy" else 503
+    
+    # If the system is explicitly put into maintenance mode, return 503
+    if health_status["maintenance_mode"]:
+        http_status = 503
+        health_status["status"] = "maintenance"
+        health_status["message"] = "System is currently undergoing scheduled maintenance."
+    
+    return jsonify(health_status), http_status
 
 @app.route('/')
 def index():
@@ -795,17 +1034,13 @@ def index():
 
 @app.route('/api/v1/analyze-mood', methods=['POST'])
 @limiter.limit("10 per minute")
-def handle_analyze_mood():
+@validate_schema(AnalyzeMoodRequest)
+def handle_analyze_mood(validated_data):
     """Analyze book mood using GoodReads reviews."""
     if not MOOD_ANALYSIS_AVAILABLE:
         return service_unavailable_error("Mood analysis not available - missing dependencies")
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(AnalyzeMoodRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         title = validated_data.title
         author = validated_data.author
@@ -823,20 +1058,16 @@ def handle_analyze_mood():
 
 @app.route('/api/v1/mood-tags', methods=['POST'])
 @limiter.limit("10 per minute")
-def handle_mood_tags():
+@validate_schema(MoodTagsRequest)
+def handle_mood_tags(validated_data):
     """Get mood tags for a book."""
-    from exceptions import (
+    from backend.core.exceptions.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException, 
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.core.responses.error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(MoodTagsRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         title = validated_data.title
         author = validated_data.author
@@ -858,20 +1089,16 @@ def handle_mood_tags():
 
 @app.route('/api/v1/mood-search', methods=['POST'])
 @limiter.limit("10 per minute")
-def handle_mood_search():
+@validate_schema(MoodSearchRequest)
+def handle_mood_search(validated_data):
     """Search for books based on mood/vibe with improved query parsing."""
-    from exceptions import (
+    from backend.core.exceptions.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.core.responses.error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(MoodSearchRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         mood_query = validated_data.query
         
@@ -914,85 +1141,12 @@ def handle_mood_search():
 
 @app.route('/api/v1/vibe-check', methods=['POST'])
 @rate_limit('vibe_check')
-def handle_vibe_check():
+@validate_schema(VibeCheckRequest)
+def handle_vibe_check(validated_data):
     """
     Generate hyper-personalized book recommendations based on a specific vibe.
     """
     try:
-        data = request.get_json()
-
-        # Safely validate input
-        if not data or 'vibe_prompt' not in data:
-            return missing_fields_error(["vibe_prompt"])
-
-        vibe_prompt = data['vibe_prompt']
-        count = data.get('count', 3)
-
-        # Call the Gemini pipeline
-        books = get_vibe_recommendations(
-            vibe_prompt=vibe_prompt,
-            count=count
-        )
-
-        if not books:
-            return service_unavailable_error(
-                "Could not generate vibe recommendations right now. Please try again shortly."
-            )
-
-        return success_response(
-            data={
-                "vibe_prompt": vibe_prompt,
-                "books": books,
-            }
-        )
-
-    except Exception as e:
-        logger.error(f"Error in handle_vibe_check: {str(e)}", exc_info=True)
-        return internal_error(str(e))
-
-
-@app.route('/api/v1/category-books', methods=['POST'])
-@limiter.limit("10 per minute")
-def handle_category_books():
-    """
-    Return AI-generated, category-specific book recommendations.
-
-    Fix for: all shelf categories displaying the same default books.
-
-    Each category sends its name + vibe description. The LLM returns a list
-    of real book titles and authors specific to that vibe. The frontend uses
-    these titles to query the Google Books API for actual cover images and
-    metadata — ensuring each shelf displays genuinely different, relevant books.
-
-    Request body:
-        {
-            "category": "Rainy Evening Reads",
-            "vibe_description": "quiet and melancholy, best read on grey afternoons",
-            "count": 5
-        }
-
-    Response:
-        {
-            "success": true,
-            "data": {
-                "category": "Rainy Evening Reads",
-                "books": [
-                    {
-                        "title": "The Remains of the Day",
-                        "author": "Kazuo Ishiguro",
-                        "reason": "A quiet, melancholy novel about regret — perfect for a rainy afternoon."
-                    },
-                    ...
-                ]
-            }
-        }
-    """
-    try:
-        data = request.get_json()
-
-        is_valid, validated_data = validate_request(CategoryBooksRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
 
         books = get_category_books(
             category=validated_data.category,
@@ -1042,21 +1196,17 @@ def handle_purchase_links():
 
 @app.route('/api/v1/generate-note', methods=['POST'])
 @limiter.limit("10 per minute")
-def handle_generate_note():
+@validate_schema(GenerateNoteRequest)
+def handle_generate_note(validated_data):
     """Generate AI-powered book recommendation with vibe support."""
-    from exceptions import (
+    from backend.core.exceptions.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         DatabaseQueryError, DatabaseIntegrityError,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.core.responses.error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(GenerateNoteRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         description = validated_data.description
         title = validated_data.title
@@ -1100,85 +1250,49 @@ def handle_generate_note():
 @app.route('/api/v1/chat', methods=['POST'])
 @limiter.limit("10 per minute")
 def handle_chat():
-    """Handle chat messages and generate bookseller responses."""
-    from exceptions import (
-        LLMCircuitBreakerOpenError, AIServiceException,
-        ValidationException, InvalidInputError
-    )
-    from error_responses import handle_exception
-    
+    """Legacy chat endpoint (deprecated in favor of WebSockets)."""
+    return jsonify({
+        "success": False,
+        "error": "This endpoint is deprecated. Please use the WebSockets interface for Literary Chat."
+    }), 426
+
+@socketio.on('chat_message')
+def handle_socket_chat(data):
+    """Handle chat messages via WebSockets and stream bookseller responses."""
     try:
-        data = request.get_json()
-        
         is_valid, validated_data = validate_request(ChatRequest, data)
         if not is_valid:
-            return jsonify(validated_data), 400
-        
+            emit('chat_error', {"error": "Validation failed", "details": validated_data})
+            return
+            
         user_message = validated_data.message
         conversation_history = validated_data.history or []
         
         validated_history = []
-        for msg in conversation_history:
-            if hasattr(msg, 'dict'):
-                validated_history.append(msg.dict())
+        for msg in conversation_history[-6:]:
+            if not isinstance(msg, dict) or 'content' not in msg:
+                continue
             else:
                 validated_history.append(msg)
         
-        # Generate contextual response based on conversation history
-        response = generate_chat_response(user_message, validated_history)
-        
-        # Try to get book recommendations based on the message
         recommendations = get_ai_recommendations(user_message)
         
-        # =========================================================================
-        # TIMESTAMP STANDARDIZATION
-        # =========================================================================
-        # Ensure that the timestamp returned to the client is explicitly set to
-        # UTC using timezone-aware objects. This prevents subtle bugs where server 
-        # locale or deployment environments might skew the time by relying on 
-        # naive datetime.now() calls. This is a critical fix for ensuring
-        # consistent client-side formatting regardless of geographical region.
-        # =========================================================================
+        full_response = ""
+        for chunk in generate_chat_response_stream(user_message, validated_history):
+            if chunk:
+                full_response += chunk
+                emit('chat_stream', {'chunk': chunk})
         
-        return success_response(
-            data={
-                "response": response,
-                "recommendations": recommendations,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-        )
+        emit('chat_complete', {
+            "success": True,
+            "response": full_response,
+            "recommendations": recommendations,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
         
-    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
-        logger.error(f"AI service error in handle_chat: {e}", exc_info=True)
-        return handle_exception(e, "handle_chat")
-    except (ValidationException, InvalidInputError) as e:
-        logger.warning(f"Validation error in handle_chat: {e}")
-        return handle_exception(e, "handle_chat")
     except Exception as e:
-        logger.error(f"Unexpected error in handle_chat: {type(e).__name__}: {e}", exc_info=True)
-        return handle_exception(e, "handle_chat")
-
-@app.route('/api/v1/health', methods=['GET'])
-def health_check():
-    """Health check endpoint with cache statistics."""
-    cache_stats = cache_service.get_stats()
-    
-    return jsonify({
-        "status": "healthy",
-        "service": "BiblioDrift AI Service",
-        "version": "2.0.0",
-        "features": {
-            "mood_analysis_available": MOOD_ANALYSIS_AVAILABLE,
-            "llm_service_available": llm_service.is_available(),
-            "openai_configured": llm_service.openai_client is not None,
-            "groq_configured": llm_service.groq_client is not None,
-            "gemini_configured": llm_service.gemini_client is not None,
-            "preferred_llm": llm_service.preferred_llm,
-            "caching_enabled": cache_stats.get('cache_type') != 'null'
-        },
-        "cache": cache_stats
-    })
-
+        logger.error(f"Error in WebSocket handle_chat: {type(e).__name__}: {e}", exc_info=True)
+        emit('chat_error', {"error": "An error occurred while generating a response. Please try again."})
 
 # =========================================================================
 # ENDPOINT: Add Book to Library
@@ -1194,19 +1308,14 @@ def health_check():
 @app.route('/api/v1/library', methods=['POST'])
 @limiter.limit("20 per minute")
 @jwt_required()
-def add_to_library():
+@validate_schema(AddToLibraryRequest)
+def add_to_library(validated_data):
     """Add a book to the user's shelf."""
     from sqlalchemy.exc import IntegrityError
-    from exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
-    from error_responses import handle_exception
+    from backend.core.exceptions.exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
+    from backend.core.responses.error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        current_user_id = get_jwt_identity()
-        
-        is_valid, validated_data = validate_request(AddToLibraryRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         if str(validated_data.user_id) != str(current_user_id):
             return unauthorized_access_error("Cannot access another user's library")
@@ -1376,15 +1485,10 @@ def _get_yearly_stats(user_id, year):
 # ==================== LIBRARY ENDPOINTS ====================
 @app.route('/api/v1/library/<int:item_id>', methods=['PUT'])
 @jwt_required()
-def update_library_item(item_id):
+@validate_schema(UpdateLibraryItemRequest)
+def update_library_item(item_id, validated_data):
     """Update a library item (e.g. move to different shelf)."""
     try:
-        data = request.get_json()
-        current_user_id = get_jwt_identity()
-        
-        is_valid, validated_data = validate_request(UpdateLibraryItemRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         item = ShelfItem.query.with_for_update().get(item_id)
         if not item:
@@ -1470,15 +1574,11 @@ price_tracker = get_price_tracker(db)
 @app.route('/api/v1/library/sync', methods=['POST'])
 @limiter.limit("20 per minute")
 @jwt_required()
-def sync_library():
+@validate_schema(SyncLibraryRequest)
+def sync_library(validated_data):
     """Sync a list of books from local storage to the user's account."""
     try:
         current_user_id = get_jwt_identity()
-        data = request.get_json()
-        
-        is_valid, validated_data = validate_request(SyncLibraryRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         user_id = validated_data.user_id
         raw_items = validated_data.items
@@ -1600,23 +1700,10 @@ def sync_library():
 # =========================================================================
 @app.route('/api/v1/register', methods=['POST'])
 @limiter.limit("5 per 10 seconds")
-def register():
+@validate_schema(RegisterRequest)
+def register(validated_data):
     """Register a new user and return JWT token."""
     try:
-        data = request.get_json()
-        
-        # =========================================================================
-        # SECURITY AUDIT: REGISTRATION ATTEMPT
-        # =========================================================================
-        # All registration attempts are logged for security auditing purposes.
-        # CSRF protection is enforced automatically by Flask-WTF for this 
-        # POST request, ensuring the signup originates from our own UI.
-        # =========================================================================
-        logger.info(f"Registration attempt for user: {data.get('username')} from IP: {request.remote_addr}")
-        
-        is_valid, validated_data = validate_request(RegisterRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         username = validated_data.username
         email = validated_data.email
@@ -1651,26 +1738,13 @@ def register():
 
 @app.route('/api/v1/login', methods=['POST'])
 @limiter.limit("5 per 10 seconds")
-def login():
+@validate_schema(LoginRequest)
+def login(validated_data):
     """Authenticate user and return JWT token."""
-    from exceptions import DatabaseQueryError, ValidationException
-    from error_responses import handle_exception
+    from backend.core.exceptions.exceptions import DatabaseQueryError, ValidationException
+    from backend.core.responses.error_responses import handle_exception
     
     try:
-        data = request.get_json()
-        
-        # =========================================================================
-        # SECURITY AUDIT: LOGIN ATTEMPT
-        # =========================================================================
-        # All login attempts are strictly validated against CSRF tokens.
-        # This prevents an attacker from creating a malicious site that 
-        # automatically logs a user into an account they control.
-        # =========================================================================
-        logger.info(f"Login attempt for identifier: {data.get('username')} from IP: {request.remote_addr}")
-        
-        is_valid, validated_data = validate_request(LoginRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
         
         username_or_email = validated_data.username
         password = validated_data.password
@@ -1853,19 +1927,82 @@ def logout():
     return resp, status
 
 
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'avatars')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/v1/users/<int:user_id>/avatar', methods=['POST'])
+@jwt_required()
+def upload_avatar(user_id):
+    """Upload and update user avatar with MIME type and magic number validation."""
+    current_user_id = get_jwt_identity()
+    
+    if str(user_id) != str(current_user_id):
+        return forbidden_error("Unauthorized access to another user's profile")
+        
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "No file selected for uploading"}), 400
+        
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Allowed file types are png, jpg, jpeg, gif"}), 400
+        
+    # Validate Content-Type header
+    file_content_type = file.content_type
+    if file_content_type not in ALLOWED_MIME_TYPES:
+        return jsonify({"error": "Invalid Content-Type"}), 400
+        
+    # Verify file magic numbers
+    file_bytes = file.read(2048)
+    file.seek(0) # Reset file pointer after reading
+    
+    try:
+        mime = magic.Magic(mime=True)
+        file_mime = mime.from_buffer(file_bytes)
+        
+        if file_mime not in ALLOWED_MIME_TYPES:
+            return jsonify({"error": "Invalid file content (magic number mismatch)"}), 400
+    except Exception as e:
+        logger.error(f"Error validating file magic numbers: {e}")
+        return jsonify({"error": "Could not validate file format"}), 500
+        
+    filename = secure_filename(file.filename)
+    unique_filename = f"user_{user_id}_{filename}"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+    
+    try:
+        file.save(filepath)
+        
+        user = User.query.get(user_id)
+        if user:
+            user.profile_picture = f"/uploads/avatars/{unique_filename}"
+            db.session.commit()
+            
+        return jsonify({
+            "message": "Avatar uploaded successfully", 
+            "profile_picture": f"/uploads/avatars/{unique_filename}"
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to save avatar: {e}")
+        return jsonify({"error": "Failed to save file"}), 500
+
+
 @app.route('/api/v1/auth/forgot-password', methods=['POST'])
 @csrf.exempt
 @limiter.limit("5 per minute")
-def forgot_password():
+@validate_schema(ForgotPasswordRequest)
+def forgot_password(validated_data):
     """Request a password reset link (always returns a generic success message)."""
     try:
-        data = request.get_json(silent=True)
-        if data is None:
-            return invalid_json_error()
-
-        is_valid, validated_data = validate_request(ForgotPasswordRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
 
         plain_token = None
         try:
@@ -1874,20 +2011,36 @@ def forgot_password():
             logger.error("forgot-password database error: %s", e, exc_info=True)
 
         response_data = {"message": FORGOT_PASSWORD_MESSAGE}
+        frontend_base = os.getenv('FRONTEND_ORIGIN', 'http://127.0.0.1:5500').rstrip('/')
+        email_config = app_config.email
 
-        if plain_token and app_config.is_development():
-            frontend_base = os.getenv(
-                'FRONTEND_ORIGIN',
-                'http://127.0.0.1:5500',
-            ).rstrip('/')
-            response_data["reset_url"] = (
-                f"{frontend_base}/pages/auth.html?token={quote(plain_token)}"
-            )
-            logger.info(
-                "Dev password reset link for %s: %s",
-                validated_data.email,
-                response_data["reset_url"],
-            )
+        if plain_token:
+            reset_url = build_password_reset_url(plain_token, frontend_base)
+            if is_email_configured(email_config):
+                send_result = send_password_reset_email(
+                    validated_data.email,
+                    reset_url,
+                    email_config,
+                )
+                if not send_result.ok:
+                    logger.error(
+                        "Password reset email not sent for %s: %s",
+                        validated_data.email,
+                        send_result.detail,
+                    )
+            elif app_config.is_development():
+                response_data["reset_url"] = reset_url
+                logger.info(
+                    "Dev password reset link for %s (email not configured): %s",
+                    validated_data.email,
+                    reset_url,
+                )
+            elif app_config.is_production():
+                logger.warning(
+                    "Password reset token created but EMAIL_* is not configured; "
+                    "user %s will not receive mail.",
+                    validated_data.email,
+                )
 
         return success_response(data=response_data)
     except Exception as e:
@@ -1898,16 +2051,10 @@ def forgot_password():
 @app.route('/api/v1/auth/reset-password', methods=['POST'])
 @csrf.exempt
 @limiter.limit("5 per minute")
-def reset_password():
+@validate_schema(ResetPasswordRequest)
+def reset_password(validated_data):
     """Set a new password using a valid reset token."""
     try:
-        data = request.get_json(silent=True)
-        if data is None:
-            return invalid_json_error()
-
-        is_valid, validated_data = validate_request(ResetPasswordRequest, data)
-        if not is_valid:
-            return jsonify(validated_data), 400
 
         ok, message = reset_password_with_token(
             validated_data.token,
@@ -1941,16 +2088,9 @@ def verify_auth_session():
 # ==================== READING STATS ENDPOINTS ====================
 @app.route('/api/v1/stats/goal', methods=['POST'])
 @jwt_required()
-def set_reading_goal():
+@validate_schema(SetGoalRequest)
+def set_reading_goal(validated_data):
     """Set or update annual reading goal."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(SetGoalRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
@@ -2066,16 +2206,9 @@ def get_leaderboard():
 # ==================== COLLECTIONS ENDPOINTS ====================
 @app.route('/api/v1/collections', methods=['POST'])
 @jwt_required()
-def create_collection():
+@validate_schema(CollectionRequest)
+def create_collection(validated_data):
     """Create a new collection."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(CollectionRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
@@ -2141,16 +2274,9 @@ def get_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>', methods=['PUT'])
 @jwt_required()
-def update_collection(collection_id):
+@validate_schema(UpdateCollectionRequest)
+def update_collection(collection_id, validated_data):
     """Update a collection."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(UpdateCollectionRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     try:
         collection = Collection.query.get(collection_id)
@@ -2208,14 +2334,6 @@ def delete_collection(collection_id):
 @jwt_required()
 def add_book_to_collection(collection_id):
     """Add a book to a collection."""
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-    current_user_id = get_jwt_identity()
-    
-    is_valid, validated_data = validate_request(AddToCollectionRequest, data)
-    if not is_valid:
-        return jsonify(validated_data), 400
     
     try:
         collection = Collection.query.get(collection_id)
@@ -2594,23 +2712,30 @@ with app.app_context():
 # load on the backend server.
 
 if __name__ == '__main__':
-    server_config = app_config.server
-    
-    if server_config.debug:
-        logger.info("--- BIBLIODRIFT MOOD ANALYSIS SERVER STARTING ON PORT %d ---", server_config.port)
-        logger.info("Environment: %s", app_config.get_environment_name())
-        logger.info("Available endpoints:")
-        logger.info("  POST /api/v1/generate-note - Generate AI book notes")
-        logger.info("  POST /api/v1/category-books - Get category-specific book recommendations")
-        if MOOD_ANALYSIS_AVAILABLE:
-            logger.info("  POST /api/v1/analyze-mood - Analyze book mood from GoodReads")
-            logger.info("  POST /api/v1/mood-tags - Get mood tags for a book")
-        else:
-            logger.warning("  [DISABLED] Mood analysis endpoints (missing dependencies)")
-        logger.info("  POST /api/v1/mood-search - Search books by mood/vibe")
-        logger.info("  POST /api/v1/chat - Chat with bookseller")
+    # Print the available endpoints
+    with app.app_context():
+        logger.info("\nAvailable endpoints:")
+        logger.info("  POST /api/v1/auth/register - Register a new user")
+        logger.info("  POST /api/v1/auth/login - Login user")
+        logger.info("  POST /api/v1/auth/logout - Logout user")
+        logger.info("  GET  /api/v1/auth/me - Get current user")
+        logger.info("  GET  /api/v1/library/shelves - Get shelves (counts only)")
+        logger.info("  GET  /api/v1/library/items - Get library items")
+        logger.info("  POST /api/v1/library/items - Add item to library")
+        logger.info("  PUT  /api/v1/library/items/<id> - Update item status/rating")
+        logger.info("  DELETE /api/v1/library/items/<id> - Remove item from library")
+        logger.info("  GET  /api/v1/library/collections - Get collections")
+        logger.info("  POST /api/v1/library/collections - Create collection")
+        logger.info("  GET  /api/v1/library/collections/<id>/items - Get collection items")
+        logger.info("  POST /api/v1/library/collections/<id>/items - Add item to collection")
+        logger.info("  GET  /api/v1/recommendations - Get AI recommendations")
+        logger.info("  GET  /api/v1/reading-goals - Get reading goals")
+        logger.info("  POST /api/v1/reading-goals - Create reading goal")
+        logger.info("  GET  /api/v1/reading-stats - Get reading statistics")
+        logger.info("  POST /api/v1/book-notes - Add book note")
+        logger.info("  GET  /api/v1/book-notes/<book_id> - Get book notes")
+        logger.info("  POST /api/v1/ai/generate-note - Generate AI book blurb")
+        logger.info("  POST /api/v1/chat - Chat with bookseller (DEPRECATED - Use WebSockets)")
         logger.info("  GET  /api/v1/health - Health check")
 
-    app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
-
-
+    socketio.run(app, debug=server_config.debug, port=server_config.port, host=server_config.host)

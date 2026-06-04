@@ -322,6 +322,14 @@ class BookshelfRenderer3D {
         this._escHandler = null;
         this._escListenerAttached = false;
         this.assetsLoaded = false;
+        
+        // Three.js Engine properties
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.staticObjects = [];
+        this.dynamicObjects = [];
+        this.threeJsAnimationId = null;
 
         // Create live region for screen reader announcements
         this.liveRegion = document.createElement('div');
@@ -1198,7 +1206,7 @@ class BookshelfRenderer3D {
         if (book.cover) {
             const img = document.createElement('img');
             img.src = book.cover;
-            img.alt = book.title;
+            img.alt = `Cover of '${book.title}' by ${book.author}`;
             img.style.cssText = `
             position: absolute;
             top: 0;
@@ -1318,6 +1326,11 @@ class BookshelfRenderer3D {
 
         // Wait for 3D assets to load via Web Worker to prevent main thread blocking
         await this.load3DAssets();
+
+        // Initialize actual Three.js Engine
+        if (typeof THREE !== 'undefined') {
+            this.initThreeJSEngine();
+        }
 
         // Sort listener
         const sortSelect = document.getElementById('library-sort');
@@ -1451,6 +1464,126 @@ class BookshelfRenderer3D {
 
         // Setup modal close handlers
         this.setupModalHandlers();
+    }
+
+    initThreeJSEngine() {
+        const container = document.getElementById('library-container') || document.querySelector('.main-content') || document.body;
+        
+        // Create Scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x1a1a1a);
+        
+        // Create Camera
+        const width = container.clientWidth || window.innerWidth;
+        const height = container.clientHeight || window.innerHeight;
+        this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+        this.camera.position.set(0, 1.5, 5);
+        
+        // Create Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.domElement.style.position = 'absolute';
+        this.renderer.domElement.style.top = '0';
+        this.renderer.domElement.style.left = '0';
+        this.renderer.domElement.style.width = '100%';
+        this.renderer.domElement.style.height = '100%';
+        this.renderer.domElement.style.zIndex = '-1'; // Place behind the DOM fallback for now
+        this.renderer.domElement.style.pointerEvents = 'none'; // Let DOM handle clicks for now, or update later
+        
+        // Ensure container is positioned
+        if (getComputedStyle(container).position === 'static') {
+            container.style.position = 'relative';
+        }
+        container.appendChild(this.renderer.domElement);
+        
+        // Add Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        this.scene.add(directionalLight);
+        
+        // Build the 3D environment with static/dynamic separation
+        this.buildThreeJSEnvironment();
+        
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            if (!this.camera || !this.renderer) return;
+            const newWidth = container.clientWidth || window.innerWidth;
+            const newHeight = container.clientHeight || window.innerHeight;
+            this.camera.aspect = newWidth / newHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(newWidth, newHeight);
+        });
+        
+        // Start Rendering Loop
+        this.animateThreeJS();
+    }
+
+    buildThreeJSEnvironment() {
+        // Create a static bookshelf
+        const shelfGeometry = new THREE.BoxGeometry(10, 0.2, 2);
+        const shelfMaterial = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+        
+        for (let i = 0; i < 3; i++) {
+            const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+            shelf.position.y = i * 2 - 2;
+            
+            // OPTIMIZATION: Static objects do not update their matrices every frame
+            shelf.matrixAutoUpdate = false;
+            shelf.updateMatrix();
+            
+            this.scene.add(shelf);
+            this.staticObjects.push(shelf);
+        }
+        
+        // Add some mock dynamic objects (e.g. floating dust particles or moving books)
+        const dustGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+        const dustMaterial = new THREE.MeshBasicMaterial({ color: 0xd4af37 });
+        
+        for (let i = 0; i < 50; i++) {
+            const dust = new THREE.Mesh(dustGeometry, dustMaterial);
+            dust.position.set(
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 5
+            );
+            
+            // Dynamic objects update their matrices
+            dust.matrixAutoUpdate = true;
+            
+            // Add custom properties for animation
+            dust.userData = {
+                speedX: (Math.random() - 0.5) * 0.01,
+                speedY: (Math.random() - 0.5) * 0.01
+            };
+            
+            this.scene.add(dust);
+            this.dynamicObjects.push(dust);
+        }
+    }
+
+    animateThreeJS() {
+        this.threeJsAnimationId = requestAnimationFrame(() => this.animateThreeJS());
+        
+        // Only update dynamic objects
+        for (const obj of this.dynamicObjects) {
+            obj.position.x += obj.userData.speedX;
+            obj.position.y += obj.userData.speedY;
+            
+            // Keep within bounds
+            if (obj.position.x > 5 || obj.position.x < -5) obj.userData.speedX *= -1;
+            if (obj.position.y > 5 || obj.position.y < -5) obj.userData.speedY *= -1;
+            
+            obj.rotation.x += 0.01;
+            obj.rotation.y += 0.01;
+        }
+        
+        // Static objects require 0 CPU overhead here because matrixAutoUpdate is false
+        
+        this.renderer.render(this.scene, this.camera);
     }
 
     refreshShelves() {
@@ -1923,7 +2056,7 @@ class BookshelfRenderer3D {
 
         // Update tooltip content
         document.getElementById('tooltip-cover').src = book.cover;
-        document.getElementById('tooltip-cover').setAttribute('alt', `Cover of ${book.title} `);
+        document.getElementById('tooltip-cover').setAttribute('alt', `Cover of '${book.title}' by ${book.author}`);
         document.getElementById('tooltip-title').textContent = book.title;
         document.getElementById('tooltip-author').textContent = `by ${book.author} `;
         document.getElementById('tooltip-stars').textContent = this.getStarRating(book.rating);
@@ -2028,7 +2161,7 @@ class BookshelfRenderer3D {
 
         container.innerHTML = related.map(b => `
             <div class="related-book-item" data-id="${b.id}" title="${b.title} by ${b.author}">
-                <img src="${b.cover || (b.volumeInfo && b.volumeInfo.imageLinks && b.volumeInfo.imageLinks.thumbnail) || '../assets/images/biblioDrift_favicon.png'}" alt="${b.title}">
+                <img src="${b.cover || (b.volumeInfo && b.volumeInfo.imageLinks && b.volumeInfo.imageLinks.thumbnail) || '../assets/images/biblioDrift_favicon.png'}" alt="Cover of '${b.title}' by ${b.author || 'Unknown Author'}">
                 <div class="related-book-title">${b.title}</div>
             </div>
         `).join('');
@@ -2070,7 +2203,7 @@ class BookshelfRenderer3D {
         const coverImg = document.getElementById('modal-cover');
         if (coverImg) {
             coverImg.src = book.cover;
-            coverImg.setAttribute('alt', `Cover of ${book.title} by ${book.author} `);
+            coverImg.setAttribute('alt', `Cover of '${book.title}' by ${book.author}`);
         }
 
         // 3. Style the 3D Book (Spine & Back)

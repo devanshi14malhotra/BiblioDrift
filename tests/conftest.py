@@ -36,8 +36,8 @@ os.environ.setdefault("GROQ_API_KEY", "fake-groq-key")
 os.environ.setdefault("GEMINI_API_KEY", "fake-gemini-key")
 os.environ.setdefault("FLASK_ENV", "testing")
 
-from backend.app import app as flask_app
-from backend.models import db as _db, User
+from backend.app import app as flask_app, db as _db
+from backend.models import User
 
 
 @pytest.fixture(scope="session")

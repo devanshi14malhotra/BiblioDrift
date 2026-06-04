@@ -120,60 +120,87 @@
 
     // ── Install Banner UI ──────────────────────────────────────────────────────
 
+    
     function _showInstallBanner() {
-        if (document.getElementById('pwa-install-banner')) return; // already shown
-
-        const banner = document.createElement('div');
-        banner.id = 'pwa-install-banner';
-        banner.setAttribute('role', 'banner');
-        banner.setAttribute('aria-label', 'Install BiblioDrift app');
-        banner.innerHTML = `
-            <div class="pwa-banner-content">
-                <img src="../assets/images/biblioDrift_favicon.png"
-                     alt="BiblioDrift icon" class="pwa-banner-icon">
-                <div class="pwa-banner-text">
-                    <strong>Install BiblioDrift.</strong>
-                    <span>Read offline, anytime.</span>
+        let banner = document.getElementById('pwa-install-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'pwa-install-banner';
+            banner.setAttribute('role', 'banner');
+            banner.setAttribute('aria-label', 'Install BiblioDrift app');
+            banner.innerHTML = `
+                <div class="pwa-banner-content">
+                    <img src="../assets/images/biblioDrift_favicon.png"
+                         alt="BiblioDrift icon" class="pwa-banner-icon">
+                    <div class="pwa-banner-text">
+                        <strong>Install BiblioDrift.</strong>
+                        <span>Read offline, anytime.</span>
+                    </div>
                 </div>
-            </div>
-            <div class="pwa-banner-actions">
-                <button class="pwa-install-btn" id="pwa-install-btn"
-                    aria-label="Install BiblioDrift as an app">
-                    Install
-                </button>
-                <button class="pwa-dismiss-btn" id="pwa-dismiss-btn"
-                    aria-label="Dismiss install prompt">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        `;
+                <div class="pwa-banner-actions">
+                    <button class="pwa-install-btn" id="pwa-install-btn"
+                        aria-label="Install BiblioDrift as an app">
+                        Install
+                    </button>
+                    <button class="pwa-dismiss-btn" id="pwa-dismiss-btn"
+                        aria-label="Dismiss install prompt">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `;
 
-        const footer = document.querySelector(".main-footer");
-        if (footer) {
-            footer.parentNode.insertBefore(banner, footer);
-        } else {
-            const main = document.querySelector("main");
-            if (main) main.appendChild(banner);
-            else document.body.appendChild(banner);
+            const footer = document.querySelector(".main-footer");
+            if (footer) {
+                footer.parentNode.insertBefore(banner, footer);
+            } else {
+                const main = document.querySelector("main");
+                if (main) main.appendChild(banner);
+                else document.body.appendChild(banner);
+            }
+            
+            // Now attach listeners since we just created it
+            _attachBannerListeners();
         }
 
         // Animate in
         requestAnimationFrame(() => banner.classList.add('pwa-banner-visible'));
-
-        document.getElementById('pwa-install-btn').addEventListener('click', async () => {
-            if (!_deferredPrompt) return;
-            _deferredPrompt.prompt();
-            const { outcome } = await _deferredPrompt.userChoice;
-            _deferredPrompt = null;
-            _hideInstallBanner();
-            console.log(`[PWA] Install prompt outcome: ${outcome}`);
-        });
-
-        document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
-            sessionStorage.setItem('pwa-install-dismissed', '1');
-            _hideInstallBanner();
-        });
     }
+
+    function _attachBannerListeners() {
+        const installBtn = document.getElementById('pwa-install-btn');
+        if (installBtn && !installBtn.dataset.listenerAttached) {
+            installBtn.dataset.listenerAttached = 'true';
+            installBtn.addEventListener('click', async () => {
+                if (!_deferredPrompt) {
+                    if (typeof showToast === 'function') {
+                        showToast("Install prompt not available. You might already have the app installed, or your browser doesn't support it.", "info");
+                    } else {
+                        alert("Install prompt not available. You might already have the app installed, or your browser doesn't support it.");
+                    }
+                    return;
+                }
+                _deferredPrompt.prompt();
+                const { outcome } = await _deferredPrompt.userChoice;
+                _deferredPrompt = null;
+                _hideInstallBanner();
+                console.log(`[PWA] Install prompt outcome: ${outcome}`);
+            });
+        }
+
+        const dismissBtn = document.getElementById('pwa-dismiss-btn');
+        if (dismissBtn && !dismissBtn.dataset.listenerAttached) {
+            dismissBtn.dataset.listenerAttached = 'true';
+            dismissBtn.addEventListener('click', () => {
+                sessionStorage.setItem('pwa-install-dismissed', '1');
+                _hideInstallBanner();
+            });
+        }
+    }
+    
+    // Attach listeners on load for any hardcoded buttons
+    document.addEventListener("DOMContentLoaded", _attachBannerListeners);
+    // Also run immediately in case DOM is already loaded
+    _attachBannerListeners();
 
     function _hideInstallBanner() {
         const banner = document.getElementById('pwa-install-banner');

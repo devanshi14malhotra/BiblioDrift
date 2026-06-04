@@ -1,0 +1,21 @@
+/* Reading Streak responsive tweaks
+   (separate file to avoid editing large style-responsive.css)
+*/
+
+@media (max-width: 768px) {
+  .reading-streak-heatmap-toolbar {
+    justify-content: center;
+  }
+
+  .reading-streak-card {
+    padding: 1.1rem;
+  }
+
+  /* Make sure the heatmap never forces horizontal overflow */
+  .reading-streak-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
