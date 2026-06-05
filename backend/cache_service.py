@@ -12,14 +12,26 @@ from typing import Optional, Any, Dict, Callable, List, Union
 from functools import wraps
 from datetime import datetime, timedelta
 from enum import Enum
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from backend.config import app_config
 
 try:
     import redis
     from flask_caching import Cache
     REDIS_AVAILABLE = True
+    REDIS_EXCEPTIONS = (redis.exceptions.TimeoutError, redis.exceptions.ConnectionError)
 except ImportError:
     REDIS_AVAILABLE = False
+    REDIS_EXCEPTIONS = ()
+
+def with_redis_retry():
+    """Retry decorator for Redis transient failures."""
+    return retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type(REDIS_EXCEPTIONS),
+        reraise=True
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -238,8 +250,12 @@ class CacheService:
         if not self.cache:
             return None
         
+        @with_redis_retry()
+        def _execute_get():
+            return self.cache.get(key)
+            
         try:
-            value = self.cache.get(key)
+            value = _execute_get()
             if value is not None:
                 self.cache_stats['hits'] += 1
                 logger.debug(f"Cache HIT for: {key}")
@@ -247,9 +263,9 @@ class CacheService:
                 self.cache_stats['misses'] += 1
                 logger.debug(f"Cache MISS for: {key}")
             return value
-        except (redis.exceptions.TimeoutError, redis.exceptions.ConnectionError) as e:
+        except REDIS_EXCEPTIONS as e:
             self.cache_stats['errors'] += 1
-            logger.error(f"Redis error during GET '{key}': {e}")
+            logger.error(f"Redis error during GET '{key}' after retries: {e}")
             return None
         except Exception as e:
             self.cache_stats['errors'] += 1
@@ -263,13 +279,17 @@ class CacheService:
         if not self.cache:
             return False
         
-        try:
+        @with_redis_retry()
+        def _execute_set():
             self.cache.set(key, value, timeout=timeout)
+            
+        try:
+            _execute_set()
             logger.debug(f"Cache SET for: {key} (TTL: {timeout})")
             return True
-        except (redis.exceptions.TimeoutError, redis.exceptions.ConnectionError) as e:
+        except REDIS_EXCEPTIONS as e:
             self.cache_stats['errors'] += 1
-            logger.error(f"Redis error during SET '{key}': {e}")
+            logger.error(f"Redis error during SET '{key}' after retries: {e}")
             return False
         except Exception as e:
             self.cache_stats['errors'] += 1
@@ -283,10 +303,18 @@ class CacheService:
         if not self.cache:
             return False
         
-        try:
+        @with_redis_retry()
+        def _execute_delete():
             self.cache.delete(key)
+            
+        try:
+            _execute_delete()
             logger.debug(f"Cache DELETE for: {key}")
             return True
+        except REDIS_EXCEPTIONS as e:
+            self.cache_stats['errors'] += 1
+            logger.error(f"Redis error during DELETE '{key}' after retries: {e}")
+            return False
         except Exception as e:
             self.cache_stats['errors'] += 1
             logger.error(f"Cache error during DELETE '{key}': {e}")
@@ -301,7 +329,8 @@ class CacheService:
             logger.warning("Namespaced clearing requires an active Redis connection.")
             return 0
         
-        try:
+        @with_redis_retry()
+        def _execute_clear():
             ns_val = namespace.value if isinstance(namespace, CacheNamespace) else namespace
             if identifier:
                 pattern = f"{CacheConfig.GLOBAL_PREFIX}:{CacheConfig.CACHE_VERSION}:{ns_val}:{identifier}:*"
@@ -313,6 +342,12 @@ class CacheService:
                 deleted_count = self.redis_client.delete(*keys)
                 logger.info(f"Cleared {deleted_count} keys from namespace '{ns_val}' pattern '{pattern}'")
                 return deleted_count
+            return 0
+            
+        try:
+            return _execute_clear()
+        except REDIS_EXCEPTIONS as e:
+            logger.error(f"Redis error clearing namespace '{namespace}' after retries: {e}")
             return 0
         except Exception as e:
             logger.error(f"Error clearing namespace '{namespace}': {e}")
@@ -353,8 +388,12 @@ class CacheService:
         if not self.redis_client:
             return {"error": "Redis client not available"}
         
+        @with_redis_retry()
+        def _execute_info():
+            return self.redis_client.info(section='memory')
+            
         try:
-            info = self.redis_client.info(section='memory')
+            info = _execute_info()
             return {
                 'used_memory_human': info.get('used_memory_human'),
                 'used_memory_rss_human': info.get('used_memory_rss_human'),
@@ -363,6 +402,9 @@ class CacheService:
                 'maxmemory_human': info.get('maxmemory_human'),
                 'maxmemory_policy': info.get('maxmemory_policy')
             }
+        except REDIS_EXCEPTIONS as e:
+            logger.error(f"Redis error getting memory info after retries: {e}")
+            return {"error": f"Redis error: {e}"}
         except Exception as e:
             logger.error(f"Failed to get Redis memory info: {e}")
             return {"error": str(e)}
@@ -371,8 +413,16 @@ class CacheService:
         """Return the total number of keys currently in the Redis database."""
         if not self.redis_client:
             return 0
-        try:
+            
+        @with_redis_retry()
+        def _execute_dbsize():
             return self.redis_client.dbsize()
+            
+        try:
+            return _execute_dbsize()
+        except REDIS_EXCEPTIONS as e:
+            logger.error(f"Redis error getting key count after retries: {e}")
+            return 0
         except Exception as e:
             logger.error(f"Failed to get Redis key count: {e}")
             return 0

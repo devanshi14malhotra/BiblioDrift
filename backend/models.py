@@ -141,7 +141,11 @@ class PasswordResetToken(db.Model):
     used_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy='dynamic'))
+    user = db.relationship(
+        'User', 
+        backref=db.backref('password_reset_tokens', lazy='dynamic'),
+        lazy='joined'
+    )
 
 
 class Book(db.Model, SoftDeleteMixin):
@@ -306,9 +310,22 @@ class ShelfItem(db.Model, SoftDeleteMixin):
         return value
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('shelf_items', lazy=True))
-    book = db.relationship('Book', backref=db.backref('shelf_items', lazy=True))
-    price_alerts = db.relationship('PriceAlert', backref='shelf_item', lazy=True, cascade='all, delete-orphan')
+    user = db.relationship(
+        'User', 
+        backref=db.backref('shelf_items', lazy='subquery'),
+        lazy='joined'
+    )
+    book = db.relationship(
+        'Book', 
+        backref=db.backref('shelf_items', lazy='subquery'),
+        lazy='joined'
+    )
+    price_alerts = db.relationship(
+        'PriceAlert', 
+        backref=db.backref('shelf_item', lazy='joined'),
+        lazy='subquery', 
+        cascade='all, delete-orphan'
+    )
 
     # =========================================================================
     # DATABASE LEVEL CONSTRAINTS
@@ -403,7 +420,11 @@ class ReadingGoal(db.Model, SoftDeleteMixin):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('reading_goals', lazy=True))
+    user = db.relationship(
+        'User', 
+        backref=db.backref('reading_goals', lazy='subquery'),
+        lazy='joined'
+    )
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'year', name='uq_user_year_goal'),
@@ -434,7 +455,11 @@ class ReadingStats(db.Model, SoftDeleteMixin):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('reading_stats', lazy=True))
+    user = db.relationship(
+        'User', 
+        backref=db.backref('reading_stats', lazy='subquery'),
+        lazy='joined'
+    )
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'year', 'month', name='uq_user_year_month_stats'),
@@ -466,8 +491,17 @@ class Collection(db.Model, SoftDeleteMixin):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('collections', lazy=True))
-    items = db.relationship('CollectionItem', backref='collection', lazy=True, cascade='all, delete-orphan')
+    user = db.relationship(
+        'User', 
+        backref=db.backref('collections', lazy='subquery'),
+        lazy='joined'
+    )
+    items = db.relationship(
+        'CollectionItem', 
+        backref=db.backref('collection', lazy='joined'),
+        lazy='subquery', 
+        cascade='all, delete-orphan'
+    )
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'name', name='uq_user_collection_name'),
@@ -499,7 +533,11 @@ class CollectionItem(db.Model, SoftDeleteMixin):
     added_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    book = db.relationship('Book', backref=db.backref('collection_items', lazy=True))
+    book = db.relationship(
+        'Book', 
+        backref=db.backref('collection_items', lazy='subquery'),
+        lazy='joined'
+    )
 
     __table_args__ = (
         db.UniqueConstraint('collection_id', 'book_id', name='uq_collection_book'),
@@ -565,7 +603,11 @@ class PriceHistory(db.Model, SoftDeleteMixin):
     checked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationships
-    book = db.relationship('Book', backref=db.backref('price_history', lazy=True))
+    book = db.relationship(
+        'Book', 
+        backref=db.backref('price_history', lazy='subquery'),
+        lazy='joined'
+    )
     
     __table_args__ = (
         db.Index('idx_price_history_book_retailer', 'book_id', 'retailer'),
@@ -599,7 +641,11 @@ class PriceAlert(db.Model, SoftDeleteMixin):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
-    user = db.relationship('User', backref=db.backref('price_alerts', lazy=True))
+    user = db.relationship(
+        'User', 
+        backref=db.backref('price_alerts', lazy='subquery'),
+        lazy='joined'
+    )
     
     __table_args__ = (
         db.UniqueConstraint('user_id', 'shelf_item_id', name='uq_user_shelf_item_alert'),
@@ -638,8 +684,16 @@ class Review(db.Model, SoftDeleteMixin):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
-    user = db.relationship('User', backref=db.backref('reviews', lazy=True))
-    book = db.relationship('Book', backref=db.backref('reviews', lazy=True))
+    user = db.relationship(
+        'User', 
+        backref=db.backref('reviews', lazy='subquery'),
+        lazy='joined'
+    )
+    book = db.relationship(
+        'Book', 
+        backref=db.backref('reviews', lazy='subquery'),
+        lazy='joined'
+    )
     
     __table_args__ = (
         db.UniqueConstraint('user_id', 'book_id', name='uq_user_book_review'),
@@ -681,8 +735,16 @@ class JournalEntry(db.Model, SoftDeleteMixin):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('journal_entries', lazy=True))
-    book = db.relationship('Book', backref=db.backref('journal_entries', lazy=True))
+    user = db.relationship(
+        'User', 
+        backref=db.backref('journal_entries', lazy='subquery'),
+        lazy='joined'
+    )
+    book = db.relationship(
+        'Book', 
+        backref=db.backref('journal_entries', lazy='subquery'),
+        lazy='joined'
+    )
 
     def to_dict(self):
         return {
