@@ -77,7 +77,7 @@
  * ==============================================================================
  */
 
-// API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
+// MOOD_API_BASE and GoogleBooksClient are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
 if (typeof window.IS_DEV === 'undefined') {
     window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -125,8 +125,6 @@ window.appStore = new Store({
     libraryBooks: { current: [], want: [], finished: [] },
     currentTheme: localStorage.getItem('bibliodrift_theme') || 'light'
 });
-
-let GOOGLE_API_KEY = '';
 
 /**
  * Utility to extract a cookie value by name.
@@ -1443,9 +1441,8 @@ class BookRenderer {
             const data = client
                 ? await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' })
                 : await (async () => {
-                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
                     const encodedQuery = encodeURIComponent(query);
-                    const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
+                    const res = await fetch(`${MOOD_API_BASE}/books/search?q=${encodedQuery}&maxResults=${maxResults}&printType=books`, { credentials: 'include' });
                     if (!res.ok) {
                         throw new Error(`API Error: ${res.statusText}`);
                     }
@@ -1540,8 +1537,7 @@ class BookRenderer {
                 const data = client
                     ? await client.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' })
                     : await (async () => {
-                        const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-                        const res = await fetch(`${API_BASE}?q=${encodeURIComponent(searchQuery)}&maxResults=1&printType=books${keyParam}`);
+                        const res = await fetch(`${MOOD_API_BASE}/books/search?q=${encodeURIComponent(searchQuery)}&maxResults=1&printType=books`, { credentials: 'include' });
                         if (!res.ok) {
                             throw new Error(`Google Books API Error: ${res.status}`);
                         }
@@ -2886,8 +2882,7 @@ class GenreManager {
             const data = client
                 ? await client.fetchVolumes(`subject:${genre}`, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' })
                 : await (async () => {
-                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-                    const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
+                    const response = await fetch(`${MOOD_API_BASE}/books/search?q=subject:${encodeURIComponent(genre)}&maxResults=20&langRestrict=en&orderBy=relevance`, { credentials: 'include' });
                     if (!response.ok) {
                         throw new Error(`API Error: ${response.status}`);
                     }
