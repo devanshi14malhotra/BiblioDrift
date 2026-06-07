@@ -546,8 +546,7 @@ def handle_unhandled_exception(e):
     response = jsonify(response_data)
     
     # Adding security headers to error responses as defense in depth
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
+    response = _apply_security_headers(response)
     
     return response, 500
 
@@ -625,8 +624,7 @@ def handle_sqlalchemy_exception(e):
         }
         
     response = jsonify(response_data)
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
+    response = _apply_security_headers(response)
     return response, 500
 
 # =========================================================================
