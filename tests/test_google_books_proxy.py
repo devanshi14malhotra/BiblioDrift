@@ -1,3 +1,4 @@
+import os
 from unittest.mock import Mock, patch
 
 
@@ -20,7 +21,7 @@ def test_books_search_proxies_key_server_side(client):
     assert kwargs["params"]["maxResults"] == 6
     assert kwargs["params"]["printType"] == "books"
     assert kwargs["params"]["langRestrict"] == "en"
-    assert kwargs["params"]["key"] == "test-dummy-google-books-key"
+    assert kwargs["params"]["key"] == os.environ["GOOGLE_BOOKS_API_KEY"]
 
 
 def test_books_search_rejects_missing_query(client):
