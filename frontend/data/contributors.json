@@ -41,7 +41,7 @@
     "type": "Bot",
     "user_view_type": "public",
     "site_admin": false,
-    "contributions": 110
+    "contributions": 111
   },
   {
     "login": "aniket866",
@@ -108,6 +108,28 @@
     "user_view_type": "public",
     "site_admin": false,
     "contributions": 55
+  },
+  {
+    "login": "diksha78dev",
+    "id": 184750994,
+    "node_id": "U_kgDOCwMTkg",
+    "avatar_url": "https://avatars.githubusercontent.com/u/184750994?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/diksha78dev",
+    "html_url": "https://github.com/diksha78dev",
+    "followers_url": "https://api.github.com/users/diksha78dev/followers",
+    "following_url": "https://api.github.com/users/diksha78dev/following{/other_user}",
+    "gists_url": "https://api.github.com/users/diksha78dev/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/diksha78dev/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/diksha78dev/subscriptions",
+    "organizations_url": "https://api.github.com/users/diksha78dev/orgs",
+    "repos_url": "https://api.github.com/users/diksha78dev/repos",
+    "events_url": "https://api.github.com/users/diksha78dev/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/diksha78dev/received_events",
+    "type": "User",
+    "user_view_type": "public",
+    "site_admin": false,
+    "contributions": 45
   },
   {
     "login": "shenoyshre22",
