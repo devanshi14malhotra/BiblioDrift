@@ -1593,10 +1593,9 @@ body {
 
 /* PENCIL CURSOR ANIMATION */
 
-body.landing-page {
-html,
-body {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%235d4037" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5a4 4 0 0 1-2.5.88H2v-4.5a4 4 0 0 1 .88-2.5L17 3"></path></svg>') 5 1, auto;
+body.landing-page,
+html {
+  cursor: url("data:image/svg+xml;utf8,<svg ...>") 5 1, auto;
 }
 
 /* Disable pencil effect on touch devices */
@@ -1706,10 +1705,9 @@ body {
 }
 
 /* Pencil cursor for dark mode */
-[data-theme="night"] body.landing-page {
-html,
-body {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23d9c0a7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5a4 4 0 0 1-2.5.88H2v-4.5a4 4 0 0 1 .88-2.5L17 3"></path></svg>') 5 1, auto;
+[data-theme="night"] body.landing-page,
+[data-theme="night"] html {
+  cursor: url("data:image/svg+xml;utf8,<svg ...>") 5 1, auto;
 }
 
 [data-theme="night"] .pencil-trail {
