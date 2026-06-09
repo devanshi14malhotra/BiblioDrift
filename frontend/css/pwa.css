@@ -1,18 +1,11 @@
 /* pwa.css */
 
-.pwa-install-banner {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+#pwa-install-banner {
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 16px 24px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    z-index: 10000;
 }
 
 .pwa-banner-icon {

@@ -10,7 +10,7 @@ import time
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
-from validators import validate_google_books_id
+from core.validators.validators import validate_google_books_id
 
 # Load environment variables
 load_dotenv()

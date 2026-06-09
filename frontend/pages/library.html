@@ -5,17 +5,17 @@
     <meta charset="UTF-8">
     <script>
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
-            if (theme === 'night') {
-                document.documentElement.setAttribute('data-theme', 'night');
-            }
+            const theme = localStorage.getItem('bibliodrift_theme') || 'night';
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
     <script src="../js/db.js"></script>
 
-
+    <script src="../js/app.js"></script>
+    <script src="../js/library-3d.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- SEO & Open Graph meta tags -->
     <meta name="description"
@@ -30,6 +30,8 @@
     <meta property="og:image:height" content="630" />
     <title>My Library | BiblioDrift</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/reading-streak.css">
+    <link rel="stylesheet" href="../css/style-responsive-reading-streak.css">
     <link rel="stylesheet" href="../css/pwa.css">
     <link rel="stylesheet" href="../css/style-responsive.css">
     <link
@@ -49,6 +51,10 @@
 </head>
 
 <body class="library-page">
+    <div id="sc-glow-outer"></div>
+    <div id="sc-glow-mid"></div>
+    <div id="sc-glow-inner"></div>
+    <div id="sc-dot"></div>
 
       <header>
     <a href="app.html" class="logo">
@@ -76,7 +82,10 @@
            <a href="community-stories.html">Community</a>
            <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
         </div>
-
+        <div class="tooltip">
+          <a href="nearby-bookstores.html">Nearby Bookstores</a>
+          <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+        </div>
         <div class="tooltip">
           <a href="chat.html" >Chat</a>
           <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
@@ -101,8 +110,7 @@
             <button id="export-library" class="btn-icon library-export-btn" title="Export Library">
                 <i class="fa-solid fa-download"></i> Export Library
             </button>
-            <div id="library-sync-status" hidden aria-live="polite"
-                style="margin: 0.75rem auto 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: rgba(44, 36, 32, 0.08); color: var(--text-secondary);">
+            <div id="library-sync-status" hidden aria-live="polite" style="margin: 0.75rem auto 0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: rgba(44, 36, 32, 0.08); color: var(--text-secondary);">
                 Synced
             </div>
             <div class="view-toggles" style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
@@ -114,8 +122,7 @@
                     style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-chart-nodes"></i> Constellation
                 </button>
-                <button id="view-collections-btn" class="btn-secondary"
-                    style="border-radius: 20px; padding: 0.5rem 1.5rem;">
+                <button id="view-collections-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1.5rem;">
                     <i class="fa-solid fa-folder-open"></i> Custom Collections
                 </button>
             </div>
@@ -142,6 +149,41 @@
                 </div>
         </section>
 
+        <!-- Reading Streak (cozy GitHub-style heatmap) -->
+        <section class="reading-streak-section">
+            <div class="reading-streak-card">
+                <div class="reading-streak-header">
+                    <div class="reading-streak-title">
+                        <i class="fa-solid fa-fire" aria-hidden="true"></i>
+                        <h2>Reading Streak</h2>
+                    </div>
+
+                    <div class="reading-streak-stats">
+                        <div class="reading-streak-stat">
+                            <div class="reading-streak-stat-value" id="reading-streak-current">0</div>
+                            <div class="reading-streak-stat-label">Current</div>
+                        </div>
+                        <div class="reading-streak-stat">
+                            <div class="reading-streak-stat-value" id="reading-streak-longest">0</div>
+                            <div class="reading-streak-stat-label">Longest</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reading-streak-heatmap-wrap">
+                    <div class="reading-streak-heatmap-toolbar">
+                        <button id="reading-streak-mark-today" class="reading-streak-btn" type="button" aria-label="Mark today as read">
+                            <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                            <span>Mark Today as Read</span>
+                        </button>
+                    </div>
+
+                    <div class="reading-streak-scroll" role="region" aria-label="Reading streak heatmap">
+                        <div id="reading-streak-calendar" class="reading-streak-calendar"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- 3D Bookshelf Container -->
         <div class="bookshelf-3d-container" id="library-shelves" role="main" aria-label="3D bookshelf library">
@@ -257,122 +299,51 @@
         <!-- Constellation Container (Hidden by default) -->
         <div id="constellation-container" class="constellation-container hidden">
             <!-- D3 SVG will be injected here -->
-            <div id="constellation-empty-state" class="hidden">
-
-                <i class="fa-solid fa-stars"></i>
-
-                <h2>Your constellation is waiting</h2>
-
-                <p>
-                    Add books to begin mapping your emotional reading universe.
-                </p>
-
-            </div>
-            <div class="constellation-toolbar">
-
-                <button id="reset-graph-btn">
-                    <i class="fa-solid fa-rotate-right"></i>
-                    Reset
-                </button>
-
-                <button id="center-graph-btn">
-                    <i class="fa-solid fa-crosshairs"></i>
-                    Center
-                </button>
-
-                <button id="fullscreen-graph-btn">
-                    <i class="fa-solid fa-expand"></i>
-                    Fullscreen
-                </button>
-
-            </div>
-
-            <div class="constellation-legend">
-                <div class="legend-item">
-                    <span class="legend-dot book-node"></span>
-                    Books
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot shelf-node"></span>
-                    Shelves
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot mood-node"></span>
-                    Moods
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot genre-node"></span>
-                    Genres
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot author-node"></span>
-                    Authors
-                </div>
-            </div>
-
-            <svg id="constellation-svg"></svg>
         </div>
 
         <!-- Custom Collections Container (Hidden by default) -->
         <div id="collections-container" class="collections-container hidden" style="padding: 2rem 0; width: 100%;">
-            <div class="collections-header"
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-                <h2
-                    style="font-family: 'Playfair Display', serif; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.8rem;">
+            <div class="collections-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 style="font-family: 'Playfair Display', serif; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.8rem;">
                     <i class="fa-solid fa-folder-open" style="color: var(--accent-gold);"></i> Custom Collections
                 </h2>
-                <button id="create-collection-btn" class="btn-primary"
-                    style="border-radius: 20px; display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.25rem;">
+                <button id="create-collection-btn" class="btn-primary" style="border-radius: 20px; display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.25rem;">
                     <i class="fa-solid fa-plus"></i> New Collection
                 </button>
             </div>
 
             <!-- Collections Grid (List View) -->
             <div id="collections-grid-view" style="width: 100%;">
-                <div id="collections-grid"
-                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+                <div id="collections-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
                     <!-- Collections populated via JS -->
                 </div>
             </div>
 
             <!-- Selected Collection View (Detail View - Hidden by default) -->
             <div id="collection-detail-view" class="hidden" style="margin-top: 1rem; width: 100%;">
-                <div class="collection-detail-header"
-                    style="background: var(--glass-bg); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid var(--glass-border); width: 100%; box-sizing: border-box;">
-                    <button id="back-to-collections-btn" class="btn-secondary"
-                        style="border-radius: 20px; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1rem;">
+                <div class="collection-detail-header" style="background: var(--glass-bg); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid var(--glass-border); width: 100%; box-sizing: border-box;">
+                    <button id="back-to-collections-btn" class="btn-secondary" style="border-radius: 20px; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1rem;">
                         <i class="fa-solid fa-arrow-left"></i> Back to Collections
                     </button>
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                         <div>
-                            <h1 id="selected-collection-name"
-                                style="font-family: 'Playfair Display', serif; margin: 0 0 0.5rem 0; color: var(--text-main); font-size: 2rem;">
-                                Collection Name</h1>
-                            <p id="selected-collection-desc" style="color: var(--text-secondary); margin: 0 0 1rem 0;">
-                                Collection description goes here...</p>
-                            <span id="selected-collection-status" class="collection-badge"
-                                style="background: var(--accent-gold); color: #000; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Public</span>
+                            <h1 id="selected-collection-name" style="font-family: 'Playfair Display', serif; margin: 0 0 0.5rem 0; color: var(--text-main); font-size: 2rem;">Collection Name</h1>
+                            <p id="selected-collection-desc" style="color: var(--text-secondary); margin: 0 0 1rem 0;">Collection description goes here...</p>
+                            <span id="selected-collection-status" class="collection-badge" style="background: var(--accent-gold); color: #000; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Public</span>
                         </div>
                         <div class="collection-actions-group" style="display: flex; gap: 0.5rem;">
-                            <button id="edit-collection-btn" class="btn-secondary"
-                                style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-pen"></i>
-                                Edit</button>
-                            <button id="delete-collection-btn" class="library-remove-btn"
-                                style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-trash"></i>
-                                Delete</button>
+                            <button id="edit-collection-btn" class="btn-secondary" style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-pen"></i> Edit</button>
+                            <button id="delete-collection-btn" class="library-remove-btn" style="border-radius: 20px; padding: 0.5rem 1rem;"><i class="fa-solid fa-trash"></i> Delete</button>
                         </div>
                     </div>
                 </div>
                 <!-- Grid for books inside this collection -->
                 <div class="shelf-section-3d" style="margin-top: 1rem; padding-top: 2rem;">
                     <span class="shelf-label" id="collection-books-shelf-label">
-                        <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold); margin-right: 6px;"></i>
-                        Books in Collection
+                        <i class="fa-solid fa-book-bookmark" style="color: var(--accent-gold); margin-right: 6px;"></i> Books in Collection
                     </span>
                     <div class="bookshelf-3d">
-                        <div class="books-row-3d" id="collection-books-row-3d" role="list"
-                            aria-label="Books in this collection">
+                        <div class="books-row-3d" id="collection-books-row-3d" role="list" aria-label="Books in this collection">
                             <!-- 3D Book Spines injected here! -->
                         </div>
                     </div>
@@ -494,17 +465,6 @@
                             </div>
                         </div>
 
-                        <!-- Related in Library (Dynamic) -->
-                        <div id="modal-related-books-lib" class="related-books-box" style="margin-bottom: 1.5rem;">
-                            <div class="related-header">
-                                <i class="fa-solid fa-link"></i>
-                                <span>Related in your Library</span>
-                            </div>
-                            <div id="related-books-container" class="related-books-container">
-                                <div class="text-skeleton skeleton" style="width: 100%; height: 30px;"></div>
-                            </div>
-                        </div>
-
                         <div class="book-actions-section">
                             <div class="library-actions-group">
                                 <!-- Issue #23: Remove from Library button UI -->
@@ -588,44 +548,28 @@
                             </div>
 
                             <!-- Price Tracker UI -->
-                            <div class="price-tracker-section" id="modal-price-tracker-section"
-                                style="display:none; margin-top: 15px;">
+                            <div class="price-tracker-section" id="modal-price-tracker-section" style="display:none; margin-top: 15px;">
                                 <div class="price-tracker-header">
                                     <div>
                                         <i class="fa-solid fa-tag" style="color: var(--accent-gold);"></i>
-                                        <span style="font-weight: 600; color: var(--text-main); margin-left: 5px;">Watch
-                                            Price</span>
+                                        <span style="font-weight: 600; color: var(--text-main); margin-left: 5px;">Watch Price</span>
                                     </div>
-                                    <div id="modal-price-latest"
-                                        style="font-size: 0.9rem; font-weight: bold; color: var(--accent-gold);"></div>
+                                    <div id="modal-price-latest" style="font-size: 0.9rem; font-weight: bold; color: var(--accent-gold);"></div>
                                 </div>
-                                <div id="modal-price-auth-prompt"
-                                    style="display: none; font-size: 0.85rem; color: var(--text-muted); background: var(--glass-bg); padding: 10px; border-radius: 8px;">
-                                    <a href="auth.html"
-                                        style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to
-                                    set a price alert for this book.
+                                <div id="modal-price-auth-prompt" style="display: none; font-size: 0.85rem; color: var(--text-muted); background: var(--glass-bg); padding: 10px; border-radius: 8px;">
+                                    <a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to set a price alert for this book.
                                 </div>
                                 <div id="modal-price-controls" style="display: none;">
                                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                                         <div style="position: relative; flex: 1;">
-                                            <span
-                                                style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">$</span>
-                                            <input type="number" id="modal-price-target" min="0.01" step="0.01"
-                                                placeholder="Target price" aria-label="Target price"
-                                                style="width: 100%; padding: 8px 8px 8px 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); background: rgba(255,255,255,0.8); color: var(--text-main);">
+                                            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">$</span>
+                                            <input type="number" id="modal-price-target" min="0.01" step="0.01" placeholder="Target price" aria-label="Target price" style="width: 100%; padding: 8px 8px 8px 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); background: rgba(255,255,255,0.8); color: var(--text-main);">
                                         </div>
-                                        <button id="modal-price-set-btn" class="action-btn-secondary"
-                                            style="white-space: nowrap; padding: 8px 15px;"><i
-                                                class="fa-solid fa-bell"></i> Set Alert</button>
+                                        <button id="modal-price-set-btn" class="action-btn-secondary" style="white-space: nowrap; padding: 8px 15px;"><i class="fa-solid fa-bell"></i> Set Alert</button>
                                     </div>
-                                    <div id="modal-price-active-alert"
-                                        style="display:none; align-items: center; justify-content: space-between; font-size: 0.85rem; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 8px; border-radius: 4px; color: var(--text-main);">
-                                        <div><i class="fa-solid fa-bell" style="color: #4CAF50;"></i> Alert set for
-                                            <strong id="modal-price-active-target"></strong>
-                                        </div>
-                                        <button id="modal-price-remove-btn" title="Remove alert"
-                                            style="background: none; border: none; color: #e53935; cursor: pointer;"><i
-                                                class="fa-solid fa-trash"></i></button>
+                                    <div id="modal-price-active-alert" style="display:none; align-items: center; justify-content: space-between; font-size: 0.85rem; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 8px; border-radius: 4px; color: var(--text-main);">
+                                        <div><i class="fa-solid fa-bell" style="color: #4CAF50;"></i> Alert set for <strong id="modal-price-active-target"></strong></div>
+                                        <button id="modal-price-remove-btn" title="Remove alert" style="background: none; border: none; color: #e53935; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -644,7 +588,20 @@
 
     </main>
 
-    <script src="../js/config.js"></script>
+      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+      <div class="pwa-banner-content">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+          <div class="pwa-banner-text">
+              <strong>Install BiblioDrift.</strong>
+              <span>Read offline, anytime.</span>
+          </div>
+      </div>
+      <div class="pwa-banner-actions">
+          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
+          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+  </div>
+  <script src="../js/config.js"></script>
     <script src="../js/library-3d.js"></script>
     <script src="../js/app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -658,11 +615,10 @@
         <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
             <i class="fa-solid fa-leaf"></i>
         </button>
-        <div id="ambientPanel" class="ambient-panel">
+        <div id="ambientPanel" class="ambient-panel" aria-hidden="true">
             <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
             <div class="ambient-option">
-                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy
-                    Evening</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
                 <label class="switch">
                     <input type="checkbox" id="rainToggle">
                     <span class="slider"></span>
@@ -676,8 +632,35 @@
                 </label>
             </div>
             <div class="ambient-option">
-                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean
-                    Waves</span>
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-train"></i> Train Ride</span>
+                <label class="switch">
+                    <input type="checkbox" id="trainToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-tree"></i> Forest Cabin</span>
+                <label class="switch">
+                    <input type="checkbox" id="forestToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-wand-sparkles"></i> Magic Realm</span>
+                <label class="switch">
+                    <input type="checkbox" id="magicToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-torii-gate"></i> Wisteria Night</span>
+                <label class="switch">
+                    <input type="checkbox" id="animeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
                 <label class="switch">
                     <input type="checkbox" id="oceanToggle">
                     <span class="slider"></span>
@@ -703,50 +686,32 @@
     </div>
 
     <!-- Collection Create/Edit Modal -->
-    <dialog id="collection-modal" class="glass-modal"
-        style="background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 15px; color: var(--text-main); padding: 0;">
-        <div class="modal-content" style="max-width: 450px; background: none; border: none; box-shadow: none;">
-            <button class="close-modal-btn" id="closeCollectionModalBtn"
-                style="position: absolute; right: 15px; top: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;"><i
-                    class="fa-solid fa-xmark"></i></button>
-            <div class="modal-body" style="display: block; padding: 2rem;">
-                <h2 id="collection-modal-title"
-                    style="margin-bottom: 1.5rem; font-family: 'Playfair Display', serif; font-size: 1.75rem; color: var(--text-main);">
-                    Create Collection</h2>
-                <form id="collection-form" onsubmit="event.preventDefault();"
-                    style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <label for="collection-name-input"
-                            style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Name
-                            *</label>
-                        <input type="text" id="collection-name-input" required class="search-input"
-                            style="width: 100%; border-radius: 8px; box-sizing: border-box; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-main); padding: 0.6rem 1rem;"
-                            placeholder="e.g. Favorite Sci-Fi">
-                    </div>
-                    <div>
-                        <label for="collection-desc-input"
-                            style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Description</label>
-                        <textarea id="collection-desc-input" class="search-input"
-                            style="width: 100%; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; box-sizing: border-box; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-main); padding: 0.6rem 1rem;"
-                            placeholder="e.g. My absolute favorite space operas..."></textarea>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 0.25rem;">
-                        <input type="checkbox" id="collection-public-input"
-                            style="cursor: pointer; width: 18px; height: 18px;">
-                        <label for="collection-public-input"
-                            style="cursor: pointer; color: var(--text-main); font-size: 0.9rem;">Make this collection
-                            public</label>
-                    </div>
-                    <button id="collection-submit-btn" class="btn-primary"
-                        style="width: 100%; border-radius: 8px; padding: 0.75rem; font-weight: bold; cursor: pointer; border: none; margin-top: 0.5rem;">Save
-                        Collection</button>
-                </form>
+    <dialog id="collection-modal" class="glass-modal" style="background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 15px; color: var(--text-main); padding: 0;">
+      <div class="modal-content" style="max-width: 450px; background: none; border: none; box-shadow: none;">
+        <button class="close-modal-btn" id="closeCollectionModalBtn" style="position: absolute; right: 15px; top: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.25rem;"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-body" style="display: block; padding: 2rem;">
+          <h2 id="collection-modal-title" style="margin-bottom: 1.5rem; font-family: 'Playfair Display', serif; font-size: 1.75rem; color: var(--text-main);">Create Collection</h2>
+          <form id="collection-form" onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label for="collection-name-input" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Name *</label>
+              <input type="text" id="collection-name-input" required class="search-input" style="width: 100%; border-radius: 8px; box-sizing: border-box; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-main); padding: 0.6rem 1rem;" placeholder="e.g. Favorite Sci-Fi">
             </div>
+            <div>
+              <label for="collection-desc-input" style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Description</label>
+              <textarea id="collection-desc-input" class="search-input" style="width: 100%; border-radius: 8px; min-height: 80px; font-family: inherit; resize: vertical; box-sizing: border-box; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-main); padding: 0.6rem 1rem;" placeholder="e.g. My absolute favorite space operas..."></textarea>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 0.25rem;">
+              <input type="checkbox" id="collection-public-input" style="cursor: pointer; width: 18px; height: 18px;">
+              <label for="collection-public-input" style="cursor: pointer; color: var(--text-main); font-size: 0.9rem;">Make this collection public</label>
+            </div>
+            <button id="collection-submit-btn" class="btn-primary" style="width: 100%; border-radius: 8px; padding: 0.75rem; font-weight: bold; cursor: pointer; border: none; margin-top: 0.5rem;">Save Collection</button>
+          </form>
         </div>
+      </div>
     </dialog>
 
     <script src="../js/theme-manager.js"></script>
-    <script src="../js/ambient.js"></script>
+  <script src="../js/ambient.js"></script>
     <script src="../js/pwa.js"></script>
   <!-- AI Chatbot Widget -->
   <div id="ai-chatbot-widget" class="chatbot-widget">
@@ -776,6 +741,7 @@
     </div>
   </div>
   <script src="../js/chatbot.js"></script>
+    <script src="../js/reading-streak.js"></script>
 
 </body>
 

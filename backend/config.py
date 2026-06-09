@@ -170,18 +170,28 @@ class GoogleOAuthConfig:
 
 @dataclass
 class EmailConfig:
-    """Email service configuration (e.g., SendGrid, Mailgun)."""
+    """Email service configuration (SendGrid API or SMTP)."""
     api_key: Optional[str]
     from_email: Optional[str]
     service_provider: str = 'sendgrid'
-    
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_use_tls: bool = True
+
     @classmethod
     def from_env(cls) -> 'EmailConfig':
         """Create email config from environment variables."""
         return cls(
             api_key=os.getenv('EMAIL_API_KEY'),
             from_email=os.getenv('EMAIL_FROM'),
-            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid')
+            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid'),
+            smtp_host=os.getenv('EMAIL_SMTP_HOST'),
+            smtp_port=int(os.getenv('EMAIL_SMTP_PORT', '587')),
+            smtp_username=os.getenv('EMAIL_SMTP_USER'),
+            smtp_password=os.getenv('EMAIL_SMTP_PASSWORD'),
+            smtp_use_tls=os.getenv('EMAIL_SMTP_USE_TLS', 'true').lower() == 'true',
         )
 
 
@@ -461,6 +471,15 @@ class TestingConfig(Config):
         
         # Disable rate limiting for tests
         self.rate_limit.enabled = False
+        
+        # Ensure tests don't use real API credits
+        self.ai_service.openai_api_key = 'test-dummy-openai-key'
+        self.ai_service.groq_api_key = 'test-dummy-groq-key'
+        self.ai_service.gemini_api_key = 'test-dummy-gemini-key'
+        self.ai_service.google_books_api_key = 'test-dummy-google-books-key'
+        self.email.api_key = 'test-dummy-email-key'
+        self.storage.access_key = 'test-dummy-storage-access'
+        self.storage.secret_key = 'test-dummy-storage-secret'
 
 
 def get_config() -> Config:
