@@ -37,7 +37,7 @@ os.environ.setdefault("GEMINI_API_KEY", "fake-gemini-key")
 os.environ.setdefault("FLASK_ENV", "testing")
 
 from backend.app import app as flask_app, db as _db
-from backend.models import User
+from backend.models import User, Book
 
 
 @pytest.fixture(scope="session")
@@ -49,6 +49,7 @@ def app():
         JWT_SECRET_KEY="test-secret-key",
         SECRET_KEY="test-secret-key",
         RATELIMIT_ENABLED=False,
+        WTF_CSRF_ENABLED=False,
     )
     with flask_app.app_context():
         _db.create_all()
@@ -79,13 +80,41 @@ def test_user(app):
 
 
 @pytest.fixture
-def auth_headers(client, test_user):
+def auth_client(client, test_user):
+    """Authenticated test client using JWT cookies."""
     resp = client.post(
-        "/api/auth/login",
+        "/api/v1/login",
         json={"username": "testuser", "password": "Password123!"},
     )
-    token = resp.get_json().get("access_token", "")
-    return {"Authorization": f"Bearer {token}"}
+    assert resp.status_code == 200
+    return client
+
+
+@pytest.fixture
+def test_book(app):
+    with app.app_context():
+        book = Book(
+            google_books_id="zyTCAlFPjcYC",
+            title="Test Book",
+            authors="Test Author",
+            thumbnail="",
+        )
+        _db.session.add(book)
+        _db.session.commit()
+        _db.session.refresh(book)
+        return book
+
+
+@pytest.fixture
+def review_payload(test_user):
+    return {
+        "user_id": test_user.id,
+        "google_books_id": "zyTCAlFPjcYC",
+        "rating": 5,
+        "review_text": "A thoughtful review.",
+        "title": "Test Book",
+        "authors": "Test Author",
+    }
 
 
 # --- Mocks for external services (issue #511 requirement) ---
