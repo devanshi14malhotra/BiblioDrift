@@ -1,10 +1,9 @@
 name: Generate Contributors
 
 on:
-  push:
-    branches: [ main ]
   schedule:
-    - cron: '0 0,8,16 * * *' # three times a day at 00:00, 08:00, and 16:00 UTC
+    # 12:00 AM IST = 6:30 PM UTC
+    - cron: '30 18 * * *'
   workflow_dispatch: {}
 
 permissions:
