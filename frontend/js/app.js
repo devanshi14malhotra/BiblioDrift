@@ -4766,3 +4766,25 @@ async function handleResetPassword(event) {
 }
 
 window.handleResetPassword = handleResetPassword;
+
+// Scroll-to-top button (#1111)
+(function() {
+    const btn = document.createElement('button');
+    btn.className = 'scroll-top-btn';
+    btn.innerHTML = '&#8593;';
+    btn.setAttribute('aria-label', 'Scroll to top');
+    btn.title = 'Back to top';
+    document.body.appendChild(btn);
+    
+    btn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 300) {
+            btn.classList.add('visible');
+        } else {
+            btn.classList.remove('visible');
+        }
+    });
+})();
