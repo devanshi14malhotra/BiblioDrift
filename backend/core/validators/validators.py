@@ -380,7 +380,6 @@ def validate_schema(schema_class):
 
 
 # ==================== JWT SECRET VALIDATION ====================
-DEFAULT_INSECURE_KEY = 'default-dev-secret-key'
 MIN_SECRET_KEY_LENGTH = 32
 
 
@@ -390,9 +389,6 @@ def validate_jwt_secret() -> tuple[bool, str]:
     
     if not secret_key:
         return False, "JWT_SECRET_KEY environment variable is not set. Please set a secure secret key."
-    
-    if secret_key == DEFAULT_INSECURE_KEY:
-        return False, "FATAL: Using default insecure JWT secret key. This is a critical security vulnerability. Set JWT_SECRET_KEY to a secure value."
     
     if len(secret_key) < MIN_SECRET_KEY_LENGTH:
         return False, f"JWT_SECRET_KEY must be at least {MIN_SECRET_KEY_LENGTH} characters. Current length: {len(secret_key)}"
