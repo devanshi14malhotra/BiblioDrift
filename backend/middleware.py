@@ -42,8 +42,14 @@ def validate_content_type_middleware(f=None, *, allowed_types=None):
         if request.method in ['GET', 'HEAD', 'DELETE']:
             return f(*args, **kwargs)
 
-        # Skip for requests without body
-        if request.content_length is None or request.content_length == 0:
+        # Check if request may have a body even without Content-Length header
+        # (chunked Transfer-Encoding can bypass the content_length check)
+        has_potential_body = (
+            request.content_length is not None and request.content_length > 0
+        ) or request.headers.get('Transfer-Encoding', '').lower() == 'chunked'
+
+        # Skip validation only if there is definitely no body
+        if not has_potential_body and request.content_length == 0:
             return f(*args, **kwargs)
 
         effective_allowed_types = allowed_types or list(DEFAULT_ALLOWED_CONTENT_TYPES)
@@ -78,6 +84,9 @@ def validate_request_size(max_size_bytes: int = 1_000_000):
         def decorated_function(*args, **kwargs):
             content_length = request.content_length
             
+            # Check chunked transfer encoding which bypasses content_length
+            is_chunked = request.headers.get('Transfer-Encoding', '').lower() == 'chunked'
+            
             if content_length is not None and content_length > max_size_bytes:
                 size_mb = content_length / (1024 * 1024)
                 max_mb = max_size_bytes / (1024 * 1024)
@@ -89,6 +98,13 @@ def validate_request_size(max_size_bytes: int = 1_000_000):
                     'success': False,
                     'error': f'Request body too large. Maximum: {max_mb:.0f}MB'
                 }), 413  # 413 Payload Too Large
+            
+            # Log warning for chunked requests with unknown size
+            if is_chunked and content_length is None:
+                logger.info(
+                    f"Chunked transfer request to {request.path} - "
+                    f"size unknown, will be limited by MAX_CONTENT_LENGTH"
+                )
             
             return f(*args, **kwargs)
         
