@@ -61,7 +61,7 @@ Before you begin, make sure you are familiar with the current stack:
    ```
    Verify virtual environment is active:
    ```bash
-   python --version
+   where python
    ```
    Your terminal should now show `(.venv)` at the beginning.
 5. Setting up pip:
@@ -127,3 +127,4 @@ If label automation is enabled in the repository, `gssoc:approved` is added when
 ## License
 
 By contributing, you agree that your contributions will be licensed under the project’s MIT License.
+
