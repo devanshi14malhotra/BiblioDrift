@@ -545,6 +545,16 @@
             20%, 60% { transform: translateX(-5px); border-color: #f87171; }
             40%, 80% { transform: translateX(5px); border-color: #f87171; }
         }
+
+        /* Prevent Edge browser's built-in password reveal icon from overlapping custom toggle */
+        .auth-input[type="password"]::-ms-reveal,
+        .auth-input[type="password"]::-ms-reveal {
+            display: none;
+        }
+        /* Also hide for other browsers */
+        input[type="password"]::-ms-reveal {
+            display: none;
+        }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
     <!-- PWA -->
