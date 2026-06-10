@@ -779,6 +779,12 @@ def _validate_jwt_secret_startup():
 
 _validate_jwt_secret_startup()
 
+# ---- Database Session Cleanup ----
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Remove database session at the end of each request to prevent connection leaks."""
+    db.session.remove()
+
 
 @app.route('/api/v1/content/live-shelves', methods=['GET'])
 def get_live_shelves():
