@@ -1195,6 +1195,7 @@ def handle_purchase_links():
         return internal_error(str(e))
 
 @app.route('/api/v1/generate-note', methods=['POST'])
+@jwt_required()
 @limiter.limit("10 per minute")
 @validate_schema(GenerateNoteRequest)
 def handle_generate_note(validated_data):
