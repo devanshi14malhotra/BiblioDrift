@@ -60,7 +60,10 @@ if (typeof window !== 'undefined') {
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
-            const keys = this.getKeys();
+            let keys = this.getKeys();
+            if (keys.length === 0 && CONFIG.GOOGLE_BOOKS_API_KEY) {
+                keys = [CONFIG.GOOGLE_BOOKS_API_KEY];
+            }
             const candidates = keys.length > 0 ? keys : [null];
             let lastError = null;
 

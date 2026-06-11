@@ -1,3 +1,6 @@
+> [!WARNING]
+> **Netlify builds have stopped** due to limit exceeding as the project was very popular and had regular commits. Changes may not be visible on the deployed site. Please run the app locally.
+
 <div align="center">
 
 # 🌌 BiblioDrift — Drift Through Stories, Not Screens
