@@ -115,18 +115,17 @@ async function loadConfig() {
         console.warn('Failed to load backend config', e);
     }
 }
-import { saveBookOffline, removeOfflineBook, db } from './db.js';
-
 // Example click handler for your custom "Save for Offline" icon
 async function handleDownloadToggle(bookCard, bookData) {
-    const isAlreadyDownloaded = await db.downloadedBooks.get(bookData.id);
+    if (!window.db) return;
+    const isAlreadyDownloaded = await window.db.books.get(bookData.id);
     
     if (isAlreadyDownloaded) {
-        const success = await removeOfflineBook(bookData.id);
-        if (success) bookCard.classList.remove('is-downloaded');
+        await window.db.books.delete(bookData.id);
+        bookCard.classList.remove('is-downloaded');
     } else {
-        const success = await saveBookOffline(bookData);
-        if (success) bookCard.classList.add('is-downloaded');
+        await window.db.books.add(bookData);
+        bookCard.classList.add('is-downloaded');
     }
 }
 // Toast Notification Helper
@@ -613,7 +612,7 @@ class BookRenderer {
         }
 
         // Interaction: Flip
-        const bookEl = scene.querySelector('.book-container-3d');
+        const bookEl = scene.querySelector('.book');
         scene.addEventListener('click', (e) => {
             if (!e.target.closest('.btn-icon') && !e.target.closest('.reading-progress')) {
                 bookEl.classList.toggle('flipped');

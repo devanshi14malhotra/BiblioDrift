@@ -4670,3 +4670,138 @@ html, body {
   cursor: pointer !important; 
   cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23ffca3a' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23ffca3a' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, pointer !important;
 }
+
+
+/* =========================================
+   MOOD WHEEL ANALYTICS
+   ========================================= */
+
+.mood-wheel-container {
+    width: 100%;
+    margin-top: 2rem;
+    animation: fadeIn 0.5s ease;
+}
+
+.mood-wheel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #4e342e;
+}
+
+.mood-wheel-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-style: italic;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.mood-wheel-header h2 i {
+    color: var(--accent-gold);
+}
+
+.mood-period-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.mood-period-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-muted);
+    font-family: 'Georgia', serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.mood-period-btn:hover {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+.mood-period-btn.active {
+    background: var(--accent-gold);
+    color: #2c2420;
+    border-color: var(--accent-gold);
+    font-weight: 600;
+}
+
+.mood-wheel-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.mood-chart-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+}
+
+#mood-wheel-canvas {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.mood-wheel-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.mood-wheel-empty i {
+    font-size: 2.5rem;
+    color: var(--accent-gold);
+    opacity: 0.6;
+}
+
+.mood-wheel-empty p {
+    font-style: italic;
+    font-size: 1rem;
+    max-width: 32ch;
+}
+
+.mood-wheel-summary {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 55ch;
+    line-height: 1.7;
+    padding: 1rem 1.5rem;
+    border-left: 3px solid var(--accent-gold);
+    background: var(--glass-bg);
+    border-radius: 0 8px 8px 0;
+}
+
+@media (max-width: 600px) {
+    .mood-wheel-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .mood-chart-wrapper {
+        max-width: 100%;
+    }
+
+    .mood-wheel-summary {
+        font-size: 0.95rem;
+    }
+}

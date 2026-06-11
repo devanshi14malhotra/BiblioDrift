@@ -407,30 +407,50 @@ class BookshelfRenderer3D {
         const containerShelves = document.getElementById('library-shelves');
         const containerConstellation = document.getElementById('constellation-container');
 
+        const btnMood = document.getElementById('view-mood-btn');
+        const containerMood = document.getElementById('mood-wheel-container');
+
+        const setActiveView = (activeBtn) => {
+            [btnShelves, btnConstellation, btnMood].forEach(btn => {
+                if (!btn) return;
+                btn.classList.remove('active-view');
+                btn.classList.replace('btn-primary', 'btn-secondary');
+            });
+            activeBtn.classList.add('active-view');
+            activeBtn.classList.replace('btn-secondary', 'btn-primary');
+        };
+
         if (btnShelves && btnConstellation) {
             this.addManagedListener(btnShelves, 'click', () => {
                 this.currentView = 'shelves';
-                btnShelves.classList.add('active-view');
-                btnShelves.classList.replace('btn-secondary', 'btn-primary');
-                btnConstellation.classList.remove('active-view');
-                btnConstellation.classList.replace('btn-primary', 'btn-secondary');
-                
+                setActiveView(btnShelves);
                 containerShelves.classList.remove('hidden');
                 containerConstellation.classList.add('hidden');
+                if (containerMood) containerMood.classList.add('hidden');
                 this.refreshShelves();
             });
 
             this.addManagedListener(btnConstellation, 'click', () => {
                 this.currentView = 'constellation';
-                btnConstellation.classList.add('active-view');
-                btnConstellation.classList.replace('btn-secondary', 'btn-primary');
-                btnShelves.classList.remove('active-view');
-                btnShelves.classList.replace('btn-primary', 'btn-secondary');
-                
+                setActiveView(btnConstellation);
                 containerShelves.classList.add('hidden');
                 containerConstellation.classList.remove('hidden');
+                if (containerMood) containerMood.classList.add('hidden');
                 this.renderConstellation();
             });
+
+            if (btnMood) {
+                this.addManagedListener(btnMood, 'click', () => {
+                    this.currentView = 'mood';
+                    setActiveView(btnMood);
+                    containerShelves.classList.add('hidden');
+                    containerConstellation.classList.add('hidden');
+                    if (containerMood) containerMood.classList.remove('hidden');
+                    if (window.MoodWheel && typeof window.MoodWheel.render === 'function') {
+                        window.MoodWheel.render();
+                    }
+                });
+            }
         }
 
         // Render all shelves with sample books
