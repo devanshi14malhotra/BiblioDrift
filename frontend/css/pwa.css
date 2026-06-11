@@ -1,0 +1,77 @@
+/* pwa.css */
+
+#pwa-install-banner {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 24px;
+}
+
+.pwa-banner-icon {
+    height: 100px;
+    margin-bottom: 0px;
+}
+
+.pwa-banner-content {
+    display: block;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    text-align: center;
+}
+
+.pwa-banner-text {
+    margin-bottom: 15px;
+}
+
+.pwa-banner-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+
+
+/* CSS */
+.pwa-install-btn {
+  background-color: #fbeee0;
+  border: 2px solid #422800;
+  border-radius: 30px;
+  box-shadow: #422800 4px 4px 0 0;
+  color: #422800;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: 600;
+  font-size: 18px;
+  padding: 0 18px;
+  line-height: 50px;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  margin-bottom: 15px;
+}
+
+.pwa-install-btn:hover {
+  background-color: #fff;
+}
+
+.pwa-install-btn:active {
+  box-shadow: #422800 2px 2px 0 0;
+  transform: translate(2px, 2px);
+}
+
+@media (min-width: 768px) {
+  .button-74 {
+    min-width: 120px;
+    padding: 0 25px;
+  }
+}
+
+.pwa-dismiss-btn {
+    display: none;
+}

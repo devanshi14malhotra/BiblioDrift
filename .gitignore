@@ -7,9 +7,10 @@ mood_analysis/mood_cache.json
 
 # Environment variables
 .env
-.env.local
-.env.production
-.env.development
+*/.env
+*/.env.local
+*/.env.production
+*/.env.development
 
 # Sensitive local files
 *.token
@@ -32,3 +33,9 @@ instance/
 *.db
 # Virtual Environment
 venv/
+
+node_modules/
+.venv/
+
+# Local untracked scripts folder
+untracked/

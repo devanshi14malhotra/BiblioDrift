@@ -149,19 +149,49 @@ class AIServiceConfig:
 
 
 @dataclass
+class GoogleOAuthConfig:
+    """Google OAuth configuration."""
+    client_id: Optional[str]
+    client_secret: Optional[str]
+    redirect_uri: Optional[str]
+    frontend_redirect_url: str
+    scope: str
+
+    @classmethod
+    def from_env(cls) -> 'GoogleOAuthConfig':
+        """Create Google OAuth config from environment variables."""
+        return cls(
+            client_id=os.getenv('GOOGLE_CLIENT_ID') or os.getenv('GOOGLE_OAUTH_CLIENT_ID'),
+            client_secret=os.getenv('GOOGLE_CLIENT_SECRET') or os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),
+            redirect_uri=os.getenv('GOOGLE_OAUTH_REDIRECT_URI'),
+            frontend_redirect_url=os.getenv('FRONTEND_URL', 'http://127.0.0.1:5500/frontend/pages/library.html'),
+            scope=os.getenv('GOOGLE_OAUTH_SCOPE', 'openid email profile')
+        )
+
+@dataclass
 class EmailConfig:
-    """Email service configuration (e.g., SendGrid, Mailgun)."""
+    """Email service configuration (SendGrid API or SMTP)."""
     api_key: Optional[str]
     from_email: Optional[str]
     service_provider: str = 'sendgrid'
-    
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_use_tls: bool = True
+
     @classmethod
     def from_env(cls) -> 'EmailConfig':
         """Create email config from environment variables."""
         return cls(
             api_key=os.getenv('EMAIL_API_KEY'),
             from_email=os.getenv('EMAIL_FROM'),
-            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid')
+            service_provider=os.getenv('EMAIL_SERVICE', 'sendgrid'),
+            smtp_host=os.getenv('EMAIL_SMTP_HOST'),
+            smtp_port=int(os.getenv('EMAIL_SMTP_PORT', '587')),
+            smtp_username=os.getenv('EMAIL_SMTP_USER'),
+            smtp_password=os.getenv('EMAIL_SMTP_PASSWORD'),
+            smtp_use_tls=os.getenv('EMAIL_SMTP_USE_TLS', 'true').lower() == 'true',
         )
 
 
@@ -215,6 +245,7 @@ class Config:
         self.server = ServerConfig.from_env()
         self.logging = LoggingConfig.from_env()
         self.ai_service = AIServiceConfig.from_env()
+        self.google_oauth = GoogleOAuthConfig.from_env()
         self.redis = RedisConfig.from_env()
         self.email = EmailConfig.from_env()
         self.storage = StorageConfig.from_env()
@@ -236,6 +267,11 @@ class Config:
             'JWT_COOKIE_SAMESITE': 'Lax',
             'SQLALCHEMY_DATABASE_URI': self.database.url,
             'SQLALCHEMY_TRACK_MODIFICATIONS': self.database.track_modifications,
+            'GOOGLE_CLIENT_ID': self.google_oauth.client_id,
+            'GOOGLE_CLIENT_SECRET': self.google_oauth.client_secret,
+            'GOOGLE_OAUTH_REDIRECT_URI': self.google_oauth.redirect_uri,
+            'GOOGLE_OAUTH_FRONTEND_REDIRECT_URL': self.google_oauth.frontend_redirect_url,
+            'GOOGLE_OAUTH_SCOPE': self.google_oauth.scope,
             
             # =========================================================================
             # SECURITY: CSRF CONFIGURATION (FLASK-WTF)
@@ -385,8 +421,7 @@ class Config:
         
         return (
             flask_env == 'production' or 
-            app_env == 'production' or 
-            not self.server.debug
+            app_env == 'production' 
         )
     
     def is_development(self) -> bool:
@@ -436,6 +471,15 @@ class TestingConfig(Config):
         
         # Disable rate limiting for tests
         self.rate_limit.enabled = False
+        
+        # Ensure tests don't use real API credits
+        self.ai_service.openai_api_key = 'test-dummy-openai-key'
+        self.ai_service.groq_api_key = 'test-dummy-groq-key'
+        self.ai_service.gemini_api_key = 'test-dummy-gemini-key'
+        self.ai_service.google_books_api_key = 'test-dummy-google-books-key'
+        self.email.api_key = 'test-dummy-email-key'
+        self.storage.access_key = 'test-dummy-storage-access'
+        self.storage.secret_key = 'test-dummy-storage-secret'
 
 
 def get_config() -> Config:
