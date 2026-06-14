@@ -162,7 +162,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── 5. Local app assets → Stale-while-revalidate ───────────────────────────
+  // ── 5. App shell JS files that must stay fresh ─────────────────────────────
+  if (url.origin === self.location.origin && (
+      url.pathname.endsWith('/frontend/js/config.js') ||
+      url.pathname.endsWith('/frontend/js/app.js')
+  )) {
+    event.respondWith(_networkFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // ── 6. Local app assets → Stale-while-revalidate ──────────────────────────
   // Covers HTML pages, CSS, JS, images, sounds
   if (url.origin === self.location.origin) {
     event.respondWith(_staleWhileRevalidate(request, STATIC_CACHE));

@@ -5,6 +5,9 @@ functions = "netlify/functions"
 
 [build.environment]
 PYTHON_VERSION = "3.10"
+# BACKEND_URL is intentionally not set here: never commit secrets to the repo.
+# Set it in: Netlify Dashboard → Site Configuration → Environment Variables
+# Example value: https://your-app.onrender.com
 
 [[headers]]
   for = "/*.gltf"
