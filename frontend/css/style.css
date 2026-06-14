@@ -346,6 +346,40 @@ header {
     color: var(--text-main);
 }
 
+.search-suggestions-dropdown {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    left: 0;
+    width: 100%;
+    background: var(--surface-panel);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    z-index: 15;
+    overflow: hidden;
+}
+
+.suggestion-item-vibe {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease;
+}
+
+.suggestion-item-vibe:hover, .suggestion-item-vibe.selected-row {
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+}
+
+.autocomplete-glow {
+    background: rgba(234, 179, 8, 0.25);
+    color: #fff;
+    border-radius: 2px;
+}
+
 .logo {
     font-size: 1.5rem;
     letter-spacing: 1px;

@@ -34,6 +34,63 @@ from datetime import datetime, timedelta, timezone
 from backend.core.security.sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
 
+# Create an isolated endpoint module route rule
+autocomplete_bp = Blueprint('autocomplete', __name__)
+
+GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
+
+@autocomplete_bp.route('/api/v1/books/autocomplete', methods=['GET'])
+def get_book_autocomplete_suggestions():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify([]), 200
+
+    try:
+        # Requesting lightweight projection parameter sets from Google Books Engine
+        params = {
+            'q': f'intitle:{query}',
+            'maxResults': 5,
+            'fields': 'items(volumeInfo(title,authors))'
+        }
+        response = requests.get(GOOGLE_BOOKS_URL, params=params, timeout=5)
+        
+        if response.status_code != 200:
+            return jsonify([]), 200
+            
+        data = response.json()
+        suggestions = []
+        
+        if 'items' in data:
+            for item in data['items']:
+                v_info = item.get('volumeInfo', {})
+                title = v_info.get('title')
+                authors = v_info.get('authors', ['Unknown Author'])
+                
+                if title:
+                    suggestions.append({
+                        'title': title,
+                        'author': authors[0] if isinstance(authors, list) else authors
+                    })
+                    
+        return jsonify(suggestions), 200
+
+    except requests.exceptions.RequestException as e:
+        # Graceful handling so client experience stays stable during downtime
+        return jsonify([]), 200
+    
+@autocomplete_bp.route('/auth/callback',methods=['GET'])
+def google_auth_callback():
+    auth_code = request.args.get('code')
+
+    if not auth_code:
+        #redirect back to home with an error parameter if the handshake failed
+        return redirect('http://localhost:5000/?error=auth_failed')
+    try:
+        #redirect the user back to the home page
+        return redirect('http://localhost:5000/')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Load environment variables from config directory based on APP_ENV
 env = os.getenv('APP_ENV', 'development')
 env_path = os.path.join(os.path.dirname(__file__), '..', 'config', f'.env.{env}')
@@ -130,6 +187,7 @@ except ImportError:
 # =====================================================================
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.register_blueprint(reader_identity_bp)
+app.register_blueprint(autocomplete_bp)
 
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
