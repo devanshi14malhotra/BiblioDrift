@@ -898,7 +898,7 @@ textarea:focus {
 /* --- Mood Analysis Styles --- */
 
 /* Mood Tags on Book Covers */
-.mood-tags {
+.book__face--front .mood-tags {
     position: absolute;
     top: 5px;
     left: 5px;
@@ -7828,7 +7828,9 @@ body.night-mode .tooltip-author {
     margin-bottom: 1rem;
 }
 
-.mood-tags {
+.quiz-results .mood-tags {
+    position: relative;
+    width: 100%;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -7836,7 +7838,7 @@ body.night-mode .tooltip-author {
     margin-bottom: 1.5rem;
 }
 
-.mood-tags span {
+.quiz-results .mood-tags span {
     background: var(--glass-bg);
     border: 1px solid var(--accent-gold);
     color: var(--accent-gold);
