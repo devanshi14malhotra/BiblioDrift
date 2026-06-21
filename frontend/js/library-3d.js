@@ -2259,9 +2259,11 @@ class BookshelfRenderer3D {
         const starsEl = document.getElementById('modal-stars');
         const scoreEl = document.getElementById('modal-rating-score');
         const countEl = document.getElementById('modal-rating-count');
+        const offlineBadge = document.getElementById('modal-offline-badge');
 
         if (titleEl) titleEl.textContent = book.title;
         if (authorEl) authorEl.textContent = book.author; // Removed "by" prefix to match design
+        if (offlineBadge) offlineBadge.style.display = 'inline-block';
         if (starsEl) starsEl.textContent = this.getStarRating(book.rating);
         if (scoreEl) scoreEl.textContent = (book.rating != null ? book.rating.toFixed(1) : 'N/A');
         if (countEl) countEl.textContent = `(${book.ratingCount} ratings)`;

@@ -328,10 +328,10 @@ const BookPreview = (() => {
             _renderViewer(googleBooksId);
         } catch (err) {
             console.error('[BookPreview] Error:', err);
-            _showFallback(
-                googleBooksId,
-                'Something went wrong loading the preview. You can view this book on Google Books instead.'
-            );
+            const offlineMsg = !navigator.onLine 
+                ? 'You are offline. The full book preview requires an internet connection, but the book details are saved.' 
+                : 'Something went wrong loading the preview. You can view this book on Google Books instead.';
+            _showFallback(googleBooksId, offlineMsg);
         }
     }
 
