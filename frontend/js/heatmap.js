@@ -9,12 +9,18 @@ const HeatmapConfig = {
     levels: 5 // 0-4
 };
 
+function formatDateLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 window.logReadingActivity = function (action, description) {
     try {
         let log = JSON.parse(localStorage.getItem(HeatmapConfig.storageKey)) || {};
         
-        // Get today's date in YYYY-MM-DD format
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatDateLocal(new Date());
         
         if (!log[today]) {
             log[today] = [];
@@ -26,12 +32,12 @@ window.logReadingActivity = function (action, description) {
             timestamp: new Date().toISOString()
         });
 
-        // Prune old days (optional, keeps size small)
         const cutoffDate = new Date();
+        cutoffDate.setHours(0, 0, 0, 0);
         cutoffDate.setDate(cutoffDate.getDate() - HeatmapConfig.daysToTrack);
         
         Object.keys(log).forEach(date => {
-            if (new Date(date) < cutoffDate) {
+            if (new Date(`${date}T00:00:00`) < cutoffDate) {
                 delete log[date];
             }
         });
@@ -96,10 +102,15 @@ window.renderHeatmap = function () {
     }
 
     const today = new Date();
-    // Move to Sunday to align weeks in a GitHub-style grid.
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - ((HeatmapConfig.weeksToShow * 7) - 1));
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+    today.setHours(0, 0, 0, 0);
+
+    // 52-week window: Sunday of the current week back through Saturday of this week.
+    const startOfCurrentWeek = new Date(today);
+    startOfCurrentWeek.setDate(today.getDate() - today.getDay());
+
+    const startDate = new Date(startOfCurrentWeek);
+    startDate.setDate(startOfCurrentWeek.getDate() - ((HeatmapConfig.weeksToShow - 1) * 7));
+    startDate.setHours(0, 0, 0, 0);
 
     const grid = document.createElement('div');
     grid.className = 'heatmap-grid';
@@ -148,8 +159,9 @@ window.renderHeatmap = function () {
         for (let d = 0; d < 7; d++) {
             const cellDate = new Date(startDate);
             cellDate.setDate(startDate.getDate() + (w * 7) + d);
+            cellDate.setHours(0, 0, 0, 0);
 
-            const dateStr = cellDate.toISOString().split('T')[0];
+            const dateStr = formatDateLocal(cellDate);
             const isFuture = cellDate > today;
             const activities = isFuture ? [] : (log[dateStr] || []);
             const count = activities.length;
