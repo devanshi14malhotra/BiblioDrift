@@ -23,6 +23,10 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
     REDIS_EXCEPTIONS = ()
+try:
+    from flask_caching import Cache
+except ImportError:
+    Cache = None
 
 def with_redis_retry():
     """Retry decorator for Redis transient failures."""
@@ -193,6 +197,13 @@ class CacheService:
             else:
                 cache_config['CACHE_TYPE'] = 'SimpleCache'
                 logger.info("Using simple in-memory cache (not recommended for production)")
+
+            if Cache is None:
+                logger.warning(
+                    "flask-caching is not installed; caching is disabled. "
+                    "Add flask-caching to requirements.txt."
+                )
+                return    
             
             self.cache = Cache()
             self.cache.init_app(app, config=cache_config)
