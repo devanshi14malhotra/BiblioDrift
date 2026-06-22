@@ -77,7 +77,7 @@
  * ==============================================================================
  */
 
-// API_BASE and MOOD_API_BASE are declared globally in config.js (loaded first).
+// MOOD_API_BASE and GoogleBooksClient are declared globally in config.js (loaded first).
 // Do NOT re-declare them here — use the globals from config.js directly.
 if (typeof window.IS_DEV === 'undefined') {
     window.IS_DEV = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -125,8 +125,6 @@ window.appStore = new Store({
     libraryBooks: { current: [], want: [], finished: [] },
     currentTheme: localStorage.getItem('bibliodrift_theme') || 'light'
 });
-
-let GOOGLE_API_KEY = '';
 
 /**
  * Utility to extract a cookie value by name.
@@ -1652,7 +1650,16 @@ class BookRenderer {
 
         try {
             const client = window.GoogleBooksClient;
-            const data = await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' });
+            const data = client
+                ? await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' })
+                : await (async () => {
+                    const encodedQuery = encodeURIComponent(query);
+                    const res = await fetch(`${MOOD_API_BASE}/books/search?q=${encodedQuery}&maxResults=${maxResults}&printType=books`, { credentials: 'include' });
+                    if (!res.ok) {
+                        throw new Error(`API Error: ${res.statusText}`);
+                    }
+                    return await res.json();
+                })();
 
             if (data.items && data.items.length > 0) {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
@@ -1743,7 +1750,16 @@ class BookRenderer {
                 : `intitle:${title}`;
 
             try {
-                const data = await window.GoogleBooksClient.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' });
+                const client = window.GoogleBooksClient;
+                const data = client
+                    ? await client.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' })
+                    : await (async () => {
+                        const res = await fetch(`${MOOD_API_BASE}/books/search?q=${encodeURIComponent(searchQuery)}&maxResults=1&printType=books`, { credentials: 'include' });
+                        if (!res.ok) {
+                            throw new Error(`Google Books API Error: ${res.status}`);
+                        }
+                        return await res.json();
+                    })();
 
                 const matchedBook = data?.items?.[0];
                 if (matchedBook) {
@@ -3094,7 +3110,16 @@ class GenreManager {
         }
 
         try {
-            const data = await window.GoogleBooksClient.fetchVolumes(searchQuery, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' });
+            const client = window.GoogleBooksClient;
+            const data = client
+                ? await client.fetchVolumes(searchQuery, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' })
+                : await (async () => {
+                    const response = await fetch(`${MOOD_API_BASE}/books/search?q=${encodeURIComponent(searchQuery)}&maxResults=20&langRestrict=en&orderBy=relevance`, { credentials: 'include' });
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+                    return await response.json();
+                })();
 
             const items = data.items || [];
             if (items.length > 0) {

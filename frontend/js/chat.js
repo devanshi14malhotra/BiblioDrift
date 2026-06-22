@@ -424,7 +424,7 @@ Tell me: what is stirring in you today?`,
             const data = client
                 ? await client.fetchVolumes(searchQuery, { maxResults: 6, extraParams: '&printType=books&langRestrict=en' })
                 : await (async () => {
-                    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=6&printType=books&langRestrict=en`);
+                    const response = await fetch(`${MOOD_API_BASE}/books/search?q=${encodeURIComponent(searchQuery)}&maxResults=6&printType=books&langRestrict=en`, { credentials: 'include' });
                     if (!response.ok) throw new Error('Google Books API error');
                     return await response.json();
                 })();

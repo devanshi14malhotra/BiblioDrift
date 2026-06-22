@@ -23,18 +23,13 @@ function resolveMoodApiBase() {
 const MOOD_API_BASE = resolveMoodApiBase();
 
 const CONFIG = {
-    // Google Books API - loaded from backend config endpoint
-    // Leave empty - it will be populated by loadConfig() in app.js
-    GOOGLE_BOOKS_API_KEY: '',
-    GOOGLE_BOOKS_API_KEYS: [],
-
     // Backend API Base - use relative path for proxy-aware deployment
     // In development: proxy to localhost:5000
     // In production: served from same origin
     MOOD_API_BASE: MOOD_API_BASE,
 
-    // Google Books API endpoint
-    API_BASE: 'https://www.googleapis.com/books/v1/volumes',
+    // Server-side Google Books proxy. The backend appends GOOGLE_BOOKS_API_KEY.
+    BOOK_SEARCH_ENDPOINT: `${MOOD_API_BASE}/books/search`,
 
     // UI Configuration
     CHUNK_SIZE: 20,
@@ -49,51 +44,16 @@ const CONFIG = {
 if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
     window.MOOD_API_BASE = MOOD_API_BASE;
-    window.API_BASE = CONFIG.API_BASE;
     window.GoogleBooksClient = {
-        setKeys(keys) {
-            CONFIG.GOOGLE_BOOKS_API_KEYS = Array.from(new Set((keys || []).map(key => String(key || '').trim()).filter(Boolean)));
-        },
-        getKeys() {
-            return CONFIG.GOOGLE_BOOKS_API_KEYS || [];
-        },
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
-            let keys = this.getKeys();
-            if (keys.length === 0 && CONFIG.GOOGLE_BOOKS_API_KEY) {
-                keys = [CONFIG.GOOGLE_BOOKS_API_KEY];
+            const url = `${CONFIG.BOOK_SEARCH_ENDPOINT}?q=${encodeURIComponent(query)}&maxResults=${encodeURIComponent(maxResults)}${extraParams}`;
+            const response = await fetch(url, { credentials: 'include' });
+            if (!response.ok) {
+                throw new Error(`Book search proxy returned ${response.status}`);
             }
-            const candidates = keys.length > 0 ? keys : [null];
-            let lastError = null;
-
-            for (let index = 0; index < candidates.length; index += 1) {
-                const key = candidates[index];
-                const keyParam = key ? `&key=${encodeURIComponent(key)}` : '';
-                const url = `${CONFIG.API_BASE}?q=${encodeURIComponent(query)}&maxResults=${maxResults}${extraParams}${keyParam}`;
-
-                try {
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        return await response.json();
-                    }
-
-                    const retryableStatuses = [429, 403, 503];
-                    if (retryableStatuses.includes(response.status) && index < candidates.length - 1) {
-                        lastError = new Error(`Google Books API returned ${response.status}`);
-                        continue;
-                    }
-
-                    throw new Error(`Google Books API returned ${response.status}`);
-                } catch (error) {
-                    lastError = error;
-                    if (index < candidates.length - 1) {
-                        continue;
-                    }
-                }
-            }
-
-            throw lastError || new Error('Google Books request failed');
+            return await response.json();
         }
     };
 }
@@ -102,4 +62,3 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }
-

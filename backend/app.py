@@ -25,9 +25,12 @@ from spine_generator import create_spine
 import os
 import requests
 import secrets
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin
 from werkzeug.utils import secure_filename
-import magic
+try:
+    import magic
+except ImportError:
+    magic = None
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -1087,6 +1090,77 @@ def handle_mood_tags(validated_data):
         logger.error(f"Unexpected error in handle_mood_tags: {type(e).__name__}: {e}", exc_info=True)
         return handle_exception(e, "handle_mood_tags")
 
+
+@app.route('/api/v1/books/search', methods=['GET'])
+@limiter.limit("60 per minute")
+def search_google_books():
+    """
+    Server-side Google Books search proxy.
+
+    The frontend should not receive or append GOOGLE_BOOKS_API_KEY. Keeping the
+    key on the backend prevents browser-source disclosure while preserving the
+    existing Google Books response shape consumed by the UI.
+    """
+    query = (request.args.get('q') or '').strip()
+    if not query:
+        return validation_error("Query parameter 'q' is required")
+    if len(query) > 240:
+        return validation_error("Query parameter 'q' must be 240 characters or fewer")
+
+    try:
+        max_results = int(request.args.get('maxResults', 5))
+    except (TypeError, ValueError):
+        return validation_error("maxResults must be an integer")
+
+    if max_results < 1 or max_results > 40:
+        return validation_error("maxResults must be between 1 and 40")
+
+    params = {
+        'q': query,
+        'maxResults': max_results,
+    }
+    allowed_optional_params = {
+        'printType',
+        'langRestrict',
+        'orderBy',
+        'startIndex',
+        'filter',
+        'projection',
+    }
+    for name in allowed_optional_params:
+        value = (request.args.get(name) or '').strip()
+        if value:
+            params[name] = value[:80]
+
+    if app_config.ai_service.google_books_api_key:
+        params['key'] = app_config.ai_service.google_books_api_key
+
+    base_url = os.getenv('GOOGLE_BOOKS_BASE_URL', 'https://www.googleapis.com/books/v1/')
+    books_url = urljoin(base_url.rstrip('/') + '/', 'volumes')
+
+    try:
+        response = requests.get(books_url, params=params, timeout=6)
+    except requests.RequestException as exc:
+        logger.warning("Google Books search proxy failed: %s", exc)
+        return service_unavailable_error("Book search service is temporarily unavailable")
+
+    if response.status_code >= 500:
+        return service_unavailable_error("Book search service is temporarily unavailable")
+    if response.status_code >= 400:
+        return error_response(
+            ErrorCodes.EXTERNAL_SERVICE_ERROR,
+            "Book search service rejected the request",
+            502,
+            {"upstream_status": response.status_code},
+        )
+
+    try:
+        return jsonify(response.json()), 200
+    except ValueError:
+        logger.warning("Google Books search proxy received invalid JSON")
+        return service_unavailable_error("Book search service returned an invalid response")
+
+
 @app.route('/api/v1/mood-search', methods=['POST'])
 @limiter.limit("10 per minute")
 @validate_schema(MoodSearchRequest)
@@ -1969,6 +2043,8 @@ def upload_avatar(user_id):
     file.seek(0) # Reset file pointer after reading
     
     try:
+        if magic is None:
+            raise RuntimeError("python-magic/libmagic is not available")
         mime = magic.Magic(mime=True)
         file_mime = mime.from_buffer(file_bytes)
         
@@ -2718,9 +2794,7 @@ def delete_price_alert(alert_id):
 with app.app_context():
     db.create_all()
 
-# NOTE: Book search is performed directly from the frontend using the Google Books API.
-# The old backend proxy endpoint /api/books has been removed to avoid unnecessary
-# load on the backend server.
+# Book search is proxied through /api/v1/books/search so API keys remain server-side.
 
 if __name__ == '__main__':
     # Print the available endpoints
