@@ -190,6 +190,17 @@
 
             <!-- Empty State Placeholder (Visible when filter returns no books) -->
             <div id="library-empty-state" class="library-empty-state" hidden>
+                <!-- Floating dust particles -->
+                <div class="empty-state-particles" aria-hidden="true">
+                    <span class="dust-particle" style="left:10%;animation-delay:0s"></span>
+                    <span class="dust-particle" style="left:25%;animation-delay:1.5s"></span>
+                    <span class="dust-particle" style="left:45%;animation-delay:0.8s"></span>
+                    <span class="dust-particle" style="left:65%;animation-delay:2.2s"></span>
+                    <span class="dust-particle" style="left:80%;animation-delay:0.4s"></span>
+                    <span class="dust-particle" style="left:90%;animation-delay:1.8s"></span>
+                    <span class="dust-particle" style="left:35%;animation-delay:2.8s"></span>
+                    <span class="dust-particle" style="left:55%;animation-delay:3.2s"></span>
+                </div>
                 <!-- Animated SVG Illustration -->
                 <div class="empty-state-illustration">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" class="empty-shelf-svg">
@@ -220,21 +231,28 @@
                         <circle cx="50" cy="60" r="2" fill="var(--accent-gold)" class="sparkle sparkle-1"/>
                         <circle cx="150" cy="70" r="2" fill="var(--accent-gold)" class="sparkle sparkle-2"/>
                         <circle cx="100" cy="50" r="1.5" fill="var(--accent-gold)" class="sparkle sparkle-3"/>
+                        <circle cx="40" cy="100" r="1.5" fill="var(--accent-gold)" class="sparkle sparkle-4"/>
+                        <circle cx="160" cy="110" r="1.5" fill="var(--accent-gold)" class="sparkle sparkle-5"/>
                     </svg>
                 </div>
                 
                 <!-- Enhanced Typography -->
                 <div class="empty-state-content">
-                    <h2 class="empty-state-title">Your library awaits its first chapter</h2>
+                    <h2 class="empty-state-title">Your shelf is waiting for its first story ✨</h2>
                     <p class="empty-state-description">
                         No books found here. Start your reading journey by discovering stories that speak to your soul.
                     </p>
                 </div>
                 
-                <!-- Call to Action -->
-                <a href="app.html" class="btn-primary library-empty-link">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Discover Books
-                </a>
+                <!-- Call to Action Buttons -->
+                <div class="empty-state-actions">
+                    <a href="app.html" class="btn-primary library-empty-link">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Discover Books
+                    </a>
+                    <button class="btn-secondary library-empty-link" onclick="window.openBookSearch()" style="margin-top:0.75rem;">
+                        <i class="fa-solid fa-plus"></i> Add Your First Book
+                    </button>
+                </div>
             </div>
 
             <!-- Currently Reading Shelf -->
