@@ -1443,6 +1443,19 @@ class BookshelfRenderer3D {
                 switchView('collections');
                 this.loadAndRenderCollections();
             });
+
+            if (btnMood) {
+                this.addManagedListener(btnMood, 'click', () => {
+                    this.currentView = 'mood';
+                    setActiveView(btnMood);
+                    containerShelves.classList.add('hidden');
+                    containerConstellation.classList.add('hidden');
+                    if (containerMood) containerMood.classList.remove('hidden');
+                    if (window.MoodWheel && typeof window.MoodWheel.render === 'function') {
+                        window.MoodWheel.render();
+                    }
+                });
+            }
         }
 
         // Render all shelves with sample books
