@@ -206,14 +206,27 @@ class MoodQueryParser:
         return negations, query_without_negations.strip()
     
     def _extract_intensity(self, query: str) -> float:
-        """Extract intensity modifiers from query."""
-        intensity = 1.0
-        
-        for modifier, multiplier in self.intensity_modifiers.items():
-            if modifier in query:
-                intensity *= multiplier
-        
-        return intensity
+    """Extract intensity modifiers from query."""
+
+    # Neutral/default intensity
+    intensity = 1.0
+
+    # Track detected modifiers
+    found_modifiers = []
+
+    for modifier, multiplier in self.intensity_modifiers.items():
+
+        # Use regex word boundaries for accurate matching
+        pattern = rf'\b{re.escape(modifier)}\b'
+
+        if re.search(pattern, query):
+            found_modifiers.append(multiplier)
+
+    # Use strongest modifier instead of multiplying all modifiers
+    if found_modifiers:
+        intensity = max(found_modifiers)
+
+    return min(intensity, 2.0)
     
     def _extract_moods(self, query: str) -> Tuple[List[str], List[str]]:
         """Extract mood and theme keywords from query."""
@@ -269,24 +282,36 @@ class MoodQueryParser:
         
         return min(base_confidence, 1.0)
     
-    def get_recommendation_prompt(self, parsed_query: MoodQuery) -> str:
-        """
-        Generate an enhanced recommendation prompt based on parsed query.
-        
-        Args:
-            parsed_query: Parsed mood query
-            
-        Returns:
-            Enhanced prompt for LLM
-        """
-        moods_str = ', '.join(parsed_query.primary_moods)
-        intensity_str = 'intense' if parsed_query.intensity > 0.7 else 'moderate' if parsed_query.intensity > 0.4 else 'subtle'
-        
-        negation_str = ''
-        if parsed_query.negations:
-            negation_str = f"\n\nImportant: Exclude books with these qualities: {', '.join(parsed_query.negations)}"
-        
-        prompt = f"""You are a knowledgeable librarian helping someone find books.
+   def get_recommendation_prompt(self, parsed_query: MoodQuery) -> str:
+    """
+    Generate an enhanced recommendation prompt based on parsed query.
+
+    Args:
+        parsed_query: Parsed mood query
+
+    Returns:
+        Enhanced prompt for LLM
+    """
+
+    moods_str = ', '.join(parsed_query.primary_moods)
+
+    # Corrected intensity thresholds
+    if parsed_query.intensity >= 1.3:
+        intensity_str = 'intense'
+    elif parsed_query.intensity >= 0.9:
+        intensity_str = 'moderate'
+    else:
+        intensity_str = 'subtle'
+
+    negation_str = ''
+
+    if parsed_query.negations:
+        negation_str = (
+            f"\n\nImportant: Exclude books with these qualities: "
+            f"{', '.join(parsed_query.negations)}"
+        )
+
+    prompt = f"""You are a knowledgeable librarian helping someone find books.
 
 The reader is looking for: {parsed_query.original_query}
 
@@ -301,8 +326,8 @@ Provide a brief, personalized book recommendation that captures:
 
 Keep your response to 2-3 sentences. Be warm and enthusiastic.
 Style: Like a trusted book friend giving a perfect recommendation."""
-        
-        return prompt
+
+    return prompt
     
     def get_search_filter_keywords(self, parsed_query: MoodQuery) -> Dict[str, List[str]]:
         """
