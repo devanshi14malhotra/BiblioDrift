@@ -63,11 +63,19 @@ class JWTConfig:
     @classmethod
     def from_env(cls) -> 'JWTConfig':
         """Create JWT config from environment variables."""
+        import secrets
         # Sensitivity: Must be set in .env for production.
-        # We provide a default only for local development ease.
+        # Auto-generate a random key for development to avoid hardcoded secrets.
         secret_key = os.getenv('JWT_SECRET_KEY')
         if not secret_key:
-            secret_key = 'default-dev-secret-key'
+            secret_key = secrets.token_hex(32)
+            os.environ['JWT_SECRET_KEY'] = secret_key
+            # Log warning so developers know they are using an auto-generated key
+            import logging
+            logging.getLogger(__name__).warning(
+                "JWT_SECRET_KEY not set - using auto-generated key for development. "
+                "Set a persistent JWT_SECRET_KEY to avoid invalidating existing tokens on restart."
+            )
             
         return cls(
             secret_key=secret_key,
@@ -313,11 +321,15 @@ class Config:
                 )
         
         # Validate JWT secret key
-        if self.jwt.secret_key == 'default-dev-secret-key':
+        if len(self.jwt.secret_key) < 32:
             if self.is_production():
-                errors.append("JWT_SECRET_KEY must be set to a secure value in production")
-            elif len(self.jwt.secret_key) < 32:
-                errors.append("JWT_SECRET_KEY should be at least 32 characters long")
+                errors.append("JWT_SECRET_KEY must be set to a secure value in production (min 32 chars)")
+            else:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "JWT_SECRET_KEY is less than 32 characters. "
+                    "Set a persistent JWT_SECRET_KEY in your .env file."
+                )
         
         # =====================================================================
         # DATABASE CONFIGURATION VALIDATION (PARSER-BASED AND LESS FRAGILE)
