@@ -2293,6 +2293,7 @@ textarea:focus {
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 .book-rec-info p {
@@ -2303,6 +2304,7 @@ textarea:focus {
     line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 /* Emotion Tags & Mood Filtering */
@@ -5821,6 +5823,11 @@ textarea:focus {
     color: var(--accent-gold);
 }
 
+/* Hide native select dropdown arrow in IE/Edge to prevent double arrows */
+.sort-select::-ms-expand {
+    display: none;
+}
+
 .filter-group::after {
     content: "\f078";
     font-family: "Font Awesome 6 Free";
@@ -8253,4 +8260,110 @@ dialog.book-preview-modal::backdrop {
     .preview-modal-title {
         font-size: 0.95rem;
     }
+}
+
+/* ============================================================
+   GSSoC FIXES — Scroll-to-top, dark mode, contrast improvements
+   ============================================================ */
+
+/* Scroll-to-top floating button (#1111) */
+.scroll-top-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent-gold, #d4af37);
+    color: #1a1a1a;
+    border: none;
+    cursor: pointer;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+.scroll-top-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.scroll-top-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* Constellation stars for dark mode (#1182) */
+[data-theme="night"] body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    background-image: 
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 25% 8%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1.5px 1.5px at 40% 20%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 55% 12%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 85% 10%, rgba(255,255,255,0.45), transparent),
+        radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 60% 22%, rgba(255,255,255,0.35), transparent),
+        radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.25), transparent);
+}
+
+/* Contributors page dark mode fixes (#1124) */
+[data-theme="night"] .contributor-card,
+[data-theme="night"] .contributor-item {
+    color: var(--text-main);
+    background: var(--card-bg, rgba(30, 30, 30, 0.8));
+}
+[data-theme="night"] .contributor-card h3,
+[data-theme="night"] .contributor-card .contributor-name,
+[data-theme="night"] .contributor-item .contributor-name {
+    color: #fffdf9;
+}
+[data-theme="night"] .contributor-card p,
+[data-theme="night"] .contributor-card .contributor-stats,
+[data-theme="night"] .contributor-item .contributor-stats {
+    color: rgba(255,255,255,0.75);
+}
+
+/* Improved visibility for auto-refresh status button (#1265) */
+.auto-refresh-status,
+[data-refresh-status] {
+    background: rgba(212, 175, 55, 0.2) !important;
+    color: var(--accent-gold, #d4af37) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    font-weight: 600;
+}
+[data-theme="night"] .auto-refresh-status,
+[data-theme="night"] [data-refresh-status] {
+    background: rgba(212, 175, 55, 0.15) !important;
+    color: #f0d060 !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+}
+
+/* Ensure yellow/gold text has sufficient contrast (#1200) */
+.yellow-text,
+.gold-text,
+.text-gold,
+[class*="yellow"],
+[style*="color: #d4af37"],
+[style*="color:#d4af37"] {
+    color: #b8941f !important;
+}
+[data-theme="night"] .yellow-text,
+[data-theme="night"] .gold-text,
+[data-theme="night"] .text-gold {
+    color: #f0d060 !important;
 }
