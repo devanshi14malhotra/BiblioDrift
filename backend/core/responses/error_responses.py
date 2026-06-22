@@ -4,7 +4,7 @@ This module provides consistent error response formatting across all API endpoin
 """
 
 from flask import jsonify
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List
 import logging
 
 logger = logging.getLogger(__name__)
@@ -141,12 +141,35 @@ def validation_error(message: str, status_code: int = 400) -> tuple:
     return error_response(ErrorCodes.VALIDATION_ERROR, message, status_code)
 
 
-def missing_fields_error(fields: str) -> tuple:
-    """Return a missing fields error response"""
+def missing_fields_error(fields: Union[str, List[str]]) -> tuple:
+    """
+    Return a missing fields error response.
+
+    Args:
+        fields: The missing field name(s). Accepts either a single string,
+            a comma-separated string, or a list of field names.
+
+    Returns:
+        Tuple of (jsonify response, status_code). The error payload includes
+        a ``missing_fields`` list so consumers can programmatically identify
+        which fields were missing.
+
+    Example:
+        return missing_fields_error(["title", "author"])
+        # -> {"success": False, "error": {"code": "MISSING_FIELDS",
+        #      "message": "Missing required fields: title, author",
+        #      "missing_fields": ["title", "author"]}}
+    """
+    if isinstance(fields, str):
+        field_list = [f.strip() for f in fields.split(",") if f.strip()]
+    else:
+        field_list = [str(f).strip() for f in fields if str(f).strip()]
+
     return error_response(
         ErrorCodes.MISSING_FIELDS,
-        f"Missing required fields: {fields}",
-        400
+        f"Missing required fields: {', '.join(field_list)}",
+        400,
+        additional_data={"missing_fields": field_list}
     )
 
 
