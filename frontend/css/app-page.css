@@ -9,9 +9,11 @@
     body {
       position: relative;
       background:
-        radial-gradient(circle at 12% 8%, rgba(212, 175, 55, 0.08), transparent 18%),
-        radial-gradient(circle at 88% 18%, rgba(93, 64, 55, 0.06), transparent 20%),
-        radial-gradient(circle at 50% 100%, rgba(212, 175, 55, 0.05), transparent 22%),
+        radial-gradient(circle at 14% 12%, rgba(212, 175, 55, 0.08), transparent 16%),
+        radial-gradient(circle at 86% 18%, rgba(93, 64, 55, 0.06), transparent 18%),
+        linear-gradient(180deg, #f9f5f0 0%, #efe5dc 100%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.72) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 22px),
         var(--bg-color);
       isolation: isolate;
     }
@@ -245,6 +247,12 @@
     .chatbot-window,
     .ambient-panel {
       color: var(--text-main);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(249, 243, 234, 0.94)),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 18px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 18px);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.55);
     }
 
     .perspective-card h3,
