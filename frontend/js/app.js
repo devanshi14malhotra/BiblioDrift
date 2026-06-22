@@ -3953,7 +3953,7 @@ async function handleAuth(event) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
     }
-
+    
     // Determine mode from dataset (set by our toggle logic) or default to login
     const mode = form.dataset.mode || 'login';
 
@@ -3961,6 +3961,12 @@ async function handleAuth(event) {
     const password = document.getElementById("password").value;
     const usernameInput = document.getElementById("username");
 
+    if(email === 'demo@bibliodrift.com'){
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In';
+        showToast("Enter a valid email address", "error");
+        return false
+    }
     // Helper to reset button state on failure
     const resetBtn = () => {
         if (btn) {
@@ -3978,7 +3984,7 @@ async function handleAuth(event) {
         return;
     }
 
-    // Demo bypass logic
+    //Demo bypass logic
     if (email === 'demo@bibliodrift.com') {
         const demoUser = { id: 1, username: 'Demo User', email: 'demo@bibliodrift.com' };
         SafeStorage.set('bibliodrift_user', JSON.stringify(demoUser));
@@ -3992,7 +3998,7 @@ async function handleAuth(event) {
         setTimeout(() => {
             window.location.href = "library.html";
         }, 1000);
-        return;
+        return false;
     }
 
     // Prepare Payload
