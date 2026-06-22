@@ -99,7 +99,7 @@ def inject_api_base_override() -> None:
 
 def main() -> None:
     reset_dist()
-    for folder in ("css", "js", "assets", "script"):
+    for folder in ("css", "js", "assets", "script", "data"):
         copy_tree(folder)
         
     manifest_src = SOURCE / "manifest.json"
