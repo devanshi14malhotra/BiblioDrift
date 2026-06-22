@@ -73,3 +73,5 @@ const createFooter = () => {
 };
 
 createFooter();
+
+// Mobile Menu Toggle Event Listener has been moved to pwa.js for global coverage
