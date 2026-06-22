@@ -1235,7 +1235,12 @@ class BookRenderer {
             }
 
             fetch(`${MOOD_API_BASE}/books/purchase-links?title=${title}&author=${author}&isbn=${isbn}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error ${res.status}`);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (data.success && data.links && data.links.length > 0) {
                         const linksHtml = data.links.map(link => {
@@ -1245,12 +1250,12 @@ class BookRenderer {
                         }).join('');
                         purchaseLinksEl.innerHTML = linksHtml;
                     } else {
-                        purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">No purchase links available.</p>';
+                        purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Purchase links are currently unavailable.</p>';
                     }
                 })
                 .catch(err => {
                     console.error('Failed to load purchase links', err);
-                    purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
+                    purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Purchase links are currently unavailable.</p>';
                 });
             // Explore Mood Button
             const moodBtnModal = document.getElementById('modal-mood-btn');
