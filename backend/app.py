@@ -135,6 +135,37 @@ app.register_blueprint(reader_identity_bp)
 # This will raise ValueError if any required variables are missing
 validate_required_env_vars()
 
+# =====================================================================
+# SECURITY COMPLIANCE UPDATE: SENTRY ERROR MONITORING
+# =====================================================================
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_dsn = os.getenv('SENTRY_DSN')
+if sentry_dsn:
+    def strip_sensitive_data(event, hint):
+        # Scrub sensitive data from request data before sending to Sentry
+        if 'request' in event:
+            request_data = event['request']
+            if 'headers' in request_data:
+                for key in ['Authorization', 'Cookie', 'X-CSRF-Token']:
+                    if key in request_data['headers'] or key.lower() in request_data['headers']:
+                        request_data['headers'][key] = '[Filtered]'
+                        request_data['headers'][key.lower()] = '[Filtered]'
+            if 'data' in request_data and isinstance(request_data['data'], dict):
+                for key in ['password', 'token', 'secret']:
+                    if key in request_data['data']:
+                        request_data['data'][key] = '[Filtered]'
+        return event
+
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FlaskIntegration()],
+        traces_sample_rate=1.0,
+        before_send=strip_sensitive_data,
+        environment=env
+    )
+
 # Apply configuration to Flask app
 app.config.update(app_config.flask_config)
 
@@ -419,6 +450,15 @@ def handle_unhandled_exception(e):
         tuple: A Flask JSON response object and an HTTP status code.
     """
     
+    # Capture in Sentry if it's not a standard HTTP exception
+    if not isinstance(e, HTTPException):
+        try:
+            import sentry_sdk
+            if os.getenv('SENTRY_DSN'):
+                sentry_sdk.capture_exception(e)
+        except ImportError:
+            pass
+
     # 1. Handle HTTP Exceptions Normally
     # If the exception is an intentional HTTP error (e.g., abort(404)),
     # we should return its intended status code and message, assuming it's
@@ -578,6 +618,13 @@ def handle_sqlalchemy_exception(e):
     Dedicated handler for database-related exceptions to prevent SQL injection
     reconnaissance and schema leakage.
     """
+    try:
+        import sentry_sdk
+        if os.getenv('SENTRY_DSN'):
+            sentry_sdk.capture_exception(e)
+    except ImportError:
+        pass
+
     # 1. Ensure the session is rolled back safely
     try:
         db.session.rollback()
