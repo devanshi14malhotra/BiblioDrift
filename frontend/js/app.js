@@ -100,6 +100,65 @@ function hideNoResults() {
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 /**
+ * Universal book share function with Web Share API + clipboard fallback
+ * Generates a shareable URL with book details
+ * @param {string} title - Book title
+ * @param {string} authors - Author name(s)
+ * @param {function} onSuccess - Optional callback on successful share/copy
+ * @param {function} onError - Optional callback on error
+ */
+function shareBookContent(title, authors, onSuccess, onError) {
+    // Determine the correct base URL
+    let baseUrl;
+    if (window.location.protocol === 'file:') {
+        // Local file testing - use production URL
+        baseUrl = 'https://bibliodrift-dm.netlify.app';
+    } else {
+        // Use current site's origin (works for localhost and production)
+        baseUrl = window.location.origin;
+    }
+    
+    const bookUrl = `${baseUrl}/?book=${encodeURIComponent(title)}`;
+    const shareText = `📚 Check out "${title}" by ${authors}\n\nDiscover more on BiblioDrift: ${bookUrl}`;
+    
+    // Use Web Share API on supported devices (mobile)
+    if (navigator.share) {
+        navigator.share({
+            title: `${title} - BiblioDrift`,
+            text: `Check out "${title}" by ${authors}`,
+            url: bookUrl,
+        }).then(() => {
+            if (onSuccess) onSuccess();
+        }).catch((err) => {
+            // User cancelled share - don't show error
+            if (err.name === 'AbortError') return;
+            
+            // Other errors - fallback to clipboard
+            copyShareFallback(shareText, onSuccess, onError);
+        });
+    } else {
+        // Fallback for desktop browsers
+        copyShareFallback(shareText, onSuccess, onError);
+    }
+}
+
+/**
+ * Fallback function to copy share text to clipboard
+ */
+function copyShareFallback(text, onSuccess, onError) {
+    navigator.clipboard.writeText(text).then(() => {
+        if (onSuccess) onSuccess();
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        if (onError) onError(err);
+    });
+}
+
+// Make helper functions globally available
+window.shareBookContent = shareBookContent;
+window.copyShareFallback = copyShareFallback;
+
+/**
  * Centralized Publish-Subscribe State Store
  */
 class Store {
@@ -1005,13 +1064,12 @@ class BookRenderer {
         // Share Button
         scene.querySelector('.share-btn').addEventListener('click', (e) => {
             e.stopPropagation();
-            const shareText = `Check out this book: ${title} by ${authors}`;
-            navigator.clipboard.writeText(shareText).then(() => {
-                showToast('Book details copied to clipboard!', 'success');
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                showToast('Failed to copy book details.', 'error');
-            });
+            shareBookContent(
+               title, 
+               authors,
+               () => showToast('Book details copied to clipboard!', 'success'),
+               () => showToast('Failed to copy book details.', 'error')
+           );
         });
 
         // Explore Mood Button
@@ -1197,16 +1255,17 @@ class BookRenderer {
         }
 
         if (shareBtn) {
-            shareBtn.onclick = () => {
-                const shareText = `Check out this book: ${book.volumeInfo.title} by ${book.volumeInfo.authors?.join(", ") || "Unknown Author"}`;
-                navigator.clipboard.writeText(shareText).then(() => {
-                    showToast('Book title and author copied!', 'success');
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                    showToast('Failed to copy book details.', 'error');
-                });
-            };
-        }
+    shareBtn.onclick = () => {
+        const bookTitle = book.volumeInfo.title;
+        const bookAuthors = book.volumeInfo.authors?.join(", ") || "Unknown Author";
+        shareBookContent(
+            bookTitle,
+            bookAuthors,
+            () => showToast('Book details copied to clipboard!', 'success'),
+            () => showToast('Failed to copy book details.', 'error')
+        );
+    };
+}
 
         // Preview Button — opens the Google Books Embedded Viewer
         const previewBtn = document.getElementById('modal-preview-btn');

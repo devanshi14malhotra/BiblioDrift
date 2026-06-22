@@ -2821,29 +2821,52 @@ class BookshelfRenderer3D {
         }
 
         const shareBtn = document.getElementById('modal-share-btn-lib');
-        if (shareBtn) {
-            shareBtn.setAttribute('aria-label', 'Share book information');
-            const newShareBtn = shareBtn.cloneNode(true);
-            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+if (shareBtn) {
+    shareBtn.setAttribute('aria-label', 'Share book information');
+    const newShareBtn = shareBtn.cloneNode(true);
+    shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
 
-            newShareBtn.addEventListener('click', () => {
-                const title = book.title || 'Unknown Title';
-                const author = book.author || 'Unknown Author';
-                const shareText = `Check out this book: ${title} by ${author}`;
-                navigator.clipboard.writeText(shareText).then(() => {
-                    // Temporarily change button text to show success
+    newShareBtn.addEventListener('click', () => {
+        const title = book.title || 'Unknown Title';
+        const author = book.author || 'Unknown Author';
+        
+        // Use the global shareBookContent helper (defined in app.js)
+        if (typeof window.shareBookContent === 'function') {
+            window.shareBookContent(
+                title,
+                author,
+                () => {
+                    // Show visual feedback on button
                     const originalHTML = newShareBtn.innerHTML;
                     newShareBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
                     this.announceToScreenReader('Book information copied to clipboard');
                     setTimeout(() => {
                         newShareBtn.innerHTML = originalHTML;
                     }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
+                },
+                () => {
                     this.announceToScreenReader('Failed to copy book information');
-                });
+                }
+            );
+        } else {
+            // Fallback if helper not loaded (graceful degradation)
+            const baseUrl = window.location.origin;
+            const bookUrl = `${baseUrl}/?book=${encodeURIComponent(title)}`;
+            const shareText = `📚 Check out "${title}" by ${author}\n\nDiscover more on BiblioDrift: ${bookUrl}`;
+            navigator.clipboard.writeText(shareText).then(() => {
+                const originalHTML = newShareBtn.innerHTML;
+                newShareBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                this.announceToScreenReader('Book information copied to clipboard');
+                setTimeout(() => {
+                    newShareBtn.innerHTML = originalHTML;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                this.announceToScreenReader('Failed to copy book information');
             });
         }
+    });
+}
 
         // Preview Button — opens the Google Books Embedded Viewer
         const previewBtnLib = document.getElementById('modal-preview-btn-lib');
