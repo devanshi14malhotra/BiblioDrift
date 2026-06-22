@@ -708,8 +708,6 @@ body {
 }
 
 *:hover {
-html,
-body {
     cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24'><path fill='%23ffca3a' d='M4.42 20.58a1 1 0 0 0 1.41 0L15.24 11.2l-2.44-2.44L3.42 18.17a1 1 0 0 0 0 1.41zM17.36 9.08l-2.44-2.44 2.12-2.12a2 2 0 0 1 2.83 0l1.77 1.77a2 2 0 0 1 0 2.83z'/><path stroke='%23ffca3a' stroke-width='1.5' d='M2 22l4-1'/></svg>") 0 24, pointer !important;
 }
 
@@ -1594,8 +1592,6 @@ body {
 /* PENCIL CURSOR ANIMATION */
 
 body.landing-page {
-html,
-body {
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%235d4037" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5a4 4 0 0 1-2.5.88H2v-4.5a4 4 0 0 1 .88-2.5L17 3"></path></svg>') 5 1, auto;
 }
 
@@ -1707,8 +1703,6 @@ body {
 
 /* Pencil cursor for dark mode */
 [data-theme="night"] body.landing-page {
-html,
-body {
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23d9c0a7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5a4 4 0 0 1-2.5.88H2v-4.5a4 4 0 0 1 .88-2.5L17 3"></path></svg>') 5 1, auto;
 }
 

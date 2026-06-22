@@ -8254,3 +8254,17 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
