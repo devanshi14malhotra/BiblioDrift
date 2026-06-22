@@ -47,6 +47,13 @@
 
   <!-- Security: DOMPurify for XSS prevention -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <!-- PDF.js for auto page detection -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
   <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
@@ -500,6 +507,144 @@
       border-radius: 12px;
       border: 1px dashed var(--border-color);
     }
+    
+    /* Reading Progress Tracker */
+    .progress-tracker-section {
+      margin-top: 14px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border-color);
+    }
+    .progress-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .progress-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .progress-percent-badge {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #c9a0dc;
+      background: rgba(201, 160, 220, 0.12);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(201, 160, 220, 0.2);
+    }
+    .progress-bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--field-bg);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #c9a0dc, #a06abd);
+      border-radius: 10px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-page-info {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: right;
+    }
+    .btn-progress-update {
+      background: var(--field-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-progress-update:hover { border-color: var(--border-focus); color: #c9a0dc; }
+
+    /* Progress Dialog */
+    .progress-dialog-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .progress-dialog-overlay.active { display: flex; }
+    .progress-dialog-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+      animation: dialogSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes dialogSlideIn {
+      from { opacity: 0; transform: scale(0.92) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .progress-dialog-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+    .progress-dialog-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      font-style: italic;
+    }
+    .progress-dialog-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .progress-dialog-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-dialog-cancel {
+      background: var(--field-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+    .btn-dialog-save {
+      background: var(--border-focus);
+      border: none;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    .btn-dialog-save:hover { opacity: 0.88; }
+
   </style>
     <link rel="stylesheet" href="../css/pwa.css">
 </head>
@@ -691,7 +836,60 @@
       </div>
     </div>
   </div>
+  <!-- Reading Progress Dialog Modal -->
+  <div class="progress-dialog-overlay" id="progressDialogOverlay">
+    <div class="progress-dialog-box">
+     <div class="progress-dialog-title">
+       <i class="fa-solid fa-bookmark" style="color:#c9a0dc; margin-right:8px;"></i> Update Reading Progress
+     </div>
+    <div class="progress-dialog-subtitle" id="progressDialogBookName">Tracking your reading journey</div>
 
+    <!-- Live Preview Bar inside Dialog -->
+    <div style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:0.78rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Progress Preview</span>
+        <span id="dialogLivePercent" style="font-size:1.1rem; font-weight:700; color:#c9a0dc;">0%</span>
+      </div>
+      <div class="progress-bar-track" style="height:10px;">
+        <div class="progress-bar-fill" id="dialogLiveBar" style="width:0%;"></div>
+      </div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px; text-align:center;" id="dialogLiveInfo">
+        Enter pages below to preview
+      </div>
+    </div>
+
+    <div class="progress-dialog-grid">
+      <div class="vault-input-group">
+        <label for="progressCurrentPage">
+          Current Page
+          <span style="font-size:0.72rem; color:#c9a0dc; margin-left:4px;">(where you left off)</span>
+        </label>
+        <input type="number" id="progressCurrentPage" class="vault-field" placeholder="e.g. 120" min="0" onkeydown="return !['.', 'e', 'E', '+', '-'].includes(event.key)">
+      </div>
+      <div class="vault-input-group">
+        <label for="progressTotalPages">
+          Total Pages
+          <span id="autoDetectedLabel" style="font-size:0.72rem; color:#2eb85c; margin-left:4px; display:none;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-detected
+          </span>
+        </label>
+        <input type="number" id="progressTotalPages" class="vault-field" placeholder="e.g. 350" min="1" onkeydown="return !['.', 'e', 'E', '+', '-'].includes(event.key)">
+      </div>
+    </div>
+
+    <div style="background:rgba(201,160,220,0.06); border:1px solid rgba(201,160,220,0.15); border-radius:8px; padding:10px 14px; margin-bottom:18px; font-size:0.78rem; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+      <i class="fa-solid fa-circle-info" style="color:#c9a0dc;"></i>
+      <span>Total pages are auto-detected from your PDF. Current page must be entered manually.</span>
+    </div>
+
+    <div class="progress-dialog-actions">
+      <button class="btn-dialog-cancel" id="progressDialogCancel">Cancel</button>
+      <button class="btn-dialog-save" id="progressDialogSave">
+        <i class="fa-solid fa-floppy-disk" style="margin-right:5px;"></i> Save Progress
+      </button>
+    </div>
+  </div>
+ </div>
 
   <div id="immersiveBookReader" class="realistic-book-overlay">
     <button class="close-reader-trigger" id="closeReaderBtn" title="Close Book Workspace Layout Layer"><i class="fa-solid fa-xmark"></i></button>
@@ -742,6 +940,9 @@
       db.version(6).stores({
         vaultBooks: "++id, title, author, genre, desc, privacy, elaraScanStatus, filename, timestamp, coverColor, coverUrl, fileBlob"
       });
+      db.version(7).stores({
+        vaultBooks: "++id, title, author, genre, desc, privacy, elaraScanStatus, filename, timestamp, coverColor, coverUrl, fileBlob, currentPage, totalPages"
+      });
 
       const authBarrier = document.getElementById("authBarrier");
       const secureDeck = document.getElementById("secureDeck");
@@ -783,12 +984,25 @@
 
       vaultFileInput.addEventListener("change", handleFileSelection);
 
-      function handleFileSelection() {
+      async function handleFileSelection() {
         if(vaultFileInput.files.length) {
           const file = vaultFileInput.files[0];
-          fileSelectedFeedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2eb85c; margin-right: 5px;"></i> Loaded: <strong style="color: var(--text-main);">${file.name}</strong> (${(file.size/(1024*1024)).toFixed(2)} MB)`;
+          fileSelectedFeedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2eb85c; margin-right: 5px;"></i> Loaded: <strong style="color: var(--text-main);">${file.name}</strong> (${(file.size/(1024*1024)).toFixed(2)} MB) <span style="color:#c9a0dc; margin-left:8px;"><i class="fa-solid fa-spinner fa-spin"></i> Detecting pages...</span>`;
           document.getElementById("vaultBookTitle").value = file.name.replace(/\.[^/.]+$/, "");
           detailsRevealer.classList.add("active");
+
+          // Auto-detect total pages using PDF.js
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const detectedPages = pdf.numPages;
+            fileSelectedFeedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2eb85c; margin-right: 5px;"></i> Loaded: <strong style="color: var(--text-main);">${file.name}</strong> (${(file.size/(1024*1024)).toFixed(2)} MB) <span style="color:#2eb85c; margin-left:8px;"><i class="fa-solid fa-file-lines"></i> ${detectedPages} pages detected</span>`;
+            // Store for use during upload
+            vaultFileInput._detectedPages = detectedPages;
+          } catch(e) {
+            fileSelectedFeedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2eb85c; margin-right: 5px;"></i> Loaded: <strong style="color: var(--text-main);">${file.name}</strong> (${(file.size/(1024*1024)).toFixed(2)} MB)`;
+            vaultFileInput._detectedPages = null;
+          }
         }
       }
 
@@ -824,7 +1038,9 @@
             timestamp: Date.now(),
             coverColor: selectedColor,
             coverUrl: coverUrl,
-            fileBlob: file 
+            fileBlob: file,
+            currentPage: 0,
+            totalPages: vaultFileInput._detectedPages || 0
           });
 
           // Reset inputs cleanly
@@ -939,6 +1155,11 @@
                   </div>
                 `;
 
+              // Calculate reading progress percentage
+              const progressPercent = (book.currentPage && book.totalPages && book.totalPages > 0)
+                ? Math.round((book.currentPage / book.totalPages) * 100)
+                : 0;
+
               // Clean Integrated Front-Cover Split-Form Component Architecture
               metaDrawer.innerHTML = `
                 <div class="vault-split-card">
@@ -977,6 +1198,20 @@
                     </div>
 
                     <div>
+                      <!-- Progress Tracker -->
+                      <div class="progress-tracker-section">
+                        <div class="progress-label-row">
+                          <span class="progress-label"><i class="fa-solid fa-bookmark" style="margin-right:5px;"></i> Reading Progress</span>
+                          <span class="progress-percent-badge" id="progress-badge-${book.id}">${progressPercent}% Completed</span>
+                        </div>
+                        <div class="progress-bar-track">
+                          <div class="progress-bar-fill" id="progress-fill-${book.id}" style="width:${progressPercent}%;"></div>
+                        </div>
+                        <div class="progress-page-info" id="progress-info-${book.id}">
+                          ${book.currentPage || 0} / ${book.totalPages || '—'} pages
+                        </div>
+                      </div>
+
                       <div style="font-size:0.72rem; color:var(--text-muted); margin-top:15px; display:flex; align-items:center; gap:6px;">
                         <i class="fa-solid fa-paperclip"></i> <span>Sandbox Block: <strong>${book.filename}</strong></span>
                       </div>
@@ -988,6 +1223,9 @@
                           </button>
                           <button class="btn-delete-vault action-delete-node" style="padding: 8px 14px; font-size:0.8rem;">
                             <i class="fa-solid fa-trash-can"></i> Delete
+                          </button>
+                          <button class="btn-progress-update action-progress-node" style="padding: 8px 14px; font-size:0.8rem;">
+                            <i class="fa-solid fa-bookmark"></i> Update Progress
                           </button>
                         </div>
                         <button class="btn-read-book action-open-reader-node" style="padding: 8px 16px; font-size:0.82rem;">
@@ -1078,6 +1316,11 @@
                 launchRealisticReader(book);
               });
 
+              // Progress Update Button
+              metaDrawer.querySelector(".action-progress-node").addEventListener("click", () => {
+                openProgressDialog(book.id, book.title, book.currentPage || 0, book.totalPages || 0);
+              });
+
               shelfRow.appendChild(spineNode);
               drawerMetaTarget.appendChild(metaDrawer);
             });
@@ -1123,6 +1366,76 @@
           URL.revokeObjectURL(activePdfObjectUrl);
           activePdfObjectUrl = null;
         }
+      });
+
+      // Progress Dialog Management
+      let activeProgressBookId = null;
+
+      function updateDialogPreview() {
+        const cur  = parseInt(document.getElementById("progressCurrentPage").value) || 0;
+        const tot  = parseInt(document.getElementById("progressTotalPages").value)  || 0;
+        const pct  = (tot > 0) ? Math.min(100, Math.round((cur / tot) * 100)) : 0;
+        document.getElementById("dialogLiveBar").style.width     = `${pct}%`;
+        document.getElementById("dialogLivePercent").textContent = `${pct}%`;
+        document.getElementById("dialogLiveInfo").textContent    = tot > 0
+          ? `${cur} of ${tot} pages read`
+          : "Enter total pages to preview";
+      }
+
+      document.getElementById("progressCurrentPage").addEventListener("input", updateDialogPreview);
+      document.getElementById("progressTotalPages").addEventListener("input",  updateDialogPreview);
+
+      function openProgressDialog(bookId, bookTitle, currentPage, totalPages) {
+        activeProgressBookId = bookId;
+        document.getElementById("progressDialogBookName").textContent = `"${bookTitle}"`;
+        document.getElementById("progressCurrentPage").value = currentPage || "";
+        document.getElementById("progressTotalPages").value  = totalPages  || "";
+
+        // Show auto-detected label if totalPages exists
+        const autoLabel = document.getElementById("autoDetectedLabel");
+        if (totalPages && totalPages > 0) {
+          autoLabel.style.display = "inline";
+        } else {
+          autoLabel.style.display = "none";
+        }
+
+        updateDialogPreview();
+        document.getElementById("progressDialogOverlay").classList.add("active");
+        // Focus current page input
+        setTimeout(() => document.getElementById("progressCurrentPage").focus(), 100);
+      }
+
+      document.getElementById("progressDialogCancel").addEventListener("click", () => {
+        document.getElementById("progressDialogOverlay").classList.remove("active");
+        activeProgressBookId = null;
+      });
+
+      document.getElementById("progressDialogOverlay").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("progressDialogOverlay")) {
+          document.getElementById("progressDialogOverlay").classList.remove("active");
+          activeProgressBookId = null;
+        }
+      });
+
+      document.getElementById("progressDialogSave").addEventListener("click", async () => {
+        if (!activeProgressBookId) return;
+        const currentPage = parseInt(document.getElementById("progressCurrentPage").value) || 0;
+        const totalPages  = parseInt(document.getElementById("progressTotalPages").value)  || 0;
+        if (totalPages < 1) { alert("Please enter the total number of pages."); return; }
+        if (currentPage > totalPages) { alert("Current page cannot exceed total pages."); return; }
+
+        await db.vaultBooks.update(activeProgressBookId, { currentPage, totalPages });
+
+        const percent = Math.round((currentPage / totalPages) * 100);
+        const fillEl  = document.getElementById(`progress-fill-${activeProgressBookId}`);
+        const badgeEl = document.getElementById(`progress-badge-${activeProgressBookId}`);
+        const infoEl  = document.getElementById(`progress-info-${activeProgressBookId}`);
+        if (fillEl)  fillEl.style.width    = `${percent}%`;
+        if (badgeEl) badgeEl.textContent   = `${percent}% Completed`;
+        if (infoEl)  infoEl.textContent    = `${currentPage} / ${totalPages} pages`;
+
+        document.getElementById("progressDialogOverlay").classList.remove("active");
+        activeProgressBookId = null;
       });
 
       // Launch Initial View Render Configuration
