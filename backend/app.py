@@ -19,7 +19,7 @@ from flask_limiter.util import get_remote_address
 from sqlalchemy.orm import joinedload
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from dotenv import load_dotenv
 from spine_generator import create_spine
 import os
@@ -48,7 +48,7 @@ else:
 # Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
 from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, generate_chat_response_stream, llm_service, get_vibe_recommendations
-from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
+from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, ReviewEditHistory, register_user, login_user
 from price_tracker import get_price_tracker
 from cache_service import cache_service
 from backend.core.validators.validators import (
@@ -100,7 +100,7 @@ from backend.core.responses.error_responses import (
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
     not_found_error, resource_exists_error, rate_limit_error,
-    internal_error, service_unavailable_error
+    internal_error, service_unavailable_error, database_integrity_error
 )
 
 # =====================================================================
@@ -314,6 +314,23 @@ def rate_limit_key_func() -> str:
     """Composite key: IP + principal + endpoint."""
     endpoint = request.endpoint or request.path
     return f"{get_remote_address()}|{_resolve_rate_limit_principal()}|{endpoint}"
+
+
+def _review_user_rate_key() -> str:
+    """Per-user daily review submission limit."""
+    user_id = get_jwt_identity()
+    if user_id:
+        return f"review-user:{user_id}"
+    return f"review-anon:{get_remote_address()}"
+
+
+def _review_ip_rate_key() -> str:
+    """Per-IP hourly review submission limit."""
+    return f"review-ip:{get_remote_address()}"
+
+
+REVIEW_USER_RATE_LIMIT = os.getenv('REVIEW_RATE_LIMIT_PER_USER_DAY', '5 per day')
+REVIEW_IP_RATE_LIMIT = os.getenv('REVIEW_RATE_LIMIT_PER_IP_HOUR', '10 per hour')
 
 
 def _handle_rate_limit_exceeded(e: RateLimitExceeded):
@@ -2450,10 +2467,29 @@ def get_public_collections():
 
 # ==================== BOOK REVIEWS & RATINGS ENDPOINTS ====================
 
+def _find_user_review(user_id: int, book_id: int):
+    """Return active review, or a soft-deleted one eligible for restore."""
+    review = Review.query.filter_by(user_id=user_id, book_id=book_id).first()
+    if review:
+        return review
+    return Review.query.filter_by(user_id=user_id, book_id=book_id, is_deleted=True).first()
+
+
+def _record_review_edit(review: Review) -> None:
+    """Persist prior rating/text before an in-place update."""
+    db.session.add(ReviewEditHistory(
+        review_id=review.id,
+        previous_rating=review.rating,
+        previous_review_text=review.review_text,
+    ))
+
+
 @app.route('/api/v1/reviews', methods=['POST'])
+@limiter.limit(REVIEW_USER_RATE_LIMIT, key_func=_review_user_rate_key)
+@limiter.limit(REVIEW_IP_RATE_LIMIT, key_func=_review_ip_rate_key)
 @jwt_required()
 def create_or_update_review():
-    """Create or update a book review (requires JWT)."""
+    """Create or update a book review (requires JWT). One review per user per book."""
     data = request.json
     current_user_id = get_jwt_identity()
     
@@ -2476,9 +2512,18 @@ def create_or_update_review():
             db.session.add(book)
             db.session.flush()
         
-        existing_review = Review.query.filter_by(user_id=validated_data.user_id, book_id=book.id).first()
-        
+        existing_review = _find_user_review(validated_data.user_id, book.id)
+        is_update = False
+
         if existing_review:
+            is_update = True
+            if existing_review.is_deleted:
+                existing_review.is_deleted = False
+            if (
+                existing_review.rating != validated_data.rating
+                or (existing_review.review_text or '') != (validated_data.review_text or '')
+            ):
+                _record_review_edit(existing_review)
             existing_review.rating = validated_data.rating
             existing_review.review_text = validated_data.review_text or ''
             review = existing_review
@@ -2494,7 +2539,11 @@ def create_or_update_review():
             message = "Review created successfully"
         
         db.session.commit()
-        return jsonify({"message": message, "review": review.to_dict()}), 201 if not existing_review else 200
+        status_code = 200 if is_update else 201
+        return jsonify({"message": message, "review": review.to_dict()}), status_code
+    except IntegrityError:
+        db.session.rollback()
+        return database_integrity_error("You already reviewed this book")
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
