@@ -74,9 +74,7 @@ body.landing-page .landing-shell {
     padding: 1rem 0 0;
 }
 
-.landing-header {
-    position: sticky;
-    top: 1rem;
+.landing-header { position: sticky; top: 0;
     z-index: 12;
     display: flex;
     align-items: center;
@@ -1944,3 +1942,4 @@ html[data-theme='night'] .hero-book-stack::before {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
 }
+
