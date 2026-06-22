@@ -261,6 +261,7 @@ header {
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+    gap:1rem;
     /* Subtly deeper bottom border */
     transition: background-color 0.4s ease, color 0.4s ease, backdrop-filter 0.4s ease, border-color 0.4s ease;
 }
@@ -354,6 +355,7 @@ header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex: 0 0 auto;
 }
 
 .nav-links {
