@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      const theme = localStorage.getItem('bibliodrift_theme');
+      if (theme === 'night') {
+        document.documentElement.setAttribute('data-theme', 'night');
+      }
+    })();
+    document.addEventListener('DOMContentLoaded', function () {
+      const btn = document.getElementById('themeToggle');
+      if (!btn) {
+        console.error('themeToggle button not found');
+        return;
+      }
+
+      const icon = btn.querySelector('i');
+      const STORAGE_KEY = 'bibliodrift_theme';
+
+      function applyTheme(theme) {
+        if (theme === 'night') {
+          document.documentElement.setAttribute('data-theme', 'night');
+          if (icon) icon.className = 'fa-solid fa-sun';
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          if (icon) icon.className = 'fa-solid fa-moon';
+        }
+
+        localStorage.setItem(STORAGE_KEY, theme);
+        if (typeof restoreTheme === 'function') restoreTheme();
+        console.log('Theme applied:', theme);
+      }
+
+      const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+      applyTheme(savedTheme);
+
+      btn.addEventListener('click', function () {
+        const current =
+          document.documentElement.getAttribute('data-theme') === 'night'
+            ? 'night'
+            : 'light';
+
+        const next = current === 'night' ? 'light' : 'night';
+        applyTheme(next);
+      });
+    });
+  </script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="../js/db.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="The Bibliodrift Blog. Thoughts, stories & reading experiences curated for every kind of reader." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bibliodrift-dm.netlify.app/pages/blogs.html" />
+  <meta property="og:title" content="BiblioDrift | Blogs" />
+  <meta property="og:description"
+    content="The Bibliodrift Blog. Thoughts, stories & reading experiences curated for every kind of reader." />
+  <title>BiblioDrift | Blogs</title>
+  
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/blogs.css" />
+  <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+  <link rel="stylesheet" href="../css/pwa.css">
+  <link rel="manifest" href="../manifest.json">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Georgia&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
+  
+  <meta name="theme-color" content="#2c2420">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BiblioDrift">
+  <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
+</head>
+
+<body>
+  <div id="sc-glow-outer"></div>
+  <div id="sc-glow-mid"></div>
+  <div id="sc-glow-inner"></div>
+  <div id="sc-dot"></div>
+  <header>
+    <a href="app.html" class="logo">
+      <img style="height: 40px" src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift Logo"> BiblioDrift
+    </a>
+    <div class="header-controls">
+      <div class="search-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search blogs, topics, moods...">
+        <i class="fa-solid fa-search search-icon" id="searchIcon"></i>
+      </div>
+      <nav class="nav-links">
+        <div class="tooltip">
+          <a href="app.html">Discovery</a>
+          <span class="tooltip-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Explore books</span>
+        </div>
+        <div class="tooltip">
+          <a href="blogs.html" class="active">Blogs</a>
+          <span class="tooltip-text"><i class="fa-solid fa-pen-fancy"></i> Editorial</span>
+        </div>
+        <div class="tooltip">
+          <a href="vault.html">My Vault</a>
+          <span class="tooltip-text"><i class="fa-solid fa-vault"></i> My Vault</span>
+        </div>
+        <div class="tooltip">
+          <a href="library.html">My Library</a>
+          <span class="tooltip-text"><i class="fa-solid fa-book"></i> My Library</span>
+        </div>
+        <div class="tooltip">
+           <a href="community-stories.html">Community</a>
+           <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
+        </div>
+        <div class="tooltip">
+          <a href="chat.html">Chat</a>
+          <span class="tooltip-text"><i class="fa-solid fa-comments"></i> Chat</span>
+        </div>
+        <div class="tooltip">
+          <a href="auth.html" id="navAuthLink">Sign In</a>
+          <span class="tooltip-text" id="navAuthTooltip"><i class="fa-solid fa-key"></i> Access account</span>
+        </div>
+      </nav>
+      <button id="themeToggle" class="btn-icon" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="blogs-main">
+    
+    <!-- Blog Page Header -->
+    <div class="blog-page-header">
+      <div class="blog-title-section">
+        <h1>The Bibliodrift Blog <i class="fa-solid fa-feather" style="color: #c5a47e; font-size: 2.2rem;"></i></h1>
+        <p>Thoughts, stories & reading experiences<br><strong>curated</strong> for every kind of reader.</p>
+      </div>
+      <a href="contributing.html" class="write-btn" style="text-decoration: none;">
+        <i class="fa-solid fa-pen-nib"></i> Write for Bibliodrift
+      </a>
+    </div>
+
+    <!-- Featured Article -->
+    <a href="#" class="featured-article" data-category="mood-reads">
+      <div class="featured-img">
+        <span class="featured-badge">Featured</span>
+        <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=800&auto=format&fit=crop" alt="Featured blog post">
+      </div>
+      <div class="featured-content">
+        <span class="category-tag"><i class="fa-solid fa-cloud"></i> MOOD READS</span>
+        <h2>7 Books That Feel Like a Warm Hug</h2>
+        <p>Stories that comfort you, heal you, and remind you that it's okay to slow down and breathe.</p>
+        <div class="article-meta">
+          <div class="author-info">
+            <img src="https://ui-avatars.com/api/?name=Elara&background=c5a47e&color=fff" alt="Elara">
+            By Elara
+          </div>
+          <span class="meta-dot"><i class="fa-solid fa-circle"></i></span>
+          <span>May 19, 2026</span>
+          <span class="meta-dot"><i class="fa-solid fa-circle"></i></span>
+          <span><i class="fa-regular fa-clock"></i> 5 min read</span>
+          <div class="featured-arrow">
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!-- Category Filters -->
+    <div class="blog-filters" id="blogFilters">
+      <button class="filter-btn active" data-filter="all"><i class="fa-solid fa-table-cells-large"></i> All</button>
+      <button class="filter-btn" data-filter="mood-reads"><i class="fa-solid fa-cloud"></i> Mood Reads</button>
+      <button class="filter-btn" data-filter="literary-essays"><i class="fa-solid fa-pen-nib"></i> Literary Essays</button>
+      <button class="filter-btn" data-filter="author-spotlight"><i class="fa-solid fa-user"></i> Author Spotlight</button>
+      <button class="filter-btn" data-filter="cozy-corners"><i class="fa-solid fa-mug-hot"></i> Cozy Corners</button>
+      <button class="filter-btn" data-filter="reading-playlists"><i class="fa-solid fa-music"></i> Reading Playlists</button>
+      <button class="filter-btn" data-filter="seasonal-picks"><i class="fa-solid fa-leaf"></i> Seasonal Picks</button>
+      <button class="filter-btn filter-icon-btn"><i class="fa-solid fa-sliders"></i> Filter</button>
+    </div>
+
+    <!-- Latest from the blog -->
+    <div class="latest-header">
+      <h3>Latest from the blog</h3>
+      <a href="#blogsGrid" class="view-all-link">View all blogs &rarr;</a>
+    </div>
+
+    <div class="blogs-grid" id="blogsGrid">
+      
+      <!-- Card 1 -->
+      <a href="#" class="blog-card" data-category="mood-reads">
+        <img src="https://images.unsplash.com/photo-1518600506278-4e8ef466b810?q=80&w=600&auto=format&fit=crop" alt="Rainy Days" class="blog-card-img">
+        <div class="blog-card-content">
+          <span class="category-tag"><i class="fa-solid fa-cloud"></i> MOOD READS</span>
+          <h4>Books for Rainy Days and Quiet Minds</h4>
+          <p>When the rain falls, these stories wrap around you like a blanket.</p>
+          <div class="blog-card-footer">
+            <div class="article-meta" style="gap: 0.5rem; font-size: 0.8rem;">
+              <span>May 18, 2026</span>
+              <span class="meta-dot"><i class="fa-solid fa-circle"></i></span>
+              <span><i class="fa-regular fa-clock"></i> 4 min read</span>
+            </div>
+            <button class="bookmark-btn"><i class="fa-regular fa-bookmark"></i></button>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 2 -->
+      <a href="#" class="blog-card" data-category="literary-essays">
+        <img src="https://images.unsplash.com/photo-1455390582262-044cdead27d2?q=80&w=600&auto=format&fit=crop" alt="Literary Essays" class="blog-card-img">
+        <div class="blog-card-content">
+          <span class="category-tag"><i class="fa-solid fa-pen-nib"></i> LITERARY ESSAYS</span>
+          <h4>Why Books Stay With Us Forever</h4>
+          <p>Exploring the emotions, memories, and moments that books leave behind.</p>
+          <div class="blog-card-footer">
+            <div class="article-meta" style="gap: 0.5rem; font-size: 0.8rem;">
+              <span>May 17, 2026</span>
+              <span class="meta-dot"><i class="fa-solid fa-circle"></i></span>
+              <span><i class="fa-regular fa-clock"></i> 6 min read</span>
+            </div>
+            <button class="bookmark-btn"><i class="fa-regular fa-bookmark"></i></button>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 3 -->
+      <a href="#" class="blog-card" data-category="cozy-corners">
+        <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=600&auto=format&fit=crop" alt="Reading Nook" class="blog-card-img">
+        <div class="blog-card-content">
+          <span class="category-tag"><i class="fa-solid fa-mug-hot"></i> COZY CORNERS</span>
+          <h4>How to Build the Perfect Reading Nook</h4>
+          <p>Create a space that makes every reading session magical.</p>
+          <div class="blog-card-footer">
+            <div class="article-meta" style="gap: 0.5rem; font-size: 0.8rem;">
+              <span>May 15, 2026</span>
+              <span class="meta-dot"><i class="fa-solid fa-circle"></i></span>
+              <span><i class="fa-regular fa-clock"></i> 5 min read</span>
+            </div>
+            <button class="bookmark-btn"><i class="fa-regular fa-bookmark"></i></button>
+          </div>
+        </div>
+      </a>
+
+      <!-- Card 4 -->
+      <a href="#" class="blog-card" data-category="author-spotlight">
+        <img src="https://images.unsplash.com/photo-1474552226712-ac0f0961a954?q=80&w=600&auto=format&fit=crop" alt="Jane Austen" class="blog-card-img">
+        <div class="blog-card-content">
+          <span class="category-tag"><i class="fa-solid fa-user"></i> AUTHOR SPOTLIGHT</span>
+          <h4>The Timeless Words of Jane Austen</h4>
+          <p>A look into the life, mind, and legacy of a literary icon.</p>
+          <div class="blog-card-footer">
+            <div class="article-meta" style="gap: 0.5rem; font-size: 0.8rem;">
+              <span>May 14, 2026</span>
+              <span class="meta-dot"><i class="fa-solid fa-circle"></i></span>
+              <span><i class="fa-regular fa-clock"></i> 7 min read</span>
+            </div>
+            <button class="bookmark-btn"><i class="fa-regular fa-bookmark"></i></button>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Newsletter Subscribe -->
+    <div class="newsletter-section">
+      <div class="newsletter-info">
+        <div class="newsletter-icon">
+          <i class="fa-solid fa-book-open-reader"></i>
+        </div>
+        <div>
+          <h4>Get cozy updates in your inbox</h4>
+          <p>New reads, blog stories, and bookish delights.</p>
+        </div>
+      </div>
+      <div class="newsletter-form">
+        <input type="email" id="newsletter-input" placeholder="Enter your email">
+        <button type="button" id="newsletter-btn"><i class="fa-solid fa-paper-plane"></i> Subscribe</button>
+      </div>
+    </div>
+    <div id="newsletter-msg" style="text-align: right; color: var(--text-main); display: none; width: 100%; margin-top: -2rem; margin-bottom: 3rem; padding-right: 2.5rem; font-weight: bold;"></div>
+
+  </main>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/security.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/pwa.js"></script>
+  <script src="../js/footer.js"></script>
+  <script src="../js/theme-manager.js"></script>
+  <script src="../js/blogs.js"></script>
+  
+  <!-- Back to Top Button -->
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top"
+    onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+</body>
+</html>
