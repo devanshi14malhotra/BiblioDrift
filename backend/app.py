@@ -114,7 +114,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import enhanced mood analysis
 try:
-    from mood_analysis.ai_service_enhanced import AIBookService
+    from backend.mood_analysis.ai_service_enhanced import AIBookService
     MOOD_ANALYSIS_AVAILABLE = True
 except ImportError:
     MOOD_ANALYSIS_AVAILABLE = False
