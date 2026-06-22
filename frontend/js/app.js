@@ -543,7 +543,7 @@ const COVER_IMAGE_NAME_OVERRIDES = {
 
 function getCoverImagePath(title) {
     if (!title) {
-        return '../assets/images/cover-placeholder.jpg';
+        return '../assets/images/cover-placeholder.svg';
     }
 
     const fileName = COVER_IMAGE_NAME_OVERRIDES[title] || String(title || '')
@@ -862,7 +862,7 @@ class BookRenderer {
         const categories = volumeInfo.categories || [];
 
         const vibe = this.generateVibe(originalDescription, categories);
-        const encodedThumb = thumb ? encodeURI(thumb).replace(/'/g, '%27') : 'https://via.placeholder.com/128x196?text=No+Cover';
+        const encodedThumb = thumb ? encodeURI(thumb).replace(/'/g, '%27') : (thumb || '');
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
         const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
@@ -895,7 +895,8 @@ class BookRenderer {
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
-                    <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
+                    <img src="${safeThumb}"
+                        alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -983,18 +984,7 @@ class BookRenderer {
         });
 
         const frontImage = scene.querySelector('.book__face--front img');
-        if (frontImage) {
-            frontImage.onerror = () => {
-                const fallback = encodedThumb.startsWith('../assets/images/')
-                    ? 'https://via.placeholder.com/128x196?text=No+Cover'
-                    : getCoverImagePath(title);
-                if (frontImage.src !== fallback) {
-                    frontImage.src = fallback;
-                } else {
-                    frontImage.onerror = null;
-                }
-            };
-        }
+        // restore default image loading behavior; do not override with local placeholder
 
         // Info Button
         scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
