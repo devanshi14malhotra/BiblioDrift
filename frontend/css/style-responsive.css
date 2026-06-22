@@ -500,6 +500,8 @@ input {
         max-height: 90vh;
         margin: 2rem auto;
         border-radius: 16px;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .genre-modal-header {
@@ -511,6 +513,22 @@ input {
 
     .genre-modal-header h2 {
         font-size: 1.5rem;
+    }
+
+    .genre-books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+
+    .genre-book-card {
+        max-width: 100%;
+    }
+
+    .genre-book-card img {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
     }
 
     .genre-books-grid {
