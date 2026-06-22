@@ -15,7 +15,9 @@ import os
 import logging
 import json
 import re
-from typing import Optional
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, Field, ValidationError, parse_obj_as
 
 #to generate book spine images dynamically based on title and author
 
@@ -112,6 +114,28 @@ def _extract_json(text: str) -> Optional[dict | list]:
                 pass
 
     return None
+
+
+class BookRecommendation(BaseModel):
+    title: str
+    author: str
+    reason: str = Field(default="")
+
+
+def _validate_book_recommendations(raw_data: Any) -> list[dict]:
+    try:
+        books = parse_obj_as(List[BookRecommendation], raw_data)
+        return [book.model_dump() for book in books]
+    except ValidationError as exc:
+        logger.error("Book recommendation schema validation failed: %s", exc)
+        return []
+
+
+def _build_book_recommendation_schema() -> dict:
+    return {
+        "type": "array",
+        "items": BookRecommendation.model_json_schema()
+    }
 
 
 class PromptTemplates:
@@ -755,6 +779,43 @@ class LLMService:
                 logger.error(f"Gemini generation failed: {type(e).__name__}: {e}", exc_info=True)
                 return None
 
+    def generate_structured_output(self, prompt: str, json_schema: dict, max_tokens: Optional[int] = None) -> Optional[Any]:
+        """Generate parsed structured data from the LLM when supported by the provider."""
+        if not self.is_available():
+            logger.warning("generate_structured_output: no LLM service available")
+            return None
+
+        if max_tokens is None:
+            max_tokens = self.config['default_max_tokens']
+
+        # OpenAI structured output if supported
+        if self.openai_client:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+                response = client.chat.completions.create(
+                    model=self.config['openai_model'],
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=min(max_tokens, self.config['openai_max_tokens']),
+                    temperature=self.config['openai_temperature'],
+                    response_format={"type": "json_schema", "json_schema": json_schema},
+                )
+                parsed = getattr(response.choices[0].message, 'parsed', None)
+                if parsed is not None:
+                    return parsed
+                # fallback if the provider did not expose parsed data
+                text_content = getattr(response.choices[0].message, 'content', None)
+                if text_content:
+                    return _extract_json(text_content)
+            except Exception as e:
+                logger.warning(f"OpenAI structured output failed, falling back to text: {e}")
+
+        # Fallback: use text generation and parse JSON from the response
+        raw_text = self.generate_text(prompt, max_tokens)
+        if raw_text is None:
+            return None
+        return _extract_json(raw_text)
+
 
 # Initialize LLM service
 llm_service = LLMService()
@@ -823,11 +884,11 @@ def generate_book_note(description, title="", author="", vibe=""):
 
 
 @cache_recommendations
-def get_ai_recommendations(query):
-    """Generate AI-powered book recommendations based on query."""
+def get_ai_recommendations(query, raw_prompt=False):
+    """Generate AI-powered book recommendations based on a raw prompt or a query."""
     if llm_service.is_available():
         try:
-            prompt = PromptTemplates.get_recommendation_recommend(query)
+            prompt = query if raw_prompt else PromptTemplates.get_recommendation_recommend(query)
             llm_response = llm_service.generate_text(prompt, llm_service.config['recommendation_max_tokens'])
             if llm_response:
                 return llm_response
@@ -876,35 +937,39 @@ def get_category_books(category: str, vibe_description: str, count: int = 5) -> 
         return []
 
     prompt = PromptTemplates.get_category_books_prompt(category, vibe_description, count)
-    raw = llm_service.generate_text(
+    structured = llm_service.generate_structured_output(
         prompt,
+        json_schema=_build_book_recommendation_schema(),
         max_tokens=llm_service.config['category_books_max_tokens'],
     )
 
-    if not raw:
-        logger.error("get_category_books: LLM returned None for category: %s", category)
-        return []
+    books = []
+    if structured is not None:
+        books = _validate_book_recommendations(structured)
+        if not books:
+            logger.warning("get_category_books: structured output returned invalid schema for category: %s", category)
+    else:
+        logger.warning("get_category_books: structured output unavailable for category: %s", category)
 
-    parsed = _extract_json(raw)
+    if not books:
+        raw = llm_service.generate_text(
+            prompt,
+            max_tokens=llm_service.config['category_books_max_tokens'],
+        )
 
-    if not isinstance(parsed, list):
-        logger.error("get_category_books: expected JSON array, got %s for category: %s", type(parsed), category)
-        return []
+        if not raw:
+            logger.error("get_category_books: LLM returned None for category: %s", category)
+            return []
 
-    # Validate each entry has required fields
-    valid_books = []
-    for item in parsed:
-        if isinstance(item, dict) and "title" in item and "author" in item:
-            valid_books.append({
-                "title": item["title"],
-                "author": item["author"],
-                "reason": item.get("reason", ""),
-            })
-        else:
-            logger.warning("get_category_books: skipping malformed entry: %s", item)
+        parsed = _extract_json(raw)
+        if not isinstance(parsed, list):
+            logger.error("get_category_books: expected JSON array, got %s for category: %s", type(parsed), category)
+            return []
 
-    logger.info("get_category_books: %d books returned for '%s'", len(valid_books), category)
-    return valid_books
+        books = _validate_book_recommendations(parsed)
+
+    logger.info("get_category_books: %d books returned for '%s'", len(books), category)
+    return books
 
 def get_vibe_recommendations(vibe_prompt: str, count: int = 3) -> list:
     """
@@ -917,32 +982,36 @@ def get_vibe_recommendations(vibe_prompt: str, count: int = 3) -> list:
 
     prompt = PromptTemplates.get_vibe_check_prompt(vibe_prompt, count)
     
-    # Utilizing the existing LLMService pipeline
-    raw = llm_service.generate_text(
+    structured = llm_service.generate_structured_output(
         prompt,
+        json_schema=_build_book_recommendation_schema(),
         max_tokens=llm_service.config.get('category_books_max_tokens', 600),
     )
 
-    if not raw:
-        logger.error("get_vibe_recommendations: LLM returned None")
-        return []
-
-    # Use the file's existing robust JSON extractor
-    parsed = _extract_json(raw)
-
-    if not isinstance(parsed, list):
-        logger.error("get_vibe_recommendations: expected JSON array")
-        return []
-
-    # Validate and clean the output
     valid_books = []
-    for item in parsed:
-        if isinstance(item, dict) and "title" in item and "author" in item:
-            valid_books.append({
-                "title": item["title"],
-                "author": item["author"],
-                "reason": item.get("reason", "This perfectly matches your requested vibe."),
-            })
+    if structured is not None:
+        valid_books = _validate_book_recommendations(structured)
+        if not valid_books:
+            logger.warning("get_vibe_recommendations: structured output returned invalid schema")
+    else:
+        logger.warning("get_vibe_recommendations: structured output unavailable")
+
+    if not valid_books:
+        raw = llm_service.generate_text(
+            prompt,
+            max_tokens=llm_service.config.get('category_books_max_tokens', 600),
+        )
+
+        if not raw:
+            logger.error("get_vibe_recommendations: LLM returned None")
+            return []
+
+        parsed = _extract_json(raw)
+        if not isinstance(parsed, list):
+            logger.error("get_vibe_recommendations: expected JSON array")
+            return []
+
+        valid_books = _validate_book_recommendations(parsed)
 
     logger.info("get_vibe_recommendations: %d books returned for vibe '%s'", len(valid_books), vibe_prompt)
     return valid_books

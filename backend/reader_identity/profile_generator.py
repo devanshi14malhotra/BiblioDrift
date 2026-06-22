@@ -1,6 +1,8 @@
 """
 Main orchestration engine for reader identity generation.
 """
+from pydantic import BaseModel
+
 from .sentiment_engine import SentimentEngine
 from .embedding_engine import EmbeddingEngine
 from .cluster_engine import ClusterEngine
@@ -8,6 +10,22 @@ from .cluster_engine import ClusterEngine
 Combines sentiment, embeddings, and clustering
 to generate reader personality profiles.
 """
+
+
+class ReaderProfile(BaseModel):
+    archetype: str
+    genres: list[str]
+    review_count: int
+    reader_mood: str
+    sentiment_score: float
+    reader_cluster: str
+
+
+class ReaderProfileResponse(BaseModel):
+    success: bool = True
+    reader_profile: ReaderProfile
+
+
 class ReaderProfileGenerator:
     def __init__(self):
         self.sentiment_engine = SentimentEngine()
@@ -51,14 +69,16 @@ class ReaderProfileGenerator:
                 
         archetype = best_match
 
-        return {
-    "success": True,
-    "reader_profile": {
-        "archetype": archetype,
-        "genres": genres,
-        "review_count": len(reviews),
-        "reader_mood": sentiment_result["reader_mood"],
-        "sentiment_score": sentiment_result["sentiment_score"],
-        "reader_cluster": cluster_result[0],
-    }
-}
+        result = {
+            "success": True,
+            "reader_profile": {
+                "archetype": archetype,
+                "genres": genres,
+                "review_count": len(reviews),
+                "reader_mood": sentiment_result["reader_mood"],
+                "sentiment_score": sentiment_result["sentiment_score"],
+                "reader_cluster": cluster_result[0],
+            }
+        }
+
+        return ReaderProfileResponse.model_validate(result).model_dump()

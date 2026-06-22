@@ -11,8 +11,20 @@ from app import app
 def client():
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
+    old_rate_limit = app.config.get('RATELIMIT_ENABLED')
+    app.config['RATELIMIT_ENABLED'] = True
+    
+    # Reset limiter storage to clear accumulation from other tests in the session
+    try:
+        from app import limiter
+        limiter.storage.reset()
+    except Exception:
+        pass
+
     with app.test_client() as test_client:
         yield test_client
+    if old_rate_limit is not None:
+        app.config['RATELIMIT_ENABLED'] = old_rate_limit
 
 
 def test_login_rate_limit_returns_429_and_retry_after(client):

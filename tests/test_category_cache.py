@@ -48,8 +48,8 @@ def clear_cache_between_tests(flask_app):
 def test_ai_called_only_once_for_same_inputs(flask_app):
     with flask_app.app_context():
         with patch('ai_service.llm_service.is_available', return_value=True), \
-             patch('ai_service.llm_service.generate_text',
-                   return_value='[{"title":"Test Book","author":"Test Author","reason":"fits"}]') as mock_llm:
+             patch('ai_service.llm_service.generate_structured_output',
+                   return_value=[{"title":"Test Book","author":"Test Author","reason":"fits"}]) as mock_llm:
 
             from ai_service import get_category_books
 
@@ -69,8 +69,8 @@ def test_ai_called_only_once_for_same_inputs(flask_app):
 def test_different_categories_get_different_cache_keys(flask_app):
     with flask_app.app_context():
         with patch('ai_service.llm_service.is_available', return_value=True), \
-             patch('ai_service.llm_service.generate_text',
-                   return_value='[{"title":"Book","author":"Author","reason":"fits"}]') as mock_llm:
+             patch('ai_service.llm_service.generate_structured_output',
+                   return_value=[{"title":"Book","author":"Author","reason":"fits"}]) as mock_llm:
 
             from ai_service import get_category_books
 
@@ -88,8 +88,8 @@ def test_different_categories_get_different_cache_keys(flask_app):
 def test_different_counts_get_different_cache_keys(flask_app):
     with flask_app.app_context():
         with patch('ai_service.llm_service.is_available', return_value=True), \
-             patch('ai_service.llm_service.generate_text',
-                   return_value='[{"title":"Book","author":"Author","reason":"fits"}]') as mock_llm:
+             patch('ai_service.llm_service.generate_structured_output',
+                   return_value=[{"title":"Book","author":"Author","reason":"fits"}]) as mock_llm:
 
             from ai_service import get_category_books
 
@@ -107,8 +107,8 @@ def test_different_counts_get_different_cache_keys(flask_app):
 def test_cached_result_matches_original_result(flask_app):
     with flask_app.app_context():
         with patch('ai_service.llm_service.is_available', return_value=True), \
-             patch('ai_service.llm_service.generate_text',
-                   return_value='[{"title":"The Road","author":"Cormac McCarthy","reason":"bleak and quiet"}]'):
+             patch('ai_service.llm_service.generate_structured_output',
+                   return_value=[{"title":"The Road","author":"Cormac McCarthy","reason":"bleak and quiet"}]):
 
             from ai_service import get_category_books
 
@@ -128,7 +128,8 @@ def test_cached_result_matches_original_result(flask_app):
 def test_none_result_is_not_cached(flask_app):
     with flask_app.app_context():
         with patch('ai_service.llm_service.is_available', return_value=True), \
-             patch('ai_service.llm_service.generate_text', return_value=None) as mock_llm:
+             patch('ai_service.llm_service.generate_structured_output', return_value=None) as mock_llm, \
+             patch('ai_service.llm_service.generate_text', return_value=None) as mock_text_llm:
 
             from ai_service import get_category_books
 
@@ -138,5 +139,6 @@ def test_none_result_is_not_cached(flask_app):
             assert mock_llm.call_count == 2, (
                 f"Failure cached. LLM called {mock_llm.call_count} times, expected 2."
             )
+            assert mock_text_llm.call_count == 2
             assert result1 == []
             assert result2 == []

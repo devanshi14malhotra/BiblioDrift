@@ -61,11 +61,13 @@ class BookMoodAnalyzer:
         """Ensure required NLTK data is available"""
         try:
             nltk.data.find('tokenizers/punkt')
+            nltk.data.find('tokenizers/punkt_tab')
             nltk.data.find('corpora/stopwords')
-        except LookupError:
+        except Exception:
             self.logger.info("Downloading required NLTK data...")
             try:
                 nltk.download('punkt', quiet=True)
+                nltk.download('punkt_tab', quiet=True)
                 nltk.download('stopwords', quiet=True)
             except Exception as e:
                 self.logger.warning(f"Could not download NLTK data: {e}")
