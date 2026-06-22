@@ -16,7 +16,7 @@ from flask_jwt_extended import (
 from flask_limiter import Limiter
 from flask_limiter.errors import RateLimitExceeded
 from flask_limiter.util import get_remote_address
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect, generate_csrf, CSRFError
 from sqlalchemy.exc import SQLAlchemyError
@@ -2252,7 +2252,9 @@ def get_collections():
         return forbidden_error("Unauthorized")
     
     try:
-        collections = Collection.query.filter_by(user_id=user_id).order_by(Collection.created_at.desc()).all()
+        collections = Collection.query.options(
+            selectinload(Collection.items)
+        ).filter_by(user_id=user_id).order_by(Collection.created_at.desc()).all()
         return jsonify({"collections": [c.to_dict() for c in collections]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2265,7 +2267,9 @@ def get_collection(collection_id):
     current_user_id = get_jwt_identity()
     
     try:
-        collection = Collection.query.get(collection_id)
+        collection = Collection.query.options(
+            selectinload(Collection.items).joinedload(CollectionItem.book)
+        ).get(collection_id)
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
         
@@ -2430,7 +2434,10 @@ def get_public_collections():
         limit = request.args.get('limit', 20, type=int)
         offset = request.args.get('offset', 0, type=int)
         
-        collections = Collection.query.filter_by(is_public=True).order_by(
+        collections = Collection.query.options(
+            joinedload(Collection.user),
+            selectinload(Collection.items)
+        ).filter_by(is_public=True).order_by(
             Collection.created_at.desc()
         ).offset(offset).limit(limit).all()
         
@@ -2439,8 +2446,7 @@ def get_public_collections():
         result = []
         for c in collections:
             collection_data = c.to_dict()
-            user = User.query.get(c.user_id)
-            collection_data['owner_username'] = user.username if user else "Unknown"
+            collection_data['owner_username'] = c.user.username if c.user else "Unknown"
             result.append(collection_data)
         
         return jsonify({"collections": result, "total": total, "limit": limit, "offset": offset}), 200
