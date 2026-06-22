@@ -1,30 +1,21 @@
-# Pull Request
+﻿### Description
+<!-- Describe your changes -->
 
-If this PR is for an open source event such as NSoC'26, Apertre 3.0, or GSSoC'26, mention that in the title or description. If not, treat it as a general contribution.
+### Related Issue
+<!-- Link the issue this PR closes -->
 
-## Description
-Describe your changes.
+### Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Documentation update
+- [ ] UI/UX improvement
+- [ ] Performance improvement
 
-## Related Issue
-Fixes #
+### Checklist
+- [ ] I have tested my changes locally
+- [ ] My code follows the project style guidelines
+- [ ] I have updated documentation if needed
+- [ ] This PR closes a linked issue
 
-## Type of Change
-- [ ] Bug Fix  
-- [ ] Feature  
-- [ ] Enhancement  
-- [ ] Documentation  
-
-## Testing
-Explain how you tested it.
-
-## Screenshots
-(if applicable)
-
-## Checklist
-- [ ] Code follows guidelines  
-- [ ] Tested properly  
-- [ ] Docs updated  
-- [ ] PR title includes the relevant event tag or a general contribution label
-
-Example:
-[NSoC'26] Add authentication system
+### Screenshots
+<!-- Add screenshots if UI changes were made -->
