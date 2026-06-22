@@ -1611,6 +1611,18 @@ def sync_library(validated_data):
         # Sanitize the items list only after validating Google Books IDs.
         items = sanitize_payload(validated_data.items)
         
+        # Deduplicate items by Google Books ID to prevent duplicate inserts
+        seen_ids = set()
+        deduped_items = []
+        for item_data in items:
+            if not isinstance(item_data, dict):
+                continue
+            gid = item_data.get('id')
+            if gid and gid not in seen_ids:
+                seen_ids.add(gid)
+                deduped_items.append(item_data)
+        items = deduped_items
+        
         synced_count = 0
         conflicts = 0
         errors = 0
