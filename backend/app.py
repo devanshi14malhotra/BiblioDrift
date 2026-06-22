@@ -544,11 +544,11 @@ def handle_unhandled_exception(e):
     # 8. Return the Secure JSON Response
     # Always return a 500 Internal Server Error status code for unhandled exceptions.
     response = jsonify(response_data)
-    
-    # Adding security headers to error responses as defense in depth
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    
+
+    # Ensure the full hardened header set is applied consistently
+    # (including CSP/HSTS/etc.) even for global 500 handlers.
+    response = _apply_security_headers(response)
+
     return response, 500
 
 # =========================================================================
@@ -625,8 +625,11 @@ def handle_sqlalchemy_exception(e):
         }
         
     response = jsonify(response_data)
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
+
+    # Ensure the full hardened header set is applied consistently
+    # (including CSP/HSTS/etc.) even for global 500 handlers.
+    response = _apply_security_headers(response)
+
     return response, 500
 
 # =========================================================================
