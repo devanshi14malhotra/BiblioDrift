@@ -2901,6 +2901,25 @@ class LibraryManager {
             console.error(`[Library] Error rendering shelf ${shelfName}:`, error);
         }
     }
+
+    async syncOnReconnect() {
+        const user = this.getUser();
+        if (!user) return;
+
+        try {
+            const hasItems = ['current', 'want', 'finished'].some(shelf => 
+                this.library[shelf] && this.library[shelf].length > 0
+            );
+
+            if (hasItems) {
+                await this.syncLocalToBackend(user);
+            } else {
+                await this.syncWithBackend();
+            }
+        } catch (e) {
+            console.error("[Library] Reconnect sync failed:", e);
+        }
+    }
 }
 
 
@@ -3011,6 +3030,78 @@ class ThemeManager {
 
 // Initialize once
 window.themeManager = new ThemeManager();
+
+
+class ConnectivityManager {
+    constructor(libManager = null) {
+        this.libManager = libManager;
+        this.isOffline = !navigator.onLine;
+        this.banner = null;
+        this.init();
+    }
+
+    init() {
+        if (this.isOffline) {
+            this.showOfflineBanner();
+        }
+
+        window.addEventListener('online', () => this.handleOnline());
+        window.addEventListener('offline', () => this.handleOffline());
+    }
+
+    createBanner() {
+        if (this.banner) return;
+        this.banner = document.createElement('div');
+        this.banner.className = 'offline-banner';
+        document.body.appendChild(this.banner);
+    }
+
+    showOfflineBanner() {
+        this.createBanner();
+        this.banner.classList.remove('online-state');
+        this.banner.innerHTML = `☁️ “You're reading offline — your library is safe, but new discoveries are paused.”`;
+        // Force reflow
+        this.banner.offsetHeight;
+        this.banner.classList.add('show');
+    }
+
+    showOnlineBanner() {
+        this.createBanner();
+        this.banner.classList.add('online-state');
+        this.banner.innerHTML = `✨ “Back online — syncing your shelf...”`;
+        // Force reflow
+        this.banner.offsetHeight;
+        this.banner.classList.add('show');
+    }
+
+    hideBanner() {
+        if (!this.banner) return;
+        this.banner.classList.remove('show');
+    }
+
+    handleOnline() {
+        if (!this.isOffline) return; // Prevent duplicate triggers
+        this.isOffline = false;
+
+        this.showOnlineBanner();
+
+        if (this.libManager) {
+            this.libManager.syncOnReconnect();
+        }
+
+        setTimeout(() => {
+            if (!this.isOffline) {
+                this.hideBanner();
+            }
+        }, 4000);
+    }
+
+    handleOffline() {
+        if (this.isOffline) return; // Prevent duplicate triggers
+        this.isOffline = true;
+        this.showOfflineBanner();
+    }
+}
 
 class GenreManager {
     constructor(libraryManager = null) {
@@ -3139,6 +3230,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
+    const connectivityManager = new ConnectivityManager(libManager);
+    window.connectivityManager = connectivityManager;
 
     // 2. Load Config before rendering shelves so Google Books key is available.
     // await loadConfig(); // Removed: function is undefined and Google Books API works without key
