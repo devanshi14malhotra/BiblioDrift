@@ -288,6 +288,13 @@ socketio = SocketIO(app, cors_allowed_origins=_cors_origins)
 # Initialize cache service
 cache_service.init_app(app)
 
+# ---- CORS Preflight Handler ----
+@app.before_request
+def handle_preflight():
+    """Handle CORS preflight OPTIONS requests before they hit rate limiters or auth checks."""
+    if request.method == 'OPTIONS' and request.path.startswith('/api/'):
+        return app.make_default_options_response()
+
 
 def _resolve_rate_limit_principal() -> str:
     """Resolve a stable principal for per-user/session throttling."""
