@@ -3895,17 +3895,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = APP_ROUTE;
         });
     }
-    // Scroll Manager (Back to Top)
+    // Scroll Manager (Back to Top) — scroll visibility handled in header-scroll.js
     const backToTopBtn = document.getElementById('backToTop');
     if (backToTopBtn) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 200) {
-                backToTopBtn.classList.remove('hidden');
-            } else {
-                backToTopBtn.classList.add('hidden');
-            }
-        });
-
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
