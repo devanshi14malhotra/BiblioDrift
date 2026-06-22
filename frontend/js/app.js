@@ -862,7 +862,9 @@ class BookRenderer {
         const categories = volumeInfo.categories || [];
 
         const vibe = this.generateVibe(originalDescription, categories);
-        const encodedThumb = thumb ? encodeURI(thumb).replace(/'/g, '%27') : (thumb || '');
+        const encodedThumb = thumb
+            ? encodeURI(thumb).replace(/'/g, '%27')
+            : getCoverImagePath('');
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
         const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
@@ -984,7 +986,30 @@ class BookRenderer {
         });
 
         const frontImage = scene.querySelector('.book__face--front img');
-        // restore default image loading behavior; do not override with local placeholder
+        if (frontImage) {
+            const localCoverFallback = getCoverImagePath(title);
+            const genericCoverFallback = getCoverImagePath('');
+
+            // Bounded fallback chain:
+            // 1) current src -> local cover from title
+            // 2) local cover -> generic placeholder
+            // 3) stop handling errors to avoid loops
+            frontImage.onerror = () => {
+                const currentSrc = frontImage.getAttribute('src') || '';
+
+                if (currentSrc !== localCoverFallback) {
+                    frontImage.setAttribute('src', localCoverFallback);
+                    return;
+                }
+
+                if (currentSrc !== genericCoverFallback) {
+                    frontImage.setAttribute('src', genericCoverFallback);
+                    return;
+                }
+
+                frontImage.onerror = null;
+            };
+        }
 
         // Info Button
         scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
