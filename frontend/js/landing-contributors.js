@@ -3,6 +3,11 @@
  * Fetches and displays contributors in a carousel and grid view
  */
 
+import {
+  saveStorageData,
+  getStorageData
+} from "./storage-manager.js";
+
 (function(){
     const lists = document.querySelectorAll('.contributors-list');
     if(!lists.length) return;
@@ -15,15 +20,6 @@
         'frontend/data/contributors.json'
     ];
 
-    function storageGet(key){
-        try { return window.localStorage.getItem(key); }
-        catch(e){ return null; }
-    }
-
-    function storageSet(key, value){
-        try { window.localStorage.setItem(key, value); }
-        catch(e){}
-    }
 
     lists.forEach(container => {
         const owner = container.dataset.owner || 'devanshi14malhotra';
@@ -37,19 +33,16 @@
         let renderVersion = 0;
 
         function readCachedContributors(){
-            const raw = storageGet(cacheKey);
-            if(!raw) return [];
-            try { return JSON.parse(raw); }
-            catch(e){ return []; }
-        }
+        return getStorageData(cacheKey, []);
+     }
 
         function writeCachedContributors(data){
-            storageSet(cacheKey, JSON.stringify(data));
-            storageSet(cacheTimeKey, String(Date.now()));
+            saveStorageData(cacheKey, data);
+            saveStorageData(cacheTimeKey, String(Date.now()));
         }
 
         function cacheAgeMs(){
-            const raw = storageGet(cacheTimeKey);
+            const raw = getStorageData(cacheTimeKey);
             if(!raw) return Number.POSITIVE_INFINITY;
             const parsed = Number(raw);
             if(!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
