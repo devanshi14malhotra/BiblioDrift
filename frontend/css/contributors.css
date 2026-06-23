@@ -105,7 +105,7 @@ header {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(93, 64, 55, 0.08);
-  color: var(--text-muted);
+  color: #3e3936;
   box-shadow: 0 8px 20px rgba(44, 36, 32, 0.04);
   font-size: 0.95rem;
 }
@@ -162,7 +162,7 @@ header {
 
 .contributor-count {
   margin: 0;
-  color: var(--text-muted);
+  color:#746961;
   font-size: 0.9rem;
 }
 

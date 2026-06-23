@@ -1311,7 +1311,7 @@ body.landing-page .landing-shell {
     padding: 0.35rem 0.65rem;
     border-radius: 999px;
     background: rgba(212,175,55,0.12);
-    color: var(--landing-text-strong);
+    color:#b3937f;
     font-size: 0.85rem;
     font-weight: 600;
 }
