@@ -99,6 +99,33 @@ function hideNoResults() {
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Centralized Publish-Subscribe State Store
+ */
+class Store {
+    constructor(initialState = {}) {
+        this.state = initialState;
+        this.listeners = [];
+    }
+    getState() { return this.state; }
+    setState(updater) {
+        const newState = typeof updater === 'function' ? updater(this.state) : updater;
+        this.state = { ...this.state, ...newState };
+        this.notify();
+    }
+    subscribe(listener) {
+        this.listeners.push(listener);
+        return () => { this.listeners = this.listeners.filter(l => l !== listener); };
+    }
+    notify() { this.listeners.forEach(listener => listener(this.state)); }
+}
+
+window.appStore = new Store({
+    user: null,
+    libraryBooks: { current: [], want: [], finished: [] },
+    currentTheme: localStorage.getItem('bibliodrift_theme') || 'light'
+});
+
 let GOOGLE_API_KEY = '';
 
 /**
@@ -254,6 +281,7 @@ function clearStoredAuthState() {
     SafeStorage.remove('bibliodrift_user');
     SafeStorage.remove('bibliodrift_token');
     SafeStorage.remove('isLoggedIn');
+    window.appStore.setState({ user: null });
     authSessionPromise = null;
 }
 
@@ -327,6 +355,7 @@ async function verifyStoredAuthSession() {
                 const verifiedUser = data.user || storedUser;
                 if (verifiedUser) {
                     SafeStorage.set('bibliodrift_user', JSON.stringify(verifiedUser));
+                    window.appStore.setState({ user: verifiedUser });
                 }
                 SafeStorage.set('isLoggedIn', 'true');
                 return verifiedUser || null;
@@ -507,6 +536,23 @@ const SafeStorage = {
         }
     },
 };
+
+const COVER_IMAGE_NAME_OVERRIDES = {
+    'The Shadow of the Wind': 'The Shadow of The Wind.jpg'
+};
+
+function getCoverImagePath(title) {
+    if (!title) {
+        return '../assets/images/cover-placeholder.jpg';
+    }
+
+    const fileName = COVER_IMAGE_NAME_OVERRIDES[title] || String(title || '')
+        .trim()
+        .replace(/[\/\?%\*:|"<>]/g, '') + '.jpg';
+
+    return `../assets/images/${fileName}`;
+}
+
 const MOCK_BOOKS = [
     {
         id: "mock-dune",
@@ -573,6 +619,179 @@ const MOCK_BOOKS = [
     }
 ];
 
+const HARDCODED_CATEGORY_BOOKS = {
+    'dark academia': [
+        {
+            id: 'hardcoded-dark-academia-1',
+            volumeInfo: {
+                title: 'The Secret History',
+                authors: ['Donna Tartt'],
+                description: 'A haunting campus thriller that follows a group of classics students whose obsession with beauty and secrecy leads to murder and madness.',
+                imageLinks: { thumbnail: getCoverImagePath('The Secret History') },
+                categories: ['Dark Academia', 'Mystery', 'Campus']
+            }
+        },
+        {
+            id: 'hardcoded-dark-academia-2',
+            volumeInfo: {
+                title: 'If We Were Villains',
+                authors: ['M.L. Rio'],
+                description: 'A Shakespeare-obsessed troupe of actors at an elite conservatory is undone by jealousy, rivalry, and the weight of their own tragic art.',
+                imageLinks: { thumbnail: getCoverImagePath('If We Were Villains') },
+                categories: ['Dark Academia', 'Thriller', 'Psychological']
+            }
+        },
+        {
+            id: 'hardcoded-dark-academia-3',
+            volumeInfo: {
+                title: 'The Magicians',
+                authors: ['Lev Grossman'],
+                description: 'A darker coming-of-age story set at a magical college, where genius, privilege and boredom collide with dangerous consequences.',
+                imageLinks: { thumbnail: getCoverImagePath('The Magicians') },
+                categories: ['Dark Academia', 'Fantasy', 'College']
+            }
+        }
+    ],
+    'mystery': [
+        {
+            id: 'hardcoded-mystery-1',
+            volumeInfo: {
+                title: 'The Girl with the Dragon Tattoo',
+                authors: ['Stieg Larsson'],
+                description: 'A dark, atmospheric thriller about family secrets, corruption, and an unlikely detective duo in Sweden.',
+                imageLinks: { thumbnail: getCoverImagePath('The Girl with the Dragon Tattoo') },
+                categories: ['Mystery', 'Thriller']
+            }
+        },
+        {
+            id: 'hardcoded-mystery-2',
+            volumeInfo: {
+                title: 'The Woman in White',
+                authors: ['Wilkie Collins'],
+                description: 'A Victorian classic of suspense, mistaken identity, and eerie conspiracies that helped invent the modern mystery novel.',
+                imageLinks: { thumbnail: getCoverImagePath('The Woman in White') },
+                categories: ['Mystery', 'Classic']
+            }
+        },
+        {
+            id: 'hardcoded-mystery-3',
+            volumeInfo: {
+                title: 'The Hound of the Baskervilles',
+                authors: ['Arthur Conan Doyle'],
+                description: 'Sherlock Holmes and Dr. Watson investigate a supernatural legend on the foggy moors of England.',
+                imageLinks: { thumbnail: getCoverImagePath('The Hound of the Baskervilles') },
+                categories: ['Mystery', 'Detective']
+            }
+        }
+    ],
+    'india': [
+        {
+            id: 'hardcoded-indian-1',
+            volumeInfo: {
+                title: "Midnight's Children",
+                authors: ['Salman Rushdie'],
+                description: "A magical realist saga that follows children born at the moment of India's independence and the country's turbulent early years.",
+                imageLinks: { thumbnail: getCoverImagePath("Midnight's Children") },
+                categories: ['Literary Fiction', 'India']
+            }
+        },
+        {
+            id: 'hardcoded-indian-2',
+            volumeInfo: {
+                title: 'The God of Small Things',
+                authors: ['Arundhati Roy'],
+                description: 'A rich, lyrical novel about forbidden love and family secrets in Kerala.',
+                imageLinks: { thumbnail: getCoverImagePath('The God of Small Things') },
+                categories: ['Literary Fiction', 'India']
+            }
+        },
+        {
+            id: 'hardcoded-indian-3',
+            volumeInfo: {
+                title: 'The White Tiger',
+                authors: ['Aravind Adiga'],
+                description: 'A darkly comic social thriller following a man who rises out of poverty to become a successful entrepreneur.',
+                imageLinks: { thumbnail: getCoverImagePath('The White Tiger') },
+                categories: ['Literary Fiction', 'India']
+            }
+        }
+    ],
+    'classic fiction': [
+        {
+            id: 'hardcoded-classic-1',
+            volumeInfo: {
+                title: 'To Kill a Mockingbird',
+                authors: ['Harper Lee'],
+                description: 'A powerful story of justice and childhood in the American South, told through the eyes of Scout Finch.',
+                imageLinks: { thumbnail: getCoverImagePath('To Kill a Mockingbird') },
+                categories: ['Classic', 'Fiction']
+            }
+        },
+        {
+            id: 'hardcoded-classic-2',
+            volumeInfo: {
+                title: 'Jane Eyre',
+                authors: ['Charlotte Brontë'],
+                description: 'A gothic romance about resilience, love, and a heroine who refuses to be defined by society.',
+                imageLinks: { thumbnail: getCoverImagePath('Jane Eyre') },
+                categories: ['Classic', 'Romance']
+            }
+        },
+        {
+            id: 'hardcoded-classic-3',
+            volumeInfo: {
+                title: 'Brave New World',
+                authors: ['Aldous Huxley'],
+                description: 'A dystopian classic examining technology, conformity, and the loss of individuality.',
+                imageLinks: { thumbnail: getCoverImagePath('Brave New World') },
+                categories: ['Classic', 'Dystopian']
+            }
+        }
+    ],
+    'fiction': [
+        {
+            id: 'hardcoded-fiction-1',
+            volumeInfo: {
+                title: 'The Night Circus',
+                authors: ['Erin Morgenstern'],
+                description: 'A magical competition between two illusionists becomes a love story set in a mysterious traveling circus.',
+                imageLinks: { thumbnail: getCoverImagePath('The Night Circus') },
+                categories: ['Fantasy', 'Fiction']
+            }
+        },
+        {
+            id: 'hardcoded-fiction-2',
+            volumeInfo: {
+                title: 'The Shadow of the Wind',
+                authors: ['Carlos Ruiz Zafón'],
+                description: 'A young boy uncovers a mysterious book and enters a labyrinth of secrets in post-war Barcelona.',
+                imageLinks: { thumbnail: getCoverImagePath('The Shadow of the Wind') },
+                categories: ['Mystery', 'Fiction']
+            }
+        },
+        {
+            id: 'hardcoded-fiction-3',
+            volumeInfo: {
+                title: 'Never Let Me Go',
+                authors: ['Kazuo Ishiguro'],
+                description: 'A haunting tale of love and memory at an English boarding school with a dark, speculative undercurrent.',
+                imageLinks: { thumbnail: getCoverImagePath('Never Let Me Go') },
+                categories: ['Fiction', 'Speculative']
+            }
+        }
+    ]
+};
+
+function getHardcodedBooksByTheme(query, maxResults = 5) {
+    const normalized = String(query || '').toLowerCase();
+    for (const theme of Object.keys(HARDCODED_CATEGORY_BOOKS)) {
+        if (normalized.includes(theme)) {
+            return HARDCODED_CATEGORY_BOOKS[theme].slice(0, maxResults);
+        }
+    }
+    return [];
+}
+
 function normalizeQueryTerms(query) {
     return String(query || '')
         .toLowerCase()
@@ -594,6 +813,11 @@ function scoreMockBook(book, queryTerms) {
 }
 
 function getFallbackBooks(query, maxResults = 5) {
+    const hardcoded = getHardcodedBooksByTheme(query, maxResults);
+    if (hardcoded.length > 0) {
+        return hardcoded;
+    }
+
     const queryTerms = normalizeQueryTerms(query);
     const ranked = MOCK_BOOKS
         .map(book => ({ book, score: scoreMockBook(book, queryTerms) }))
@@ -631,11 +855,14 @@ class BookRenderer {
         const progress = typeof bookData.progress === 'number' ? bookData.progress : 0;
         const title = volumeInfo.title || "Untitled";
         const authors = volumeInfo.authors ? volumeInfo.authors.join(", ") : "Unknown Author";
-        const thumb = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/128x196?text=No+Cover';
+        const thumb = volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail
+            ? volumeInfo.imageLinks.thumbnail
+            : getCoverImagePath(title);
         const originalDescription = volumeInfo.description ? volumeInfo.description.substring(0, 100) + "..." : "A mysterious tome waiting to be opened.";
         const categories = volumeInfo.categories || [];
 
         const vibe = this.generateVibe(originalDescription, categories);
+        const encodedThumb = thumb ? encodeURI(thumb).replace(/'/g, '%27') : 'https://via.placeholder.com/128x196?text=No+Cover';
         const spineColors = ['#5D4037', '#4E342E', '#3E2723', '#2C2420', '#8D6E63'];
         const randomSpine = spineColors[Math.floor(Math.random() * spineColors.length)];
         const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
@@ -663,7 +890,7 @@ class BookRenderer {
         const safeAuthors = escapeHTML(authors);
         const safeOriginalDescription = escapeHTML(originalDescription);
         const safeVibe = escapeHTML(vibe);
-        const safeThumb = escapeHTML(thumb.replace('http:', 'https:'));
+        const safeThumb = escapeHTML(encodedThumb.replace('http:', 'https:'));
 
         scene.innerHTML = `
             <div class="book" data-id="${escapeHTML(id)}">
@@ -754,6 +981,20 @@ class BookRenderer {
             }
             updateBtn();
         });
+
+        const frontImage = scene.querySelector('.book__face--front img');
+        if (frontImage) {
+            frontImage.onerror = () => {
+                const fallback = encodedThumb.startsWith('../assets/images/')
+                    ? 'https://via.placeholder.com/128x196?text=No+Cover'
+                    : getCoverImagePath(title);
+                if (frontImage.src !== fallback) {
+                    frontImage.src = fallback;
+                } else {
+                    frontImage.onerror = null;
+                }
+            };
+        }
 
         // Info Button
         scene.querySelector('.read-details-btn').addEventListener('click', (e) => {
@@ -1413,17 +1654,7 @@ class BookRenderer {
 
         try {
             const client = window.GoogleBooksClient;
-            const data = client
-                ? await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' })
-                : await (async () => {
-                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-                    const encodedQuery = encodeURIComponent(query);
-                    const res = await fetch(`${API_BASE}?q=${encodedQuery}&maxResults=${maxResults}&printType=books${keyParam}`);
-                    if (!res.ok) {
-                        throw new Error(`API Error: ${res.statusText}`);
-                    }
-                    return await res.json();
-                })();
+            const data = await client.fetchVolumes(query, { maxResults, extraParams: '&printType=books' });
 
             if (data.items && data.items.length > 0) {
                 await this.renderBookCards(container, data.items.slice(0, maxResults));
@@ -1492,6 +1723,11 @@ class BookRenderer {
             throw new Error(`Could not resolve Google Books matches for category: ${categoryConfig.category}`);
         } catch (err) {
             console.error(`Failed to load category shelf "${categoryConfig.category}"`, err);
+            const categoryFallbackBooks = getHardcodedBooksByTheme(`${categoryConfig.category} ${categoryConfig.fallbackQuery}`, maxResults);
+            if (categoryFallbackBooks.length > 0) {
+                await this.renderBookCards(container, categoryFallbackBooks);
+                return;
+            }
             await this.renderCuratedSection(categoryConfig.fallbackQuery, elementId, maxResults);
         }
     }
@@ -1509,18 +1745,7 @@ class BookRenderer {
                 : `intitle:${title}`;
 
             try {
-                // Always use GoogleBooksClient — it handles caching + request
-                // queuing (300 ms gap between calls) to prevent 429 bursts.
-                const client = window.GoogleBooksClient;
-                if (!client) {
-                    console.warn('GoogleBooksClient not available, skipping', title);
-                    continue;
-                }
-
-                const data = await client.fetchVolumes(searchQuery, {
-                    maxResults: 1,
-                    extraParams: '&printType=books'
-                });
+                const data = await window.GoogleBooksClient.fetchVolumes(searchQuery, { maxResults: 1, extraParams: '&printType=books' });
 
                 const matchedBook = data?.items?.[0];
                 if (matchedBook) {
@@ -1850,13 +2075,38 @@ class LibraryManager {
         // 1. Request persistent storage to prevent wipes
         await SafeStorage.requestPersistence();
 
-        // 2. Load from LocalStorage or IndexedDB backup (Issue #8)
-        const stored = await SafeStorage.getAsync(this.storageKey);
-        if (stored) {
+        const user = this.getUser();
+        let storedLibrary = null;
+
+        // 2. Load from Dexie IndexedDB (Issue #875)
+        if (user && window.db?.userLibrary) {
             try {
-                this.library = JSON.parse(stored);
+                const record = await window.db.userLibrary.get(user.id);
+                if (record && record.library) {
+                    storedLibrary = record.library;
+                }
             } catch (e) {
-                console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                console.error("[Library] Failed to read from Dexie", e);
+            }
+        }
+
+        // Fallback to SafeStorage for migration
+        if (!storedLibrary) {
+            const stored = await SafeStorage.getAsync(this.storageKey);
+            if (stored) {
+                try {
+                    storedLibrary = JSON.parse(stored);
+                } catch (e) {
+                    console.error("[Library] Failed to parse stored library, resetting to empty.", e);
+                }
+            }
+        }
+
+        if (storedLibrary) {
+            this.library = storedLibrary;
+            // Migrate to Dexie immediately
+            if (user && window.db?.userLibrary) {
+                window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
             }
         }
 
@@ -1870,12 +2120,27 @@ class LibraryManager {
             this.renderShelf('finished', 'shelf-finished');
         }
 
-        // 4. Sync with backend if available (Full Refresh)
-        await this.syncWithBackend();
-        if (navigator.onLine) {
-            await this.flushPendingLibraryMutations();
+        // 4. Sync with backend if available (Background Refresh)
+        if (!storedLibrary) {
+            await this.syncWithBackend();
+            if (navigator.onLine) {
+                await this.flushPendingLibraryMutations();
+            }
+            await this.updateSyncStatus();
+        } else {
+            // Background sync (stale-while-revalidate strategy)
+            (async () => {
+                try {
+                    await this.syncWithBackend();
+                    if (navigator.onLine) {
+                        await this.flushPendingLibraryMutations();
+                    }
+                    await this.updateSyncStatus();
+                } catch (e) {
+                    console.error("[Library] Background sync failed", e);
+                }
+            })();
         }
-        await this.updateSyncStatus();
     }
 
     getUser() {
@@ -2608,6 +2873,10 @@ class LibraryManager {
     }
 
     saveLocally() {
+        const user = this.getUser();
+        if (user && window.db?.userLibrary) {
+            window.db.userLibrary.put({ userId: user.id, library: this.library }).catch(e => console.error(e));
+        }
         SafeStorage.set(this.storageKey, JSON.stringify(this.library));
     }
 
@@ -2799,6 +3068,21 @@ class GenreManager {
     async fetchBooks(genre) {
         if (!this.booksGrid) return;
 
+        const genreQueries = {
+            romance: 'subject:romance romance love story',
+            mystery: 'subject:mystery detective suspense thriller',
+            fiction: 'subject:fiction literary fiction bestselling',
+            crime: 'subject:crime detective mystery true crime',
+            fantasy: 'subject:fantasy magic epic adventure',
+            thriller: 'subject:thriller suspense action mystery',
+            biography: 'subject:biography memoir inspirational life story',
+            'self-help': 'subject:self-help motivation personal growth wellness',
+            science: 'subject:science technology popular science innovation',
+            history: 'subject:history historical nonfiction events'
+        };
+
+        const searchQuery = genreQueries[genre] || `subject:${genre}`;
+
         // Show loading skeletons
         if (window.renderer) {
             window.renderer.renderSkeletons(this.booksGrid, 10);
@@ -2812,17 +3096,7 @@ class GenreManager {
         }
 
         try {
-            const client = window.GoogleBooksClient;
-            const data = client
-                ? await client.fetchVolumes(`subject:${genre}`, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' })
-                : await (async () => {
-                    const keyParam = GOOGLE_API_KEY ? `&key=${GOOGLE_API_KEY}` : '';
-                    const response = await fetch(`${API_BASE}?q=subject:${genre}&maxResults=20&langRestrict=en&orderBy=relevance${keyParam}`);
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.status}`);
-                    }
-                    return await response.json();
-                })();
+            const data = await window.GoogleBooksClient.fetchVolumes(searchQuery, { maxResults: 20, extraParams: '&langRestrict=en&orderBy=relevance' });
 
             const items = data.items || [];
             if (items.length > 0) {
@@ -2868,7 +3142,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.renderer = new BookRenderer(libManager);
     const themeManager = new ThemeManager();
 
-    // 2. Load Config (Non-blocking)
+    // 2. Load Config before rendering shelves so Google Books key is available.
+    // await loadConfig(); // Removed: function is undefined and Google Books API works without key
+
     // --- AUTH LOGIC ---
     const toggleLink = document.getElementById('toggleText');
     const authTitle = document.getElementById('authTitle');
@@ -3003,24 +3279,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         renderer.renderCuratedSection(query, 'search-results-grid', 20);
-    } else if (document.getElementById('row-rainy')) {
+    } else if (document.getElementById('dynamic-shelves-container')) {
         console.log('📚 Initializing Curated Discovery Sections...');
-        const discoveryShelves = [
-            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy' },
-            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian' },
-            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics' },
-            {
-                type: 'query',
-                query: 'subject:gothic fiction subject:dark academia subject:campus',
-                elementId: 'row-dark-academia',
-                vibeDescription: 'gothic, intellectual, melancholic, and candlelit',
-                fallbackQuery: 'subject:gothic fiction subject:campus'
-            },
-            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction' },
-            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller' },
+        const container = document.getElementById('dynamic-shelves-container');
+        const fallbackShelves = [
+            { type: 'query', query: 'subject:mystery atmosphere', elementId: 'row-rainy', title: 'Rainy Evening Reads', subtitle: 'Mystery & Melancholy', icon: 'fa-cloud-rain' },
+            { type: 'query', query: 'authors:arundhati roy|subject:india', elementId: 'row-indian', title: 'Indian Authors', subtitle: 'Subcontinent Voices', icon: 'fa-feather' },
+            { type: 'query', query: 'subject:classic fiction', elementId: 'row-classics', title: 'Forgotten Classics', subtitle: 'Timeless & Dust-free', icon: 'fa-hourglass' },
+            { type: 'query', query: 'subject:gothic fiction subject:dark academia subject:campus', elementId: 'row-dark-academia', title: 'Dark Academia', subtitle: 'Gothic, cerebral, candlelit', icon: 'fa-feather-pointed', vibeDescription: 'gothic, intellectual, melancholic, and candlelit', fallbackQuery: 'subject:gothic fiction subject:campus' },
+            { type: 'query', query: 'subject:fiction', elementId: 'row-fiction', title: 'General Fiction', subtitle: 'Stories for everyone', icon: 'fa-book-open' },
+            { type: 'query', query: 'subject:thriller suspense', elementId: 'row-thriller', title: 'Thriller & Suspense', subtitle: 'Edge of Your Seat', icon: 'fa-skull' }
         ];
+
         (async () => {
             try {
+                let discoveryShelves = fallbackShelves;
+                try {
+                    const response = await fetch(`${MOOD_API_BASE}/content/live-shelves`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data && data.data.shelves) {
+                            discoveryShelves = data.data.shelves;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn('⚠️ Could not fetch live shelves, falling back to local config:', apiErr);
+                }
+
+                // Render HTML for shelves
+                container.innerHTML = discoveryShelves.map(shelf => `
+                    <section class="curated-section">
+                        <div class="section-header">
+                            <h2>${shelf.title}</h2>
+                            <span><i class="fa-solid ${shelf.icon}"></i> ${shelf.subtitle}</span>
+                        </div>
+                        <div class="curated-row" id="${shelf.elementId}"></div>
+                    </section>
+                `).join('');
+
                 for (const shelf of discoveryShelves) {
                     if (shelf.type === 'category') {
                         await renderer.renderMoodCategorySection(shelf, shelf.elementId);

@@ -28,6 +28,11 @@
     const SW_URL   = '/frontend/sw.js';
     const SW_SCOPE = '/frontend/';
 
+    if (window.location.protocol !== 'https:' && window.location.protocol !== 'http:') {
+        console.warn('[PWA] Skipping service worker registration on unsupported protocol:', window.location.protocol);
+        return;
+    }
+
     let _swRegistration = null;
     let _syncRequestInFlight = false;
 

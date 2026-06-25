@@ -123,26 +123,10 @@ if (typeof window !== 'undefined') {
         async fetchVolumes(query, options = {}) {
             const maxResults = options.maxResults || 5;
             const extraParams = options.extraParams || '';
-            const cacheKey = `${query}|${maxResults}|${extraParams}`;
-
-            const cached = this._getCache(cacheKey);
-            if (cached) return cached;
-
-            await this._acquireToken();
-            try {
-                const result = await this._doFetch(query, maxResults, extraParams);
-                this._setCache(cacheKey, result);
-                return result;
-            } finally {
-                // Always release — even if _doFetch threw — so the bucket
-                // never permanently drains on errors.
-                this._releaseToken();
+            let keys = this.getKeys();
+            if (keys.length === 0 && CONFIG.GOOGLE_BOOKS_API_KEY) {
+                keys = [CONFIG.GOOGLE_BOOKS_API_KEY];
             }
-        },
-
-        /** Internal: performs the actual fetch with key-rotation on 429/403/503. */
-        async _doFetch(query, maxResults, extraParams) {
-            const keys = this.getKeys();
             const candidates = keys.length > 0 ? keys : [null];
             let lastError = null;
 

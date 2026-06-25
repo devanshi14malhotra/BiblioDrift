@@ -6,6 +6,7 @@ mood_analysis/mood_cache.json
 *.cache
 
 # Environment variables
+.env
 */.env
 */.env.local
 */.env.production

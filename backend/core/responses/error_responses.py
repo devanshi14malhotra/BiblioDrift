@@ -304,7 +304,7 @@ def handle_exception(exception: Exception, endpoint: str = "unknown") -> tuple:
     Returns:
         Tuple of (error response, status_code)
     """
-    from exceptions import (
+    from core.exceptions.exceptions import (
         LLMRateLimitError, LLMTimeoutError, LLMConnectionError,
         LLMAuthenticationError, LLMCircuitBreakerOpenError,
         DatabaseException, DatabaseConnectionError, DatabaseQueryError,

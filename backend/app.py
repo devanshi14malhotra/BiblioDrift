@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, 
     get_jwt_identity, set_access_cookies, unset_jwt_cookies
@@ -30,7 +31,7 @@ import magic
 
 import logging
 from datetime import datetime, timedelta, timezone
-from sanitizer import sanitize_payload
+from backend.core.security.sanitizer import sanitize_payload
 from reader_identity.routes import reader_identity_bp
 
 # Load environment variables from config directory based on APP_ENV
@@ -46,11 +47,11 @@ else:
 
 # Environment variables are now loaded centrally in backend/config.py
 from config import app_config, setup_logging, validate_required_env_vars
-from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, llm_service, get_vibe_recommendations
+from ai_service import generate_book_note, get_ai_recommendations, get_category_books, get_book_mood_tags_safe, generate_chat_response, generate_chat_response_stream, llm_service, get_vibe_recommendations
 from models import db, User, Book, ShelfItem, BookNote, ReadingGoal, ReadingStats, Collection, CollectionItem, PriceHistory, PriceAlert, Review, register_user, login_user
 from price_tracker import get_price_tracker
 from cache_service import cache_service
-from validators import (
+from backend.core.validators.validators import (
     validate_request,
     validate_schema,
     validate_google_books_id,
@@ -94,7 +95,7 @@ from email_service import (
 from collections import defaultdict, deque
 from math import ceil
 from time import time
-from error_responses import (
+from backend.core.responses.error_responses import (
     ErrorCodes, error_response, success_response,
     validation_error, missing_fields_error, invalid_json_error,
     auth_error, forbidden_error, unauthorized_access_error,
@@ -278,12 +279,11 @@ _cors_origins = _load_cors_origins()
 CORS(
     app,
     supports_credentials=True,
-    origins=_cors_origins,
-    methods=ALLOWED_CORS_METHODS,
-    allow_headers=ALLOWED_CORS_HEADERS,
-    expose_headers=['Retry-After'],
     resources={r"/api/*": {"origins": _cors_origins}},
 )
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins=_cors_origins)
 
 # Initialize cache service
 cache_service.init_app(app)
@@ -789,6 +789,55 @@ def get_config():
 
     return response
 
+@app.route('/api/v1/content/live-shelves', methods=['GET'])
+def get_live_shelves():
+    """Return the configuration for live discovery shelves on the frontend."""
+    discovery_shelves = [
+        {
+            "type": "query",
+            "query": "subject:mystery atmosphere",
+            "elementId": "row-rainy",
+            "title": "Rainy Evening Reads",
+            "subtitle": "Mystery & Melancholy",
+            "icon": "fa-cloud-rain"
+        },
+        {
+            "type": "query",
+            "query": "authors:arundhati roy|subject:india",
+            "elementId": "row-indian",
+            "title": "Indian Authors",
+            "subtitle": "Subcontinent Voices",
+            "icon": "fa-feather"
+        },
+        {
+            "type": "query",
+            "query": "subject:classic fiction",
+            "elementId": "row-classics",
+            "title": "Forgotten Classics",
+            "subtitle": "Timeless & Dust-free",
+            "icon": "fa-hourglass"
+        },
+        {
+            "type": "query",
+            "query": "subject:gothic fiction subject:dark academia subject:campus",
+            "elementId": "row-dark-academia",
+            "title": "Dark Academia",
+            "subtitle": "Gothic, cerebral, candlelit",
+            "icon": "fa-feather-pointed",
+            "vibeDescription": "gothic, intellectual, melancholic, and candlelit",
+            "fallbackQuery": "subject:gothic fiction subject:campus"
+        },
+        {
+            "type": "query",
+            "query": "subject:fiction",
+            "elementId": "row-fiction",
+            "title": "General Fiction",
+            "subtitle": "Stories for everyone",
+            "icon": "fa-book-open"
+        }
+    ]
+    return success_response(data={"shelves": discovery_shelves})
+
 # =====================================================================
 # ENDPOINT: CSRF Token Retrieval
 # =====================================================================
@@ -1021,11 +1070,11 @@ def handle_analyze_mood(validated_data):
 @validate_schema(MoodTagsRequest)
 def handle_mood_tags(validated_data):
     """Get mood tags for a book."""
-    from exceptions import (
+    from backend.core.exceptions.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException, 
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.core.responses.error_responses import handle_exception
     
     try:
         
@@ -1059,7 +1108,7 @@ def handle_mood_search(validated_data):
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.core.responses.error_responses import handle_exception
     
     try:
         
@@ -1162,12 +1211,12 @@ def handle_purchase_links():
 @validate_schema(GenerateNoteRequest)
 def handle_generate_note(validated_data):
     """Generate AI-powered book recommendation with vibe support."""
-    from exceptions import (
+    from backend.core.exceptions.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         DatabaseQueryError, DatabaseIntegrityError,
         ValidationException, InvalidInputError
     )
-    from error_responses import handle_exception
+    from backend.core.responses.error_responses import handle_exception
     
     try:
         
@@ -1212,62 +1261,50 @@ def handle_generate_note(validated_data):
 
 @app.route('/api/v1/chat', methods=['POST'])
 @limiter.limit("10 per minute")
-@validate_schema(ChatRequest)
-def handle_chat(validated_data):
-    """Handle chat messages and generate bookseller responses."""
-    from exceptions import (
-        LLMCircuitBreakerOpenError, AIServiceException,
-        ValidationException, InvalidInputError
-    )
-    from error_responses import handle_exception
-    
+def handle_chat():
+    """Legacy chat endpoint (deprecated in favor of WebSockets)."""
+    return jsonify({
+        "success": False,
+        "error": "This endpoint is deprecated. Please use the WebSockets interface for Literary Chat."
+    }), 426
+
+@socketio.on('chat_message')
+def handle_socket_chat(data):
+    """Handle chat messages via WebSockets and stream bookseller responses."""
     try:
-        
+        is_valid, validated_data = validate_request(ChatRequest, data)
+        if not is_valid:
+            emit('chat_error', {"error": "Validation failed", "details": validated_data})
+            return
+            
         user_message = validated_data.message
         conversation_history = validated_data.history or []
         
         validated_history = []
-        for msg in conversation_history:
-            if hasattr(msg, 'dict'):
-                validated_history.append(msg.dict())
+        for msg in conversation_history[-6:]:
+            if not isinstance(msg, dict) or 'content' not in msg:
+                continue
             else:
                 validated_history.append(msg)
         
-        # Generate contextual response based on conversation history
-        response = generate_chat_response(user_message, validated_history)
-        
-        # Try to get book recommendations based on the message
         recommendations = get_ai_recommendations(user_message)
         
-        # =========================================================================
-        # TIMESTAMP STANDARDIZATION
-        # =========================================================================
-        # Ensure that the timestamp returned to the client is explicitly set to
-        # UTC using timezone-aware objects. This prevents subtle bugs where server 
-        # locale or deployment environments might skew the time by relying on 
-        # naive datetime.now() calls. This is a critical fix for ensuring
-        # consistent client-side formatting regardless of geographical region.
-        # =========================================================================
+        full_response = ""
+        for chunk in generate_chat_response_stream(user_message, validated_history):
+            if chunk:
+                full_response += chunk
+                emit('chat_stream', {'chunk': chunk})
         
-        return success_response(
-            data={
-                "response": response,
-                "recommendations": recommendations,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-        )
+        emit('chat_complete', {
+            "success": True,
+            "response": full_response,
+            "recommendations": recommendations,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
         
-    except (LLMCircuitBreakerOpenError, AIServiceException) as e:
-        logger.error(f"AI service error in handle_chat: {e}", exc_info=True)
-        return handle_exception(e, "handle_chat")
-    except (ValidationException, InvalidInputError) as e:
-        logger.warning(f"Validation error in handle_chat: {e}")
-        return handle_exception(e, "handle_chat")
     except Exception as e:
-        logger.error(f"Unexpected error in handle_chat: {type(e).__name__}: {e}", exc_info=True)
-        return handle_exception(e, "handle_chat")
-
-
+        logger.error(f"Error in WebSocket handle_chat: {type(e).__name__}: {e}", exc_info=True)
+        emit('chat_error', {"error": "An error occurred while generating a response. Please try again."})
 
 # =========================================================================
 # ENDPOINT: Add Book to Library
@@ -1287,11 +1324,12 @@ def handle_chat(validated_data):
 def add_to_library(validated_data):
     """Add a book to the user's shelf."""
     from sqlalchemy.exc import IntegrityError
-    from exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
-    from error_responses import handle_exception
+    from backend.core.exceptions.exceptions import DatabaseQueryError, DatabaseIntegrityError, ValidationException
+    from backend.core.responses.error_responses import handle_exception
     
     try:
         
+        current_user_id = get_jwt_identity()
         if str(validated_data.user_id) != str(current_user_id):
             return unauthorized_access_error("Cannot access another user's library")
         
@@ -1469,6 +1507,7 @@ def update_library_item(item_id, validated_data):
         if not item:
             return not_found_error("Library item")
             
+        current_user_id = get_jwt_identity()
         if str(item.user_id) != str(current_user_id):
             return forbidden_error("Cannot modify another user's library item")
 
@@ -1515,6 +1554,7 @@ def remove_from_library(item_id):
         if not item:
             return not_found_error("Library item")
         
+        current_user_id = get_jwt_identity()
         if str(item.user_id) != str(current_user_id):
             return forbidden_error("Cannot delete another user's library item")
             
@@ -1716,8 +1756,8 @@ def register(validated_data):
 @validate_schema(LoginRequest)
 def login(validated_data):
     """Authenticate user and return JWT token."""
-    from exceptions import DatabaseQueryError, ValidationException
-    from error_responses import handle_exception
+    from backend.core.exceptions.exceptions import DatabaseQueryError, ValidationException
+    from backend.core.responses.error_responses import handle_exception
     
     try:
         
@@ -2067,6 +2107,7 @@ def verify_auth_session():
 def set_reading_goal(validated_data):
     """Set or update annual reading goal."""
     
+    current_user_id = get_jwt_identity()
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
     
@@ -2185,6 +2226,7 @@ def get_leaderboard():
 def create_collection(validated_data):
     """Create a new collection."""
     
+    current_user_id = get_jwt_identity()
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized")
     
@@ -2258,6 +2300,7 @@ def update_collection(collection_id, validated_data):
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
         
+        current_user_id = get_jwt_identity()
         if str(collection.user_id) != str(current_user_id):
             return forbidden_error("Unauthorized")
         
@@ -2295,6 +2338,7 @@ def delete_collection(collection_id):
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
         
+        current_user_id = get_jwt_identity()
         if str(collection.user_id) != str(current_user_id):
             return forbidden_error("Unauthorized")
         
@@ -2307,7 +2351,8 @@ def delete_collection(collection_id):
 
 @app.route('/api/v1/collections/<int:collection_id>/books', methods=['POST'])
 @jwt_required()
-def add_book_to_collection(collection_id):
+@validate_schema(AddToCollectionRequest)
+def add_book_to_collection(collection_id, validated_data):
     """Add a book to a collection."""
     
     try:
@@ -2315,6 +2360,7 @@ def add_book_to_collection(collection_id):
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
         
+        current_user_id = get_jwt_identity()
         if str(collection.user_id) != str(current_user_id):
             return forbidden_error("Unauthorized")
         
@@ -2374,6 +2420,7 @@ def remove_book_from_collection(collection_id, book_id):
         if not collection:
             return jsonify({"error": "Collection not found"}), 404
         
+        current_user_id = get_jwt_identity()
         if str(collection.user_id) != str(current_user_id):
             return forbidden_error("Unauthorized")
         
@@ -2550,6 +2597,7 @@ def create_price_alert(book_id):
     if not is_valid:
         return jsonify(validated_data), 400
     
+    current_user_id = get_jwt_identity()
     if str(validated_data.user_id) != str(current_user_id):
         return forbidden_error("Unauthorized access to another user's alerts")
     
@@ -2687,21 +2735,30 @@ with app.app_context():
 # load on the backend server.
 
 if __name__ == '__main__':
-    server_config = app_config.server
-    
-    if server_config.debug:
-        logger.info("--- BIBLIODRIFT MOOD ANALYSIS SERVER STARTING ON PORT %d ---", server_config.port)
-        logger.info("Environment: %s", app_config.get_environment_name())
-        logger.info("Available endpoints:")
-        logger.info("  POST /api/v1/generate-note - Generate AI book notes")
-        logger.info("  POST /api/v1/category-books - Get category-specific book recommendations")
-        if MOOD_ANALYSIS_AVAILABLE:
-            logger.info("  POST /api/v1/analyze-mood - Analyze book mood from GoodReads")
-            logger.info("  POST /api/v1/mood-tags - Get mood tags for a book")
-        else:
-            logger.warning("  [DISABLED] Mood analysis endpoints (missing dependencies)")
-        logger.info("  POST /api/v1/mood-search - Search books by mood/vibe")
-        logger.info("  POST /api/v1/chat - Chat with bookseller")
+    # Print the available endpoints
+    with app.app_context():
+        logger.info("\nAvailable endpoints:")
+        logger.info("  POST /api/v1/auth/register - Register a new user")
+        logger.info("  POST /api/v1/auth/login - Login user")
+        logger.info("  POST /api/v1/auth/logout - Logout user")
+        logger.info("  GET  /api/v1/auth/me - Get current user")
+        logger.info("  GET  /api/v1/library/shelves - Get shelves (counts only)")
+        logger.info("  GET  /api/v1/library/items - Get library items")
+        logger.info("  POST /api/v1/library/items - Add item to library")
+        logger.info("  PUT  /api/v1/library/items/<id> - Update item status/rating")
+        logger.info("  DELETE /api/v1/library/items/<id> - Remove item from library")
+        logger.info("  GET  /api/v1/library/collections - Get collections")
+        logger.info("  POST /api/v1/library/collections - Create collection")
+        logger.info("  GET  /api/v1/library/collections/<id>/items - Get collection items")
+        logger.info("  POST /api/v1/library/collections/<id>/items - Add item to collection")
+        logger.info("  GET  /api/v1/recommendations - Get AI recommendations")
+        logger.info("  GET  /api/v1/reading-goals - Get reading goals")
+        logger.info("  POST /api/v1/reading-goals - Create reading goal")
+        logger.info("  GET  /api/v1/reading-stats - Get reading statistics")
+        logger.info("  POST /api/v1/book-notes - Add book note")
+        logger.info("  GET  /api/v1/book-notes/<book_id> - Get book notes")
+        logger.info("  POST /api/v1/ai/generate-note - Generate AI book blurb")
+        logger.info("  POST /api/v1/chat - Chat with bookseller (DEPRECATED - Use WebSockets)")
         logger.info("  GET  /api/v1/health - Health check")
 
     app.run(debug=server_config.debug, port=server_config.port, host=server_config.host)
