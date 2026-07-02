@@ -6926,13 +6926,21 @@ body { cursor: none; }
     font-size: 1.1rem;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .empty-state-title {
-        font-size: 1.5rem;
+    .library-error-retry-btn {
+        border: none;
+        background: var(--accent-gold);
+        color: var(--text-primary);
+        padding: 0.95rem 1.75rem;
+        font-size: 0.95rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .empty-shelf-svg {
+    .library-error-retry-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
         width: 150px;
         height: 150px;
     }

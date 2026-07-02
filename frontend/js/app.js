@@ -97,6 +97,24 @@ function hideNoResults() {
   if (el) el.style.display = 'none';
 }
 
+async function fetchWithTimeout(resource, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const init = { ...options, signal: controller.signal };
+
+  try {
+    const response = await fetch(resource, init);
+    return response;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 /**
@@ -2351,16 +2369,19 @@ class LibraryManager {
         if (!user) return;
 
         try {
-            const res = await fetch(`${this.apiBase}/library/${user.id}`, {
+            const res = await fetchWithTimeout(`${this.apiBase}/library/${user.id}`, {
                 headers: this.getAuthHeaders(),
                 credentials: 'include'
-            });
-            if (res.ok) {
-                const data = await res.json();
+            }, 12000);
+            if (!res.ok) {
+                const errorBody = await res.text().catch(() => '');
+                throw new Error(`HTTP ${res.status}: ${errorBody}`);
+            }
+            const data = await res.json();
 
-                // Merge Strategy:
-                // 1. Create a map of existing local books for quick lookup
-                const localBooksMap = new Map();
+            // Merge Strategy:
+            // 1. Create a map of existing local books for quick lookup
+            const localBooksMap = new Map();
                 ['current', 'want', 'finished'].forEach(shelf => {
                     this.library[shelf].forEach(book => {
                         localBooksMap.set(book.id, { book, shelf });
@@ -2438,12 +2459,52 @@ class LibraryManager {
                         this.renderShelf('finished', 'shelf-finished');
                     }
                 }
+                this.hideLibraryError();
                 await this.updateSyncStatus();
             }
         } catch (e) {
             console.error("Sync failed", e);
-            showToast("Sync failed. Using local library.", "error");
+            const message = e.message === 'Request timed out'
+                ? 'Connection timed out. Please check your internet or try again later.'
+                : 'Unable to load your library. Using local data.';
+            showToast(message, 'error');
+            this.showLibraryError(message);
         }
+    }
+
+    showLibraryError(message) {
+        const errorState = document.getElementById('library-error-state');
+        if (!errorState) return;
+
+        const sanitized = String(message || 'An error occurred while loading your library.');
+        errorState.innerHTML = `
+            <div class="empty-state-illustration" aria-hidden="true">
+                <i class="fa-solid fa-circle-exclamation" style="font-size: 3rem; color: var(--accent-red);"></i>
+            </div>
+            <div class="empty-state-content">
+                <h2 class="empty-state-title">${sanitized}</h2>
+                <p class="empty-state-description">Please check your network connection and try again. Your local library is still available.</p>
+            </div>
+            <button id="retry-library-sync-btn" class="library-error-retry-btn btn-primary" type="button">Retry</button>
+        `;
+        errorState.hidden = false;
+        errorState.style.display = 'flex';
+
+        const retryBtn = document.getElementById('retry-library-sync-btn');
+        if (retryBtn) {
+            retryBtn.onclick = async () => {
+                this.hideLibraryError();
+                showToast('Retrying library load...', 'info');
+                await this.syncWithBackend();
+            };
+        }
+    }
+
+    hideLibraryError() {
+        const errorState = document.getElementById('library-error-state');
+        if (!errorState) return;
+        errorState.hidden = true;
+        errorState.style.display = 'none';
     }
 
     async syncLocalToBackend(user) {
