@@ -1209,17 +1209,27 @@ class BookRenderer {
         }
 
         // Preview Button — opens the Google Books Embedded Viewer
-        const previewBtn = document.getElementById('modal-preview-btn');
-        if (previewBtn) {
-            previewBtn.onclick = () => {
-                if (window.BookPreview && book.id) {
-                    const author = book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author';
-                    const rating = book.volumeInfo.averageRating || 0;
-                    const genre = book.volumeInfo.categories ? book.volumeInfo.categories[0] : 'Fiction';
-                    window.BookPreview.open(book.id, book.volumeInfo.title || 'Book Preview', author, rating, genre);
-                }
-            };
+       const previewBtn = document.getElementById('modal-preview-btn');
+if (previewBtn) {
+    previewBtn.onclick = () => {
+        if (window.BookPreview && book.id) {
+
+         
+
+            const author = book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author';
+            const rating = book.volumeInfo.averageRating || 0;
+            const genre = book.volumeInfo.categories ? book.volumeInfo.categories[0] : 'Fiction';
+
+            window.BookPreview.open(
+                book.id,
+                book.volumeInfo.title || 'Book Preview',
+                author,
+                rating,
+                genre
+            );
         }
+    };
+}
 
         // Fetch and render purchase links
         const purchaseLinksEl = document.getElementById('modal-purchase-links');

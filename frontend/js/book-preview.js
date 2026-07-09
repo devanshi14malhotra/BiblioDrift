@@ -32,8 +32,7 @@ const BookPreview = (() => {
     let _pendingCbs     = [];      // { resolve, reject } queued during load
 
     // Google Books volume IDs are 12 chars typically, allow 8-20 to be safe
-    const VALID_ID_RE = /^[a-zA-Z0-9_-]{8,20}$/;
-
+   const VALID_ID_RE = /^[a-zA-Z0-9_-]+$/;
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     function _isValidId(id) {
@@ -52,7 +51,7 @@ const BookPreview = (() => {
      *       var viewer = new google.books.DefaultViewer(...);
      *   }
      *
-     * @returns {Promise<void>}
+     * @returns {Promise<void>}  
      */
     function _loadAPI() {
         return new Promise((resolve, reject) => {
@@ -248,8 +247,33 @@ const BookPreview = (() => {
         if (loading)   loading.style.display   = 'none';
         if (container) container.style.display = 'none';
         if (msgEl && msg) msgEl.textContent = msg;
-        if (link) link.href = `https://books.google.com/books?id=${encodeURIComponent(id)}`;
-        if (fallback)  fallback.style.display  = 'flex';
+      if (link) {
+    if (
+        id &&
+        !id.startsWith("mock-") &&
+        !id.startsWith("hardcoded-")
+    ) {
+        const url = `https://books.google.com/books?id=${encodeURIComponent(id)}`;
+
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.style.display = "inline-flex";
+
+        link.onclick = (e) => {
+            e.preventDefault();
+            window.open(url, "_blank");
+        };
+    } else {
+        link.removeAttribute("href");
+        link.onclick = null;
+        link.style.display = "none";
+    }
+}
+
+if (fallback) {
+    fallback.style.display = "flex";
+}
     }
 
     function _close() {
