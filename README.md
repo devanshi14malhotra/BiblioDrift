@@ -36,13 +36,13 @@ where stories are explored through <b>mood, atmosphere, and feeling</b> instead 
 
 | 📚 Section | 🔗 Description |
 |---|---|
-| 💭 **[The Idea](#-the-idea)** | Vision and inspiration behind BiblioDrift |
-| 🧘 **[Core Philosophy](#-core-philosophy)** | Principles that shape the experience |
-| ✨ **[Experience Highlights](#-experience-highlights)** | Main features and immersive interactions |
-| 🛠️ **[Tech Stack](#-tech-stack)** | Technologies powering the platform |
-| 🧠 **[System Architecture](#-system-architecture)** | Flow between frontend, backend, and AI |
-| 📸 **[Screenshots](#-screenshots)** | Visual preview of the application |
-| 📄 **[License](#-license)** | Project licensing information |
+| 💭 **[The Idea](#the-idea)** | Vision and inspiration behind BiblioDrift |
+| 🧘 **[Core Philosophy](#core-philosophy)** | Principles that shape the experience |
+| ✨ **[Experience Highlights](#experience-highlights)** | Main features and immersive interactions |
+| 🛠️ **[Tech Stack](#tech-stack)** | Technologies powering the platform |
+| 🧠 **[System Architecture](#system-architecture)** | Flow between frontend, backend, and AI |
+| 📸 **[Screenshots](#screenshots)** | Visual preview of the application |
+| 📄 **[License](#license)** | Project licensing information |
 
 </div>
 
