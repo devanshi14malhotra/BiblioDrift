@@ -1912,14 +1912,20 @@ def google_oauth_callback():
 @app.route('/api/v1/auth/verify', methods=['GET'])
 @jwt_required()
 def verify_auth():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
-    print(user)
+    """Validate JWT from access cookie and return the current user (session restore)."""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(int(current_user_id))
 
-    if not user:
-        return auth_error("Invalid or expired session.")
+        if not user:
+            return auth_error("Invalid or expired session.")
 
-    return jsonify({"user": user.to_dict()}), 200
+        return jsonify({"user": user.to_dict()}), 200
+    except (TypeError, ValueError):
+        return auth_error("Invalid session.")
+    except Exception as e:
+        logger.error(f"Auth verification failed: {e}", exc_info=True)
+        return internal_error("Unable to verify session.")
 
 
 @app.route('/api/v1/logout', methods=['POST'])
@@ -2072,20 +2078,6 @@ def reset_password(validated_data):
         return internal_error("Unable to reset password.")
 
 
-@app.route('/api/v1/auth/verify', methods=['GET'])
-@jwt_required()
-def verify_auth_session():
-    """Validate JWT from access cookie and return the current user (session restore)."""
-    try:
-        uid = get_jwt_identity()
-        user = User.query.get(int(uid))
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        return jsonify({
-            "user": {"id": user.id, "username": user.username, "email": user.email}
-        }), 200
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid session"}), 401
 
 
 # ==================== READING STATS ENDPOINTS ====================
