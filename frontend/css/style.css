@@ -6343,6 +6343,32 @@ input:checked+.slider {
     box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.16);
 }
 
+/* Link to curated Spotify reading playlists inside the Ambient Sanctuary widget */
+.ambient-spotify-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 10px;
+    background: #1db954;
+    color: #fff !important;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.ambient-spotify-link:hover {
+    background: #1ed760;
+    transform: translateY(-1px);
+}
+
+.ambient-spotify-link:active {
+    transform: translateY(0) scale(0.98);
+}
+
 /* Volume slider styling */
 .ambient-panel input[type="range"] {
     -webkit-appearance: none;
