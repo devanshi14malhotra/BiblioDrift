@@ -18,7 +18,7 @@ def load_existing_books():
     with open(JSON_FILE, "r") as file:
         try:
             return json.load(file)
-        except:
+        except (json.JSONDecodeError, IOError):
             return []
 
 
