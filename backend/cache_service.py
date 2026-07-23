@@ -10,7 +10,7 @@ import hashlib
 import logging
 from typing import Optional, Any, Dict, Callable, List, Union
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from backend.config import app_config
@@ -397,7 +397,7 @@ class CacheService:
             return {
                 'used_memory_human': info.get('used_memory_human'),
                 'used_memory_rss_human': info.get('used_memory_rss_human'),
-                'peak_memory_human': info.get('used_peak_human'),
+                'peak_memory_human': info.get('used_memory_peak_human'),
                 'mem_fragmentation_ratio': info.get('mem_fragmentation_ratio'),
                 'maxmemory_human': info.get('maxmemory_human'),
                 'maxmemory_policy': info.get('maxmemory_policy')
@@ -434,7 +434,7 @@ class CacheService:
         """
         health = {
             'status': 'healthy',
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'type': CacheConfig.CACHE_TYPE,
             'issues': []
         }
