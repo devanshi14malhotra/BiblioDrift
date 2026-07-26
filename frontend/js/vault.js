@@ -70,10 +70,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
             const dt = e.dataTransfer;
             const files = dt.files;
             if (files.length > 0) {
-                fileInput.files = files;
+                const dataTransfer = new DataTransfer();
+                Array.from(files).forEach(f => dataTransfer.items.add(f));
+                fileInput.files = dataTransfer.files;
                 updateFileInputFeedback();
             }
         });
@@ -197,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const searchStr = filterQuery.toLowerCase();
                 dataCollection = dataCollection.filter(item => 
                     item.name.toLowerCase().includes(searchStr) || 
-                    item.genre.toLowerCase().includes(searchStr) ||
+                    (item.genre || '').toLowerCase().includes(searchStr) ||
                     (item.description && item.description.toLowerCase().includes(searchStr))
                 );
             }
