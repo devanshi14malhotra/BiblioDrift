@@ -1252,13 +1252,15 @@ class BookRenderer {
                     console.error('Failed to load purchase links', err);
                     purchaseLinksEl.innerHTML = '<p class="modal-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.7;">Failed to load purchase links.</p>';
                 });
-            // Explore Mood Button
-            const moodBtnModal = document.getElementById('modal-mood-btn');
-            if (moodBtnModal) {
-                moodBtnModal.onclick = () => {
-                    this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
-                };
-            }
+        } // end if (purchaseLinksEl)
+
+        // Explore Mood Button
+        const moodBtnModal = document.getElementById('modal-mood-btn');
+        if (moodBtnModal) {
+            moodBtnModal.onclick = () => {
+                this.exploreBookMood(book.volumeInfo.title, book.volumeInfo.authors?.join(", ") || "");
+            };
+        }
 
             modal.showModal();
             document.getElementById('closeModalBtn').onclick = () => modal.close();
