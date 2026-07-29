@@ -209,6 +209,7 @@ const BookPreview = (() => {
         el.querySelector('#download-card-btn').addEventListener('click', () => {
             const card = document.getElementById('book-card');
             html2canvas(card).then(canvas => {
+.catch(err => console.error(err))
                 const link = document.createElement('a');
                 link.download = 'book-card.png';
                 link.href = canvas.toDataURL('image/png');
