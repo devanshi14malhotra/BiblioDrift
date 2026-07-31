@@ -489,19 +489,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const type = Math.random();
     if (type < 0.5) {
-      el.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
+      el.textContent = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
         <path d="M10 1 L11.5 8.5 L19 10 L11.5 11.5 L10 19 L8.5 11.5 L1 10 L8.5 8.5 Z"
           fill="${color}" opacity="0.9"/></svg>`;
     } else if (type < 0.75) {
       const s = size * 0.7;
-      el.innerHTML = `<svg width="${s}" height="${s}" viewBox="0 0 14 14">
+      el.textContent = `<svg width="${s}" height="${s}" viewBox="0 0 14 14">
         <circle cx="7" cy="7" r="5" fill="${color}" opacity="0.85"/>
         <line x1="7" y1="0" x2="7" y2="14" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
         <line x1="0" y1="7" x2="14" y2="7" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
         </svg>`;
     } else {
       const s = size * 0.8;
-      el.innerHTML = `<svg width="${s}" height="${s}" viewBox="0 0 20 20">
+      el.textContent = `<svg width="${s}" height="${s}" viewBox="0 0 20 20">
         <polygon points="10,2 12,8 18,8 13,12 15,18 10,14 5,18 7,12 2,8 8,8"
           fill="${color}" opacity="0.9"/></svg>`;
     }
