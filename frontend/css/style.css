@@ -7935,6 +7935,10 @@ body.night-mode .tooltip-author {
   transform: translateY(-2px);
 }
 
+/* Story Modal (Dark Mode) Popup Targeted Fix */
+[data-theme='night'] .story-read-modal {
+    background: var(--bg-color);
+}
 
 /* ============================================================ */
 /* IN-APP BOOK PREVIEW MODAL (Google Books Embedded Viewer)    */
