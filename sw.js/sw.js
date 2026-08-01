@@ -15,25 +15,4 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('Caching essential UI sanctuary assets...');
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
-    );
-});
-
-// Fetch Event: Cache-First strategy for core layout files
-self.addEventListener('fetch', (event) => {
-    // Only intercept local GET requests
-    if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
-        return;
-    }
-
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse; // Return local cache copy
-            }
-            return fetch(event.request); // Fallback to network
-        })
-    );
-});
+        .catch(err => console.error(err))
