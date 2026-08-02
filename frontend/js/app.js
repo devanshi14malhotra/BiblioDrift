@@ -152,7 +152,7 @@ const CollectionAPI = {
             method: 'POST',
             headers: this.getHeaders(),
             credentials: 'include',
-            body: JSON.stringify({ user_id: parseInt(userId), name, description, is_public: isPublic })
+            body: JSON.stringify({ user_id: parseInt(userId, 10), name, description, is_public: isPublic })
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -222,7 +222,7 @@ const CollectionAPI = {
             headers: this.getHeaders(),
             credentials: 'include',
             body: JSON.stringify({
-                user_id: parseInt(userId),
+                user_id: parseInt(userId, 10),
                 google_books_id: bookId,
                 title: title,
                 authors: Array.isArray(authors) ? authors.join(', ') : authors,
@@ -939,7 +939,7 @@ class BookRenderer {
         const slider = scene.querySelector('.progress-slider');
         if (slider) {
             slider.addEventListener('change', (e) => {
-                const newProgress = parseInt(e.target.value);
+                const newProgress = parseInt(e.target.value, 10);
                 if (this.libraryManager) {
                     this.libraryManager.updateBook(id, { progress: newProgress });
                 }
@@ -3483,7 +3483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (saveGoalBtn) {
             saveGoalBtn.addEventListener('click', async () => {
-                const target = parseInt(goalInput.value);
+                const target = parseInt(goalInput.value, 10);
                 if (isNaN(target) || target < 1) return;
 
                 const token = SafeStorage.get('bibliodrift_token');
@@ -3782,13 +3782,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const saveBtn = card.querySelector('.progress-card-save-btn');
 
                     slider.addEventListener('input', () => {
-                        const val = parseInt(slider.value);
+                        const val = parseInt(slider.value, 10);
                         barFill.style.width = `${val}%`;
                         pctLabel.textContent = `${val}%`;
                     });
 
                     saveBtn.addEventListener('click', async () => {
-                        const newProgress = parseInt(slider.value);
+                        const newProgress = parseInt(slider.value, 10);
                         saveBtn.disabled = true;
                         saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                         try {

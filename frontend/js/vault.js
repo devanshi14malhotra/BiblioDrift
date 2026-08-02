@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateFileInputFeedback() {
         if (fileInput && fileInput.files.length > 0) {
-            fileFeedback.innerHTML = `<i class="fa-solid fa-file-signature"></i> Staged File: <span style="text-decoration: underline;">${fileInput.files[0].name}</span>`;
+            fileFeedback.textContent = `<i class="fa-solid fa-file-signature"></i> Staged File: <span style="text-decoration: underline;">${fileInput.files[0].name}</span>`;
             if (metadataFormSection) metadataFormSection.style.display = 'block';
         } else {
             if (fileFeedback) fileFeedback.innerText = '';
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 uploadBtn.disabled = true;
-                uploadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Encrypting & Securing...`;
+                uploadBtn.textContent = `<i class="fa-solid fa-spinner fa-spin"></i> Encrypting & Securing...`;
 
                 const targetDocumentModel = {
                     name: file.name,
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert("Process Interrupted: Could not write record data to internal memory storage.");
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.innerHTML = `<i class="fa-solid fa-vault"></i> Secure File to Vault`;
+                uploadBtn.textContent = `<i class="fa-solid fa-vault"></i> Secure File to Vault`;
             }
         });
     }
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!vaultGrid) return;
         
         clearActiveObjectUrls();
-        vaultGrid.innerHTML = '';
+        vaultGrid.textContent = '';
 
         try {
             let dataCollection = await vaultDb.securedFiles.toArray();
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (dataCollection.length === 0) {
-                vaultGrid.innerHTML = `
+                vaultGrid.textContent = `
                     <div style="grid-column: 1/-1; text-align: center; color: var(--text-main); padding: 50px 20px; opacity: 0.55;">
                         <i class="fa-solid fa-cubes-stacked" style="font-size: 2.8rem; margin-bottom: 12px; display: block;"></i>
                         <p>${filterQuery ? 'No records match your current directory text filter criteria.' : 'Your reading vault repository workspace is empty.'}</p>
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const badgeClassMap = file.privacy === 'private' ? 'status-is-private' : 'status-is-public';
                     const iconClassMap = file.privacy === 'private' ? 'fa-user-lock' : 'fa-share-nodes';
 
-                    documentCard.innerHTML = `
+                    documentCard.textContent = `
                         <button class="purge-item-trigger" data-row-id="${file.id}" title="Delete document registry entry" 
                                 style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.1rem; opacity: 0.6; transition: opacity 0.2s;">
                             <i class="fa-solid fa-trash-can"></i>
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (error) {
             console.error("View painting interface process loop dropped errors:", error);
-            vaultGrid.innerHTML = `<p style="color: #e74c3c; text-align: center; grid-column: 1/-1;">Critical Error: Secure local document catalog retrieval failures.</p>`;
+            vaultGrid.textContent = `<p style="color: #e74c3c; text-align: center; grid-column: 1/-1;">Critical Error: Secure local document catalog retrieval failures.</p>`;
         }
     }
     async function integrateVaultIntoLibrary(targetContainer) {
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             divider.id = 'vault-library-divider';
             divider.style.gridColumn = '1 / -1';
             divider.style.margin = '40px 0 20px 0';
-            divider.innerHTML = `
+            divider.textContent = `
                 <h3 style="font-family: 'Georgia', serif; font-size: 1.6rem; display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
                     <i class="fa-solid fa-shield-halved" style="color: var(--border-focus, #9b59b6);"></i> Local Vault Documents
                 </h3>
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const sGenre = DOMPurify.sanitize(item.genre);
                 const sDesc = DOMPurify.sanitize(item.description || 'No annotation log context provided.');
 
-                card.innerHTML = `
+                card.textContent = `
                     <div style="height: 180px; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1); padding: 12px; text-align: center; margin-bottom: 10px;">
                         <i class="fa-solid fa-file-pdf" style="font-size: 2.8rem; margin-bottom: 8px; opacity: 0.6;"></i>
                         <span style="font-size: 0.85rem; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: 'Georgia', serif;">${sName}</span>
