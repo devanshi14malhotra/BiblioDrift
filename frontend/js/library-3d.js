@@ -1070,7 +1070,7 @@ class BookshelfRenderer3D {
         const localLibrary = this.getLibraryState();
         let books = [...(localLibrary[shelfType] || [])];
 
-        books = books.map(b => {
+        books = (books ?? []).map(b => {
             if (b.volumeInfo) {
                 return {
                     id: b.id,

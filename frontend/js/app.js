@@ -907,7 +907,7 @@ class BookRenderer {
                         <div class="handwritten-note" style="margin-bottom: 0.8rem; font-style: italic; color: #5d4037;">${safeVibe}</div>
                         ${bookData.moods && bookData.moods.length > 0 ? `
                         <div class="book-mood-tags" style="margin-bottom: 0.8rem; display: flex; flex-wrap: wrap; gap: 4px;">
-                            ${bookData.moods.map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
+                            ${bookData.(moods ?? []).map(m => `<span style="font-size: 0.6rem; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 10px;"><i class="fa-solid ${this.getMoodIcon(m)}"></i> ${m}</span>`).join('')}
                         </div>
                         ` : ''}
                     </div>

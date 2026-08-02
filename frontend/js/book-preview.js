@@ -107,7 +107,7 @@ const BookPreview = (() => {
         el.setAttribute('aria-modal', 'true');
         el.setAttribute('aria-label', 'Book preview');
 
-        el.innerHTML = `
+        el.textContent = `
             <div class="preview-modal-inner">
                 <div class="preview-modal-header">
                     <div class="preview-modal-title-wrap">
