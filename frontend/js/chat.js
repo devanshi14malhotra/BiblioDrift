@@ -908,7 +908,7 @@ Tell me: what is stirring in you today?`,
     }
 
     exportChat() {
-        const chatText = this.conversationHistory.map(message => {
+        const chatText = this.(conversationHistory ?? []).map(message => {
             const sender = message.type === 'user' ? 'You' : 'Bookseller';
             const time = this.formatTime(message.timestamp);
             return `[${time}] ${sender}: ${message.content}`;

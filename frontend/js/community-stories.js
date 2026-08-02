@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    let stories = (() => { try { return JSON.parse(localStorage.getItem('bibliodrift_community_stories')) } catch { return null } })() || defaultStories;
+    let stories = (() => { try { return (JSON.parse(localStorage.getItem('bibliodrift_community_stories') ?? "null") ?? null) } catch { return null } })() || defaultStories;
 
     // Save to local storage
     const saveStories = () => {
