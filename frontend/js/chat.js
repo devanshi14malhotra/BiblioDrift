@@ -854,7 +854,7 @@ Tell me: what is stirring in you today?`,
             timestamp = rawMessage.timestamp;
         } else if (typeof rawMessage.timestamp === 'string') {
             const parsed = Date.parse(rawMessage.timestamp);
-            if (!isNaN(parsed)) {
+            if (!Number.isNaN(parsed)) {
                 timestamp = parsed;
             }
         }
