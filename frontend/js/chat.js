@@ -927,7 +927,7 @@ Tell me: what is stirring in you today?`,
 
     extractMoodKeywordsFromHistory() {
         try {
-            const textBlob = this.conversationHistory.map(m => (m.content || '')).join(' ');
+            const textBlob = this.(conversationHistory ?? []).map(m => (m.content || '')).join(' ');
             const keywords = [];
             const moodHints = ['cozy','comfort','romance','mystery','thriller','dark','uplifting','melancholy','adventure','fantasy','science fiction','sci-fi','historical','literary'];
             const lower = textBlob.toLowerCase();
