@@ -1070,7 +1070,7 @@ class BookshelfRenderer3D {
         const localLibrary = this.getLibraryState();
         let books = [...(localLibrary[shelfType] || [])];
 
-        books = books.map(b => {
+        books = (books ?? []).map(b => {
             if (b.volumeInfo) {
                 return {
                     id: b.id,
@@ -2407,7 +2407,7 @@ class BookshelfRenderer3D {
                     if (progressBadge) progressBadge.textContent = `${clamped}% `;
                     // Sync pages input
                     if (pagesReadInput && pagesTotalInput) {
-                        const pages = Math.round((clamped / 100) * parseInt(pagesTotalInput.value || totalPages));
+                        const pages = Math.round((clamped / 100) * parseInt(pagesTotalInput.value || totalPages, 10));
                         pagesReadInput.value = pages;
                     }
                     if (pagesBar) pagesBar.style.width = `${clamped}% `;
@@ -2450,12 +2450,12 @@ class BookshelfRenderer3D {
                     progressSlider.parentNode.replaceChild(newSlider, progressSlider);
                     newSlider.value = currentProgress;
                     newSlider.addEventListener('input', () => {
-                        const pct = parseInt(newSlider.value);
+                        const pct = parseInt(newSlider.value, 10);
                         if (progressBar) progressBar.style.width = `${pct}% `;
                         if (progressValue) progressValue.textContent = `${pct}% `;
                         if (progressBadge) progressBadge.textContent = `${pct}% `;
                         // Sync pages
-                        const total = parseInt(document.getElementById('modal-pages-total')?.value || totalPages);
+                        const total = parseInt(document.getElementById('modal-pages-total', 10)?.value || totalPages);
                         const pages = Math.round((pct / 100) * total);
                         const pagesReadEl = document.getElementById('modal-pages-read');
                         if (pagesReadEl) pagesReadEl.value = pages;
@@ -2469,8 +2469,8 @@ class BookshelfRenderer3D {
                     const pagesTotalEl = document.getElementById('modal-pages-total');
                     const sliderEl = document.getElementById('modal-progress-slider');
                     if (!pagesReadEl || !pagesTotalEl) return;
-                    const read = Math.max(0, parseInt(pagesReadEl.value) || 0);
-                    const total = Math.max(1, parseInt(pagesTotalEl.value) || 1);
+                    const read = Math.max(0, parseInt(pagesReadEl.value, 10) || 0);
+                    const total = Math.max(1, parseInt(pagesTotalEl.value, 10) || 1);
                     const pct = Math.min(100, Math.round((read / total) * 100));
                     if (sliderEl) sliderEl.value = pct;
                     if (progressBar) progressBar.style.width = `${pct}% `;
@@ -2497,7 +2497,7 @@ class BookshelfRenderer3D {
                     progressSaveBtn.parentNode.replaceChild(newSaveBtn, progressSaveBtn);
                     newSaveBtn.addEventListener('click', async () => {
                         const sliderEl = document.getElementById('modal-progress-slider');
-                        const newProgress = sliderEl ? parseInt(sliderEl.value) : currentProgress;
+                        const newProgress = sliderEl ? parseInt(sliderEl.value, 10) : currentProgress;
 
                         newSaveBtn.disabled = true;
                         newSaveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
