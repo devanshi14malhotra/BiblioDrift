@@ -2407,7 +2407,7 @@ class BookshelfRenderer3D {
                     if (progressBadge) progressBadge.textContent = `${clamped}% `;
                     // Sync pages input
                     if (pagesReadInput && pagesTotalInput) {
-                        const pages = Math.round((clamped / 100) * parseInt(pagesTotalInput.value || totalPages));
+                        const pages = Math.round((clamped / 100) * parseInt(pagesTotalInput.value || totalPages, 10));
                         pagesReadInput.value = pages;
                     }
                     if (pagesBar) pagesBar.style.width = `${clamped}% `;

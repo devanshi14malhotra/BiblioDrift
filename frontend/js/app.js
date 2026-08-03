@@ -152,7 +152,7 @@ const CollectionAPI = {
             method: 'POST',
             headers: this.getHeaders(),
             credentials: 'include',
-            body: JSON.stringify({ user_id: parseInt(userId), name, description, is_public: isPublic })
+            body: JSON.stringify({ user_id: parseInt(userId, 10), name, description, is_public: isPublic })
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));

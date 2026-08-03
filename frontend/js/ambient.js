@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const type = Math.random();
     if (type < 0.5) {
-      el.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
+      el.textContent = `<svg width="${size}" height="${size}" viewBox="0 0 20 20">
         <path d="M10 1 L11.5 8.5 L19 10 L11.5 11.5 L10 19 L8.5 11.5 L1 10 L8.5 8.5 Z"
           fill="${color}" opacity="0.9"/></svg>`;
     } else if (type < 0.75) {
