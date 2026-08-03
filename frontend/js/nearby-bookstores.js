@@ -142,7 +142,7 @@ function handleLocationSuccess(position) {
     const longitude =
         position.coords.longitude;
 
-    locationStatus.innerHTML = `
+    locationStatus.textContent = `
 
         <span class="location-success">
 
