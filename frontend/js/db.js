@@ -12,7 +12,7 @@
 
     async function getPendingLibrarySyncCount(userId) {
         if (!window.db?.syncQueue) return 0;
-        if (userId == null) {
+        if (userId === null) {
             return await window.db.syncQueue.count();
         }
         return await window.db.syncQueue.where('userId').equals(userId).count();

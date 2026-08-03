@@ -334,6 +334,6 @@
         }
 
         refreshContributorSource(false);
-        setInterval(()=> refreshContributorSource(true), REFRESH_INTERVAL_MS);
+        clearInterval(window.__interval); window.__interval = setInterval(()=> refreshContributorSource(true), REFRESH_INTERVAL_MS);
     });
 })();

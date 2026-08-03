@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    let stories = JSON.parse(localStorage.getItem('bibliodrift_community_stories')) || defaultStories;
+    let stories = (JSON.parse(localStorage.getItem('bibliodrift_community_stories') ?? "null") ?? null) || defaultStories;
 
     // Save to local storage
     const saveStories = () => {
