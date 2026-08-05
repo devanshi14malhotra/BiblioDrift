@@ -4,6 +4,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Check for active session tokens
+      const userSessionToken = localStorage.getItem('bibliodrift_session');
+      const standardToken = localStorage.getItem('token');
+      
+      // 2. If no valid session exists, execute immediate bounce back to lobby
+      if (!userSessionToken && !standardToken) {
+        console.warn("[AuthGuard] Unauthorized layout access detected. Redirecting to root...");
+        window.location.replace("../index.html"); 
+      }
+    });
+  </script>
   <title>BiblioDrift-upload your books</title>
   
   <meta name="description" content="BiblioDrift Vault - Upload and manage your personal book collection" />
