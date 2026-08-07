@@ -864,7 +864,7 @@
         const localBooks = await db.vaultBooks.orderBy('timestamp').reverse().toArray();
 
         if (localBooks.length === 0) {
-          shelfRow.innerHTML = `<p style="padding: 30px; text-align: center; color: var(--text-muted); width: 100%;">Your virtual shelf is empty. Drop PDFs to stack your shelf space.</p>`;
+          shelfRow.innerHTML = `<p style="padding: 30px; text-align: center; color: #ffffff; width: 100%;">Your virtual shelf is empty. Drop PDFs to stack your shelf space.</p>`;
           return;
         }
 
