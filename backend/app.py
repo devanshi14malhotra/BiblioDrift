@@ -131,6 +131,11 @@ except ImportError:
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.register_blueprint(reader_identity_bp)
 
+# Security: Set hard limit on request body size to prevent content-length spoofing
+# This catches chunked transfer encoding attacks where Content-Length is omitted
+# or spoofed. Flask enforces this at the WSGI level before the request body is read.
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB hard limit
+
 # Validate required environment variables at startup
 # This will raise ValueError if any required variables are missing
 validate_required_env_vars()
