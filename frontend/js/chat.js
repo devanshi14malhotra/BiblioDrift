@@ -23,7 +23,19 @@ class ChatInterface {
         if (typeof io !== 'undefined') {
             const moodApiBase = window.MOOD_API_BASE || 'http://127.0.0.1:5000';
             const baseUrl = moodApiBase.replace(/\/api\/v1\/?$/, '');
-            this.socket = io(baseUrl);
+            this.socket = io(baseUrl, {
+                timeout: 10000,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
+            
+            this.socket.on('connect_error', (error) => {
+                console.warn('Chat socket connection failed:', error.message);
+            });
+            
+            this.socket.on('reconnect_failed', () => {
+                console.warn('Chat socket reconnection failed after all attempts');
+            });
             
             this.socket.on('chat_stream', (data) => {
                 if (this.currentMessageBubble) {
