@@ -447,6 +447,7 @@
                             <div class="ai-header">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                                 <span>AI Insight</span>
+                                <button class="btn-icon copy-note-btn" data-copy-target="modal-ai-note" title="Copy to clipboard" aria-label="Copy AI insight"><i class="fa-regular fa-clipboard"></i></button>
                             </div>
                             <div id="modal-ai-note">
                                 <div class="text-skeleton skeleton"></div>
@@ -587,6 +588,11 @@
         </div>
 
     </main>
+
+  <!-- Back to Top Button -->
+  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
 
       <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
       <div class="pwa-banner-content">

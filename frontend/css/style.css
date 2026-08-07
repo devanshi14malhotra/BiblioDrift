@@ -1713,6 +1713,29 @@ textarea:focus {
     font-size: 0.9rem;
 }
 
+.copy-note-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--control-border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.copy-note-btn:hover,
+.copy-note-btn:focus-visible {
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.08);
+    outline: none;
+}
+
 #modal-summary {
     line-height: 1.6;
     color: var(--text-main);
@@ -6014,6 +6037,10 @@ textarea:focus {
     cursor: pointer !important;
     border: none !important;
     transition: all 0.3s ease !important;
+}
+
+.back-to-top.hidden {
+    display: none !important;
 }
 
 /* Ambient Sanctuary Wrapper Position */
