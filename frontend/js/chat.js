@@ -191,6 +191,9 @@ Tell me: what is stirring in you today?`,
         // Show typing indicator
         this.showTypingIndicator();
 
+        this.sendBtn.disabled = true;
+        this.chatInput.disabled = true;
+
         // --- WebSockets Path ---
         if (this.socket && this.socket.connected) {
             this.currentMessageContent = "";
@@ -211,6 +214,10 @@ Tell me: what is stirring in you today?`,
                 this.socket.off('chat_complete', onComplete);
                 this.socket.off('chat_error', onError);
                 
+                this.hideTypingIndicator();
+                this.sendBtn.disabled = false;
+                this.chatInput.disabled = false;
+
                 booksellerMessage.content = data.response;
                 if (data.recommendations && data.recommendations.length > 0) {
                     booksellerMessage.books = data.recommendations;
@@ -225,6 +232,8 @@ Tell me: what is stirring in you today?`,
                 this.socket.off('chat_complete', onComplete);
                 this.socket.off('chat_error', onError);
                 this.hideTypingIndicator();
+                this.sendBtn.disabled = false;
+                this.chatInput.disabled = false;
                 
                 // Remove the empty message we created
                 this.conversationHistory.pop();
@@ -252,6 +261,8 @@ Tell me: what is stirring in you today?`,
 
             // Hide typing indicator
             this.hideTypingIndicator();
+            this.sendBtn.disabled = false;
+            this.chatInput.disabled = false;
 
             // Add bookseller response
             const booksellerMessage = {
@@ -267,7 +278,8 @@ Tell me: what is stirring in you today?`,
         } catch (error) {
             // Log error silently in production
             this.hideTypingIndicator();
-
+            this.sendBtn.disabled = false;
+            this.chatInput.disabled = false;
             // Add error message in Elara's voice
             const errorMessage = {
                 type: 'bookseller',
