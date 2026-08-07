@@ -56,7 +56,7 @@ def test_endpoint(name, method, endpoint, data=None, headers=None, expected_stat
                 if 'success' in response_json:
                     print("\n✓ Success response format is correct!")
                     
-        except:
+        except Exception:
             print(response.text)
             
     except Exception as e:
