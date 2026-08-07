@@ -48,6 +48,7 @@
     <meta name="apple-mobile-web-app-title" content="BiblioDrift">
     <link rel="apple-touch-icon" href="../assets/images/biblioDrift_favicon.png">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 
 <body class="library-page">
@@ -294,6 +295,28 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- Mood Wheel Container (Hidden by default) -->
+        <div id="mood-wheel-container" class="mood-wheel-container hidden">
+            <div class="mood-wheel-header">
+                <h2><i class="fa-solid fa-chart-pie"></i> Your Reading Mood</h2>
+                <div class="mood-period-controls">
+                    <button class="mood-period-btn active" data-period="month">This Month</button>
+                    <button class="mood-period-btn" data-period="year">This Year</button>
+                    <button class="mood-period-btn" data-period="all">All Time</button>
+                </div>
+            </div>
+            <div class="mood-wheel-body">
+                <div class="mood-chart-wrapper">
+                    <canvas id="mood-wheel-canvas"></canvas>
+                    <div id="mood-wheel-empty" class="mood-wheel-empty" hidden>
+                        <i class="fa-solid fa-book-open"></i>
+                        <p>Add some books to your library to see your mood breakdown.</p>
+                    </div>
+                </div>
+                <p id="mood-wheel-summary" class="mood-wheel-summary"></p>
+            </div>
         </div>
 
         <!-- Constellation Container (Hidden by default) -->
@@ -606,6 +629,7 @@
     <script src="../js/app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../js/book-preview.js"></script>
+    <script src="../js/mood-wheel.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../script/header-scroll.js"></script>
 
