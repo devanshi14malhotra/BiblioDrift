@@ -926,6 +926,10 @@ class BookRenderer {
                         <button class="btn-icon share-btn" title="Share Book"><i class="fa-solid fa-share-nodes"></i></button>
                         <button class="btn-icon mood-btn" title="Explore Mood"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
                         <button class="btn-icon flip-back-btn" title="Flip Back"><i class="fa-solid fa-rotate-left"></i></button>
+
+                        <a href="discuss.html?title=${encodeURIComponent(title)}" class="btn-icon discuss-btn" title="Discuss Book" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; color: inherit;">
+        <i class="fa-solid fa-comments"></i>
+    </a>
                     </div>
                 </div>
             </div>
