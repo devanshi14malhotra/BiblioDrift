@@ -457,12 +457,12 @@ const SafeStorage = {
             const transaction = db.transaction(this._storeName, 'readwrite');
             const store = transaction.objectStore(this._storeName);
             store.put(value, key);
+            return true;
         } catch (e) {
             console.error('IndexedDB Backup Failed', e);
+            showToast('Local storage full! Please sync to cloud and clear cache.', 'error');
+            return false;
         }
-
-        showToast('Local storage full! Please sync to cloud and clear cache.', 'error');
-        return false;
     },
 
     /**

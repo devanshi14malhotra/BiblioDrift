@@ -58,6 +58,11 @@ def save_to_csv(book_data):
     Save book data into CSV
     """
 
+    existing_books = load_existing_books()
+    if is_duplicate(book_data["title"], existing_books):
+        print("Duplicate book found. Skipping CSV save...")
+        return
+
     file_exists = os.path.exists(CSV_FILE)
 
     with open(CSV_FILE, "a", newline='', encoding='utf-8') as file:
