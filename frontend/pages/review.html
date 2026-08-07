@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>BiblioDrift • Reviews</title>
+
+    <!-- GOOGLE FONTS -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- FONT AWESOME -->
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      :root {
+        --bg: #f7f1ea;
+        --card: #ffffff;
+        --primary: #5d4037;
+        --secondary: #8d6e63;
+        --accent: #d7b899;
+        --text: #2d2d2d;
+        --muted: #6d6d6d;
+        --border: #eadfd4;
+        --shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        --radius: 28px;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      img {
+        width: 100%;
+        display: block;
+      }
+
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .container {
+        width: min(1180px, 92%);
+        margin: auto;
+      }
+
+      section {
+        padding: 6rem 0;
+      }
+
+      /* NAVBAR */
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: rgba(247, 241, 234, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      }
+
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        font-family: "Playfair Display", serif;
+        font-size: 1.6rem;
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .brand img {
+        width: 45px;
+        height: 45px;
+        object-fit: contain;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      .nav-links a {
+        color: var(--muted);
+        position: relative;
+        transition: 0.3s;
+      }
+
+      .nav-links a::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: -5px;
+        width: 0;
+        height: 2px;
+        background: var(--primary);
+        transition: 0.3s;
+      }
+
+      .nav-links a:hover {
+        color: var(--primary);
+      }
+
+      .nav-links a:hover::after {
+        width: 100%;
+      }
+
+      /* HERO */
+
+      .hero {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: rgba(215, 184, 153, 0.2);
+        right: -100px;
+        top: -100px;
+        filter: blur(40px);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 4rem;
+        align-items: center;
+      }
+
+      .hero h1 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(3rem, 6vw, 5rem);
+        line-height: 1.1;
+        color: var(--primary);
+        margin-bottom: 1.5rem;
+      }
+
+      .hero p {
+        color: var(--muted);
+        line-height: 1.8;
+        margin-bottom: 2rem;
+        font-size: 1.05rem;
+      }
+
+      .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 1rem 1.6rem;
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: 0.35s;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 10px 24px rgba(93, 64, 55, 0.2);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-4px);
+      }
+
+      .btn-secondary {
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--primary);
+      }
+
+      .btn-secondary:hover {
+        background: var(--primary);
+        color: white;
+      }
+
+      .hero-image img {
+        border-radius: 36px;
+        height: 600px;
+        object-fit: cover;
+        box-shadow: var(--shadow);
+      }
+
+      /* SECTION TITLE */
+
+      .section-title {
+        text-align: center;
+        margin-bottom: 4rem;
+      }
+
+      .section-title h2 {
+        font-family: "Playfair Display", serif;
+        font-size: 3rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+      }
+
+      .section-title p {
+        color: var(--muted);
+        max-width: 700px;
+        margin: auto;
+        line-height: 1.8;
+      }
+
+      /* SEARCH */
+
+      .search-bar {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 4rem;
+      }
+
+      .search-input {
+        flex: 1;
+        min-width: 280px;
+        background: white;
+        padding: 1rem 1.4rem;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        box-shadow: var(--shadow);
+      }
+
+      .search-input input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 1rem;
+        background: none;
+      }
+
+      .filter-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .filter-group select {
+        border: none;
+        outline: none;
+        padding: 1rem 1.2rem;
+        border-radius: 999px;
+        background: white;
+        box-shadow: var(--shadow);
+      }
+
+      /* SUMMARY */
+
+      .rating-summary {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 5rem;
+      }
+
+      .summary-card {
+        background: white;
+        padding: 3rem;
+        border-radius: 32px;
+        text-align: center;
+        box-shadow: var(--shadow);
+        width: min(500px, 100%);
+      }
+
+      .big-rating {
+        font-size: 5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin: 1rem 0;
+      }
+
+      .stars {
+        color: #f5b301;
+        margin-bottom: 1rem;
+      }
+
+      /* REVIEW GRID */
+
+      .review-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+      }
+
+      .review-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        transition: 0.4s;
+      }
+
+      .review-card:hover {
+        transform: translateY(-10px);
+      }
+
+      .review-top {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .review-top img {
+        width: 65px;
+        height: 65px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .review-name {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 1.1rem;
+      }
+
+      .review-username {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .review-heading {
+        font-size: 1.2rem;
+        color: var(--primary);
+        margin-bottom: 0.8rem;
+        font-weight: 700;
+      }
+
+      .review-text {
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .review-date {
+        margin-top: 1rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      /* ACTIONS */
+
+      .review-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .like-btn {
+        border: none;
+        background: rgba(215, 184, 153, 0.18);
+        color: var(--primary);
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+
+      .like-btn:hover {
+        background: var(--primary);
+        color: white;
+      }
+
+      .edit-btn,
+      .delete-btn,
+      .report-btn {
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--muted);
+        transition: 0.3s;
+        font-size: 1rem;
+      }
+
+      .edit-btn:hover {
+        color: var(--primary);
+      }
+
+      .delete-btn:hover {
+        color: #d64545;
+      }
+
+      .report-btn:hover {
+        color: #f39c12;
+      }
+
+      /* SPOILER */
+
+      .spoiler-box {
+        margin-top: 1rem;
+      }
+
+      .spoiler-btn {
+        border: none;
+        background: rgba(0, 0, 0, 0.06);
+        padding: 0.6rem 1rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+
+      .spoiler-btn:hover {
+        background: var(--primary);
+        color: white;
+      }
+
+      .spoiler-text {
+        display: none;
+        margin-top: 1rem;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .spoiler-text.show {
+        display: block;
+      }
+
+      /* FORM */
+
+      .review-form-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        align-items: start;
+      }
+
+      .review-form,
+      .review-info {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 32px;
+        box-shadow: var(--shadow);
+      }
+
+      .review-form h3,
+      .review-info h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.6rem;
+        font-weight: 600;
+        color: var(--primary);
+      }
+
+      .form-group input,
+      .form-group textarea,
+      .form-group select {
+        width: 100%;
+        padding: 1rem;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        outline: none;
+        font-family: inherit;
+      }
+
+      textarea {
+        resize: none;
+        min-height: 160px;
+      }
+
+      /* INFO BOX */
+
+      .info-box {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .info-box i {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: rgba(215, 184, 153, 0.2);
+        display: grid;
+        place-items: center;
+        color: var(--primary);
+        flex-shrink: 0;
+      }
+
+      .info-box h4 {
+        margin-bottom: 0.4rem;
+        color: var(--primary);
+      }
+
+      .info-box p {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 0.95rem;
+      }
+
+      /* FOOTER */
+
+      footer {
+        margin-top: 6rem;
+        background: #241913;
+        color: rgba(255, 255, 255, 0.8);
+        padding: 4rem 0 2rem;
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .footer-brand {
+        font-family: "Playfair Display", serif;
+        color: white;
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+      }
+
+      .footer-links {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .footer-links a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        padding-top: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      /* RESPONSIVE */
+
+      @media (max-width: 900px) {
+        .hero-grid,
+        .review-form-wrapper {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-image img {
+          height: 420px;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .nav-links {
+          display: none;
+        }
+
+        .hero h1 {
+          font-size: 2.8rem;
+        }
+
+        .section-title h2 {
+          font-size: 2.2rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- NAVBAR -->
+
+    <header>
+      <div class="container navbar">
+        <a href="index.html" class="brand">
+          <img src="../assets/images/biblioDrift_favicon.png" alt="" />
+          <span>BiblioDrift</span>
+        </a>
+
+        <nav class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="#reviews">Reviews</a>
+          <a href="#write-review">Write Review</a>
+          <a href="app.html">Open App</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- HERO -->
+
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <h1>Discover books through reader experiences.</h1>
+
+          <p>
+            Read detailed reviews, explore trending books, share your thoughts,
+            and connect with a growing literary community.
+          </p>
+
+          <div class="hero-buttons">
+            <a href="#write-review" class="btn btn-primary"> Write a Review </a>
+
+            <a href="#reviews" class="btn btn-secondary"> Browse Reviews </a>
+          </div>
+        </div>
+
+        <div class="hero-image">
+          <img
+            src="https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1200&auto=format&fit=crop"
+            alt="Books"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+
+    <section>
+      <div class="container">
+        <div class="section-title">
+          <h2>Explore Reviews</h2>
+
+          <p>Search by genre, ratings, or reader experiences.</p>
+        </div>
+
+        <div class="search-bar">
+          <div class="search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input type="text" placeholder="Search books or reviews..." />
+          </div>
+
+          <div class="filter-group">
+            <select>
+              <option>All Genres</option>
+              <option>Fantasy</option>
+              <option>Romance</option>
+              <option>Thriller</option>
+              <option>Poetry</option>
+            </select>
+
+            <select>
+              <option>All Ratings</option>
+              <option>5 Stars</option>
+              <option>4 Stars</option>
+              <option>3 Stars</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- RATING SUMMARY -->
+
+        <div class="rating-summary">
+          <div class="summary-card">
+            <h2>Community Rating</h2>
+
+            <div class="big-rating">4.8</div>
+
+            <div class="stars">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star-half-stroke"></i>
+            </div>
+
+            <p>Based on 500+ reader reviews</p>
+          </div>
+        </div>
+
+        <!-- REVIEWS -->
+
+        <div class="review-grid" id="reviews">
+          <!-- REVIEW CARD -->
+
+          <div class="review-card">
+            <div class="review-top">
+              <img src="https://i.pravatar.cc/120?img=32" alt="" />
+
+              <div>
+                <div class="review-name">Ariana Collins</div>
+
+                <div class="review-username">@arianareads</div>
+              </div>
+            </div>
+
+            <div class="stars">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+            </div>
+
+            <h3 class="review-heading">Magical and Atmospheric</h3>
+
+            <p class="review-text">
+              “One of the most immersive fantasy books I’ve read. The
+              storytelling and world-building felt unforgettable.”
+            </p>
+
+            <div class="spoiler-box">
+              <button class="spoiler-btn">Show Spoiler</button>
+
+              <p class="spoiler-text">
+                The final reveal completely changes the reader’s understanding
+                of the protagonist.
+              </p>
+            </div>
+
+            <div class="review-date">Reviewed 2 days ago</div>
+
+            <div class="review-actions">
+              <button class="like-btn">
+                <i class="fa-regular fa-thumbs-up"></i>
+                Helpful
+              </button>
+
+              <button class="edit-btn">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+
+              <button class="delete-btn">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+
+              <button class="report-btn">
+                <i class="fa-solid fa-flag"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- SECOND REVIEW -->
+
+          <div class="review-card">
+            <div class="review-top">
+              <img src="https://i.pravatar.cc/120?img=15" alt="" />
+
+              <div>
+                <div class="review-name">Noah Bennett</div>
+
+                <div class="review-username">@noahbooks</div>
+              </div>
+            </div>
+
+            <div class="stars">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-regular fa-star"></i>
+            </div>
+
+            <h3 class="review-heading">Beautifully Written</h3>
+
+            <p class="review-text">
+              “The prose was elegant and emotional. Definitely worth reading for
+              literary fiction lovers.”
+            </p>
+
+            <div class="review-date">Reviewed 5 days ago</div>
+
+            <div class="review-actions">
+              <button class="like-btn">
+                <i class="fa-regular fa-thumbs-up"></i>
+                Helpful
+              </button>
+
+              <button class="report-btn">
+                <i class="fa-solid fa-flag"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WRITE REVIEW -->
+
+    <section id="write-review">
+      <div class="container">
+        <div class="section-title">
+          <h2>Share Your Review</h2>
+
+          <p>
+            Help other readers discover meaningful books through your
+            experience.
+          </p>
+        </div>
+
+        <div class="review-form-wrapper">
+          <!-- FORM -->
+
+          <div class="review-form">
+            <h3>Write a Review</h3>
+
+            <form>
+              <div class="form-group">
+                <label>Your Name</label>
+
+                <input type="text" placeholder="Enter your name" />
+              </div>
+
+              <div class="form-group">
+                <label>Book Title</label>
+
+                <input
+                  type="text"
+                  placeholder="Which book are you reviewing?"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Rating</label>
+
+                <select>
+                  <option>Select Rating</option>
+                  <option>★★★★★ — 5 Stars</option>
+                  <option>★★★★☆ — 4 Stars</option>
+                  <option>★★★☆☆ — 3 Stars</option>
+                  <option>★★☆☆☆ — 2 Stars</option>
+                  <option>★☆☆☆☆ — 1 Star</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Review Title</label>
+
+                <input type="text" placeholder="Summarize your review" />
+              </div>
+
+              <div class="form-group">
+                <label>Your Thoughts</label>
+
+                <textarea placeholder="Write your review..."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                Publish Review
+              </button>
+            </form>
+          </div>
+
+          <!-- INFO -->
+
+          <div class="review-info">
+            <h3>Why Reviews Matter</h3>
+
+            <div class="info-box">
+              <i class="fa-solid fa-book-open"></i>
+
+              <div>
+                <h4>Discover Better Books</h4>
+
+                <p>
+                  Reviews help readers find books matching their interests and
+                  moods.
+                </p>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <i class="fa-solid fa-users"></i>
+
+              <div>
+                <h4>Build Community</h4>
+
+                <p>
+                  Connect with readers through thoughtful literary discussions.
+                </p>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <i class="fa-solid fa-star"></i>
+
+              <div>
+                <h4>Support Honest Feedback</h4>
+
+                <p>
+                  Share detailed experiences and help others make informed
+                  reading choices.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+
+    <footer>
+      <div class="container">
+        <div class="footer-grid">
+          <div>
+            <div class="footer-brand">BiblioDrift</div>
+
+            <p>
+              A cozy reading sanctuary for thoughtful discovery, community
+              reviews, and literary exploration.
+            </p>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 1rem; color: white">Explore</h3>
+
+            <div class="footer-links">
+              <a href="index.html">Home</a>
+              <a href="#reviews">Reviews</a>
+              <a href="#write-review">Write Review</a>
+              <a href="app.html">Open App</a>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 1rem; color: white">Connect</h3>
+
+            <div class="footer-links">
+              <a href="#"> GitHub </a>
+
+              <a href="#"> LinkedIn </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>© 2026 BiblioDrift • Curated with ❤️ for book lovers.</p>
+
+          <a href="#"> Back to top </a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- JAVASCRIPT -->
+
+    <script>
+      // SPOILER TOGGLE
+
+      document.querySelectorAll(".spoiler-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const spoiler = btn.nextElementSibling;
+
+          spoiler.classList.toggle("show");
+
+          btn.innerText = spoiler.classList.contains("show")
+            ? "Hide Spoiler"
+            : "Show Spoiler";
+        });
+      });
+    </script>
+  </body>
+</html>
