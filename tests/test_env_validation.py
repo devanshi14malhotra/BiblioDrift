@@ -27,7 +27,8 @@ class TestEnvironmentValidation:
         """Clean up environment variables before and after each test."""
         # Save original environment
         original_env = os.environ.copy()
-        yield
+        with mock.patch('dotenv.load_dotenv'):
+            yield
         # Restore original environment
         os.environ.clear()
         os.environ.update(original_env)

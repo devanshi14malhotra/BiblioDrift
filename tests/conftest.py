@@ -20,9 +20,8 @@ for p in (ROOT, BACKEND):
 # Stub out heavy optional packages so tests don't need GPU/model downloads
 for _mod in [
     "transformers", "sentence_transformers",
-    "nltk", "nltk.tokenize", "nltk.tokenize.api",
     "huggingface_hub", "safetensors", "tokenizers", "tqdm", "joblib",
-    "textblob", "textblob.blob", "textblob.base",
+    "magic",
 ]:
     sys.modules.setdefault(_mod, MagicMock())
 
