@@ -8254,3 +8254,26 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+/* ── Reading Time Badge — Issue #606 ── */
+.reading-time-badge,
+.reading-time-remaining {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.reading-time-badge {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.reading-time-remaining {
+    background: rgba(29, 158, 117, 0.12);
+    color: #1D9E75;
+    border: 1px solid rgba(29, 158, 117, 0.25);
+}
