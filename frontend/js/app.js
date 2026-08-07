@@ -868,6 +868,9 @@ class BookRenderer {
         const cleanId = title.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
         const spineImagePath = `assets/images/${cleanId}_spine.jpg`;
 
+        const isOffline = window.db && window.db.downloadedBooks ? await window.db.downloadedBooks.get(id) : null;
+        const offlineBadgeHtml = isOffline ? `<div class="offline-badge-3d" style="position:absolute; top:5px; right:5px; color:#4caf50; font-size:1.1rem; background:rgba(255,255,255,0.9); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" title="Available Offline"><i class="fa-solid fa-cloud-arrow-down"></i></div>` : '';
+
         const scene = document.createElement('div');
         scene.className = 'book-scene';
 
@@ -896,6 +899,7 @@ class BookRenderer {
             <div class="book" data-id="${escapeHTML(id)}">
                 <div class="book__face book__face--front">
                     <img src="${safeThumb}" alt="Cover of '${safeTitle}' by ${safeAuthors || 'Unknown Author'}">
+                    ${offlineBadgeHtml}
                 </div>
                 <div class="book__face book__face--spine" style="background: ${randomSpine}"></div>
                 <div class="book__face book__face--right"></div>
@@ -1147,6 +1151,17 @@ class BookRenderer {
         document.getElementById('modal-img').alt = `Cover of '${book.volumeInfo.title}' by ${book.volumeInfo.authors?.join(', ') || 'Unknown Author'}`;
         document.getElementById('modal-title').textContent = book.volumeInfo.title;
         document.getElementById('modal-author').textContent = book.volumeInfo.authors?.join(", ") || "Unknown Author";
+
+        const offlineBadge = document.getElementById('modal-offline-badge');
+        if (offlineBadge) offlineBadge.style.display = 'none';
+
+        if (window.saveBookOffline) {
+            window.saveBookOffline(book).then(success => {
+                if (success && offlineBadge) {
+                    offlineBadge.style.display = 'inline-block';
+                }
+            });
+        }
 
         const summaryEl = document.getElementById('modal-summary');
         if (summaryEl) {
