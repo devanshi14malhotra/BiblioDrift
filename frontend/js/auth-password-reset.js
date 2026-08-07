@@ -67,7 +67,9 @@
                 credentials: 'include',
                 body: JSON.stringify({ email }),
             });
-            const data = await res.json();
+            if (!res.ok) throw new Error("Request failed");
+if (!res.ok) throw new Error("Request failed");
+const data = await res.json();
             const message = data.message
                 || 'If an account exists for that email, password reset instructions have been sent.';
 
@@ -134,7 +136,9 @@
                 credentials: 'include',
                 body: JSON.stringify({ token, password: newPassword }),
             });
-            const data = await res.json();
+            if (!res.ok) throw new Error("Request failed");
+if (!res.ok) throw new Error("Request failed");
+const data = await res.json();
 
             if (res.ok) {
                 notify(data.message || 'Password updated. You can sign in now.', 'success');
