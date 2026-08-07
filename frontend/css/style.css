@@ -148,7 +148,7 @@ body, p, li, dd, dt {
     font-family: "Georgia", serif;
     font-size: 1rem;
     line-height: 1.65;
-    color: var(--text-main);
+    color: #746961;
 }
 
 /* Headings */
@@ -5525,7 +5525,6 @@ textarea:focus {
     font-size: 8rem;
     font-family: 'Playfair Display', serif;
     font-weight: 700;
-    color: var(--wood-dark);
     margin: 0;
     opacity: 0.15;
     line-height: 1;
@@ -7762,9 +7761,9 @@ body.night-mode .tooltip-author {
 }
 
 .quiz-options button {
-    background: transparent;
+    background: #e1cc89;
     border: 1px solid var(--input-border);
-    color: var(--text-muted);
+    color : black;
     padding: 0.6rem 1.2rem;
     border-radius: 20px;
     font-family: "Georgia", serif;
