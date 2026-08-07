@@ -355,6 +355,18 @@
           flex-direction: column;
         }
       }
+
+      /* Privacy page navbar fixes — prevent search bar crowding the logo */
+      header {
+        gap: 1.5rem;
+      }
+      header .logo {
+        flex-shrink: 0;
+      }
+      /* Align breadcrumb properly below header */
+      .breadcrumb {
+        margin-top: 0.5rem;
+      }
     </style>
   </head>
 

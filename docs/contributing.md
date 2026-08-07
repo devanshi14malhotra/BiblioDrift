@@ -61,7 +61,11 @@ Before you begin, make sure you are familiar with the current stack:
    ```
    Verify virtual environment is active:
    ```bash
-   python --version
+   # Windows — should show path inside .venv
+   where python
+   
+   # Linux/macOS
+   which python
    ```
    Your terminal should now show `(.venv)` at the beginning.
 5. Setting up pip:
