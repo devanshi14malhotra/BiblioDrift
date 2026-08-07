@@ -3,9 +3,11 @@
 #pwa-install-banner {
     position: relative;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 16px 24px;
+    gap: 16px;
 }
 
 .pwa-banner-icon {
@@ -14,11 +16,13 @@
 }
 
 .pwa-banner-content {
-    display: block;
+    display:flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-
+    gap: 5px;
+    gap: 12px;             
+    margin: 0 auto;        
+    width: max-content;
     text-align: center;
 }
 
@@ -53,7 +57,7 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  margin-bottom: 15px;
+  margin-bottom: 0px;
 }
 
 .pwa-install-btn:hover {
