@@ -7828,7 +7828,7 @@ body.night-mode .tooltip-author {
     margin-bottom: 1rem;
 }
 
-.mood-tags {
+.quiz-mood-tags {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -7836,7 +7836,7 @@ body.night-mode .tooltip-author {
     margin-bottom: 1.5rem;
 }
 
-.mood-tags span {
+.quiz-mood-tags span {
     background: var(--glass-bg);
     border: 1px solid var(--accent-gold);
     color: var(--accent-gold);
