@@ -203,3 +203,64 @@ header {
     max-width: 100%;
   }
 }
+
+
+[data-theme="night"] body {
+  background:
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.08), transparent 24%),
+    radial-gradient(circle at top right, rgba(127, 150, 160, 0.06), transparent 18%),
+    #111111 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="night"] header {
+  background: rgba(20, 20, 20, 0.9) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="night"] .contributor-card {
+  background: #1c1c1c !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="night"] .contributor-card:hover,
+[data-theme="night"] .contributor-card:focus-visible {
+  background: #252525 !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="night"] .contributor-avatar {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: #111111 !important;
+}
+
+[data-theme="night"] .contributors-note {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="night"] .contributors-note i {
+  color: #111111 !important;
+}
+
+[data-theme="night"] .nav-links .tooltip a:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Heading & Text Color Alignments */
+[data-theme="night"] h1,
+[data-theme="night"] p,
+[data-theme="night"] a,
+[data-theme="night"] span,
+[data-theme="night"] .logo {
+  color: #ffffff !important;
+}
+
+[data-theme="night"] .meta,
+[data-theme="night"] .contributor-count {
+  color: #d1d5db !important;
+}
