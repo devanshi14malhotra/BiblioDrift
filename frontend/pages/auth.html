@@ -16,7 +16,7 @@
             if (!btn) return;
             const icon = btn.querySelector('i');
             const STORAGE_KEY = 'bibliodrift_theme';
-            
+
             function applyTheme(theme) {
                 if (theme === 'night') {
                     document.documentElement.setAttribute('data-theme', 'night');
@@ -27,12 +27,12 @@
                 }
                 localStorage.setItem(STORAGE_KEY, theme);
             }
-            
+
             btn.addEventListener('click', function () {
                 const current = document.documentElement.getAttribute('data-theme') === 'night' ? 'night' : 'light';
                 applyTheme(current === 'night' ? 'light' : 'night');
             });
-            
+
             // Set initial icon state
             const currentTheme = localStorage.getItem(STORAGE_KEY);
             if (currentTheme === 'night' && icon) {
@@ -63,8 +63,7 @@
         html,
         body {
             height: auto;
-            overflow-x: hidden;
-            overflow-y: auto;
+            overflow-x: clip;
         }
 
         body {
@@ -325,7 +324,7 @@
         .auth-footer {
             margin-top: 1rem;
             text-align: center;
-            
+
         }
 
         .google-auth-btn {
@@ -490,7 +489,7 @@
             border-radius: 4px;
             overflow: hidden;
             margin-bottom: 0.75rem;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .password-strength-fill {
@@ -525,25 +524,57 @@
         .criterion-met {
             color: #4ade80 !important;
         }
+
         .criterion-met i {
             color: #4ade80;
         }
+
         .criterion-unmet {
             color: #f87171 !important;
         }
+
         .criterion-unmet i {
             color: #f87171;
         }
 
-        .strength-weak { background-color: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.4); }
-        .strength-fair { background-color: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.4); }
-        .strength-good { background-color: #a3e635; box-shadow: 0 0 8px rgba(163,230,53,0.4); }
-        .strength-strong { background-color: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.4); }
+        .strength-weak {
+            background-color: #f87171;
+            box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+        }
+
+        .strength-fair {
+            background-color: #fbbf24;
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+        }
+
+        .strength-good {
+            background-color: #a3e635;
+            box-shadow: 0 0 8px rgba(163, 230, 53, 0.4);
+        }
+
+        .strength-strong {
+            background-color: #4ade80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+        }
 
         @keyframes inputShake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); border-color: #f87171; }
-            40%, 80% { transform: translateX(5px); border-color: #f87171; }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+                border-color: #f87171;
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+                border-color: #f87171;
+            }
         }
     </style>
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png">
@@ -584,8 +615,8 @@
                     <span class="tooltip-text"><i class="fa-solid fa-pen-nib"></i> Community Stories</span>
                 </div>
                 <div class="tooltip">
-                     <a href="nearby-bookstores.html">Nearby Bookstores</a>
-                     <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
+                    <a href="nearby-bookstores.html">Nearby Bookstores</a>
+                    <span class="tooltip-text"><i class="fa-solid fa-location-dot"></i>Find bookstores near you</span>
                 </div>
                 <div class="tooltip">
                     <a href="chat.html">Chat</a>
@@ -626,7 +657,7 @@
                 <form id="authForm" data-mode="login" onsubmit="handleAuth(event)">
                     <input type="hidden" id="csrf_token" name="csrf_token" value="">
 
-                    
+
                     <div id="nameField">
                         <input type="text" id="username" class="auth-input" placeholder="Full Name" autocomplete="name">
                     </div>
@@ -641,16 +672,19 @@
                             value="demo123" required autocomplete="current-password">
                         <i class="fa-solid fa-eye password-toggle-icon" id="togglePassword" title="Show Password"
                             aria-label="Show password" role="button" tabindex="0"></i>
-                            
+
                         <!-- Client-side Password Strength Validation UI -->
                         <div id="passwordStrengthContainer" style="display: none;" class="password-strength-container">
                             <div class="password-strength-bar">
                                 <div class="password-strength-fill" id="passwordStrengthFill"></div>
                             </div>
                             <ul class="password-criteria" id="passwordCriteria">
-                                <li id="criterion-length" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 8 characters</li>
-                                <li id="criterion-number" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 1 number</li>
-                                <li id="criterion-special" class="criterion-unmet"><i class="fa-solid fa-circle-xmark"></i> At least 1 special character</li>
+                                <li id="criterion-length" class="criterion-unmet"><i
+                                        class="fa-solid fa-circle-xmark"></i> At least 8 characters</li>
+                                <li id="criterion-number" class="criterion-unmet"><i
+                                        class="fa-solid fa-circle-xmark"></i> At least 1 number</li>
+                                <li id="criterion-special" class="criterion-unmet"><i
+                                        class="fa-solid fa-circle-xmark"></i> At least 1 special character</li>
                             </ul>
                         </div>
                     </div>
@@ -668,7 +702,8 @@
                     -->
                     <input type="hidden" id="csrf_token" name="csrf_token" value="">
 
-                    <span id="forgotPasswordLink" class="toggle-link" style="display: block; margin: -0.25rem 0 1rem; font-size: 0.85rem;">
+                    <span id="forgotPasswordLink" class="toggle-link"
+                        style="display: block; margin: -0.25rem 0 1rem; font-size: 0.85rem;">
                         Forgot password?
                     </span>
 
@@ -683,12 +718,14 @@
                         <span>Sign in with Google</span>
                     </button>
                     <!-- GitHub Authentication -->
-                    <button type="button" id="githubAuthBtn" class="google-auth-btn" style="margin-top: 10px;" onclick="alert('GitHub authentication coming soon!')">
+                    <button type="button" id="githubAuthBtn" class="google-auth-btn" style="margin-top: 10px;"
+                        onclick="alert('GitHub authentication coming soon!')">
                         <i class="fa-brands fa-github"></i>
                         <span>Sign in with GitHub</span>
                     </button>
                     <!-- Apple Authentication -->
-                    <button type="button" id="appleAuthBtn" class="google-auth-btn" style="margin-top: 10px;" onclick="alert('Apple authentication coming soon!')">
+                    <button type="button" id="appleAuthBtn" class="google-auth-btn" style="margin-top: 10px;"
+                        onclick="alert('Apple authentication coming soon!')">
                         <i class="fa-brands fa-apple"></i>
                         <span>Sign in with Apple</span>
                     </button>
@@ -696,14 +733,16 @@
 
                 <div id="forgotPasswordPanel" style="display: none;">
                     <p class="auth-hint">
-                        No email is sent yet. In local development, a reset link appears below only if this address is already registered in your database.
+                        No email is sent yet. In local development, a reset link appears below only if this address is
+                        already registered in your database.
                     </p>
                     <form id="forgotPasswordForm" action="#" method="post" novalidate>
-                        <input type="email" id="forgotEmail" class="auth-input" placeholder="Email address" required autocomplete="email">
+                        <input type="email" id="forgotEmail" class="auth-input" placeholder="Email address" required
+                            autocomplete="email">
                         <button type="submit" id="forgotSubmitBtn" class="auth-btn">Send reset link</button>
                     </form>
                     <div id="forgotResetLinkBox" aria-live="polite"></div>
-                    
+
                     <div class="auth-panel-actions">
                         <span id="backToSignInFromForgot" class="toggle-link">Back to sign in</span>
                     </div>
@@ -711,8 +750,11 @@
 
                 <div id="resetPasswordPanel" style="display: none;">
                     <form id="resetPasswordForm" action="#" method="post" novalidate>
-                        <input type="password" id="newPassword" class="auth-input" placeholder="New password (min 8 characters)" required minlength="8" autocomplete="new-password">
-                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
+                        <input type="password" id="newPassword" class="auth-input"
+                            placeholder="New password (min 8 characters)" required minlength="8"
+                            autocomplete="new-password">
+                        <input type="password" id="confirmPassword" class="auth-input"
+                            placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
                         <button type="submit" id="resetSubmitBtn" class="auth-btn">Reset password</button>
                     </form>
                     <div class="auth-panel-actions">
@@ -730,72 +772,78 @@
         </section>
     </main>
 
-  <!-- Back to Top Button -->
-  <button id="backToTop" class="btn-icon back-to-top" title="Back to Top" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
-    <i class="fa-solid fa-arrow-up"></i>
-  </button>
-
-  <!-- Ambient Sanctuary UI -->
-  <div class="ambient-sanctuary">
-    <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
-      <i class="fa-solid fa-leaf"></i>
+    <!-- Back to Top Button -->
+    <button id="backToTop" class="btn-icon back-to-top" title="Back to Top"
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'});">
+        <i class="fa-solid fa-arrow-up"></i>
     </button>
-    <div id="ambientPanel" class="ambient-panel">
-      <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy Evening</span>
-        <label class="switch">
-          <input type="checkbox" id="rainToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
-        <label class="switch">
-          <input type="checkbox" id="fireToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean Waves</span>
-        <label class="switch">
-          <input type="checkbox" id="oceanToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="ambient-option">
-        <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
-        <label class="switch">
-          <input type="checkbox" id="stormToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div class="volume-control">
-        <label for="ambientVolume" style="color: var(--text-main) !important;"><i class="fa-solid fa-volume-high"></i> Volume</label>
-        <div class="range-wrap">
-          <div class="range-track" aria-hidden="true"></div>
-          <div class="range-fill" aria-hidden="true"></div>
-          <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+
+    <!-- Ambient Sanctuary UI -->
+    <div class="ambient-sanctuary">
+        <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
+            <i class="fa-solid fa-leaf"></i>
+        </button>
+        <div id="ambientPanel" class="ambient-panel">
+            <h3 style="color: var(--text-main) !important;">Ambient Sanctuary</h3>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-cloud-rain"></i> Rainy
+                    Evening</span>
+                <label class="switch">
+                    <input type="checkbox" id="rainToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-fire"></i> Cozy Fireplace</span>
+                <label class="switch">
+                    <input type="checkbox" id="fireToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-water"></i> Calm Ocean
+                    Waves</span>
+                <label class="switch">
+                    <input type="checkbox" id="oceanToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="ambient-option">
+                <span style="color: var(--text-main) !important;"><i class="fa-solid fa-bolt"></i> Stormy Rain</span>
+                <label class="switch">
+                    <input type="checkbox" id="stormToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="volume-control">
+                <label for="ambientVolume" style="color: var(--text-main) !important;"><i
+                        class="fa-solid fa-volume-high"></i> Volume</label>
+                <div class="range-wrap">
+                    <div class="range-track" aria-hidden="true"></div>
+                    <div class="range-fill" aria-hidden="true"></div>
+                    <input type="range" id="ambientVolume" min="0" max="1" step="0.1" value="0.5" style="width: 100%;">
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 
 
-      <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
-      <div class="pwa-banner-content">
-          <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
-          <div class="pwa-banner-text">
-              <strong>Install BiblioDrift.</strong>
-              <span>Read offline, anytime.</span>
-          </div>
-      </div>
-      <div class="pwa-banner-actions">
-          <button class="pwa-install-btn" id="pwa-install-btn" aria-label="Install BiblioDrift as an app">Install</button>
-          <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-  </div>
-  <script src="../js/config.js"></script>
+    <div id="pwa-install-banner" role="banner" aria-label="Install BiblioDrift app" class="pwa-banner-visible">
+        <div class="pwa-banner-content">
+            <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift icon" class="pwa-banner-icon">
+            <div class="pwa-banner-text">
+                <strong>Install BiblioDrift.</strong>
+                <span>Read offline, anytime.</span>
+            </div>
+        </div>
+        <div class="pwa-banner-actions">
+            <button class="pwa-install-btn" id="pwa-install-btn"
+                aria-label="Install BiblioDrift as an app">Install</button>
+            <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss install prompt"><i
+                    class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+    <script src="../js/config.js"></script>
     <script src="../js/auth-password-reset.js"></script>
     <script src="../js/footer.js"></script>
     <script src="../js/app.js"></script>
@@ -960,7 +1008,7 @@
             const hasLength = password.length >= 8;
             const hasNumber = /\d/.test(password);
             const hasSpecial = /[!@#$%^&*(),.?":{}|<>\-_\+=\/\[\]\\';`~]/.test(password);
-            
+
             return {
                 length: hasLength,
                 number: hasNumber,
@@ -988,14 +1036,14 @@
 
             const password = passwordInput.value;
             const validation = validatePasswordCriteria(password);
-            
+
             updateCriterionNode(criteriaNodes.length, validation.length);
             updateCriterionNode(criteriaNodes.number, validation.number);
             updateCriterionNode(criteriaNodes.special, validation.special);
-            
+
             let fillWidth = '0%';
             let fillClass = 'strength-weak';
-            
+
             if (password.length > 0) {
                 if (validation.score === 1) {
                     fillWidth = '33%';
@@ -1008,7 +1056,7 @@
                     fillClass = password.length >= 12 ? 'strength-strong' : 'strength-good';
                 }
             }
-            
+
             if (passwordStrengthFill) {
                 passwordStrengthFill.style.width = fillWidth;
                 passwordStrengthFill.className = `password-strength-fill ${fillClass}`;
@@ -1022,17 +1070,17 @@
         // Intercept form submission to enforce validation on register
         if (authForm) {
             const originalOnSubmit = authForm.onsubmit;
-            authForm.onsubmit = function(event) {
+            authForm.onsubmit = function (event) {
                 if (authForm.dataset.mode === 'register') {
                     const validation = validatePasswordCriteria(passwordInput.value);
                     if (validation.score < 3) {
                         event.preventDefault();
-                        
+
                         passwordInput.style.animation = 'inputShake 0.4s ease-in-out 0s 1';
                         setTimeout(() => {
                             passwordInput.style.animation = 'none';
                         }, 400);
-                        
+
                         passwordInput.focus();
                         return false; // Stop submission
                     }
@@ -1093,7 +1141,7 @@
         });
     </script>
     <script src="../js/theme-manager.js"></script>
-  <script src="../js/ambient.js"></script>
+    <script src="../js/ambient.js"></script>
 </body>
 
 </html>
