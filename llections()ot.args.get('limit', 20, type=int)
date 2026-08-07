@@ -1,0 +1,40 @@
+[1mdiff --git a/backend/app.py b/backend/app.py[m
+[1mindex 8305b82b..cd884e47 100644[m
+[1m--- a/backend/app.py[m
+[1m+++ b/backend/app.py[m
+[36m@@ -2387,21 +2387,28 @@[m [mdef get_public_collections():[m
+     try:[m
+         limit = request.args.get('limit', 20, type=int)[m
+         offset = request.args.get('offset', 0, type=int)[m
+[31m-        [m
+[32m+[m
+         collections = Collection.query.filter_by(is_public=True).order_by([m
+             Collection.created_at.desc()[m
+         ).offset(offset).limit(limit).all()[m
+[31m-        [m
+[32m+[m
+         total = Collection.query.filter_by(is_public=True).count()[m
+[31m-        [m
+[32m+[m
+         result = [][m
+         for c in collections:[m
+             collection_data = c.to_dict()[m
+[31m-            user = User.query.get(c.user_id)[m
+[31m-            collection_data['owner_username'] = user.username if user else "Unknown"[m
+[32m+[m[32m            collection_data['owner_username'] = ([m
+[32m+[m[32m                c.user.username if c.user else "Unknown"[m
+[32m+[m[32m            )[m
+             result.append(collection_data)[m
+[31m-        [m
+[31m-        return jsonify({"collections": result, "total": total, "limit": limit, "offset": offset}), 200[m
+[32m+[m
+[32m+[m[32m        return jsonify({[m
+[32m+[m[32m            "collections": result,[m
+[32m+[m[32m            "total": total,[m
+[32m+[m[32m            "limit": limit,[m
+[32m+[m[32m            "offset": offset[m
+[32m+[m[32m        }), 200[m
+[32m+[m
+     except Exception as e:[m
+         return jsonify({"error": str(e)}), 500[m
+ [m
