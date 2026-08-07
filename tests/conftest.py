@@ -19,8 +19,15 @@ for p in (ROOT, BACKEND):
 
 # Stub out heavy optional packages so tests don't need GPU/model downloads
 for _mod in [
+    # Windows / platform-specific
+    "magic",
+    "spine_generator",
+    # Mood analysis stack
+    "vaderSentiment",
+    "vaderSentiment.vaderSentiment",
+    # ML / NLP stack (already present, keeping for clarity)
     "transformers", "sentence_transformers",
-    "nltk", "nltk.tokenize", "nltk.tokenize.api",
+    "nltk", "nltk.corpus", "nltk.tokenize", "nltk.tokenize.api",
     "huggingface_hub", "safetensors", "tokenizers", "tqdm", "joblib",
     "textblob", "textblob.blob", "textblob.base",
 ]:
