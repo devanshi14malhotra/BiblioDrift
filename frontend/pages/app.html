@@ -2,6 +2,58 @@
 <html lang="en">
 
 <head>
+  <script>
+    
+    (function() {
+        const originalSetItem = localStorage.setItem;
+        localStorage.setItem = function(key, value) {
+            if (key === 'bibliodrift_library' && value) {
+                try {
+                    let library = JSON.parse(value);
+                    const cleanShelf = (shelf) => {
+                        if (Array.isArray(shelf)) {
+                            shelf.forEach(book => {
+                                if (book && book.volumeInfo && book.volumeInfo.imageLinks) {
+                                    let thumb = book.volumeInfo.imageLinks.thumbnail || '';
+                                    if (thumb.startsWith('data:image') || thumb.length > 500) {
+                                        book.volumeInfo.imageLinks.thumbnail = ''; // Payload destroyed!
+                                    }
+                                }
+                            });
+                        }
+                    };
+                    cleanShelf(library.current);
+                    cleanShelf(library.want);
+                    value = JSON.stringify(library);
+                } catch (e) {
+                    console.error("Interceptor parse error:", e);
+                }
+            }
+            return originalSetItem.call(localStorage, key, value);
+        };
+    })();
+
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes('Constellation')) {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        alert("Constellation View: Feature coming soon!");
+                    });
+                }
+                if (btn.textContent.includes('Custom Collections')) {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        alert("Custom Collections: Feature under development!");
+                    });
+                }
+            });
+        }, 1000); 
+    });
+</script>
   <meta charset="UTF-8" />
   <script>
     (function () {
