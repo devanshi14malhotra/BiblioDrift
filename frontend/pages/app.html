@@ -146,6 +146,10 @@
   </header>
 
   <main>
+    <div id="quote-section">
+      <p id="quote-text"></p>
+      <p id="quote-author"></p>
+    </div>
     <section class="hero">
       <div class="hero-glow" aria-hidden="true"></div>
       <div class="hero-copy">
@@ -545,7 +549,24 @@
     </div>
   </div>
   <script src="../js/chatbot.js"></script>
+  <script>
+  const quotes = [
+  { text: "A room without books is like a body without a soul.", author: "Cicero" },
+  { text: "So many books, so little time.", author: "Frank Zappa" },
+  { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "F.D. Roosevelt" },
+  { text: "Once you learn to read, you will be forever free.", author: "Frederick Douglass" },
+  { text: "Reading is essential for those who seek to rise above the ordinary.", author: "Jim Rohn" },
+  { text: "Books are a uniquely portable magic.", author: "Stephen King" },
+  { text: "The man who does not read has no advantage over the man who cannot read.", author: "Mark Twain" },
+  { text: "Literature is the most agreeable way of ignoring life.", author: "Fernando Pessoa" }
+  ];
+  
+  const todayIndex = new Date().getDate() % quotes.length;
+  const todayQuote = quotes[todayIndex];
 
+  document.getElementById("quote-text").innerText = `"${todayQuote.text}"`;
+  document.getElementById("quote-author").innerText = `– ${todayQuote.author}`;
+  </script>
 </body>
 
 </html>

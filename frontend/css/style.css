@@ -8254,3 +8254,23 @@ dialog.book-preview-modal::backdrop {
         font-size: 0.95rem;
     }
 }
+
+#quote-section {
+  text-align: center;
+  padding: 15px;
+  font-family: Georgia, serif;
+  border-bottom: 1px solid #ddd;
+  background-color: #f9f9f9;
+}
+
+#quote-text {
+  font-style: italic;
+  font-size: 1.2em;
+  color: #333;
+}
+
+#quote-author {
+  font-weight: bold;
+  margin-top: 5px;
+  color: #555;
+}
