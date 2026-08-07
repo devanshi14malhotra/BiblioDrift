@@ -107,13 +107,15 @@ body.landing-page .landing-shell {
     border-radius: 14px;
     box-shadow: 0 10px 20px rgba(44, 36, 32, 0.08);
 }
-
 .landing-nav {
     display: flex;
     align-items: center;
     gap: 0.65rem;
     flex-wrap: wrap;
     justify-content: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .landing-nav a {
