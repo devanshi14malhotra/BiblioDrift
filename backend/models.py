@@ -702,6 +702,7 @@ class Review(db.Model, SoftDeleteMixin):
     )
     
     def to_dict(self):
+        edit_count = self.edit_history.count() if self.id else 0
         return {
             "id": self.id,
             "user_id": self.user_id,
@@ -715,7 +716,32 @@ class Review(db.Model, SoftDeleteMixin):
             "review_text": self.review_text,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "edit_count": edit_count,
+            "edited": edit_count > 0,
             "is_deleted": self.is_deleted
+        }
+
+
+class ReviewEditHistory(db.Model):
+    """Audit trail for review edits — preserves prior rating and text."""
+    id = db.Column(db.Integer, primary_key=True)
+    review_id = db.Column(db.Integer, db.ForeignKey('review.id'), nullable=False, index=True)
+    previous_rating = db.Column(db.Integer, nullable=False)
+    previous_review_text = db.Column(db.Text, nullable=True)
+    edited_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    review = db.relationship(
+        'Review',
+        backref=db.backref('edit_history', lazy='dynamic', order_by='ReviewEditHistory.edited_at.desc()')
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "review_id": self.review_id,
+            "previous_rating": self.previous_rating,
+            "previous_review_text": self.previous_review_text,
+            "edited_at": self.edited_at.isoformat() if self.edited_at else None,
         }
 
 

@@ -577,6 +577,27 @@
 
                         <div class="book-reviews-section">
                             <h3>Reader Reviews</h3>
+                            <div id="modal-review-form-section" class="review-form-section">
+                                <div id="modal-review-auth-prompt" class="review-auth-prompt" style="display: none;">
+                                    <a href="auth.html" style="color: var(--accent-gold); text-decoration: underline;">Sign in</a> to write a review.
+                                </div>
+                                <div id="modal-review-controls" class="review-form-controls" style="display: none;">
+                                    <label for="modal-review-rating" class="review-form-label">Your rating</label>
+                                    <select id="modal-review-rating" aria-label="Your star rating">
+                                        <option value="5">5 stars</option>
+                                        <option value="4">4 stars</option>
+                                        <option value="3">3 stars</option>
+                                        <option value="2">2 stars</option>
+                                        <option value="1">1 star</option>
+                                    </select>
+                                    <label for="modal-review-text" class="review-form-label">Your review</label>
+                                    <textarea id="modal-review-text" rows="3" maxlength="2000" placeholder="Share your thoughts about this book..." aria-label="Review text"></textarea>
+                                    <button type="button" id="modal-review-submit-btn" class="action-btn-secondary">
+                                        <i class="fa-solid fa-pen"></i> Submit Review
+                                    </button>
+                                    <p id="modal-review-error" class="review-form-error" style="display: none;" role="alert"></p>
+                                </div>
+                            </div>
                             <div id="modal-reviews" class="reviews-scroll-container">
                                 <!-- Reviews injected via JS -->
                             </div>

@@ -2303,37 +2303,8 @@ class BookshelfRenderer3D {
             });
         }
 
-        // Reviews
-        const reviewsContainer = document.getElementById('modal-reviews');
-        if (reviewsContainer && book.reviews) {
-            reviewsContainer.innerHTML = '';
-            book.reviews.forEach(review => {
-                const item = document.createElement('div');
-                item.className = 'review-item';
-
-                const header = document.createElement('div');
-                header.className = 'review-header';
-
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'reviewer-name';
-                nameSpan.textContent = review.name;
-                header.appendChild(nameSpan);
-
-                const ratingSpan = document.createElement('span');
-                ratingSpan.className = 'review-rating';
-                ratingSpan.textContent = this.getStarRating(review.rating);
-                header.appendChild(ratingSpan);
-
-                item.appendChild(header);
-
-                const textP = document.createElement('p');
-                textP.className = 'review-text';
-                textP.textContent = `"${review.text}"`;
-                item.appendChild(textP);
-
-                reviewsContainer.appendChild(item);
-            });
-        }
+        this.setupReviewForm(book);
+        this.loadAndRenderReviews(book);
 
         taggingSection.querySelectorAll('.emotion-tag').forEach(tag => {
             tag.onclick = async () => {
@@ -3299,6 +3270,235 @@ class BookshelfRenderer3D {
         if (found) {
             StorageHelper.set(storageKey, JSON.stringify(localLibrary));
             this.refreshShelves();
+        }
+    }
+
+    isValidGoogleBooksId(bookId) {
+        return typeof bookId === 'string' && /^[a-zA-Z0-9_-]{12,13}$/.test(bookId.trim());
+    }
+
+    setupReviewForm(book) {
+        const authPrompt = document.getElementById('modal-review-auth-prompt');
+        const controls = document.getElementById('modal-review-controls');
+        const submitBtn = document.getElementById('modal-review-submit-btn');
+        const ratingSelect = document.getElementById('modal-review-rating');
+        const reviewText = document.getElementById('modal-review-text');
+        const errorEl = document.getElementById('modal-review-error');
+
+        if (!authPrompt || !controls || !submitBtn) return;
+
+        authPrompt.style.display = 'none';
+        controls.style.display = 'none';
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+
+        if (!this.isValidGoogleBooksId(book.id)) return;
+
+        const isLoggedIn = window.SafeStorage ? window.SafeStorage.get('isLoggedIn') === 'true' : false;
+        if (!isLoggedIn) {
+            authPrompt.style.display = 'block';
+            return;
+        }
+
+        controls.style.display = 'block';
+        submitBtn.textContent = '';
+        submitBtn.innerHTML = '<i class="fa-solid fa-pen"></i> Submit Review';
+
+        const newSubmitBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+
+        newSubmitBtn.addEventListener('click', async () => {
+            await this.submitReview(book, {
+                ratingSelect,
+                reviewText,
+                submitBtn: newSubmitBtn,
+                errorEl
+            });
+        });
+    }
+
+    async loadAndRenderReviews(book) {
+        const reviewsContainer = document.getElementById('modal-reviews');
+        if (!reviewsContainer) return;
+
+        reviewsContainer.innerHTML = '<p class="review-loading">Loading reviews...</p>';
+
+        if (!this.isValidGoogleBooksId(book.id)) {
+            this.renderReviewsList(reviewsContainer, book.reviews || [], book);
+            return;
+        }
+
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/reviews/${encodeURIComponent(book.id)}`, {
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (typeof data.average_rating === 'number') {
+                    const starsEl = document.getElementById('modal-stars');
+                    const scoreEl = document.getElementById('modal-rating-score');
+                    const countEl = document.getElementById('modal-rating-count');
+                    if (starsEl) starsEl.textContent = this.getStarRating(data.average_rating);
+                    if (scoreEl) scoreEl.textContent = data.average_rating.toFixed(1);
+                    if (countEl) countEl.textContent = `(${data.total_reviews} ratings)`;
+                }
+                this.renderReviewsList(reviewsContainer, data.reviews || [], book);
+                this.prefillUserReviewForm(book, data.reviews || []);
+            } else {
+                this.renderReviewsList(reviewsContainer, book.reviews || [], book);
+            }
+        } catch (err) {
+            console.error('Failed to load reviews', err);
+            this.renderReviewsList(reviewsContainer, book.reviews || [], book);
+        }
+    }
+
+    prefillUserReviewForm(book, apiReviews) {
+        const controls = document.getElementById('modal-review-controls');
+        const ratingSelect = document.getElementById('modal-review-rating');
+        const reviewText = document.getElementById('modal-review-text');
+        const submitBtn = document.getElementById('modal-review-submit-btn');
+        if (!controls || controls.style.display === 'none' || !ratingSelect || !reviewText) return;
+
+        const user = window.libManager ? window.libManager.getUser() : null;
+        if (!user) return;
+
+        const ownReview = apiReviews.find(r => String(r.user_id) === String(user.id));
+        if (!ownReview) return;
+
+        ratingSelect.value = String(ownReview.rating);
+        reviewText.value = ownReview.review_text || '';
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-pen"></i> Update Review';
+        }
+    }
+
+    renderReviewsList(container, reviews, book) {
+        container.innerHTML = '';
+
+        const normalized = (reviews || []).map(review => {
+            if (review.username || review.user_id) {
+                return {
+                    name: review.username || 'Reader',
+                    rating: review.rating,
+                    text: review.review_text || '',
+                    edited: review.edited
+                };
+            }
+            return review;
+        });
+
+        if (!normalized.length) {
+            container.innerHTML = '<p class="review-empty">No reviews yet. Be the first to share your thoughts.</p>';
+            return;
+        }
+
+        normalized.forEach(review => {
+            const item = document.createElement('div');
+            item.className = 'review-item';
+
+            const header = document.createElement('div');
+            header.className = 'review-header';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'reviewer-name';
+            nameSpan.textContent = review.name;
+            header.appendChild(nameSpan);
+
+            const ratingSpan = document.createElement('span');
+            ratingSpan.className = 'review-rating';
+            ratingSpan.textContent = this.getStarRating(review.rating);
+            header.appendChild(ratingSpan);
+
+            item.appendChild(header);
+
+            const textP = document.createElement('p');
+            textP.className = 'review-text';
+            textP.textContent = review.text ? `"${review.text}"` : 'No written review.';
+            item.appendChild(textP);
+
+            if (review.edited) {
+                const editedSpan = document.createElement('span');
+                editedSpan.className = 'review-edited-badge';
+                editedSpan.textContent = 'Edited';
+                item.appendChild(editedSpan);
+            }
+
+            container.appendChild(item);
+        });
+    }
+
+    async submitReview(book, { ratingSelect, reviewText, submitBtn, errorEl }) {
+        const user = window.libManager ? window.libManager.getUser() : null;
+        if (!user) return;
+
+        const rating = parseInt(ratingSelect.value, 10);
+        const text = (reviewText.value || '').trim();
+
+        if (!rating || rating < 1 || rating > 5) {
+            if (errorEl) {
+                errorEl.textContent = 'Please select a rating between 1 and 5 stars.';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+
+        const headers = window.libManager ? window.libManager.getAuthHeaders() : new Headers();
+        const originalHTML = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+
+        try {
+            const res = await fetch(`${MOOD_API_BASE}/reviews`, {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({
+                    user_id: user.id,
+                    google_books_id: book.id,
+                    rating,
+                    review_text: text,
+                    title: book.title,
+                    authors: book.author
+                })
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (res.status === 201 || res.status === 200) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-pen"></i> Update Review';
+                await this.loadAndRenderReviews(book);
+                return;
+            }
+
+            let message = data.error?.message || data.error || data.message || 'Failed to submit review.';
+            if (res.status === 409) {
+                message = 'You already reviewed this book.';
+            } else if (res.status === 429) {
+                message = 'Too many reviews. Please try again later.';
+            }
+
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Review submission failed', error);
+            if (errorEl) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        } finally {
+            submitBtn.disabled = false;
+            if (submitBtn.innerHTML.includes('Saving')) {
+                submitBtn.innerHTML = originalHTML;
+            }
         }
     }
 

@@ -3498,6 +3498,56 @@ textarea:focus {
     margin-bottom: 1rem;
 }
 
+.review-form-section {
+    margin-bottom: 1rem;
+}
+
+.review-form-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+
+.review-form-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.review-form-controls select,
+.review-form-controls textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text-main);
+}
+
+.review-form-error {
+    color: #e53935;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.review-empty,
+.review-loading {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.review-edited-badge {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .review-item {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
