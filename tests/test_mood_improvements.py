@@ -284,6 +284,46 @@ class TestMoodMatchingAndRecommendations:
         assert 'intensity' in filters
 
 
+class TestAIRecommendationPipeline:
+    """Tests for recommendation prompt handling."""
+
+    def test_get_ai_recommendations_uses_raw_prompt_when_requested(self, monkeypatch):
+        """Ensure raw prompts are sent directly to the LLM without re-wrapping."""
+        called = {'wrapped': False}
+
+        def fake_template(query):
+            called['wrapped'] = True
+            return f"wrapped:{query}"
+
+        monkeypatch.setattr("backend.ai_service.PromptTemplates.get_recommendation_recommend", fake_template)
+        monkeypatch.setattr("backend.ai_service.llm_service.is_available", lambda: True)
+        monkeypatch.setattr("backend.ai_service.llm_service.generate_text", lambda prompt, tokens: "raw-recommendation")
+
+        from backend.ai_service import get_ai_recommendations
+        recommendation = get_ai_recommendations("enhanced prompt content", raw_prompt=True)
+
+        assert recommendation == "raw-recommendation"
+        assert called['wrapped'] is False
+
+    def test_get_ai_recommendations_wraps_query_by_default(self, monkeypatch):
+        """Ensure normal queries are wrapped by the recommendation template."""
+        called = {'wrapped': False}
+
+        def fake_template(query):
+            called['wrapped'] = True
+            return f"wrapped:{query}"
+
+        monkeypatch.setattr("backend.ai_service.PromptTemplates.get_recommendation_recommend", fake_template)
+        monkeypatch.setattr("backend.ai_service.llm_service.is_available", lambda: True)
+        monkeypatch.setattr("backend.ai_service.llm_service.generate_text", lambda prompt, tokens: "wrapped-recommendation")
+
+        from backend.ai_service import get_ai_recommendations
+        recommendation = get_ai_recommendations("cozy mystery")
+
+        assert recommendation == "wrapped-recommendation"
+        assert called['wrapped'] is True
+
+
 class TestIntegrationFlow:
     """Integration tests for complete mood search flow."""
     

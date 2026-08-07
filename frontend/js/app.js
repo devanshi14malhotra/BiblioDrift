@@ -3900,13 +3900,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Scroll Manager (Back to Top)
     const backToTopBtn = document.getElementById('backToTop');
     if (backToTopBtn) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 200) {
+        backToTopBtn.classList.add('hidden');
+
+        const toggleBackToTopVisibility = () => {
+            if (window.scrollY > 300) {
                 backToTopBtn.classList.remove('hidden');
             } else {
                 backToTopBtn.classList.add('hidden');
             }
-        });
+        };
+
+        window.addEventListener('scroll', toggleBackToTopVisibility, { passive: true });
+        toggleBackToTopVisibility();
 
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({

@@ -9,6 +9,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
+from pydantic import BaseModel, Field, ValidationError
+
 # Import caching decorators
 try:
     from cache_service import cache_mood_tags, CacheConfig
@@ -26,6 +28,25 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
+
+
+class MoodPrimaryMood(BaseModel):
+    mood: str
+    confidence: Optional[float] = None
+
+
+class MoodAnalysisResponse(BaseModel):
+    success: bool = True
+    overall_sentiment: Optional[Dict] = None
+    primary_moods: list[MoodPrimaryMood] = Field(default_factory=list)
+    mood_description: Optional[str] = None
+    bibliodrift_vibe: Optional[str] = None
+    analysis_confidence: Optional[float] = None
+    total_reviews_analyzed: Optional[int] = None
+    review_statistics: Optional[Dict] = None
+    metadata: Optional[Dict] = None
+    error: Optional[str] = None
+
 
 class AIBookService:
     """Enhanced AI service with GoodReads mood analysis integration."""
@@ -60,6 +81,15 @@ class AIBookService:
             return json.loads(cached_entry.analysis_json)
         except (TypeError, json.JSONDecodeError):
             logger.warning("Invalid mood cache payload for key: %s", cache_key)
+            return None
+
+    def _validate_mood_analysis(self, mood_analysis: Dict) -> Optional[Dict]:
+        """Validate raw mood analysis against the expected response schema."""
+        try:
+            validated = MoodAnalysisResponse.model_validate(mood_analysis)
+            return validated.model_dump(exclude_unset=True)
+        except ValidationError as exc:
+            logger.error("Mood analysis validation failed: %s", exc)
             return None
 
     def _store_cached_analysis(self, cache_key: str, title: str, author: str, mood_analysis: Dict) -> None:
@@ -116,11 +146,12 @@ class AIBookService:
             
             # Analyze mood
             mood_analysis = self.mood_analyzer.determine_primary_mood(reviews)
-            
+            mood_analysis = self._validate_mood_analysis(mood_analysis)
+            if mood_analysis is None:
+                return None
+
             # Cache the result
-            if mood_analysis:
-                self._store_cached_analysis(cache_key, title, author, mood_analysis)
-            
+            self._store_cached_analysis(cache_key, title, author, mood_analysis)
             return mood_analysis
             
         except Exception as e:
