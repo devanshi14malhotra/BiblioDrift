@@ -249,6 +249,10 @@ h3 {
 }
 
 /* --- Layout --- */
+.mobile-menu-toggle {
+    display: none;
+}
+
 header {
     padding: 1.5rem 4rem;
     display: flex;

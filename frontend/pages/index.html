@@ -47,9 +47,9 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="../css/style.css" />
-    <link rel="stylesheet" href="../css/style-responsive.css" />
-    <link rel="stylesheet" href="../css/keyboard-shortcuts.css" />
+    <link rel="stylesheet" href="../css/style.css?v=2" />
+    <link rel="stylesheet" href="../css/style-responsive.css?v=2" />
+    <link rel="stylesheet" href="../css/keyboard-shortcuts.css?v=2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -57,7 +57,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="icon" href="../assets/images/biblioDrift_favicon.png" type="image/png" />
-    <link rel="stylesheet" href="../css/landing.css" />
+    <link rel="stylesheet" href="../css/landing.css?v=2" />
     <style>
         :root {
             --landing-bg: #f9f7f2;
@@ -1916,6 +1916,98 @@
             .contributors-panel { padding: 0.85rem; border-radius: 22px; }
             .contributors-grid-view { grid-template-columns: 1fr; }
         }
+        @media (max-width: 768px) {
+            .landing-header {
+                flex-wrap: wrap;
+                justify-content: space-between;
+                padding: 0.8rem;
+                position: relative;
+            }
+
+            .landing-brand {
+                order: 1;
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+                order: 2;
+                align-items: center;
+                justify-content: center;
+                min-height: 44px;
+                min-width: 44px;
+                background: transparent;
+                border: 1px solid rgba(212, 175, 55, 0.3);
+                border-radius: 8px;
+                color: var(--landing-ink);
+                font-size: 1.5rem;
+                cursor: pointer;
+                margin-left: auto;
+            }
+
+            .landing-nav, .landing-header-actions {
+                display: none;
+                width: 100%;
+                flex-direction: column;
+                align-items: center;
+                order: 3;
+                margin-top: 1rem;
+                gap: 1rem;
+            }
+
+            .landing-header.nav-active .landing-nav,
+            .landing-header.nav-active .landing-header-actions {
+                display: flex;
+            }
+
+            .landing-nav a {
+                padding: 0.8rem;
+                font-size: 1.1rem;
+                width: 100%;
+                text-align: center;
+                border-bottom: 1px solid rgba(0,0,0,0.05);
+            }
+            
+            .landing-header-actions {
+                border-top: 1px solid rgba(0,0,0,0.05);
+                padding-top: 1rem;
+            }
+            
+            .landing-hero,
+            .about-grid,
+            .feature-grid,
+            .community-grid,
+            .testimonial-grid,
+            .workflow-grid,
+            .footer-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .eyebrow-row {
+                justify-content: center;
+            }
+            
+            .hero-copy {
+                text-align: center;
+                align-items: center;
+            }
+            
+            .hero-copy h1 {
+                font-size: clamp(2.5rem, 8vw, 3.5rem);
+                max-width: 100%;
+            }
+
+            .landing-cta-group {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .btn-primary.landing-cta-primary, 
+            .btn-ghost {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
     <link rel="manifest" href="../manifest.json">
     <link rel="stylesheet" href="../css/pwa.css">
@@ -1932,6 +2024,9 @@
                 <img src="../assets/images/biblioDrift_favicon.png" alt="BiblioDrift logo" />
                 <span>BiblioDrift</span>
             </a>
+            <button class="mobile-menu-toggle" id="landingMenuToggle" aria-label="Toggle navigation">
+                <i class="fa-solid fa-bars"></i>
+            </button>
             <nav class="landing-nav" aria-label="Landing sections">
                 <a href="#about-project">About</a>
                 <a href="#key-features">Features</a>
@@ -2691,7 +2786,7 @@
     <script src="../js/theme-manager.js"></script>
     <script src="../js/landing-interactions.js"></script>
     <script src="../js/ambient.js"></script>
-    <script src="../js/pwa.js"></script>
+    <script src="../js/pwa.js?v=2"></script>
 </body>
 
 </html>

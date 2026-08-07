@@ -276,3 +276,29 @@
     if (!navigator.onLine) _showOfflineIndicator();
 
 })();
+
+// Global Mobile Menu Toggle Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtns = document.querySelectorAll('.mobile-menu-toggle');
+    toggleBtns.forEach(toggleBtn => {
+        const header = toggleBtn.closest('header') || toggleBtn.closest('.landing-header');
+        if (header) {
+            const headerControls = header.querySelector('.header-controls');
+            toggleBtn.addEventListener('click', () => {
+                if (headerControls) {
+                    headerControls.classList.toggle('nav-active');
+                } else {
+                    header.classList.toggle('nav-active');
+                }
+                const icon = toggleBtn.querySelector('i');
+                if (icon) {
+                    if (icon.classList.contains('fa-bars')) {
+                        icon.classList.replace('fa-bars', 'fa-times');
+                    } else {
+                        icon.classList.replace('fa-times', 'fa-bars');
+                    }
+                }
+            });
+        }
+    });
+});
