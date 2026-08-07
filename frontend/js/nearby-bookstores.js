@@ -154,12 +154,137 @@ function handleLocationSuccess(position) {
 
     initializeMap(latitude, longitude);
 
-    renderBookstores(MOCK_BOOKSTORES);
+    fetchNearbyBookstores(latitude, longitude);
 
     cacheLocation(latitude, longitude);
 
     findStoresBtn.disabled = false;
 
+}
+
+// =========================================
+// Distance Calculation (Haversine Formula)
+// =========================================
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    ;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+}
+
+// =========================================
+// Fetch Bookstores from OpenStreetMap API
+// =========================================
+
+async function fetchNearbyBookstores(lat, lng) {
+    // We search within a 10km radius first.
+    const radius = 10000;
+    const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];nwr["shop"="books"](around:${radius},${lat},${lng});out center;`;
+
+    try {
+        const response = await fetch(overpassUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        if (!data.elements || data.elements.length === 0) {
+            // No bookstores found in OSM within 10km, fallback to MOCK_BOOKSTORES with updated distances
+            locationStatus.innerHTML = `
+                <span class="location-success">
+                    Location detected. No local bookstores mapped within 10 km. Displaying demo bookstores.
+                </span>
+            `;
+            const simulatedBookstores = MOCK_BOOKSTORES.map(store => {
+                const distanceKm = calculateDistance(lat, lng, store.lat, store.lng);
+                return {
+                    ...store,
+                    distance: `${distanceKm.toFixed(1)} km`
+                };
+            });
+            renderBookstores(simulatedBookstores);
+            return;
+        }
+
+        const bookstores = data.elements.map(item => {
+            const itemLat = item.lat || (item.center && item.center.lat) || lat;
+            const itemLng = item.lon || (item.center && item.center.lon) || lng;
+            const distanceKm = calculateDistance(lat, lng, itemLat, itemLng);
+
+            // Extract address
+            let address = "Address not available";
+            if (item.tags) {
+                const street = item.tags["addr:street"];
+                const housenumber = item.tags["addr:housenumber"];
+                const city = item.tags["addr:city"] || item.tags["addr:suburb"];
+                const postcode = item.tags["addr:postcode"];
+
+                if (item.tags["addr:full"]) {
+                    address = item.tags["addr:full"];
+                } else if (street) {
+                    address = [housenumber, street, city, postcode].filter(Boolean).join(", ");
+                } else if (city) {
+                    address = city;
+                }
+            }
+
+            // Consistent mock rating based on the element ID
+            const ratingValue = (4.0 + (item.id % 11) / 10).toFixed(1);
+
+            // Hours
+            const hours = (item.tags && item.tags.opening_hours) || "Hours not available";
+
+            return {
+                name: (item.tags && item.tags.name) || "Unnamed Bookstore",
+                address: address,
+                distance: `${distanceKm.toFixed(1)} km`,
+                distanceVal: distanceKm,
+                rating: ratingValue,
+                hours: hours,
+                lat: itemLat,
+                lng: itemLng
+            };
+        });
+
+        // Sort by distance
+        bookstores.sort((a, b) => a.distanceVal - b.distanceVal);
+
+        locationStatus.innerHTML = `
+            <span class="location-success">
+                Location detected. Found ${bookstores.length} bookstore(s) within 10 km.
+            </span>
+        `;
+
+        renderBookstores(bookstores);
+    } catch (error) {
+        console.error("Error fetching bookstores from Overpass API:", error);
+        locationStatus.innerHTML = `
+            <span class="location-error">
+                Failed to fetch real-time bookstore data. Showing demo bookstores instead.
+            </span>
+        `;
+        // Fallback to mock bookstores but update their distance relative to user
+        const simulatedBookstores = MOCK_BOOKSTORES.map(store => {
+            const distanceKm = calculateDistance(lat, lng, store.lat, store.lng);
+            return {
+                ...store,
+                distance: `${distanceKm.toFixed(1)} km`
+            };
+        });
+        renderBookstores(simulatedBookstores);
+    }
 }
 
 // =========================================
