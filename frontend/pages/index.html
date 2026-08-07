@@ -4,9 +4,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
+    <script type="module">
+        import {
+                getStorageData,
+                saveStorageData,
+                STORAGE_KEYS
+                } from '../js/storage-manager.js';
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
+            const theme = getStorageData(STORAGE_KEYS.THEME);
             if (theme === 'night') {
                 document.documentElement.setAttribute('data-theme', 'night');
             }
@@ -16,7 +21,7 @@
             const btn = document.getElementById('themeToggle');
             if (!btn) return;
             const icon = btn.querySelector('i');
-            const STORAGE_KEY = 'bibliodrift_theme';
+            const STORAGE_KEY = STORAGE_KEYS.THEME;
             
             function applyTheme(theme) {
                 if (theme === 'night') {
@@ -26,7 +31,7 @@
                     document.documentElement.removeAttribute('data-theme');
                     if (icon) icon.className = 'fa-solid fa-moon';
                 }
-                localStorage.setItem(STORAGE_KEY, theme);
+                saveStorageData(STORAGE_KEY, theme);
             }
             
             btn.addEventListener('click', function () {
@@ -39,9 +44,10 @@
         content="BiblioDrift is a cozy, community-driven reading sanctuary for discovering books by mood, collecting favorites, and exploring with AI-guided discovery." />
     <meta name="theme-color" content="#2c2420" />
     <title>BiblioDrift | A cozy reading sanctuary</title>
-    <script>
+    <script type="module">
+         import { getStorageData, STORAGE_KEYS } from '../js/storage-manager.js';
         (function () {
-            const theme = localStorage.getItem('bibliodrift_theme');
+            const theme = getStorageData(STORAGE_KEYS.THEME);
             if (theme === 'night') {
                 document.documentElement.setAttribute('data-theme', 'night');
             }
@@ -2266,7 +2272,12 @@
             </section>
 
             <script src="../js/landing-contributors.js"></script>
-            <script>
+            <script type="module">
+                import {
+                        getStorageData,
+                        saveStorageData,
+                        STORAGE_KEYS
+                       } from '../js/storage-manager.js';
             (function(){
                 const lists = document.querySelectorAll('.contributors-list');
                 if(!lists.length) return;
@@ -2279,15 +2290,6 @@
                     'frontend/data/contributors.json'
                 ];
 
-                function storageGet(key){
-                    try { return window.localStorage.getItem(key); }
-                    catch(e){ return null; }
-                }
-
-                function storageSet(key, value){
-                    try { window.localStorage.setItem(key, value); }
-                    catch(e){}
-                }
 
                 lists.forEach(container => {
                     const owner = container.dataset.owner || 'devanshi14malhotra';

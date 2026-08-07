@@ -3,9 +3,14 @@
 
 <head>
   <meta charset="UTF-8" />
-  <script>
+  <script type="module">
+            import {
+                getStorageData,
+                saveStorageData,
+                STORAGE_KEYS
+                } from '../js/storage-manager.js';
     (function () {
-      const theme = localStorage.getItem('bibliodrift_theme');
+      getStorageData(STORAGE_KEYS.THEME, 'light')
       if (theme === 'night') {
         document.documentElement.setAttribute('data-theme', 'night');
       }
@@ -29,13 +34,13 @@
           if (icon) icon.className = 'fa-solid fa-moon';
         }
 
-        localStorage.setItem(STORAGE_KEY, theme);
+        saveStorageData(STORAGE_KEY, theme);
         if (typeof restoreTheme === 'function') restoreTheme();
         console.log('Theme applied:', theme);
       }
 
       // Load saved theme
-      const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
+      const savedTheme = getStorageData(STORAGE_KEY, 'light');
       applyTheme(savedTheme);
 
       // Toggle on click

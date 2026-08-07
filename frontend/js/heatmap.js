@@ -1,6 +1,12 @@
 /**
  * Heatmap Activity Logger and Renderer
  */
+import {
+  getStorageData,
+  saveStorageData,
+  removeStorageData,
+  STORAGE_KEYS
+} from "./storage-manager.js";
 
 const HeatmapConfig = {
     storageKey: 'bibliodrift_activity_log',
@@ -11,7 +17,7 @@ const HeatmapConfig = {
 
 window.logReadingActivity = function (action, description) {
     try {
-        let log = JSON.parse(localStorage.getItem(HeatmapConfig.storageKey)) || {};
+        let log = getStorageData(HeatmapConfig.storageKey, {});
         
         // Get today's date in YYYY-MM-DD format
         const today = new Date().toISOString().split('T')[0];
@@ -36,7 +42,7 @@ window.logReadingActivity = function (action, description) {
             }
         });
 
-        localStorage.setItem(HeatmapConfig.storageKey, JSON.stringify(log));
+        saveStorageData(HeatmapConfig.storageKey, log);
 
         // Re-render if on profile page
         if (document.getElementById('reading-heatmap')) {
@@ -90,7 +96,7 @@ window.renderHeatmap = function () {
 
     let log = {};
     try {
-        log = JSON.parse(localStorage.getItem(HeatmapConfig.storageKey)) || {};
+        log = getStorageData(HeatmapConfig.storageKey, {});
     } catch (e) {
         console.error("Failed to parse activity log:", e);
     }

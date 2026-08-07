@@ -2,7 +2,12 @@
  * Community Stories Logic
  * Added by devanshi14malhotra
  */
-
+import {
+  getStorageData,
+  saveStorageData,
+  removeStorageData,
+  STORAGE_KEYS
+} from "./storage-manager.js";
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const openFormBtn = document.getElementById('openFormBtn');
@@ -49,11 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    let stories = JSON.parse(localStorage.getItem('bibliodrift_community_stories')) || defaultStories;
+        let stories = getStorageData(
+        STORAGE_KEYS.COMMUNITY_STORIES,
+        defaultStories
+        );
 
     // Save to local storage
     const saveStories = () => {
-        localStorage.setItem('bibliodrift_community_stories', JSON.stringify(stories));
+        saveStorageData(STORAGE_KEYS.COMMUNITY_STORIES, stories);
     };
 
     // Render Stories
