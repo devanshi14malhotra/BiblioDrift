@@ -40,8 +40,10 @@ where stories are explored through <b>mood, atmosphere, and feeling</b> instead 
 | 🧘 **[Core Philosophy](#-core-philosophy)** | Principles that shape the experience |
 | ✨ **[Experience Highlights](#-experience-highlights)** | Main features and immersive interactions |
 | 🛠️ **[Tech Stack](#-tech-stack)** | Technologies powering the platform |
+| 🚀 **[Backend Deployment](#-backend-deployment--backend_url-setup)** | Setting up BACKEND_URL for the Flask backend |
 | 🧠 **[System Architecture](#-system-architecture)** | Flow between frontend, backend, and AI |
 | 📸 **[Screenshots](#-screenshots)** | Visual preview of the application |
+| 📚 **[Documentation Hub](#-documentation-hub)** | Links to detailed project documentation |
 | 📄 **[License](#-license)** | Project licensing information |
 
 </div>
