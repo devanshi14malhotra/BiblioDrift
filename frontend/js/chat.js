@@ -332,6 +332,10 @@ Tell me: what is stirring in you today?`,
             if (moodResponse.ok) {
                 const moodData = await moodResponse.json();
                 if (moodData.success) {
+                    // Surface the ambient music payload for the mini-player
+                    window.dispatchEvent(new CustomEvent('bibliodrift:ambient-music', {
+                        detail: moodData.data?.ambient_music || null
+                    }));
                     const books = await this.searchGoogleBooks(userMessage);
                     return {
                         message: this.generateContextualResponse(userMessage, books),

@@ -1104,7 +1104,7 @@ def handle_mood_search(validated_data):
     # Note: CORS preflight (OPTIONS) is handled globally by Flask-CORS —
     # no manual OPTIONS check needed here.
 
-    from exceptions import (
+    from backend.core.exceptions.exceptions import (
         LLMCircuitBreakerOpenError, AIServiceException,
         ValidationException, InvalidInputError
     )
@@ -1117,19 +1117,26 @@ def handle_mood_search(validated_data):
         # Try to use enhanced mood parsing if available
         try:
             from mood_analysis.mood_query_parser import parse_mood_query, get_recommendation_prompt
+            from mood_analysis.ambient_music import get_ambient_music
             parsed_query = parse_mood_query(mood_query)
             enhanced_prompt = get_recommendation_prompt(mood_query)
-            
+
             logger.info(f"Parsed mood query: {parsed_query.to_dict()}")
-            
+
+            # Map the parsed mood to a curated ambient playlist for the mini-player
+            ambient_music = get_ambient_music(
+                mood_query, primary_moods=parsed_query.primary_moods
+            )
+
             # Use enhanced prompt for recommendations
             recommendations = get_ai_recommendations(enhanced_prompt)
-            
+
             return success_response(
                 data={
                     "recommendations": recommendations,
                     "query": mood_query,
-                    "parsed_mood": parsed_query.to_dict()
+                    "parsed_mood": parsed_query.to_dict(),
+                    "ambient_music": ambient_music
                 }
             )
         except ImportError:
@@ -1139,7 +1146,8 @@ def handle_mood_search(validated_data):
             return success_response(
                 data={
                     "recommendations": recommendations,
-                    "query": mood_query
+                    "query": mood_query,
+                    "ambient_music": {"genre": None, "spotify_embed_url": None}
                 }
             )
         
