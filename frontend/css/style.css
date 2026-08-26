@@ -6096,6 +6096,42 @@ textarea:focus {
     gap: 10px;
 }
 
+/* Mood-based Ambient Music mini-player (#1404) */
+.music-player {
+    bottom: 6.1rem !important; /* stacked above the sanctuary leaf button */
+}
+
+#musicToggle {
+    width: 2.8rem !important;
+    height: 2.8rem !important;
+    border-radius: 50% !important;
+    background: var(--header-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--glass-border) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+#musicToggle:hover {
+    background: var(--accent-gold) !important;
+    color: white !important;
+    transform: scale(1.05);
+}
+
+.music-panel {
+    width: 280px;
+}
+
+.music-panel .music-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
 .ambient-option span {
     display: flex;
     align-items: center;

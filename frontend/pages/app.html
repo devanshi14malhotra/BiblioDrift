@@ -424,6 +424,20 @@
   </button>
 
   <!-- Ambient Sanctuary UI -->
+  <div class="ambient-sanctuary music-player" id="musicPlayer" hidden>
+    <button id="musicToggle" title="Ambient Music" aria-expanded="false" aria-controls="musicPanel">
+      <i class="fa-solid fa-music"></i>
+    </button>
+
+    <div id="musicPanel" class="ambient-panel music-panel">
+      <h3 style="color: var(--text-main) !important;" id="musicGenre">Ambient Music</h3>
+      <iframe id="musicEmbed" src="" width="100%" height="80" frameborder="0"
+        allowtransparency="true" allow="encrypted-media" title="Ambient playlist player"
+        style="border-radius: 12px; display: none;"></iframe>
+      <p id="musicEmpty" class="music-empty">Search for a mood to get a matching playlist.</p>
+    </div>
+  </div>
+
   <div class="ambient-sanctuary">
     <button id="ambientToggle" title="Ambient Sanctuary" aria-expanded="false" aria-controls="ambientPanel">
       <i class="fa-solid fa-leaf"></i>
@@ -515,9 +529,9 @@
   </div>
 
   <script src="../js/ambient.js"></script>
+  <script src="../js/ambient-music.js"></script>
   <script src="../js/security.js"></script>
   <script src="../js/pwa.js"></script>
-  <!-- AI Chatbot Widget -->
   <div id="ai-chatbot-widget" class="chatbot-widget">
     <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" title="Chat with Elara">
       <i class="fa-solid fa-robot"></i>

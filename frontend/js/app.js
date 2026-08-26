@@ -3279,6 +3279,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         renderer.renderCuratedSection(query, 'search-results-grid', 20);
+
+        // Fire-and-forget: fetch a matching ambient playlist for this mood query
+        fetch(`${MOOD_API_BASE}/mood-search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        }).then(res => res.ok ? res.json() : null).then(data => {
+            window.dispatchEvent(new CustomEvent('bibliodrift:ambient-music', {
+                detail: data?.data?.ambient_music || null
+            }));
+        }).catch(() => { /* playlist is optional; search results still render */ });
     } else if (document.getElementById('dynamic-shelves-container')) {
         console.log('📚 Initializing Curated Discovery Sections...');
         const container = document.getElementById('dynamic-shelves-container');
